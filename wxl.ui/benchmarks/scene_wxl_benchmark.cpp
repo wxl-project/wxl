@@ -21,10 +21,6 @@
 #include "scene_report.h"
 #include "scene_shape.h"
 
-// __argc and __wargv: wxl owns the entry point, and the CRT's wide command
-// line is how its arguments reach this one.
-#include <cstdlib>
-
 #include "launch.h"
 #include "ui.h"
 
@@ -410,9 +406,12 @@ int verify(std::vector<CardHandles> const& handles) {
 }  // namespace
 
 wxl::Teardown wxl_launched() {
+    // wxl owns the entry point; the arguments come from the process's command
+    // line, the program first.
+    auto const arguments = core::environment::command_line();
     bool keepOpen = false;
-    for (int index = 1; index < __argc; ++index) {
-        if (std::wstring_view(__wargv[index]) == L"--keep-open") {
+    for (std::size_t index = 1; index < arguments.size(); ++index) {
+        if (arguments[index] == L"--keep-open") {
             keepOpen = true;
         } else {
             std::fputs("usage: wxl.ui.scene-wxl-benchmark [--keep-open]\n", stderr);
