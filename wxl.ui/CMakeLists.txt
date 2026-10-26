@@ -552,11 +552,9 @@ set_property(SOURCE ${_wxl_ui_generated_sources} APPEND PROPERTY
 wxl_set_target_folders(wxl.ui)
 wxl_set_target_folders(wxl.ui.surface-test PREFIX "tests")
 
-# Off by default, like wxl.core's and wxl.async's: the benchmarks are
-# measurement tools, run deliberately. These two are whole WinUI3
-# applications, so they also cost a build the other targets do not.
-option(WXL_BUILD_BENCHMARKS "Build the wxl.ui benchmark executables." OFF)
-
+# WXL_BUILD_BENCHMARKS is the tree's one switch (cmake/config.cmake). These two
+# are whole WinUI3 applications, so they also cost a build the other
+# benchmarks do not.
 if(WXL_BUILD_BENCHMARKS)
     add_subdirectory(benchmarks)
 endif()

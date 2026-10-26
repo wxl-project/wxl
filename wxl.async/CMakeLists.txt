@@ -15,10 +15,6 @@
 # module and that setup already lives at the root.
 option(WXL_ENABLE_PCH "Use a precompiled header (src/pch.h)." ON)
 
-# Off by default: the benchmarks are measurement tools, run deliberately, and
-# an ordinary build has no reason to spend time on them.
-option(WXL_BUILD_BENCHMARKS "Build the wxl.async benchmark executables." OFF)
-
 # Off by default: the checks of how coroutines are used -- a task awaited twice at
 # once, a value read twice, a task dropped while it runs or while somebody joins it,
 # a task used after a move -- are then assert's, a Debug build's alone, and a

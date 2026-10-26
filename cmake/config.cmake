@@ -34,6 +34,14 @@ if(WIN32)
     add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/Zc:throwingNew>)
 endif()
 
+# ---- Benchmarks ----
+# Off by default: the benchmarks are measurement tools, run deliberately
+# (tools\bench.ps1), and an ordinary build has no reason to spend time on them.
+# One switch for every benchmark of the tree, declared here for each project
+# that includes this file -- the tree's root, and wxl.core and wxl.xml when they
+# are configured on their own.
+option(WXL_BUILD_BENCHMARKS "Build the benchmark executables of the tree (tools/bench.ps1 runs them)." OFF)
+
 set(_old_module_path ${CMAKE_MODULE_PATH})
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
 

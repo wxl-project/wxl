@@ -59,7 +59,10 @@ if(NOT TARGET wxl::core)
 endif()
 
 add_subdirectory(src)
-add_subdirectory(bench)
+
+if(WXL_BUILD_BENCHMARKS)
+    add_subdirectory(bench)
+endif()
 
 if(BUILD_TESTING)
     add_subdirectory(test)

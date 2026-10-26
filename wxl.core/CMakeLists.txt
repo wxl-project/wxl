@@ -47,10 +47,6 @@ option(BUILD_TESTING "Build the testing tree." ON)
 # the module-unit interaction is worth being able to bisect out.
 option(WXL_ENABLE_PCH "Use a precompiled header (src/pch.h) for wxl.core." ON)
 
-# Off by default: the benchmarks are measurement tools, run deliberately, and
-# an ordinary build has no reason to spend time on them.
-option(WXL_BUILD_BENCHMARKS "Build the wxl.core benchmark executables." OFF)
-
 # Install/export rules. Off by default when wxl is a subproject (FetchContent):
 # a consumer's `cmake --install` should not start dropping wxl's archives and
 # module sources into its prefix unless it asks for it.

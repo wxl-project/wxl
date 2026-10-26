@@ -43,4 +43,6 @@ if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()
 
-add_subdirectory(bench)
+if(WXL_BUILD_BENCHMARKS)
+    add_subdirectory(bench)
+endif()
