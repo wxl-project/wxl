@@ -23,6 +23,12 @@
 // catches up with the reader, so after a burst it keeps walking every block the burst made
 // it grow. It is what the claim about the queue's handover is measured against.
 //
+// The slots rows, in the table after a burst alone, are a ring of slots in the manner of the
+// Disruptor (spsc_slot_ring.h): one array of a size chosen in advance, which never grows and
+// never gives memory back, so the burst it takes is its whole capacity. Three sizes, by the
+// 12 MB L3 of the i7-8700K the claims were measured on: 1 MB and 8 MB inside it, 16 MB past
+// it. A fragmented heap changes nothing for a single allocation, and that is expected.
+//
 // mpsc_queue is measured in FIFO mode, one node per element, and it is flattered
 // twice over: in the threaded run its nodes are all allocated up front, and in the
 // single-threaded runs they are recycled through a private list. A real user of it needs a
@@ -34,6 +40,7 @@
 // and the queue at that block size.
 
 #include "spsc_block_ring.h"
+#include "spsc_slot_ring.h"
 
 import std;
 import wxl.core;
@@ -646,6 +653,27 @@ void queue_rows(const char* const name, const settings& how) {
     throughput_row<spsc_handle<queue_tt<element_t, 256>>>((label + "/256").c_str(), how);
 }
 
+/// The row of a slot ring in the table after a burst. Its burst is its whole capacity -- a
+/// writer and a reader on one thread cannot put more into a ring that does not grow -- and
+/// the fragmented heap is holed in the size of its one allocation. Spread has no meaning for
+/// a single block, and grown is the ring's own size.
+template <std::size_t capacity>
+void slot_row(const char* const name, const settings& how) {
+    using handle_t = spsc_handle<spsc_slot_ring<element_t, capacity>>;
+
+    const auto [fresh_early, fresh_late] =
+        after_burst<handle_t>(capacity, how.pair_elements, how.rounds, geometry{});
+
+    const geometry holed{capacity * sizeof(element_t), 1};
+    const auto [holed_early, holed_late] =
+        after_burst<handle_t>(capacity, how.pair_elements, how.rounds, holed);
+
+    const double megabytes = static_cast<double>(capacity * sizeof(element_t)) / (1024.0 * 1024.0);
+
+    std::printf("  %-22s %8.2f %8.2f %10.2f %8.2f %8s %7.0f\n", name, fresh_early, fresh_late,
+                holed_early, holed_late, "-", megabytes);
+}
+
 template <template <class, std::size_t> class queue_tt>
 void queue_sweeps(const char* const name, const settings& how) {
     const std::string label = name;
@@ -804,6 +832,10 @@ int main(int argc, char** argv) {
     queue_sweeps<spsc_queue>("queue", how);
     std::putchar('\n');
     queue_sweeps<spsc_queue_reference_implementation>("reference", how);
+    std::putchar('\n');
+    slot_row<std::size_t{1} << 17>("slots/1MB", how);
+    slot_row<std::size_t{1} << 20>("slots/8MB", how);
+    slot_row<std::size_t{1} << 21>("slots/16MB", how);
 
     std::printf("\n\nthe whole machine: %zu pairs, each grown by its own backlog first\n\n", pairs);
     std::printf("  %-22s %18s %20s %7s\n", "", "fresh heap", "fragmented heap", "grown");
