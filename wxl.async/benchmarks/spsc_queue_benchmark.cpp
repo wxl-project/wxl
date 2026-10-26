@@ -28,7 +28,10 @@
 // single-threaded runs they are recycled through a private list. A real user of it needs a
 // pool for that and pays for the pool, so read that row as a floor rather than as its cost.
 //
-// Usage: wxl.async.spsc-queue-benchmark [rounds [pairs [backlog]]]
+// Usage: wxl.async.spsc-queue-benchmark [rounds [pairs [backlog]]] [--machine 16|64|128|256]
+//
+// --machine, anywhere on the line, runs the machine-wide table alone, and in it only the ring
+// and the queue at that block size.
 
 #include "spsc_block_ring.h"
 
@@ -690,21 +693,55 @@ void queue_machines(const char* const name, const settings& how) {
                                                        geometry_of<256>(how.parallel_grown), how);
 }
 
+/// The machine-wide rows of the ring and the queue at one block size, which is what
+/// --machine asks for.
+template <std::size_t block_size>
+void machine_pair(const settings& how) {
+    const std::string size = std::to_string(block_size);
+
+    machine_row<spsc_handle<spsc_block_ring<element_t, block_size>>>(
+        ("ring/" + size).c_str(), geometry_of<block_size>(how.parallel_grown), how);
+    std::putchar('\n');
+    machine_row<spsc_handle<spsc_queue<element_t, block_size>>>(
+        ("queue/" + size).c_str(), geometry_of<block_size>(how.parallel_grown), how);
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
-    const int rounds = argc > 1 ? std::atoi(argv[1]) : 5;
+    // --machine <block> may stand anywhere; the positional arguments are the others, in order.
+    std::size_t machine_block = 0;
+    std::vector<const char*> positional;
+    for (int i = 1; i < argc; ++i) {
+        if (std::string_view(argv[i]) != "--machine") {
+            positional.push_back(argv[i]);
+            continue;
+        }
+        const std::string_view block = i + 1 < argc ? std::string_view(argv[++i]) : std::string_view{};
+        if (block == "16") machine_block = 16;
+        else if (block == "64") machine_block = 64;
+        else if (block == "128") machine_block = 128;
+        else if (block == "256") machine_block = 256;
+        else {
+            std::cerr << "usage: wxl.async.spsc-queue-benchmark [rounds [pairs [backlog]]] "
+                         "[--machine 16|64|128|256]\n";
+            return 2;
+        }
+    }
+
+    const int rounds = positional.size() > 0 ? std::atoi(positional[0]) : 5;
 
     // One pair per physical core, both of its threads on that core's two hardware threads,
     // which is what `all_cores` assumes when it pins them to 2*pair and 2*pair + 1.
     const std::size_t pairs =
-        argc > 2 ? static_cast<std::size_t>(std::atoi(argv[2]))
-                 : std::max<std::size_t>(1, std::thread::hardware_concurrency() / 2);
+        positional.size() > 1 ? static_cast<std::size_t>(std::atoi(positional[1]))
+                              : std::max<std::size_t>(1, std::thread::hardware_concurrency() / 2);
 
     // How big a backlog grows the queue before anything is measured. It is an argument
     // because the answer to "does walking what a burst grew cost anything" depends on
     // whether what it grew still fits in a cache, and that is worth being able to ask.
-    const std::size_t grown = argc > 3 ? static_cast<std::size_t>(std::atoi(argv[3])) : 4'000'000;
+    const std::size_t grown =
+        positional.size() > 2 ? static_cast<std::size_t>(std::atoi(positional[2])) : 4'000'000;
 
     thread::set_affinity(reader_cpu);
 
@@ -725,6 +762,22 @@ int main(int argc, char** argv) {
     std::printf("wxl.async SPSC queues -- nanoseconds per element, best of %d rounds\n", rounds);
     std::printf("%zu logical processors, %zu writer/reader pairs\n\n",
                 static_cast<std::size_t>(std::thread::hardware_concurrency()), pairs);
+
+    if (machine_block) {
+        std::printf("the whole machine: %zu pairs, each grown by its own backlog first\n\n", pairs);
+        std::printf("  %-22s %18s %20s %7s\n", "", "fresh heap", "fragmented heap", "grown");
+        std::printf("  %-22s %8s %9s %10s %9s %7s\n", "", "ns/elem", "Melem/s", "ns/elem", "Melem/s",
+                    "MB");
+        std::putchar('\n');
+
+        switch (machine_block) {
+            case 16: machine_pair<16>(how); break;
+            case 64: machine_pair<64>(how); break;
+            case 128: machine_pair<128>(how); break;
+            default: machine_pair<256>(how); break;
+        }
+        return 0;
+    }
 
     std::printf("moving an element\n\n");
     std::printf("  %-22s %8s %10s %8s %8s\n", "", "steady", "recovered", "fill", "drain");
