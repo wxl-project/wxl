@@ -18,12 +18,19 @@
 // sides of a pair on different cores, every queue grown past the caches by its own backlog
 // first. What all of them share there is the L3 and the path to memory.
 //
+// The ring rows are the ring of blocks spsc_queue used to be (spsc_block_ring.h), there for
+// comparison only: a ring that never recycles a block and grows by one when the writer
+// catches up with the reader, so after a burst it keeps walking every block the burst made
+// it grow. It is what the claim about the queue's handover is measured against.
+//
 // mpsc_queue is measured in FIFO mode, one node per element, and it is flattered
 // twice over: in the threaded run its nodes are all allocated up front, and in the
 // single-threaded runs they are recycled through a private list. A real user of it needs a
 // pool for that and pays for the pool, so read that row as a floor rather than as its cost.
 //
 // Usage: wxl.async.spsc-queue-benchmark [rounds [pairs [backlog]]]
+
+#include "spsc_block_ring.h"
 
 import std;
 import wxl.core;
@@ -724,6 +731,8 @@ int main(int argc, char** argv) {
     std::printf("  %-22s %8s %10s %8s %8s\n", "", "2 thr", "2 thr", "1 thr", "1 thr");
     std::putchar('\n');
 
+    queue_rows<spsc_block_ring>("ring", how);
+    std::putchar('\n');
     queue_rows<spsc_queue>("queue", how);
     std::putchar('\n');
     queue_rows<spsc_queue_reference_implementation>("reference", how);
@@ -737,6 +746,8 @@ int main(int argc, char** argv) {
                 "MB");
     std::putchar('\n');
 
+    queue_sweeps<spsc_block_ring>("ring", how);
+    std::putchar('\n');
     queue_sweeps<spsc_queue>("queue", how);
     std::putchar('\n');
     queue_sweeps<spsc_queue_reference_implementation>("reference", how);
@@ -747,6 +758,8 @@ int main(int argc, char** argv) {
                 "MB");
     std::putchar('\n');
 
+    queue_machines<spsc_block_ring>("ring", how);
+    std::putchar('\n');
     queue_machines<spsc_queue>("queue", how);
     std::putchar('\n');
     queue_machines<spsc_queue_reference_implementation>("reference", how);
