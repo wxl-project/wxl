@@ -14,30 +14,43 @@
 //                 stretch of write-one-read-one, over a fresh heap and over a fragmented
 //                 one. What it costs to keep going once the burst is over.
 //
-// The last table runs the whole machine: one writer/reader pair per physical core, the two
-// sides of a pair on different cores, every queue grown past the caches by its own backlog
-// first. What all of them share there is the L3 and the path to memory.
+// The machine-wide table runs the whole machine: one writer/reader pair per physical core,
+// the two sides of a pair on different cores, every queue grown past the caches by its own
+// backlog first. What all of them share there is the L3 and the path to memory.
 //
 // The ring rows are the ring of blocks spsc_queue used to be (spsc_block_ring.h), there for
 // comparison only: a ring that never recycles a block and grows by one when the writer
 // catches up with the reader, so after a burst it keeps walking every block the burst made
 // it grow. It is what the claim about the queue's handover is measured against.
 //
-// The slots rows, in the table after a burst alone, are a ring of slots in the manner of the
-// Disruptor (spsc_slot_ring.h): one array of a size chosen in advance, which never grows and
-// never gives memory back, so the burst it takes is its whole capacity. Three sizes, by the
-// 12 MB L3 of the i7-8700K the claims were measured on: 1 MB and 8 MB inside it, 16 MB past
-// it. A fragmented heap changes nothing for a single allocation, and that is expected.
+// The slots rows, in the table after a burst and in the many-queues one, are a ring of slots
+// in the manner of the Disruptor (spsc_slot_ring.h): one array of a size chosen in advance,
+// which never grows and never gives memory back, so the burst it takes is its whole
+// capacity. Three sizes, by the 12 MB L3 of the i7-8700K the claims were measured on: 1 MB
+// and 8 MB inside it, 16 MB past it. A fragmented heap changes nothing for a single
+// allocation, and that is expected.
+//
+// The many-queues table asks the machine-wide question again with many queues per thread.
+// The hypothesis: on a busy machine, slot rings, each sweeping its whole array, wash the
+// shared L3 out between them, while spsc_queue, settled on two warm blocks per queue, keeps
+// its working set there -- and the machine as a whole moves more. The pairs and their pinning
+// are the machine-wide table's, but every pair has 8 queues of its own, 48 on the i7-8700K:
+// the writer puts one element into each in turn, the reader takes one from each in the same
+// order and spins on a queue that is empty. Nothing is grown beforehand -- spsc_queue grows
+// only as the traffic needs, a slot ring is made its size -- and the clock is the wall clock,
+// from a barrier after the warm-up to the last reader done.
 //
 // mpsc_queue is measured in FIFO mode, one node per element, and it is flattered
 // twice over: in the threaded run its nodes are all allocated up front, and in the
 // single-threaded runs they are recycled through a private list. A real user of it needs a
 // pool for that and pays for the pool, so read that row as a floor rather than as its cost.
 //
-// Usage: wxl.async.spsc-queue-benchmark [rounds [pairs [backlog]]] [--machine 16|64|128|256]
+// Usage: wxl.async.spsc-queue-benchmark [rounds [pairs [backlog]]]
+//                                       [--machine 16|64|128|256 | --many-queues]
 //
 // --machine, anywhere on the line, runs the machine-wide table alone, and in it only the ring
-// and the queue at that block size.
+// and the queue at that block size. --many-queues, anywhere on the line, runs the many-queues
+// table alone. The two do not go together.
 
 #include "spsc_block_ring.h"
 #include "spsc_slot_ring.h"
@@ -102,6 +115,8 @@ public:
     void write(const element_t value) { queue_.write(value); }
 
     bool read(element_t& value) { return reader_.read(value); }
+
+    const queue_t& queue() const noexcept { return queue_; }
 
 private:
     queue_t queue_;
@@ -601,6 +616,8 @@ struct settings {
     std::size_t pairs;              ///< One writer/reader pair per physical core.
     std::size_t parallel_grown;     ///< The backlog each of them grows, per queue.
     std::size_t parallel_elements;  ///< What is measured afterwards, per queue.
+    std::size_t many_warm_up;       ///< Per queue before the many-queues barrier.
+    std::size_t many_elements;      ///< Per queue after it.
     int rounds;
 };
 
@@ -734,13 +751,197 @@ void machine_pair(const settings& how) {
         ("queue/" + size).c_str(), geometry_of<block_size>(how.parallel_grown), how);
 }
 
+// ---------------------------------------------------------------------------------------
+// Many queues per thread.
+
+constexpr std::size_t queues_per_pair = 8;
+
+/// The blocks a spsc_queue has allocated, which is what it holds: it frees none until it
+/// goes. The count is private to the queue, and an explicit instantiation is the one place
+/// the language does not check access, so the member is named there. It is read once the
+/// threads are joined, never while the queue runs.
+template <class queue_t>
+struct allocated_blocks_of {
+    friend std::size_t queue_t::*allocated_blocks_member(allocated_blocks_of);
+};
+
+template <class queue_t, std::size_t queue_t::*member>
+struct allocated_blocks_access {
+    friend std::size_t queue_t::*allocated_blocks_member(allocated_blocks_of<queue_t>) {
+        return member;
+    }
+};
+
+template struct allocated_blocks_access<spsc_queue<element_t, 16>,
+                                        &spsc_queue<element_t, 16>::allocated_blocks_>;
+template struct allocated_blocks_access<spsc_queue<element_t, 256>,
+                                        &spsc_queue<element_t, 256>::allocated_blocks_>;
+
+template <std::size_t block_size>
+double held_megabytes(const spsc_handle<spsc_queue<element_t, block_size>>& handle) {
+    const std::size_t blocks = handle.queue().*allocated_blocks_member(
+                                                   allocated_blocks_of<spsc_queue<element_t, block_size>>{});
+
+    return static_cast<double>(blocks * geometry_of<block_size>(0).block_bytes) /
+           (1024.0 * 1024.0);
+}
+
+template <std::size_t capacity>
+double held_megabytes(const spsc_handle<spsc_slot_ring<element_t, capacity>>&) {
+    return static_cast<double>(capacity * sizeof(element_t)) / (1024.0 * 1024.0);
+}
+
+struct many_queues_round {
+    double seconds;    ///< From the barrier to the last reader done.
+    double megabytes;  ///< What all the queues hold once it is over.
+};
+
+/// The pairs of `all_cores`, pinned the same way, with `queues_per_pair` queues each: the
+/// writer puts one element into each of its queues in turn, the reader takes one from each in
+/// the same order and spins on a queue that is empty. Nothing is grown first. `warm_up`
+/// elements go through every queue, a barrier gathers all the threads, and then `elements`
+/// more go through every queue; the clock is the wall clock, from the barrier to the moment
+/// the last reader is done, so it is the whole machine's time and nobody's own.
+template <class handle_t>
+std::vector<many_queues_round> many_queues(const std::size_t pairs, const std::size_t warm_up,
+                                           const std::size_t elements, const int rounds) {
+    std::vector<many_queues_round> measured;
+
+    for (int round = 0; round < rounds; ++round) {
+        std::vector<std::unique_ptr<handle_t>> queues;
+        std::vector<bench_clock::time_point> done(pairs);
+        std::vector<std::uint64_t> sums(pairs);
+        std::vector<std::thread> threads;
+        bench_clock::time_point started{};
+
+        queues.reserve(pairs * queues_per_pair);
+        threads.reserve(pairs * 2);
+
+        for (std::size_t i = 0; i < pairs * queues_per_pair; ++i)
+            queues.push_back(std::make_unique<handle_t>(elements));
+
+        // The completion step runs once, after the last thread has arrived and before any is
+        // let go, so the clock starts with every thread at the line.
+        std::barrier warmed(static_cast<std::ptrdiff_t>(pairs * 2),
+                            [&started]() noexcept { started = bench_clock::now(); });
+
+        for (std::size_t pair = 0; pair < pairs; ++pair) {
+            std::array<handle_t*, queues_per_pair> own{};
+
+            for (std::size_t i = 0; i < queues_per_pair; ++i)
+                own[i] = queues[pair * queues_per_pair + i].get();
+
+            threads.emplace_back([&, own, pair] {
+                thread::set_affinity(pair * 2);
+
+                for (element_t i = 0; i < warm_up; ++i)
+                    for (handle_t* const queue : own) queue->write(i);
+
+                warmed.arrive_and_wait();
+
+                for (element_t i = 0; i < elements; ++i)
+                    for (handle_t* const queue : own) queue->write(i);
+            });
+
+            threads.emplace_back([&, own, pair] {
+                thread::set_affinity(((pair + pairs / 2) % pairs) * 2 + 1);
+                std::uint64_t sum = 0;
+
+                const auto take = [&](const std::size_t count) {
+                    for (std::size_t i = 0; i < count; ++i) {
+                        for (handle_t* const queue : own) {
+                            element_t value{};
+
+                            while (!queue->read(value)) {
+                            }
+
+                            sum += value;
+                        }
+                    }
+                };
+
+                take(warm_up);
+                warmed.arrive_and_wait();
+                take(elements);
+
+                done[pair] = bench_clock::now();
+                sums[pair] = sum;
+            });
+        }
+
+        for (std::thread& one : threads) one.join();
+
+        double megabytes = 0;
+
+        for (const std::unique_ptr<handle_t>& queue : queues) megabytes += held_megabytes(*queue);
+
+        measured.push_back({seconds(*std::ranges::max_element(done) - started).count(), megabytes});
+
+        if (sums[0] == 0xdead'beef'dead'beefULL) std::printf("  (%llu)\n", sums[0]);
+    }
+
+    return measured;
+}
+
+/// One row of the many-queues table: the best round and the median one, both numbers of each
+/// from that one round. The median is a round that ran, not the mean of two -- with an even
+/// count, the faster of the middle two. What the queues hold is the best round's.
+template <class handle_t>
+void many_queues_row(const char* const name, const settings& how) {
+    std::vector<many_queues_round> measured =
+        many_queues<handle_t>(how.pairs, how.many_warm_up, how.many_elements, how.rounds);
+
+    std::ranges::sort(measured, {}, &many_queues_round::seconds);
+
+    const many_queues_round& best = measured.front();
+    const many_queues_round& median = measured[(measured.size() - 1) / 2];
+
+    const double all = static_cast<double>(how.pairs * queues_per_pair * how.many_elements);
+    const double one_pair = static_cast<double>(queues_per_pair * how.many_elements);
+
+    std::printf("  %-22s %9.1f %9.2f %11.1f %9.2f %8.0f\n", name, all / best.seconds / 1e6,
+                best.seconds * 1e9 / one_pair, all / median.seconds / 1e6,
+                median.seconds * 1e9 / one_pair, best.megabytes);
+}
+
+void many_queues_table(const settings& how) {
+    std::printf("many queues per thread: %zu pairs, %zu queues each, %zu in all, nothing grown "
+                "first\n\n",
+                how.pairs, queues_per_pair, how.pairs * queues_per_pair);
+    std::printf("  Melem/s is all the queues together; ns/elem is the same wall time over the\n"
+                "  elements of one pair, %zu queues x %zu\n\n",
+                queues_per_pair, how.many_elements);
+    std::printf("  %-22s %19s %21s %8s\n", "", "best round", "median round", "held");
+    std::printf("  %-22s %9s %9s %11s %9s %8s\n", "", "Melem/s", "ns/elem", "Melem/s", "ns/elem",
+                "MB");
+    std::putchar('\n');
+
+    many_queues_row<spsc_handle<spsc_queue<element_t, 16>>>("queue/16", how);
+    many_queues_row<spsc_handle<spsc_queue<element_t, 256>>>("queue/256", how);
+    std::putchar('\n');
+    many_queues_row<spsc_handle<spsc_slot_ring<element_t, std::size_t{1} << 17>>>("slots/1MB", how);
+    many_queues_row<spsc_handle<spsc_slot_ring<element_t, std::size_t{1} << 20>>>("slots/8MB", how);
+    many_queues_row<spsc_handle<spsc_slot_ring<element_t, std::size_t{1} << 21>>>("slots/16MB",
+                                                                                 how);
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
-    // --machine <block> may stand anywhere; the positional arguments are the others, in order.
+    constexpr const char* usage =
+        "usage: wxl.async.spsc-queue-benchmark [rounds [pairs [backlog]]] "
+        "[--machine 16|64|128|256 | --many-queues]\n";
+
+    // --machine <block> and --many-queues may stand anywhere; the positional arguments are the
+    // others, in order.
     std::size_t machine_block = 0;
+    bool many_queues_alone = false;
     std::vector<const char*> positional;
     for (int i = 1; i < argc; ++i) {
+        if (std::string_view(argv[i]) == "--many-queues") {
+            many_queues_alone = true;
+            continue;
+        }
         if (std::string_view(argv[i]) != "--machine") {
             positional.push_back(argv[i]);
             continue;
@@ -751,10 +952,14 @@ int main(int argc, char** argv) {
         else if (block == "128") machine_block = 128;
         else if (block == "256") machine_block = 256;
         else {
-            std::cerr << "usage: wxl.async.spsc-queue-benchmark [rounds [pairs [backlog]]] "
-                         "[--machine 16|64|128|256]\n";
+            std::cerr << usage;
             return 2;
         }
+    }
+
+    if (machine_block && many_queues_alone) {
+        std::cerr << usage;
+        return 2;
     }
 
     const int rounds = positional.size() > 0 ? std::atoi(positional[0]) : 5;
@@ -785,6 +990,8 @@ int main(int argc, char** argv) {
                        .pairs = pairs,
                        .parallel_grown = 1'000'000,
                        .parallel_elements = 8'000'000,
+                       .many_warm_up = std::size_t{1} << 21,  // a lap of the largest slot ring
+                       .many_elements = 8'000'000,            // four laps of it
                        .rounds = rounds};
 
     std::printf("wxl.async SPSC queues -- nanoseconds per element, best of %d rounds\n", rounds);
@@ -804,6 +1011,11 @@ int main(int argc, char** argv) {
             case 128: machine_pair<128>(how); break;
             default: machine_pair<256>(how); break;
         }
+        return 0;
+    }
+
+    if (many_queues_alone) {
+        many_queues_table(how);
         return 0;
     }
 
@@ -849,15 +1061,19 @@ int main(int argc, char** argv) {
     std::putchar('\n');
     queue_machines<spsc_queue_reference_implementation>("reference", how);
 
+    std::printf("\n\n");
+    many_queues_table(how);
+
     std::printf(
         "\n  steady and recovered are the writer's own time per element with a reader\n"
         "  draining on another core; recovered has a backlog behind it that grew the\n"
-        "  queue past every cache first. In the last table every core is busy and the\n"
-        "  grown column is what all the queues hold together, against a shared L3.\n"
-        "  mpsc_queue is flattered -- preallocated nodes in the threaded runs,\n"
+        "  queue past every cache first. In the whole-machine table every core is busy\n"
+        "  and the grown column is what all the queues hold together, against a shared\n"
+        "  L3. mpsc_queue is flattered -- preallocated nodes in the threaded runs,\n"
         "  hand-recycled ones in the single-threaded ones, where a real user would pay\n"
         "  for a pool -- and it is left out of the tables whose question is about\n"
-        "  blocks, which it does not have.\n");
+        "  blocks, which it does not have. In the many-queues table every pair runs 8\n"
+        "  queues of its own, and the time is the wall clock of all of them together.\n");
 
     return 0;
 }
