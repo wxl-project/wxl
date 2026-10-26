@@ -5,8 +5,8 @@
 #   pwsh -NoProfile -File tools\bench.ps1 -Toolset 14.52
 #
 # The build goes through tools\build.ps1, into build\bench and in Release: the
-# benchmarks are switched on there (WXL_BUILD_BENCHMARKS), and build\x64 is not
-# touched. Which benchmarks there are, with what arguments and on what input
+# benchmarks are switched on there (WXL_BUILD_BENCHMARKS) and the documentation
+# site off (WXL_BUILD_DOCS), and build\x64 is not touched. Which benchmarks there are, with what arguments and on what input
 # files, CMake says: wxl_add_benchmark() registers each one, and the configure
 # writes the list into build\bench\benchmarks-Release.json. Nothing here names a
 # benchmark.
@@ -37,7 +37,7 @@ $config = 'Release'
 # In this process: build.ps1 imports the Visual Studio environment into it, and
 # the compiler banner below is asked of the same toolset.
 & (Join-Path $PSScriptRoot 'build.ps1') -Config $config -BuildDir $buildDir -Toolset $Toolset `
-    -Target wxl.benchmarks -Define 'WXL_BUILD_BENCHMARKS=ON'
+    -Target wxl.benchmarks -Define 'WXL_BUILD_BENCHMARKS=ON', 'WXL_BUILD_DOCS=OFF'
 if ($LASTEXITCODE -ne 0) { throw "The benchmarks did not build (exit code $LASTEXITCODE)." }
 
 $listFile = Join-Path $buildDir "benchmarks-$config.json"
