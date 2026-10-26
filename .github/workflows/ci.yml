@@ -90,11 +90,12 @@ jobs:
 
       # One shell for the developer environment and every CMake call: VsDevCmd
       # puts the toolset and Ninja on PATH, as tools/build.ps1 does at home.
+      # The benchmarks are built, not run: so that they compile on every change.
       - name: Configure
         shell: cmd
         run: |
           call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
-          cmake --preset x64 -DVCPKG_ROOT=C:/vcpkg -DBUILD_TESTING=ON -DWXL_BUILD_DOCS=OFF
+          cmake --preset x64 -DVCPKG_ROOT=C:/vcpkg -DBUILD_TESTING=ON -DWXL_BUILD_DOCS=OFF -DWXL_BUILD_BENCHMARKS=ON
 
       - name: Build winui-srcgen
         shell: cmd
