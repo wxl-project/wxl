@@ -1,7 +1,7 @@
 // Compares plain new/delete against threaded_allocator-backed new/delete for a grid of
 // object sizes (24 / 240 / 2400 bytes), in two scenarios:
 //  1. single-threaded: allocate then free, all on one thread (same shape as
-//     sta_allocator_benchmark.cpp).
+//     sta_allocator_size_grid_benchmark.cpp).
 //  2. two-thread ping-pong: two threads each create a batch of objects and hand every one of
 //     them to the *other* thread to destroy, so every threaded_allocator object is freed on a
 //     thread other than the one that allocated it -- exercising the cross-thread deferred-free

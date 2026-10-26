@@ -1,7 +1,7 @@
 // The scene of scene_shape.h, built the way it is built without wxl: the
 // cppwinrt projection, by hand, one control and one property call at a time.
 //
-// This is the other half of the comparison -- scene_wxl.cpp describes the
+// This is the other half of the comparison -- scene_wxl_benchmark.cpp describes the
 // same scene declaratively. Nothing here is written to be slow: it is what an
 // ordinary WinUI3 application in C++ looks like when there is no XAML file,
 // down to the idioms -- a string reaches a Text property as a view, so

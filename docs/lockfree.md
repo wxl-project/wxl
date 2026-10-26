@@ -85,7 +85,7 @@
   собственным потоком.
 
 Замеры примитивов выполняют бенчмарки `wxl.async.mpsc-queue-benchmark`,
-`wxl.async.spsc-queues-benchmark`, `wxl.async.channels-benchmark` и другие
+`wxl.async.spsc-queue-benchmark`, `wxl.async.channel-one-to-one-benchmark` и другие
 из каталога `wxl.async/benchmarks`.
 
 Подробный разбор `drain_stack`, `mpsc_queue`, `atomic_trigger` и

@@ -4,8 +4,8 @@ include_guard(GLOBAL)
 
 # A benchmark of the tree, declared the way every one of them is declared:
 #
-#     wxl_add_benchmark(wxl.xml.bench
-#         SOURCES bench.cpp
+#     wxl_add_benchmark(wxl.xml.document-parse-benchmark
+#         SOURCES document_parse_benchmark.cpp
 #         ARGS    "${generic_xaml}" 20
 #         INPUTS  "${generic_xaml}")
 #

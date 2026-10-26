@@ -6,9 +6,9 @@ wxl_add_benchmark(wxl.async.mpsc-queue-benchmark SOURCES mpsc_queue_benchmark.cp
 
 target_link_libraries(wxl.async.mpsc-queue-benchmark PRIVATE wxl::async)
 
-wxl_add_benchmark(wxl.async.spsc-queues-benchmark SOURCES spsc_queues_benchmark.cpp)
+wxl_add_benchmark(wxl.async.spsc-queue-benchmark SOURCES spsc_queue_benchmark.cpp)
 
-target_link_libraries(wxl.async.spsc-queues-benchmark PRIVATE wxl::async)
+target_link_libraries(wxl.async.spsc-queue-benchmark PRIVATE wxl::async)
 
 wxl_add_benchmark(wxl.async.threaded-allocator-benchmark SOURCES threaded_allocator_benchmark.cpp)
 
@@ -19,9 +19,9 @@ wxl_add_benchmark(wxl.async.coroutine-frame-benchmark SOURCES coroutine_frame_be
 target_link_libraries(wxl.async.coroutine-frame-benchmark PRIVATE wxl::async)
 
 # A co_await of one task from another, plain and under a cancellation token.
-wxl_add_benchmark(wxl.async.coroutine-chain-benchmark SOURCES coroutine_chain_benchmark.cpp)
+wxl_add_benchmark(wxl.async.task-chain-benchmark SOURCES task_chain_benchmark.cpp)
 
-target_link_libraries(wxl.async.coroutine-chain-benchmark PRIVATE wxl::async)
+target_link_libraries(wxl.async.task-chain-benchmark PRIVATE wxl::async)
 
 # The loop end to end: what one co_await costs through it, with the real sta_loop in the
 # first row and the variants beside it. synchronization.lib is WaitOnAddress, which the
@@ -32,16 +32,16 @@ target_link_libraries(wxl.async.sta-loop-benchmark PRIVATE wxl::async synchroniz
 
 # The wake on its own: how long a thread takes to be woken, by primitive and by how long
 # it slept -- the number the loop's round trip is made of.
-wxl_add_benchmark(wxl.async.wake-latency-benchmark SOURCES wake_latency_benchmark.cpp)
+wxl_add_benchmark(wxl.async.thread-wake-benchmark SOURCES thread_wake_benchmark.cpp)
 
-target_link_libraries(wxl.async.wake-latency-benchmark PRIVATE wxl::async synchronization)
+target_link_libraries(wxl.async.thread-wake-benchmark PRIVATE wxl::async synchronization)
 
 # One writer and one reader through spsc_channel, mpsc_channel and the textbook ring under a
 # mutex and condition variables: latency at a steady pace, by the pause between elements, and
 # throughput at full speed.
-wxl_add_benchmark(wxl.async.channels-benchmark SOURCES channels_benchmark.cpp)
+wxl_add_benchmark(wxl.async.channel-one-to-one-benchmark SOURCES channel_one_to_one_benchmark.cpp)
 
-target_link_libraries(wxl.async.channels-benchmark PRIVATE wxl::async)
+target_link_libraries(wxl.async.channel-one-to-one-benchmark PRIVATE wxl::async)
 
 # The loop against the native scheme: the same round trip written the WinRT way --
 # resume_background() out, resume_foreground(DispatcherQueue) back, and the
@@ -51,13 +51,13 @@ target_link_libraries(wxl.async.channels-benchmark PRIVATE wxl::async)
 # base links against.
 find_package(cppwinrt CONFIG REQUIRED)
 
-wxl_add_benchmark(wxl.async.winrt-coroutine-benchmark SOURCES winrt_coroutine_benchmark.cpp)
+wxl_add_benchmark(wxl.async.sta-loop-vs-winrt-benchmark SOURCES sta_loop_vs_winrt_benchmark.cpp)
 
-target_link_libraries(wxl.async.winrt-coroutine-benchmark
+target_link_libraries(wxl.async.sta-loop-vs-winrt-benchmark
     PRIVATE wxl::async Microsoft::CppWinRT coremessaging.lib runtimeobject.lib)
 
 # One read of a file, by how it is carried out: blocking on either thread, or overlapped
 # and finished through the port.
-wxl_add_benchmark(wxl.async.async-file-benchmark SOURCES async_file_benchmark.cpp)
+wxl_add_benchmark(wxl.async.file-read-benchmark SOURCES file_read_benchmark.cpp)
 
-target_link_libraries(wxl.async.async-file-benchmark PRIVATE wxl::async)
+target_link_libraries(wxl.async.file-read-benchmark PRIVATE wxl::async)

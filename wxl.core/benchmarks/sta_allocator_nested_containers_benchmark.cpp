@@ -4,7 +4,7 @@
 // here is a synthetic allocation loop; the sizes, the growth steps and the order of the frees
 // are whatever the containers themselves decide.
 //
-// That order is the whole point. Allocate-all-then-free-all (sta_allocator_benchmark.cpp) never
+// That order is the whole point. Allocate-all-then-free-all (sta_allocator_size_grid_benchmark.cpp) never
 // makes an allocation follow a free of the same size class. Churning a tree does the opposite:
 // erasing a subtree hands whole runs of blocks back, and rebuilding it takes them straight out
 // again, which is what the free lists actually see in a running application.

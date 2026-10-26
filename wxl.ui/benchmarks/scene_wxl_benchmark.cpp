@@ -2,7 +2,7 @@
 // one expression, no element held in a variable, every property written
 // inside the braces of the element it belongs to.
 //
-// Its twin is scene_winrt.cpp, which builds the same scene through the
+// Its twin is scene_winrt_benchmark.cpp, which builds the same scene through the
 // cppwinrt projection by hand. What the pair measures is the cost of bringing
 // a window's worth of controls into existence -- activations, property
 // writes, event subscriptions -- and nothing else: the texts are made before

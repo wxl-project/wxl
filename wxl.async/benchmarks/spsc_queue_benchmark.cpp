@@ -23,7 +23,7 @@
 // single-threaded runs they are recycled through a private list. A real user of it needs a
 // pool for that and pays for the pool, so read that row as a floor rather than as its cost.
 //
-// Usage: wxl.async.spsc-queues-benchmark [rounds [pairs [backlog]]]
+// Usage: wxl.async.spsc-queue-benchmark [rounds [pairs [backlog]]]
 
 import std;
 import wxl.core;

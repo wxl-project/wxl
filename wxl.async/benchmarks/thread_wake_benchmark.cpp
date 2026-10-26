@@ -12,7 +12,7 @@
 // the ponger and waits for the answer. The wake latency is the ponger's time minus the
 // pinger's, on one clock (QueryPerformanceCounter, invariant across cores here).
 //
-// Usage: wxl.async.wake-latency-benchmark [samples [pinger_cpu ponger_cpu]]
+// Usage: wxl.async.thread-wake-benchmark [samples [pinger_cpu ponger_cpu]]
 
 #include "platform.h"
 

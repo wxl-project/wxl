@@ -43,7 +43,7 @@
 // medians came out in milliseconds, for every queue alike -- numbers about the scheduler, not
 // about any queue.
 //
-// Usage: wxl.async.channels-benchmark [samples [elements [rounds [tries [writer_cpu reader_cpu]]]]]
+// Usage: wxl.async.channel-one-to-one-benchmark [samples [elements [rounds [tries [writer_cpu reader_cpu]]]]]
 //        samples per latency round, elements per throughput round, attempts with the pause
 //        before sleeping
 

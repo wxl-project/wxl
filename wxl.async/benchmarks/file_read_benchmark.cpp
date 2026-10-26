@@ -2,7 +2,7 @@
 // worker through the queue, and as an overlapped operation started on either thread and
 // finished through the port. One cached file, read through in chunks of three sizes.
 //
-// Usage: wxl.async.async-file-benchmark [rounds [file]]
+// Usage: wxl.async.file-read-benchmark [rounds [file]]
 //        `file` is where the 4 MB file is made; it is removed afterwards.
 
 #include "platform.h"
@@ -109,7 +109,7 @@ void row(const char* name, reader read, const wchar_t* path, int rounds) {
 
 int wmain(int argc, wchar_t** argv) {
     const int rounds = argc > 1 ? static_cast<int>(std::wcstol(argv[1], nullptr, 10)) : 5;
-    const std::wstring path = argc > 2 ? argv[2] : L"async-file-benchmark.bin";
+    const std::wstring path = argc > 2 ? argv[2] : L"file-read-benchmark.bin";
 
     {
         file made = file::create(path.c_str());

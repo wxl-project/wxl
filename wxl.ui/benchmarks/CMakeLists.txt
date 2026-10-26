@@ -22,7 +22,7 @@ wxl_add_benchmark(wxl.ui.scene-wxl-benchmark
     SOURCES
         scene_shape.h
         scene_report.h
-        scene_wxl.cpp
+        scene_wxl_benchmark.cpp
         app.manifest
 )
 
@@ -40,7 +40,7 @@ wxl_add_benchmark(wxl.ui.scene-winrt-benchmark
     SOURCES
         scene_shape.h
         scene_report.h
-        scene_winrt.cpp
+        scene_winrt_benchmark.cpp
         app.manifest
 )
 

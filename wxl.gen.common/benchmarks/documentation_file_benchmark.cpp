@@ -2,7 +2,7 @@
 // the whole document for comparison, opening the file -- reading it and
 // indexing its members --, finding one member, and parsing the rest in slices.
 //
-// Usage: wxl.gen.common.bench <documentation.xml> [rounds] [id]
+// Usage: wxl.gen.common.documentation-file-benchmark <documentation.xml> [rounds] [id]
 
 #include <algorithm>
 #include <chrono>
@@ -39,7 +39,7 @@ void time(best_time& best, F&& f) {
 
 int main(int argc, char** argv) {
     if (argc < 2) {
-        std::fprintf(stderr, "usage: wxl.gen.common.bench <documentation.xml> [rounds] [id]\n");
+        std::fprintf(stderr, "usage: wxl.gen.common.documentation-file-benchmark <documentation.xml> [rounds] [id]\n");
         return 2;
     }
     std::filesystem::path const file {argv[1]};
