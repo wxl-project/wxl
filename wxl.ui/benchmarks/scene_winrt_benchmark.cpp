@@ -12,8 +12,12 @@
 // being measured is the projection, and a library beside it would be a
 // library beside it.
 //
-// A console subsystem executable, like its twin: the window still opens, and
-// the table has somewhere to go.
+// A console subsystem executable, like its twin: the table has somewhere to
+// go. Once it is printed the window is closed and the benchmark exits, like
+// every other; --keep-open activates the window instead and leaves the scene
+// on screen until it is closed.
+//
+// Usage: wxl.ui.scene-winrt-benchmark [--keep-open]
 
 #include "platform.h"
 
@@ -461,6 +465,8 @@ int verify(std::vector<CardHandles> const& handles) {
 // entirely. Both executables bring this up the same way; wxl simply does it
 // inside the library instead of here.
 struct App : mux::ApplicationT<App, mux::Markup::IXamlMetadataProvider> {
+    explicit App(bool keepOpen) : keepOpen_(keepOpen) {}
+
     void OnLaunched(mux::LaunchActivatedEventArgs const&) {
         Resources().MergedDictionaries().Append(muxc::XamlControlsResources{});
 
@@ -479,8 +485,8 @@ struct App : mux::ApplicationT<App, mux::Markup::IXamlMetadataProvider> {
             runs.push_back(bench::milliseconds(finished - started));
         }
 
-        // The second measurement, on a scene of its own so that the window is
-        // left showing a scene nobody has written over. The tree, the handles
+        // The second measurement, on a scene of its own so that the window --
+        // kept with --keep-open -- shows a scene nobody has written over. The tree, the handles
         // into it and the brushes a pass hands out are all made before the
         // stopwatch starts: what is timed is property writes and nothing else.
         std::vector<double> passTimes;
@@ -501,8 +507,8 @@ struct App : mux::ApplicationT<App, mux::Markup::IXamlMetadataProvider> {
             checksPassed = verify(handles);
         }
 
-        // And once more for the window that stays on screen, stopped on the
-        // line before Activate().
+        // And once more for the window that stays on screen with --keep-open,
+        // stopped on the line before Activate().
         auto const started = bench::clock::now();
         window_ = mux::Window{};
         window_.Title(wide(bench::windowTitle));
@@ -514,6 +520,13 @@ struct App : mux::ApplicationT<App, mux::Markup::IXamlMetadataProvider> {
                            bench::events);
         bench::reportPass(passTimes, bench::writesPerPass, bench::writesPerCard, checksPassed,
                           bench::sampledChecks);
+
+        // The table is out. Closing the last window ends the application, the
+        // way a WinUI3 application ends.
+        if (!keepOpen_) {
+            window_.Close();
+            return;
+        }
 
         window_.AppWindow().Resize({1560, 940});
         window_.Activate();
@@ -531,11 +544,22 @@ struct App : mux::ApplicationT<App, mux::Markup::IXamlMetadataProvider> {
 
     mux::XamlTypeInfo::XamlControlsXamlMetaDataProvider provider_;
     mux::Window window_{nullptr};
+    bool keepOpen_;
 };
 
 }  // namespace
 
-int main() {
+int main(int argc, char** argv) {
+    bool keepOpen = false;
+    for (int index = 1; index < argc; ++index) {
+        if (std::string_view(argv[index]) == "--keep-open") {
+            keepOpen = true;
+        } else {
+            std::fputs("usage: wxl.ui.scene-winrt-benchmark [--keep-open]\n", stderr);
+            return 2;
+        }
+    }
+
     // The framework package first: without it no WinUI3 class can be
     // activated at all. Release 2 -- the minor version is not consulted -- and
     // no version tag, matching what wxl's own bootstrap asks for.
@@ -543,6 +567,6 @@ int main() {
 
     winrt::init_apartment(winrt::apartment_type::single_threaded);
 
-    mux::Application::Start([](auto&&) { winrt::make<App>(); });
+    mux::Application::Start([keepOpen](auto&&) { winrt::make<App>(keepOpen); });
     return 0;
 }
