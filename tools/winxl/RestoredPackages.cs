@@ -2,7 +2,10 @@ using System.Text.Json;
 
 namespace Wxl.Winxl;
 
-/// <summary>A package of the restore: its id and version as the restore names them, and its directory.</summary>
+/// <summary>
+/// A package of the restore: its id and version as the restore names them, and its directory,
+/// absolute and canonical, with the separator of the platform.
+/// </summary>
 internal sealed record RestoredPackage(string Id, string Version, string Directory);
 
 /// <summary>
@@ -58,10 +61,29 @@ internal static class RestoredPackages
                 {
                     throw new ToolException(Failure.Input, $"{listPath} lists {id} more than once");
                 }
-                found = new RestoredPackage(entryId, Member(entry, "version", listPath), Member(entry, "directory", listPath));
+                found = new RestoredPackage(
+                    entryId, Member(entry, "version", listPath), PackageDirectory(Member(entry, "directory", listPath), listPath));
             }
 
             return found ?? throw new ToolException(Failure.Input, $"the restore of {listPath} resolved no {id}");
+        }
+    }
+
+    /// <summary>
+    /// The directory of a package as the tool uses and prints it. The list writes it with /
+    /// (cmake/wxl_restored_packages.cmake), and a path combined from it would keep that
+    /// separator beside the platform's; GetFullPath turns it into the platform's and makes
+    /// the path canonical, once, where it is read.
+    /// </summary>
+    private static string PackageDirectory(string directory, string listPath)
+    {
+        try
+        {
+            return Path.GetFullPath(directory);
+        }
+        catch (Exception e) when (e is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            throw new ToolException(Failure.Input, $"{listPath}: the directory '{directory}' is not a path: {e.Message}", e);
         }
     }
 

@@ -31,21 +31,20 @@ namespace Wxl.Winxl;
 internal static class RuntimeInstallCommand
 {
     private const string RuntimePackageId = "Microsoft.WindowsAppSDK.Runtime";
-    private const string InstallerDirectory = "tools/MSIX/win10-x64";
 
     private sealed record Outcome(RuntimeMsix Msix, bool Installed, Version Registered);
 
     public static int Run(string packagesList, bool json)
     {
         var runtime = RestoredPackages.Find(packagesList, RuntimePackageId);
-        var packageDirectory = Path.GetFullPath(runtime.Directory);
+        var packageDirectory = runtime.Directory;
         if (!Directory.Exists(packageDirectory))
         {
             throw new ToolException(Failure.Environment,
                 $"{RuntimePackageId} {runtime.Version} is not in {packageDirectory}, where the list of the "
                 + "restore says it is: configure the build again, and run winxl after its restore");
         }
-        var installers = Path.Combine(packageDirectory, InstallerDirectory);
+        var installers = Path.Combine(packageDirectory, "tools", "MSIX", "win10-x64");
         if (!Directory.Exists(installers))
         {
             throw new ToolException(Failure.Input,
