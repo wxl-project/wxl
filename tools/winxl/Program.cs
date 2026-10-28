@@ -63,7 +63,10 @@ internal static class Program
         switch (args[0])
         {
             case "--help":
-                Options.Parse(args, flags: ["--help"]);
+                if (args.Length > 1)
+                {
+                    throw new ToolException(Failure.Invocation, HelpAlone);
+                }
                 Console.Out.WriteLine(Usage);
                 return 0;
 
@@ -81,8 +84,38 @@ internal static class Program
 
             default:
                 throw new ToolException(Failure.Invocation,
-                    $"'{string.Join(' ', args)}' is not a command of winxl");
+                    Misplaced(args) ?? $"'{string.Join(' ', args)}' is not a command of winxl");
         }
+    }
+
+    private const string HelpAlone = "--help takes no other argument: winxl --help";
+
+    /// <summary>
+    /// What to say when an argument comes before the command it belongs to, as in
+    /// <c>winxl --json runtime install ...</c>: the arguments go after the command, and the
+    /// message says where; null when the arguments name no command at all.
+    /// </summary>
+    private static string? Misplaced(string[] args)
+    {
+        var first = args[0];
+        if (!first.StartsWith("--", StringComparison.Ordinal))
+        {
+            return null;
+        }
+        if (args.Contains("--help", StringComparer.Ordinal))
+        {
+            return HelpAlone;
+        }
+        if (args.Contains("--version", StringComparer.Ordinal))
+        {
+            return $"{first} goes after the command: winxl --version {first}";
+        }
+        var runtime = Array.IndexOf(args, "runtime");
+        if (runtime > 0 && runtime + 1 < args.Length && args[runtime + 1] == "install")
+        {
+            return $"{first} goes after the command: winxl runtime install ... {first}";
+        }
+        return null;
     }
 }
 
