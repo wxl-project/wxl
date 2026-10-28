@@ -6,6 +6,7 @@
 // Copyright (c) Microsoft Corporation and Contributors.
 // Licensed under the MIT License; the license text is in NOTICE next to this file.
 
+using Windows.Foundation;
 using Windows.Management.Deployment;
 
 namespace Wxl.Winxl;
@@ -57,23 +58,60 @@ internal sealed class PackageRegistry
     /// </summary>
     public void Install(RuntimeMsix msix)
     {
+        IAsyncOperationWithProgress<DeploymentResult, DeploymentProgress> operation;
+        try
+        {
+            operation = manager.AddPackageAsync(new Uri(msix.Path), null, DeploymentOptions.None);
+        }
+        catch (Exception e) when (e is not ToolException)
+        {
+            throw new ToolException(Failure.Environment,
+                $"the package manager could not start the installation of {msix.File}: {e.Message} (0x{e.HResult:X8})", e);
+        }
+
         DeploymentResult result;
         try
         {
             // A blocking wait on the main thread: nothing continues on the thread that
             // completes the operation, which is what the deployment stack waits for.
-            result = manager.AddPackageAsync(new Uri(msix.Path), null, DeploymentOptions.None).AsTask().GetAwaiter().GetResult();
+            result = operation.AsTask().GetAwaiter().GetResult();
         }
         catch (Exception e) when (e is not ToolException)
         {
+            // A failed deployment completes with AsyncStatus.Error, and the task faults
+            // with the generic text of its HRESULT; what the deployment says -- the text
+            // Add-AppxPackage prints -- is the ErrorText of its result.
             throw new ToolException(Failure.Environment,
-                $"the package manager could not install {msix.File}: {e.Message} (0x{e.HResult:X8})", e);
+                $"the package manager could not install {msix.File}: {DeploymentErrorText(operation, e)} (0x{e.HResult:X8})", e);
         }
         if (!string.IsNullOrEmpty(result.ErrorText))
         {
             var code = result.ExtendedErrorCode is { } extended ? $" (0x{extended.HResult:X8})" : "";
             throw new ToolException(Failure.Environment,
                 $"the package manager could not install {msix.File}: {result.ErrorText}{code}");
+        }
+    }
+
+    /// <summary>
+    /// The ErrorText of a failed deployment, or the message of <paramref name="failure"/>
+    /// when the operation has none to give: the failure is reported either way, and only
+    /// its wording depends on this.
+    /// </summary>
+    private static string DeploymentErrorText(
+        IAsyncOperationWithProgress<DeploymentResult, DeploymentProgress> operation, Exception failure)
+    {
+        if (operation.Status != AsyncStatus.Error)
+        {
+            return failure.Message;
+        }
+        try
+        {
+            var text = operation.GetResults()?.ErrorText;
+            return string.IsNullOrEmpty(text) ? failure.Message : text;
+        }
+        catch (Exception e) when (e is not ToolException)
+        {
+            return failure.Message;
         }
     }
 }
