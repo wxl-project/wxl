@@ -16,11 +16,12 @@
 
     <!-- The Windows SDK projection of this TFM (CsWinRT) carries
          Windows.Management.Deployment.PackageManager, which `runtime install` calls. The
-         lowest Windows the tool claims is the minimum of the runtime packages it installs:
-         the TargetDeviceFamily MinVersion of the MSIX manifests of
-         Microsoft.WindowsAppSDK.Runtime 2.5.4-experimental is 10.0.17763.0. -->
+         lowest Windows the tool claims is 10.0.18362.0 (1903): the runtime packages it
+         installs require 10.0.17763.0 (the TargetDeviceFamily MinVersion of the MSIX
+         manifests of Microsoft.WindowsAppSDK.Runtime 2.5.4-experimental), and the name
+         ProcessorArchitecture.Arm64 the tool reads from a manifest exists from 18362. -->
     <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
-    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion>10.0.18362.0</SupportedOSPlatformVersion>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
 
     <Nullable>enable</Nullable>
