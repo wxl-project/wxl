@@ -1,11 +1,13 @@
-# The tool set of a release: the generator winui-srcgen, the profile editor
-# wxl.gen.ui and the utility winxl, built in the x64-static build directory --
-# the CRT linked statically (CMakePresets.json) -- in Release, run, tested and
-# uploaded as the artifact wxl-tools-x64.
+# A release checks both build directories, one after the other: first the rows
+# of ci.yml on x64-dynamic -- the libraries, the samples and the tests with the
+# CRT linked dynamically -- called as a reusable workflow, then the tool set:
+# the generator winui-srcgen, the profile editor wxl.gen.ui and the utility
+# winxl, built in the x64-static build directory -- the CRT linked statically
+# (CMakePresets.json) -- in Release, run, tested and uploaded as the artifact
+# wxl-tools-x64.
 #
 # The static build directory is built and checked here only, at a release, and
-# not on a pull request: ci.yml keeps its rows on x64-dynamic, which builds the
-# libraries, the samples and the tests with the CRT linked dynamically.
+# not on a pull request.
 #
 # The toolset and the WinUI build tools are installed as in ci.yml, and the
 # restore of the configure runs in locked mode as there. winxl is published by
@@ -22,9 +24,23 @@ on:
 permissions:
   contents: read
 
+# A tag push and a run by hand on the same ref wait for each other rather than
+# run side by side; a release is not cancelled by the next one. The group is
+# not release-<ref>: the rows of ci.yml called below take the caller's
+# workflow name into their own group, and the two must differ.
+concurrency:
+  group: release-run-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
+  # ci.yml needs no secrets: its only token is github.token, of the job that
+  # checks the commits of a pull request, which a release does not run.
+  dynamic:
+    uses: ./.github/workflows/ci.yml
+
   tools:
     name: tools (Release)
+    needs: [dynamic]
     runs-on: windows-2025
     timeout-minutes: 90
     env:

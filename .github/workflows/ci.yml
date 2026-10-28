@@ -39,10 +39,15 @@ name: ci
 # merge_group: the merge queue's candidate branch, main plus the queued pull
 # requests, checked before it becomes main. edited: a new title or description
 # of a pull request is checked again by the commits job, which reads them.
+# workflow_call: release.yml runs these rows before it builds the tool set, so
+# that a release checks x64-dynamic together with x64-static. A called workflow
+# sees the caller's event -- a tag push or a run by hand -- so the build rows
+# run there and windows-pr and commits are skipped, as on a run by hand.
 on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
   merge_group:
+  workflow_call:
   workflow_dispatch:
 
 permissions:
@@ -50,8 +55,11 @@ permissions:
 
 # A newer push to the same pull request makes the older run moot. A queue
 # candidate has a ref of its own, so one candidate does not cancel another.
+# The name of the workflow is ci on its own runs and that of the caller under
+# workflow_call (the github context is the caller's), so a run by hand of ci
+# does not cancel the rows a release runs on the same ref.
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
