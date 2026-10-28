@@ -5,14 +5,20 @@
 # self-contained executable, <build>/winxl/winxl.exe. Included by the root
 # under WXL_WINXL.
 #
-# The executable is made by `dotnet publish` of the .NET SDK. The configure
-# finds the SDK and checks its version, and never downloads or installs one:
-# without a `dotnet` that lists an SDK of major version 10 it stops and says
-# what to install. The tool carries its own runtime, so it does not depend on
-# the CRT of the build directory; it belongs to the tool set, which a release
-# builds in x64-static. The publish links the native executable with the MSVC
-# linker of a Visual Studio installation with the C++ toolset, which the tree
-# needs anyway.
+# The executable is made by `dotnet publish` of the .NET SDK. Which SDK is
+# fixed by tools/winxl/global.json: a released 10.0 SDK, 10.0.100 or a later
+# feature band or patch of 10.0 (rollForward latestFeature), never a
+# prerelease (allowPrerelease false) and never another major version, however
+# new an SDK the machine also has -- without the file the publish would run
+# under the newest SDK installed. The host reads global.json from its working
+# directory upward, so the publish runs in tools/winxl. The configure checks
+# the same choice, a released 10.0.x in `dotnet --list-sdks`, and never
+# downloads or installs an SDK: without one it stops and says what to install.
+#
+# The tool carries its own runtime, so it does not depend on the CRT of the
+# build directory; it belongs to the tool set, which a release builds in
+# x64-static. The publish links the native executable with the MSVC linker of a
+# Visual Studio installation with the C++ toolset, which the tree needs anyway.
 #
 # Always Release, whatever the configuration of the build: the publish is the
 # same for each, and one executable serves the build directory. Its bin/ and
@@ -39,17 +45,21 @@ if(NOT _wxl_dotnet_result EQUAL 0)
     message(FATAL_ERROR
         "${WXL_DOTNET} --list-sdks failed (${_wxl_dotnet_result}): ${_wxl_dotnet_error}")
 endif()
-# One line per SDK: "<version> [<directory>]".
-if(NOT _wxl_dotnet_sdks MATCHES "(^|\n)10\\.[0-9]+\\.[0-9]+")
+# One line per SDK: "<version> [<directory>]". A released 10.0 SDK is a version
+# 10.0.<n> followed by the directory; a prerelease has a label after a -
+# (10.0.100-rc.1.25451.107), which global.json does not admit.
+if(NOT _wxl_dotnet_sdks MATCHES "(^|\n)10\\.0\\.[0-9]+ \\[")
     string(STRIP "${_wxl_dotnet_sdks}" _wxl_dotnet_sdks)
     string(REPLACE "\n" "; " _wxl_dotnet_sdks "${_wxl_dotnet_sdks}")
     if(_wxl_dotnet_sdks STREQUAL "")
         set(_wxl_dotnet_sdks "none")
     endif()
     message(FATAL_ERROR
-        "WXL_WINXL is ON and ${WXL_DOTNET} has no .NET SDK of major version 10, which builds "
-        "winxl (net10.0, Native AOT). Its SDKs: ${_wxl_dotnet_sdks}. Install the .NET SDK 10 "
-        "(https://dotnet.microsoft.com/download/dotnet/10.0), or turn WXL_WINXL off.")
+        "WXL_WINXL is ON and ${WXL_DOTNET} has no released .NET SDK 10.0, which builds winxl "
+        "(net10.0, Native AOT; tools/winxl/global.json). Its SDKs: ${_wxl_dotnet_sdks}. A "
+        "prerelease of 10.0 does not count, nor does an SDK of another major version. Install "
+        "the .NET SDK 10.0 (https://dotnet.microsoft.com/download/dotnet/10.0), or turn "
+        "WXL_WINXL off.")
 endif()
 
 set(_wxl_winxl_source "${CMAKE_CURRENT_LIST_DIR}/../tools/winxl")
@@ -58,7 +68,8 @@ set(_wxl_winxl_dir "${CMAKE_CURRENT_BINARY_DIR}/winxl")
 set(_wxl_winxl_exe "${_wxl_winxl_dir}/winxl.exe")
 
 file(GLOB _wxl_winxl_sources CONFIGURE_DEPENDS
-    "${_wxl_winxl_source}/*.cs" "${_wxl_winxl_source}/*.csproj")
+    "${_wxl_winxl_source}/*.cs" "${_wxl_winxl_source}/*.csproj"
+    "${_wxl_winxl_source}/global.json")
 
 add_custom_command(
     OUTPUT "${_wxl_winxl_exe}"
@@ -68,6 +79,7 @@ add_custom_command(
             -o "${_wxl_winxl_dir}"
             "-p:WxlVersion=${wxl-project_VERSION}"
     DEPENDS ${_wxl_winxl_sources}
+    WORKING_DIRECTORY "${_wxl_winxl_source}"
     COMMENT "dotnet publish: winxl ${wxl-project_VERSION} -> ${_wxl_winxl_exe}"
     VERBATIM)
 
