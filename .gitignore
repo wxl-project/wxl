@@ -8,3 +8,8 @@ CMakeUserPresets.json
 
 # MSBuild-вывод проекта wxl.vcxproj: объектники, BMI и tlog.
 wxl/x64/
+
+# Вывод dotnet build утилиты winxl, запущенной вручную; цель winxl пишет
+# в каталог сборки.
+tools/winxl/bin/
+tools/winxl/obj/

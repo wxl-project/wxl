@@ -73,8 +73,10 @@
 `pwsh` из корня дерева следующие команды:
 
 ```powershell
-tools\build.ps1 -Define WXL_BUILD_DOCS=OFF       # настройка (пакеты NuGet, проекция) и сборка, обёртки — её шаг
-pwsh -NoProfile -File tools\install-runtime.ps1  # экспериментальная среда Windows App Runtime
+# настройка (пакеты NuGet, проекция) и сборка, обёртки — её шаг; WXL_WINXL — утилита winxl
+tools\build.ps1 -Define WXL_BUILD_DOCS=OFF,WXL_WINXL=ON
+# экспериментальная среда Windows App Runtime
+build\x64-dynamic\winxl\winxl.exe runtime install --packages build\x64-dynamic\wxl.packages\restored-packages.json
 build\x64-dynamic\samples\Quadratic\Debug\sample.quadratic.exe
 ```
 
@@ -86,10 +88,10 @@ build\x64-dynamic\samples\Quadratic\Debug\sample.quadratic.exe
   `WrapPanel`, `LayoutPanel`, `FlowLayout`, `PagerControl` и элементов
   рукописного ввода. Среда этого канала устанавливается для текущего
   пользователя рядом со стабильной; без неё приложение не запустится.
-  Сценарий `tools/install-runtime.ps1` берёт её установщики из пакета
+  Команда `winxl runtime install` берёт её установщики из пакета
   `Microsoft.WindowsAppSDK.Runtime`, каталог которого называет список
   восстановления (`build/x64-dynamic/wxl.packages/restored-packages.json`), поэтому
-  сценарий запускается после настройки. Метку выпуска и основную версию, по
+  она запускается после настройки (см. «Утилита winxl»). Метку выпуска и основную версию, по
   которым приложение запрашивает пакет платформы Windows App Runtime
   (`Microsoft.WindowsAppRuntime.2-experimentalF`), загрузчик **wxl** берёт из
   заголовка `WindowsAppSDK-VersionInfo.h` того же пакета.
@@ -341,8 +343,9 @@ MSBuild.exe wxl.packages.vcxproj -restore -t:ResolveReferences,CppWinRTMakeProje
   файлов этого Windows SDK. Без ключа генератор останавливается с ошибкой, а
   редактор показывает ошибку; в обеих сказано, откуда взять список. Тесты
   `wxl.gen` и `wxl.gen.common` получают путь к списку от CMake
-  (`wxl_restored_packages_file()`), а `tools/install-runtime.ps1` и
-  `run-gen-ui.cmd` берут список каталога `build/x64-dynamic`. Формат списка и его
+  (`wxl_restored_packages_file()`), `winxl runtime install` получает его
+  ключом `--packages`, а `run-gen-ui.cmd` берёт список каталога
+  `build/x64-dynamic`. Формат списка и его
   запись описаны в `cmake/wxl_restored_packages.cmake`, тест записи —
   `ctest -R restored-packages`.
 - **Что выключено.** Вспомогательный проект выключает интеграцию vcpkg

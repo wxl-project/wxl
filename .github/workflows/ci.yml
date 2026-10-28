@@ -81,7 +81,7 @@ jobs:
       DEVCMD: C:\BuildToolsInsiders\Common7\Tools\VsDevCmd.bat
       VCVARS: -vcvars_ver=14.53
       # The global packages folder the restore of the configure puts the
-      # packages into; winui-srcgen and tools/install-runtime.ps1 find them
+      # packages into; winui-srcgen and winxl runtime install find them
       # through the list of the restore the configure writes.
       NUGET_PACKAGES: C:\nuget-packages
       # MSBuild reads the environment variables as properties, so the restore of
@@ -114,11 +114,14 @@ jobs:
 
       # One shell for the developer environment and every CMake call: VsDevCmd
       # puts the toolset and Ninja on PATH, as tools/build.ps1 does at home.
+      # The rows that start a sample build winxl as well (WXL_WINXL), which
+      # installs the runtime the sample needs; the .NET SDK 10 that publishes
+      # it is the runner image's.
       - name: Configure
         shell: cmd
         run: |
           call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
-          cmake --preset x64-dynamic -DBUILD_TESTING=ON -DWXL_BUILD_DOCS=OFF ${{ matrix.strict && '-DWXL_STRICT_CORO=ON' || '' }}
+          cmake --preset x64-dynamic -DBUILD_TESTING=ON -DWXL_BUILD_DOCS=OFF ${{ matrix.strict && '-DWXL_STRICT_CORO=ON' || '-DWXL_WINXL=ON' }}
 
       # -k 0: every compile error of the change at once, not only the first. A
       # failed generation still stops everything built on the wrappers: their
@@ -147,7 +150,8 @@ jobs:
       - name: Install the experimental Windows App Runtime
         if: (success() || failure()) && steps.build.outcome == 'success' && !matrix.strict
         shell: pwsh
-        run: pwsh -NoProfile -File tools/install-runtime.ps1
+        run: |
+          & .\build\x64-dynamic\winxl\winxl.exe runtime install --packages build\x64-dynamic\wxl.packages\restored-packages.json
 
       - name: Start a sample
         if: (success() || failure()) && steps.build.outcome == 'success' && !matrix.strict

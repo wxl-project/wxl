@@ -314,6 +314,16 @@ if(WXL_BUILD_DOCS)
     add_subdirectory(docs)
 endif()
 
+# winxl, the command-line utility of the tree (tools/winxl), published by the
+# .NET SDK 10 (cmake/wxl_winxl.cmake). Off by default everywhere: nothing else
+# in the tree needs .NET, and a configure should not ask for an SDK it does not
+# use. A release turns it on, and so does the CI job that installs the Windows
+# App Runtime with it.
+option(WXL_WINXL "Build winxl, the command-line utility of the tree (needs the .NET SDK 10)." OFF)
+if(WXL_WINXL)
+    include(cmake/wxl_winxl.cmake)
+endif()
+
 # The shared CMake scripts, shown in the IDE tree without being built: in the
 # tree's own IDE, not under a name in the project that adds it.
 if(PROJECT_IS_TOP_LEVEL)

@@ -361,10 +361,11 @@ target_link_libraries(wxl.ui
 # tag and the major version that name the release's framework package
 # (WINDOWSAPPSDK_RELEASE_VERSION_TAG_W, WINDOWSAPPSDK_RELEASE_MAJORMINOR), so no
 # value of the release is kept here. The installers of that framework package
-# are in the same Runtime package, and tools/install-runtime.ps1 installs them:
-# the release of the tree is an experimental one (tools/packages.json), and a
-# stable runtime answers a call to WrapPanel, TitleBar.RecomputeDragRegions or
-# the Window size properties with "no such interface".
+# are in the same Runtime package, and winxl runtime install (tools/winxl)
+# installs them: the release of the tree is an experimental one
+# (tools/packages.json), and a stable runtime answers a call to WrapPanel,
+# TitleBar.RecomputeDragRegions or the Window size properties with "no such
+# interface".
 wxl_nuget_package_dir(_wxl_runtime_dir Microsoft.WindowsAppSDK.Runtime)
 if(NOT EXISTS "${_wxl_runtime_dir}/include/WindowsAppSDK-VersionInfo.h")
     message(FATAL_ERROR

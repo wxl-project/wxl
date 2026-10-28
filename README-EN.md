@@ -172,6 +172,8 @@ To build the library and the sample projects, you will need:
 - **Windows SDK:** 10.0.26100.0 or newer
 - **Build:** CMake (version 4.3 / 4.4) and Ninja
 - **Environment:** PowerShell 7 (`pwsh`)
+- **.NET SDK 10:** to build the `winxl` utility, which installs the runtime;
+  the utility itself needs no .NET on the machine
 
 ### Step-by-step setup
 
@@ -184,11 +186,12 @@ the following commands to build the tree and run a sample:
 #    tools/packages.lock.json and listed in build\x64-dynamic\wxl.packages\restored-packages.json)
 #    and builds the cppwinrt projection in the build directory; the build builds the
 #    winui-srcgen generator, writes the WinUI wrappers of the full profile with it into
-#    build\x64-dynamic\wxl.ui\full\wxl and compiles them with the rest
-tools\build.ps1 -Define WXL_BUILD_DOCS=OFF
+#    build\x64-dynamic\wxl.ui\full\wxl and compiles them with the rest; WXL_WINXL=ON
+#    builds the winxl utility
+tools\build.ps1 -Define WXL_BUILD_DOCS=OFF,WXL_WINXL=ON
 
 # 2. Deploy the experimental Windows App Runtime from the package the configure restored
-pwsh -NoProfile -File tools\install-runtime.ps1
+build\x64-dynamic\winxl\winxl.exe runtime install --packages build\x64-dynamic\wxl.packages\restored-packages.json
 
 # 3. Run the Quadratic sample application
 build\x64-dynamic\samples\Quadratic\Debug\sample.quadratic.exe

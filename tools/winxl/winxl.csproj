@@ -1,0 +1,51 @@
+<!--
+  winxl: the command-line utility of the wxl tree (docs/building.md, "winxl").
+
+  Built by the target winxl of the CMake tree under WXL_WINXL (cmake/wxl_winxl.cmake),
+  which runs `dotnet publish -c Release -r win-x64` with WxlVersion set to the version of
+  the tree, project() of the root CMakeLists.txt. The publish is one self-contained
+  executable compiled ahead of time (Native AOT): it needs no .NET runtime on the machine
+  it runs on, and the .NET SDK only where it is built.
+-->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>winxl</AssemblyName>
+    <RootNamespace>Wxl.Winxl</RootNamespace>
+
+    <!-- The Windows SDK projection of this TFM (CsWinRT) carries
+         Windows.Management.Deployment.PackageManager, which `runtime install` calls. The
+         lowest Windows the tool claims is the minimum of the runtime packages it installs:
+         the TargetDeviceFamily MinVersion of the MSIX manifests of
+         Microsoft.WindowsAppSDK.Runtime 2.5.4-experimental is 10.0.17763.0. -->
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <PublishAot>true</PublishAot>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <TrimMode>full</TrimMode>
+    <!-- No culture data: the tool compares names and versions ordinally and formats
+         nothing by culture. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+
+    <!-- `winxl --version` prints the informational version, which is the version of
+         the tree and nothing else: no commit hash appended by the SDK. -->
+    <Version>$(WxlVersion)</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+
+  <!-- Without the version of the tree the SDK would stamp its default, 1.0.0, and
+       `winxl --version` would print a version the tree never had. -->
+  <Target Name="WxlRequireVersion" BeforeTargets="BeforeBuild">
+    <Error Condition="'$(WxlVersion)' == ''"
+           Text="WxlVersion is not set. winxl prints the version of the wxl tree, which its build passes in: build the CMake target winxl (configure with -DWXL_WINXL=ON), or pass -p:WxlVersion=&lt;the version of project() in the root CMakeLists.txt&gt;." />
+  </Target>
+
+</Project>
