@@ -181,17 +181,17 @@ the following commands to build the tree and run a sample:
 ```powershell
 # 1. Configure and build the whole tree without the documentation site.
 #    The configure restores the NuGet packages (pinned in tools/packages.json, resolved into
-#    tools/packages.lock.json and listed in build\x64\wxl.packages\restored-packages.json)
+#    tools/packages.lock.json and listed in build\x64-dynamic\wxl.packages\restored-packages.json)
 #    and builds the cppwinrt projection in the build directory; the build builds the
 #    winui-srcgen generator, writes the WinUI wrappers of the full profile with it into
-#    build\x64\wxl.ui\full\wxl and compiles them with the rest
+#    build\x64-dynamic\wxl.ui\full\wxl and compiles them with the rest
 tools\build.ps1 -Define WXL_BUILD_DOCS=OFF
 
 # 2. Deploy the experimental Windows App Runtime from the package the configure restored
 pwsh -NoProfile -File tools\install-runtime.ps1
 
 # 3. Run the Quadratic sample application
-build\x64\samples\Quadratic\Debug\sample.quadratic.exe
+build\x64-dynamic\samples\Quadratic\Debug\sample.quadratic.exe
 ```
 
 A detailed walkthrough of each automation step, the supported CMake

@@ -29,7 +29,7 @@ wxl, — `sta_loop::async_call(fn, stop)` и `sta_loop::async_call(orphanable, f
 
 ```
 tools\build.ps1 -Target sandbox.unified-task-probe
-build\x64\sandbox\UnifiedTaskProbe\Debug\sandbox.unified-task-probe.exe > before.txt
+build\x64-dynamic\sandbox\UnifiedTaskProbe\Debug\sandbox.unified-task-probe.exe > before.txt
 ```
 
 Аргументы: `[прогонов [множитель итераций]]`. По умолчанию 7 прогонов и полные числа

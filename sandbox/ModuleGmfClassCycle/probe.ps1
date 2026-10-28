@@ -14,7 +14,7 @@ param(
 
     # Каталог с настоящим winmd_reader.h, для сверки уменьшенной формы с ним;
     # по умолчанию — то, что скачала сборка дерева.
-    [string]$WinmdInclude = (Join-Path $PSScriptRoot '..\..\build\x64\_deps\winmd-src\src')
+    [string]$WinmdInclude = (Join-Path $PSScriptRoot '..\..\build\x64-dynamic\_deps\winmd-src\src')
 )
 
 $ErrorActionPreference = 'Stop'

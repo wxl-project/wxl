@@ -1,7 +1,7 @@
 # ---- The wxl documentation site ----
 #
-#   cmake --build --preset x64-debug --target docs
-#   build/x64/docs/wxl/html/index.html
+#   cmake --build --preset x64-dynamic-debug --target docs
+#   build/x64-dynamic/docs/wxl/html/index.html
 #
 # One site for the whole tree: the prose articles in docs/ and in each module's
 # doc/ next to the API pulled out of the sources, because that is the pairing

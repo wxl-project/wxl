@@ -16,7 +16,7 @@
 # them the way a fresh clone does, with one configure and one build: the
 # configure restores the packages and builds the projection in the build
 # directory, and the build builds the generator, runs it with the full profile
-# into build\x64\wxl.ui\full\wxl (cmake/wxl_ui_profile.cmake) and compiles
+# into build\x64-dynamic\wxl.ui\full\wxl (cmake/wxl_ui_profile.cmake) and compiles
 # what it wrote with the rest.
 #
 # A third row keeps the coroutine checks of wxl.async in the build
@@ -68,11 +68,11 @@ jobs:
       matrix:
         include:
           - config: Debug
-            preset: x64-debug
+            preset: x64-dynamic-debug
           - config: Release
-            preset: x64-release
+            preset: x64-dynamic-release
           - config: Debug
-            preset: x64-debug
+            preset: x64-dynamic-debug
             strict: true
     name: build (${{ matrix.strict && 'Strict' || matrix.config }})
     runs-on: windows-2025
@@ -118,7 +118,7 @@ jobs:
         shell: cmd
         run: |
           call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
-          cmake --preset x64 -DBUILD_TESTING=ON -DWXL_BUILD_DOCS=OFF ${{ matrix.strict && '-DWXL_STRICT_CORO=ON' || '' }}
+          cmake --preset x64-dynamic -DBUILD_TESTING=ON -DWXL_BUILD_DOCS=OFF ${{ matrix.strict && '-DWXL_STRICT_CORO=ON' || '' }}
 
       # -k 0: every compile error of the change at once, not only the first. A
       # failed generation still stops everything built on the wrappers: their
@@ -128,7 +128,7 @@ jobs:
         shell: cmd
         run: |
           call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
-          cmake --build build\x64 --config ${{ matrix.config }} ${{ matrix.strict && '--target wxl.async.tests wxl.async.dispatched-tests wxl.async.driven-tests' || '' }} -- -k 0
+          cmake --build build\x64-dynamic --config ${{ matrix.config }} ${{ matrix.strict && '--target wxl.async.tests wxl.async.dispatched-tests wxl.async.driven-tests' || '' }} -- -k 0
 
       # The strict row runs the tests of its own directory: the preset would list
       # every program of the tree, and the ones it did not build would fail.
@@ -136,7 +136,7 @@ jobs:
         shell: cmd
         run: |
           call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
-          ctest ${{ matrix.strict && '--test-dir build\x64\wxl.async\tests -C Debug' || format('--preset {0}', matrix.preset) }} --output-on-failure --timeout 300 --output-junit ctest.xml
+          ctest ${{ matrix.strict && '--test-dir build\x64-dynamic\wxl.async\tests -C Debug' || format('--preset {0}', matrix.preset) }} --output-on-failure --timeout 300 --output-junit ctest.xml
 
       # No test opens a WinUI window; a sample does. The experimental runtime
       # the wrappers ask for, from the installers of the Runtime package the
@@ -153,7 +153,7 @@ jobs:
         if: (success() || failure()) && steps.build.outcome == 'success' && !matrix.strict
         shell: pwsh
         run: |
-          $exe = "build\x64\samples\HelloHere\${{ matrix.config }}\sample.hello.exe"
+          $exe = "build\x64-dynamic\samples\HelloHere\${{ matrix.config }}\sample.hello.exe"
           if (-not (Test-Path $exe)) { throw "$exe was not built" }
           $exe = Get-Item $exe
           $p = Start-Process -FilePath $exe.FullName -WorkingDirectory $exe.DirectoryName -PassThru
@@ -171,10 +171,10 @@ jobs:
         with:
           name: ctest-logs-${{ matrix.strict && 'Strict' || matrix.config }}
           path: |
-            build/x64/Testing/Temporary/
-            build/x64/wxl.async/tests/Testing/Temporary/
-            build/x64/ctest.xml
-            build/x64/wxl.async/tests/ctest.xml
+            build/x64-dynamic/Testing/Temporary/
+            build/x64-dynamic/wxl.async/tests/Testing/Temporary/
+            build/x64-dynamic/ctest.xml
+            build/x64-dynamic/wxl.async/tests/ctest.xml
           if-no-files-found: ignore
 
   # The build rows on a pull request: the names the ruleset requires, green at
@@ -187,11 +187,11 @@ jobs:
       matrix:
         include:
           - config: Debug
-            preset: x64-debug
+            preset: x64-dynamic-debug
           - config: Release
-            preset: x64-release
+            preset: x64-dynamic-release
           - config: Debug
-            preset: x64-debug
+            preset: x64-dynamic-debug
             strict: true
     name: build (${{ matrix.strict && 'Strict' || matrix.config }})
     runs-on: ubuntu-latest

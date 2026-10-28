@@ -107,7 +107,7 @@ endforeach()
 # requirement list said "optional" about a package without which even the
 # configure step failed. One place says it now, and it is this one.
 #
-#     cmake --preset x64 -DBUILD_TESTING=ON      (sticks in CMakeCache.txt)
+#     cmake --preset x64-dynamic -DBUILD_TESTING=ON      (sticks in CMakeCache.txt)
 #     tools\build.ps1 -Define BUILD_TESTING=ON
 #
 # WXL_TESTS builds wxl's own tests -- of the modules, of the scripts in cmake/ --

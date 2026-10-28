@@ -6,8 +6,8 @@
 # <build>\wxl.packages\restored-packages.json, which the configure writes
 # (cmake/wxl_packages.cmake), so this script runs after a configure.
 #
-#   cmake --preset x64                                # in a developer prompt; tools\build.ps1 configures as well
-#   pwsh -NoProfile -File tools\install-runtime.ps1   # -Packages <list> for a build directory other than build\x64
+#   cmake --preset x64-dynamic                                # in a developer prompt; tools\build.ps1 configures as well
+#   pwsh -NoProfile -File tools\install-runtime.ps1   # -Packages <list> for a build directory other than build\x64-dynamic
 #
 # Why: the WinUI metadata the wrappers are generated from is the experimental
 # channel's, and only the experimental framework package (Microsoft.WindowsAppRuntime
@@ -22,7 +22,7 @@
 # Every run hands each installer to Add-AppxPackage; Windows leaves a package already
 # installed at the same version as it is.
 [CmdletBinding()]
-param([string]$Packages = (Join-Path (Split-Path -Parent $PSScriptRoot) 'build\x64\wxl.packages\restored-packages.json'))
+param([string]$Packages = (Join-Path (Split-Path -Parent $PSScriptRoot) 'build\x64-dynamic\wxl.packages\restored-packages.json'))
 
 $ErrorActionPreference = 'Stop'
 if (-not (Test-Path -LiteralPath $Packages)) {

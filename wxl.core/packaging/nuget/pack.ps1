@@ -14,7 +14,7 @@
     проверяется в targets.
 
 .PARAMETER BuildDir
-    Каталог сборки CMake, по умолчанию build\x64 в корне репозитория.
+    Каталог сборки CMake, по умолчанию build\x64-dynamic в корне репозитория.
 
 .PARAMETER Version
     Версия пакета; по умолчанию берётся из project(... VERSION ...).
@@ -32,7 +32,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-if (-not $BuildDir) { $BuildDir = Join-Path $root 'build\x64' }
+if (-not $BuildDir) { $BuildDir = Join-Path $root 'build\x64-dynamic' }
 if (-not $Output) { $Output = Join-Path $root 'build\nuget' }
 if (-not (Test-Path $BuildDir)) { throw "Каталог сборки не найден: $BuildDir" }
 

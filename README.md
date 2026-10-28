@@ -182,9 +182,9 @@ TextBox {
 ```powershell
 # 1. Настройка и сборка всего дерева без сайта документации.
 #    Настройка восстанавливает пакеты NuGet (закрепления — tools/packages.json,
-#    результат — tools/packages.lock.json и список build\x64\wxl.packages\restored-packages.json)
+#    результат — tools/packages.lock.json и список build\x64-dynamic\wxl.packages\restored-packages.json)
 #    и строит проекцию cppwinrt в каталоге сборки; сборка собирает генератор
-#    winui-srcgen, пишет им обёртки WinUI полного профиля в build\x64\wxl.ui\full\wxl
+#    winui-srcgen, пишет им обёртки WinUI полного профиля в build\x64-dynamic\wxl.ui\full\wxl
 #    и компилирует их вместе с остальным
 tools\build.ps1 -Define WXL_BUILD_DOCS=OFF
 
@@ -193,7 +193,7 @@ tools\build.ps1 -Define WXL_BUILD_DOCS=OFF
 pwsh -NoProfile -File tools\install-runtime.ps1
 
 # 3. Запуск демонстрационного приложения Quadratic
-build\x64\samples\Quadratic\Debug\sample.quadratic.exe
+build\x64-dynamic\samples\Quadratic\Debug\sample.quadratic.exe
 ```
 
 Подробный разбор каждого шага автоматизации, поддерживаемые ключи

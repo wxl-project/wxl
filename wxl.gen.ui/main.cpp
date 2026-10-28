@@ -66,7 +66,7 @@ std::filesystem::path restoredPackages() {
             "wxl.gen.ui reads the packages of a profile from the list of the restored packages of "
             "a build. Start it with --packages <build>/wxl.packages/restored-packages.json, the "
             "list the configure of that build writes from its NuGet restore: in the wxl tree, "
-            "run-gen-ui.cmd builds the editor and starts it with the list of build\\x64.");
+            "run-gen-ui.cmd builds the editor and starts it with the list of build\\x64-dynamic.");
     }
     return packages;
 }

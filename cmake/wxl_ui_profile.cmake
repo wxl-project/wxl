@@ -101,7 +101,7 @@ function(wxl_generate_wrappers name)
             "wxl_generate_wrappers(${name}): there is no target winui-srcgen, which generates "
             "the wrappers: ${CMAKE_CURRENT_SOURCE_DIR} is configured without the wxl tree that "
             "builds it. Configure the root of the wxl tree (tools\\build.ps1, or cmake --preset "
-            "x64 there).")
+            "x64-dynamic there).")
     endif()
     if(NOT A_DIR)
         message(FATAL_ERROR "wxl_generate_wrappers(${name}): no DIR.")

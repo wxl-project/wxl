@@ -506,7 +506,8 @@ function(_wxl_packages)
             "CMAKE_TOOLCHAIN_FILE names vcpkg's toolchain (${CMAKE_TOOLCHAIN_FILE}), which the wxl "
             "tree does not use: the cache of ${CMAKE_BINARY_DIR} keeps it from an earlier "
             "configure. Configure the build directory anew, with an empty cache: "
-            "cmake --preset x64 --fresh in a developer prompt, or delete the directory and run "
+            "cmake --preset <preset> --fresh in a developer prompt, with the preset the directory is "
+            "named after (x64-dynamic, x64-static), or delete the directory and run "
             "tools\\build.ps1 -Configure.")
     endif()
 

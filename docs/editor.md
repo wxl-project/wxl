@@ -4,7 +4,7 @@
 
 **Конфигурация.** Настройка дерева записывает в каталог сборки базу команд
 компиляции `compile_commands.json` (`CMAKE_EXPORT_COMPILE_COMMANDS` в корневом
-`CMakeLists.txt`): для пресета `x64` это `build/x64/compile_commands.json`.
+`CMakeLists.txt`): для пресета `x64-dynamic` это `build/x64-dynamic/compile_commands.json`.
 Расширение C/C++ берёт из неё ключи компиляции каждого файла, если путь к
 базе указан в `.vscode/c_cpp_properties.json` (свойство `compileCommands`)
 или в параметре `C_Cpp.default.compileCommands`.
