@@ -32,6 +32,10 @@ internal static class RestoredPackages
         {
             throw new ToolException(Failure.Input, $"{listPath} is not JSON: {e.Message}", e);
         }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            throw new ToolException(Failure.Environment, $"{listPath} cannot be read: {e.Message}", e);
+        }
 
         using (document)
         {

@@ -60,9 +60,19 @@ internal static class RuntimeInventory
             throw new ToolException(Failure.Input, $"no {FileName} in {directory}");
         }
 
+        string[] lines;
+        try
+        {
+            lines = File.ReadAllLines(inventory);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            throw new ToolException(Failure.Environment, $"{inventory} cannot be read: {e.Message}", e);
+        }
+
         var packages = new List<RuntimeMsix>();
         var number = 0;
-        foreach (var line in File.ReadAllLines(inventory))
+        foreach (var line in lines)
         {
             number++;
             if (string.IsNullOrWhiteSpace(line))
@@ -121,6 +131,10 @@ internal static class RuntimeInventory
         catch (Exception e) when (e is InvalidDataException or System.Xml.XmlException)
         {
             throw new ToolException(Failure.Input, $"{path} is not an MSIX with a readable AppxManifest.xml: {e.Message}", e);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            throw new ToolException(Failure.Environment, $"{path} cannot be read: {e.Message}", e);
         }
 
         var name = Attribute(identity, "Name", path);
