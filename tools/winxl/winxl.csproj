@@ -4,8 +4,8 @@
   Built by the target winxl of the CMake tree under WXL_WINXL (cmake/wxl_winxl.cmake),
   which runs `dotnet publish -c Release -r win-x64` with WxlVersion set to the version of
   the tree, project() of the root CMakeLists.txt. The publish is one self-contained
-  executable compiled ahead of time (Native AOT): it needs no .NET runtime on the machine
-  it runs on, and the .NET SDK only where it is built.
+  executable compiled ahead of time (Native AOT), a single file by construction: it needs
+  no .NET runtime on the machine it runs on, and the .NET SDK only where it is built.
 -->
 <Project Sdk="Microsoft.NET.Sdk">
 
@@ -29,8 +29,6 @@
 
     <PublishAot>true</PublishAot>
     <SelfContained>true</SelfContained>
-    <PublishSingleFile>true</PublishSingleFile>
-    <TrimMode>full</TrimMode>
     <!-- No culture data: the tool compares names and versions ordinally and formats
          nothing by culture. -->
     <InvariantGlobalization>true</InvariantGlobalization>
