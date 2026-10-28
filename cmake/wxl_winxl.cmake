@@ -17,8 +17,23 @@
 #
 # The tool carries its own runtime, so it does not depend on the CRT of the
 # build directory; it belongs to the tool set, which a release builds in
-# x64-static. The publish links the native executable with the MSVC linker of a
-# Visual Studio installation with the C++ toolset, which the tree needs anyway.
+# x64-static.
+#
+# The publish links the native executable with the MSVC linker of the developer
+# environment the tree is built in -- ninja needs cl.exe and link.exe on PATH,
+# which tools\build.ps1 imports and a developer prompt has. By default the
+# ILCompiler searches for a linker of its own: its
+# Microsoft.NETCore.Native.Windows.targets runs findvcvarsall.bat, which runs
+# vcvarsall.bat of Visual Studio, which calls vswhere.exe by name; where the
+# Visual Studio Installer directory is not on PATH, the error text of that call
+# becomes the directory of the linker and the link fails. With
+# IlcUseEnvironmentalTools=true the targets skip that search -- the only use of
+# findvcvarsall.bat in the ILCompiler's build integration, read at the
+# release/10.0 branch of dotnet/runtime -- and link with `link` from PATH, the
+# libraries coming from the LIB of the same environment. Nothing falls back to
+# another linker: outside the environment the Exec of "link" @link.rsp fails,
+# with cmd's exit code 9009 for a command it does not find, and the publish
+# stops with MSBuild's MSB3073.
 #
 # Always Release, whatever the configuration of the build: the publish is the
 # same for each, and one executable serves the build directory. Its bin/ and
@@ -78,6 +93,7 @@ add_custom_command(
             --artifacts-path "${_wxl_winxl_dir}/artifacts"
             -o "${_wxl_winxl_dir}"
             "-p:WxlVersion=${wxl-project_VERSION}"
+            -p:IlcUseEnvironmentalTools=true
     DEPENDS ${_wxl_winxl_sources}
     WORKING_DIRECTORY "${_wxl_winxl_source}"
     COMMENT "dotnet publish: winxl ${wxl-project_VERSION} -> ${_wxl_winxl_exe}"
