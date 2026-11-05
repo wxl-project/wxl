@@ -1,32 +1,17 @@
 // Проза страницы Gallery: текст, который страница показывает между живыми примерами. Он лежит в .html рядом со
 // сниппетами страницы (Snippets/<Страница>/<Раздел>.html) и строится тем же HtmlBlock, что Presenter ставит введением
-// к примеру, с одним обработчиком ссылок: item:<id> — переход на страницу контрола, http/https — запуск адреса,
-// любая иная схема — ошибка (не маскируется).
+// к примеру, с обработчиком ссылок (item:<id> — переход на страницу контрола, http/https — запуск адреса, иная
+// схема — ошибка) и onError: восстановление парсера и заблокированная ссылка тоже не маскируются.
 
 #include "Pages.h"
 #include "Shell.h"
 
 #include <stdexcept>
 
-#include <wxl/Windows.System.h>
-
 import wxl.core;
 
 using namespace wxl;
 using namespace wxl::dsl;
-
-namespace {
-
-// Запуски адресов по ссылкам http/https: задача живёт, пока адрес не открыт, а кончившаяся выметается при следующем
-// запуске — как сохранения состояния в Shell.
-std::vector<async::task<bool>> launches;
-
-void launch(zstring_view uri) {
-    std::erase_if(launches, [](async::task<bool> const& each) { return each.done(); });
-    launches.push_back(Launcher::launchUriAsync(uri));
-}
-
-}  // namespace
 
 namespace gallery {
 
@@ -71,7 +56,7 @@ FrameworkElement prose(Snippet html, Thickness margin) {
             return;
         }
         if (view.starts_with(u"http://") || view.starts_with(u"https://")) {
-            launch(target);
+            launchUri(target);
             return;
         }
         // Схемы, которой в prose не бывает, быть не должно: это ошибка в .html страницы, и её не глушат — останавливает
