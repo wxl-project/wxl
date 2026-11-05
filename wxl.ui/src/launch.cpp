@@ -18,9 +18,9 @@
 #include <iostream>
 
 #include "impl/activator.h"
-#include "CompositionWindow.h"
 #include "impl/event_waits.h"
 #include "impl/winrt_helpers.h"
+#include "impl/xaml_holders.h"
 #include "async/coroutine_checks.h"
 #include "Application.h"
 #include "launch.h"
@@ -59,9 +59,10 @@ struct App : winrt::Microsoft::UI::Xaml::ApplicationT<
         // resolve_activation_factory names.
         ::wxl::Application::set_launched(true);
 
-        // The windows of wxl's own are closed when the queue of XAML begins to shut down: its
-        // ShutdownStarting is the last moment XAML is alive under them, and the loop is over by
-        // then, so the flag goes down first (see Application::loopRunning()). Subscribed here,
+        // What holds content of XAML outside its windows -- the windows of wxl's own -- is closed
+        // when the queue of XAML begins to shut down (impl/xaml_holders.h): its ShutdownStarting
+        // is the last moment XAML is alive under them, and the loop is over by then, so the flag
+        // goes down first (see Application::loopRunning()). Subscribed here,
         // before any subscription of the application's, and never taken off: the queue goes with
         // it. The order among the handlers of the event does not matter: closing the rendering
         // devices stops only their replacement. Neither call throws; a handler of Closing or Closed
@@ -70,7 +71,7 @@ struct App : winrt::Microsoft::UI::Xaml::ApplicationT<
         if (!queue) wxl::core::abort("wxl: the XAML application launched with no dispatcher queue");
         static_cast<void>(queue.ShutdownStarting([](auto&&, auto&&) noexcept {
             ::wxl::Application::set_loop_running(false);
-            ::wxl::CompositionWindow::close_all_at_exit();
+            ::wxl::impl::xaml_holders::close_all();
         }));
 
         // Without a XAML application definition nothing has merged the
@@ -319,16 +320,12 @@ int __stdcall wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
                    wxl::async::detail::site::current());
     }
 
-    // A CompositionWindow still alive here outlived XAML: one that was not closed when the
+    // A holder of XAML content still open here outlived XAML: one that was not closed when the
     // queue of XAML began to shut down -- a Start that failed before its loop, or a window
     // opened later, by the teardown handler, say. Destroyed in stop(), it would release its
     // XAML content under a XAML that is gone; the process stops on it here instead, with the
-    // cause named.
-    if (!wxl::CompositionWindow::all_closed()) {
-        wxl::core::abort(
-            "wxl: a CompositionWindow is still alive at sta_loop::stop() -- it was "
-            "to be closed while XAML lived, in ShutdownStarting of its queue");
-    }
+    // holder named.
+    wxl::impl::xaml_holders::ensure_all_closed();
 
     wxl::async::sta_loop::stop();
 

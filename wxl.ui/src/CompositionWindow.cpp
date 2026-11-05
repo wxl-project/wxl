@@ -50,6 +50,7 @@
 #include "impl/background_load.h"
 #include "Object.impl.h"
 #include "impl/handler_list.h"
+#include "impl/xaml_holders.h"
 #include <wxl/Microsoft.UI.Composition.impl.h>
 #include <wxl/Microsoft.UI.Dispatching.impl.h>
 #include <wxl/Microsoft.UI.Input.impl.h>
@@ -616,7 +617,7 @@ struct CompositionWindow::Impl : core::refcounted, core::intrusive_list_node<Imp
     std::unique_ptr<window_hold> hold;
 
     // Окно уничтожается (WM_DESTROY), XAML ещё жив: окно закрывают, пока он жив, -- его же WM_CLOSE
-    // или wxl при выходе, в ShutdownStarting очереди XAML (CompositionWindow::close_all_at_exit);
+    // или wxl при выходе, в ShutdownStarting очереди XAML (close_all_at_exit);
     // XAML разбирает себя следом, ещё внутри Application::Start. Всё, что состояние держит от XAML,
     // отпускается сейчас: остров со всем, что живёт с ним, и неклиентский ввод -- окно ещё есть,
     // и снимать подписки есть с кого. Отказ XAML по дороге -- нарушенный инвариант: деструкторы
@@ -1324,7 +1325,7 @@ CompositionWindow::Impl* state_of(HWND hwnd) noexcept {
 // Окна, которые живы сейчас. XAML считает только свои окна: цикл приложения
 // кончается с последним из них, а CompositionWindow может остаться, -- и закрыть
 // его, пока XAML жив, может только wxl, который его знает
-// (CompositionWindow::close_all_at_exit). Список не владеет: ссылку держит само окно, до
+// (close_all_at_exit). Список не владеет: ссылку держит само окно, до
 // WM_NCDESTROY, где узел уходит из списка.
 core::intrusive_list<CompositionWindow::Impl>& live_windows() noexcept {
     static core::intrusive_list<CompositionWindow::Impl> live;
@@ -1514,6 +1515,53 @@ LRESULT CALLBACK window_procedure(HWND hwnd, UINT message, WPARAM wparam, LPARAM
     return ::DefWindowProcW(hwnd, message, wparam, lparam);
 }
 
+// ---- Выход: окна закрываются, пока XAML жив ---------------------------------
+//
+// XAML считает только свои окна: с DispatcherShutdownMode::OnLastWindowClose, который ставит
+// Application::Start, его цикл кончается, когда закрылось последнее окно XAML, и открытый
+// CompositionWindow -- не его окно, чтобы его ждать. Своего цикла XAML не переживает: ещё внутри
+// Start он гасит свою очередь и разбирает себя в её FrameworkShutdownStarting. ShutdownStarting
+// очереди приходит раньше, пока XAML жив, -- последний миг, когда окно можно закрыть как
+// положено. Этот миг знает точка входа, а окна -- только этот файл, поэтому окна сами встают в
+// число держателей XAML (impl/xaml_holders.h), с регистрацией класса окна, то есть с первым
+// окном.
+
+// Каждое окно, которое ещё открыто, закрывается, пока XAML жив: ему шлётся WM_CLOSE, чтобы
+// прошли Closing и Closed и владельцы отпустили то, что держат, а отказавшее закрыться
+// уничтожается всё равно -- на выходе отказу нечего беречь. Окна, которые обработчики открывают
+// по дороге, закрываются вместе с остальными.
+//
+// Первое окно списка, пока он не пуст: обработчики Closing и Closed уносят из
+// него и другие окна (закрывая их), и заводят новые -- обход копией не увидел бы
+// ни того, ни другого. Состояние держится на время своего закрытия: окно, его
+// державшее, отпускает его в WM_NCDESTROY, изнутри DestroyWindow.
+void close_all_at_exit() noexcept {
+    while (CompositionWindow::Impl* const front = live_windows().front()) {
+        core::intrusive_ptr<CompositionWindow::Impl> const state{front};
+        ::SendMessageW(state->window.get(), WM_CLOSE, 0, 0);
+        // Отказ Closing на выходе не в счёт: окно, оставленное жить, пережило бы
+        // XAML.
+        if (HWND const handle = state->window.get()) ::DestroyWindow(handle);
+        // WM_NCDESTROY уносит узел из списка; оставшийся -- окно, которое не
+        // уничтожилось, и обход стоял бы на нём вечно.
+        if (state->linked()) {
+            core::abort(
+                "wxl: a CompositionWindow outlived DestroyWindow while the windows "
+                "were closed at exit");
+        }
+    }
+}
+
+void ensure_all_closed_at_exit() noexcept {
+    if (!live_windows().empty()) {
+        core::abort(
+            "wxl: a CompositionWindow is still alive at sta_loop::stop() -- it was "
+            "to be closed while XAML lived, in ShutdownStarting of its queue");
+    }
+}
+
+constexpr impl::xaml_holders::kind windows_at_exit{&close_all_at_exit, &ensure_all_closed_at_exit};
+
 void ensure_class();
 
 // Само окно: класс регистрируется один раз, отказ системы бросается здесь, до состояния.
@@ -1547,37 +1595,14 @@ void ensure_class() {
                                                      ::GetSystemMetrics(SM_CYSMICON), LR_SHARED));
         wc.hbrBackground = nullptr;  // без классовой кисти -- белому взяться неоткуда
         ::RegisterClassExW(&wc);
+        // Окна класса держат XAML: с первого из них выход закрывает их, пока XAML жив.
+        impl::xaml_holders::enlist(windows_at_exit);
         return true;
     }();
     (void)registered;
 }
 
 }  // namespace
-
-// ---- Выход: окна закрываются, пока XAML жив ---------------------------------
-
-// Первое окно списка, пока он не пуст: обработчики Closing и Closed уносят из
-// него и другие окна (закрывая их), и заводят новые -- обход копией не увидел бы
-// ни того, ни другого. Состояние держится на время своего закрытия: окно, его
-// державшее, отпускает его в WM_NCDESTROY, изнутри DestroyWindow.
-void CompositionWindow::close_all_at_exit() noexcept {
-    while (Impl* const front = live_windows().front()) {
-        core::intrusive_ptr<Impl> const state{front};
-        ::SendMessageW(state->window.get(), WM_CLOSE, 0, 0);
-        // Отказ Closing на выходе не в счёт: окно, оставленное жить, пережило бы
-        // XAML.
-        if (HWND const handle = state->window.get()) ::DestroyWindow(handle);
-        // WM_NCDESTROY уносит узел из списка; оставшийся -- окно, которое не
-        // уничтожилось, и обход стоял бы на нём вечно.
-        if (state->linked()) {
-            core::abort(
-                "wxl: a CompositionWindow outlived DestroyWindow while the windows "
-                "were closed at exit");
-        }
-    }
-}
-
-bool CompositionWindow::all_closed() noexcept { return live_windows().empty(); }
 
 // ---- Сцена: задний фон и собственные визуалы приложения --------------------
 

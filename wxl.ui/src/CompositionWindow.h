@@ -78,19 +78,8 @@
 // Объявлено, не включено: держится хэндл окна, а вызывающему, которому нужно
 // лишь его открыть, незачем разбирать заголовок Windows. Так же у WindowShade.
 struct HWND__;
-struct HINSTANCE__;
-
-// С той же связью, что у winbase.h: это объявление и то сходятся, какое бы ни шло
-// в единице трансляции первым.
-extern "C" int __stdcall wWinMain(HINSTANCE__*, HINSTANCE__*, wchar_t*, int);
 
 namespace wxl {
-
-namespace impl {
-
-struct App;
-
-}  // namespace impl
 
 class AppZoom;
 class ZoomEffect;
@@ -496,26 +485,6 @@ private:
     // колесом своего острова и следует за её масштабом.
     friend class ZoomEffect;
     void attachZoom(core::intrusive_ptr<AppZoom> zoom) const;
-
-    // The way out, which launch.cpp takes: XAML counts only its own windows, and with
-    // DispatcherShutdownMode::OnLastWindowClose, which Application::Start sets, its loop ends
-    // when the last XAML Window closes -- a CompositionWindow still open is no window of XAML's
-    // to wait for. XAML does not outlive its loop: still inside Start it shuts its own queue down
-    // and takes itself apart in that queue's FrameworkShutdownStarting. The queue's
-    // ShutdownStarting comes before, with XAML alive -- the last moment a window can be closed
-    // the way it is meant to be.
-    friend struct impl::App;
-    friend int __stdcall ::wWinMain(HINSTANCE__*, HINSTANCE__*, wchar_t*, int);
-
-    /// Closes every window still open, while XAML lives -- in ShutdownStarting of the queue of
-    /// XAML: each is sent WM_CLOSE, so that Closing and Closed run and the owners let go of what
-    /// they hold, and one that refuses to close is destroyed regardless -- on the way out a
-    /// refusal has nothing left to keep the window for. Windows a handler opens in the meantime
-    /// are closed with the rest.
-    static void close_all_at_exit() noexcept;
-
-    /// Whether no window is alive.
-    static bool all_closed() noexcept;
 
     core::intrusive_ptr<Impl> impl_;
 };
