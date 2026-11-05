@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ui.h"
+#include "Bind.h"
 #include "Card.h"
 #include "HtmlBlock.h"
 #include "Panels.h"
