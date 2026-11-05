@@ -6,12 +6,21 @@
 #include "Design.h"
 
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
-#include <wxl/Microsoft.UI.Xaml.Documents.h>
 
 using namespace wxl;
 using namespace wxl::dsl;
 
 namespace {
+
+constexpr char8_t typographyIntroText[] = {
+#include "Snippets/Typography/Intro.html.embed"
+};
+constexpr char8_t geometryIntroText[] = {
+#include "Snippets/Geometry/Intro.html.embed"
+};
+constexpr char8_t spacingIntroText[] = {
+#include "Snippets/Spacing/Intro.html.embed"
+};
 
 constexpr char8_t typographyHeader[] = {
 #include "Snippets/Typography/TypographyTypeRamp.html.embed"
@@ -116,47 +125,21 @@ FrameworkElement spacingExample(char16_t const* title, char16_t const* stem, dou
 
 FrameworkElement gallery::typographyPage() {
     return StackPanel {
-        RichTextBlock {
-            Margin {0, 4, 0, 0},
-            Paragraph {
-                Run {u"Typography helps provide structure and hierarchy to UI. The default font for Windows is "},
-                Hyperlink {navigateUri = u"https://learn.microsoft.com/windows/apps/design/downloads/#fonts", Run {u"Segoe UI Variable"}},
-                Run {u". Best practice is to use Regular weight for most text, use Semibold for titles. The minimum values should be "
-                     u"12px Regular, 14px Semibold."},
-            },
-        },
+        gallery::prose(gallery::snippet(typographyIntroText)),
         typographyExample(),
     };
 }
 
 FrameworkElement gallery::geometryPage() {
     return StackPanel {
-        RichTextBlock {
-            Paragraph {
-                Run {u"Geometry describes the shape, size and position of UI elements on screen. These fundamental design elements help "
-                     u"experiences feel coherent across the entire design system. WinUI uses three levels of rounding depending on what UI "
-                     u"component is being rounded and how that component is arranged relative to neighboring elements. "
-                     u"You can reference built-in corner radii styles using: "},
-                Run {fontStyle = FontStyle::Italic, u"CornerRadius=\"{StaticResource ControlCornerRadius}\""},
-                Run {u"."},
-            },
-        },
+        gallery::prose(gallery::snippet(geometryIntroText)),
         geometryExample(),
     };
 }
 
 FrameworkElement gallery::spacingPage() {
     return StackPanel {
-        RichTextBlock {
-            Paragraph {
-                Run {u"The use of consistently sized spacing and gutters semantically groups an experience into separate components. "
-                     u"These values map to our rounded corner logic and together help create a cohesive and usable layout. "
-                     u"A best practice in design is to use a 4px grid. This means that any spacing or sizing should be a multiple of 4. "
-                     u"This helps to create a consistent and harmonious layout and these values are easy to scale."},
-                LineBreak {},
-                Run {u"Below, you can find a few examples of common layout types with highlighted spacing values (in epx)."},
-            },
-        },
+        gallery::prose(gallery::snippet(spacingIntroText)),
         ScrollViewer {
             Margin {0, 24, 0, 0},
             horizontalScrollBarVisibility = ScrollBarVisibility::Auto,

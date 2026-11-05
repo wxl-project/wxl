@@ -8,7 +8,6 @@
 #include <vector>
 #include "Resource.h"
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
-#include <wxl/Microsoft.UI.Xaml.Documents.h>
 #include <wxl/Microsoft.UI.Xaml.Media.h>
 #include <wxl/Microsoft.UI.Xaml.Media.Animation.h>
 #include <wxl/Microsoft.UI.Xaml.Shapes.h>
@@ -17,6 +16,10 @@ using namespace wxl;
 using namespace wxl::dsl;
 
 namespace {
+
+constexpr char8_t introText[] = {
+#include "Snippets/EasingFunction/Intro.html.embed"
+};
 
 constexpr char8_t standardHeader[] = {
 #include "Snippets/EasingFunction/StandardEasingFunction.html.embed"
@@ -92,5 +95,5 @@ FrameworkElement other() {
 }  // namespace
 
 wxl::FrameworkElement gallery::easingFunctionPage() {
-    return StackPanel {RichTextBlock {Paragraph {Run {u"- Use the Standard easing function for animating general property changes."}}, Paragraph {Run {u"- Use the Accelerate easing function to animate objects that are exiting the scene."}}, Paragraph {Run {u"- Use the Decelerate easing function to animate objects that are entering the scene."}}}, standard(), accelerate(), decelerate(), other()};
+    return StackPanel {gallery::prose(gallery::snippet(introText)), standard(), accelerate(), decelerate(), other()};
 }

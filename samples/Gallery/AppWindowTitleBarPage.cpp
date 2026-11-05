@@ -8,6 +8,10 @@ using namespace wxl::dsl;
 
 namespace {
 
+constexpr char8_t introText[] = {
+#include "Snippets/AppWindowTitleBar/Intro.html.embed"
+};
+
 constexpr char8_t colorCustomizationHeader[] = {
 #include "Snippets/AppWindowTitleBar/AppwindowtitlebarColorCustomization.html.embed"
 };
@@ -66,15 +70,5 @@ FrameworkElement themeHeight() {
 
 wxl::FrameworkElement gallery::appWindowTitleBarPage() {
     return StackPanel {
-        RichTextBlock {
-            Margin {0, 8, 0, 0},
-            Paragraph {
-                Run {u"For the default title bar and basic scenarios, use the "},
-                Hyperlink {
-                    onClick += [](Object const&, HyperlinkClickEventArgs&) { navigate({Place::Item, L"TitleBar"}); },
-                    Run {u"TitleBar"},
-                },
-                Run {u" control."},
-            },
-        },colorCustomization(), extend(), themeHeight()};
+        gallery::prose(gallery::snippet(introText)), colorCustomization(), extend(), themeHeight()};
 }

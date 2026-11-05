@@ -6,7 +6,6 @@
 #include "Shell.h"
 
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
-#include <wxl/Microsoft.UI.Xaml.Documents.h>
 
 #include <cmath>
 #include <format>
@@ -15,6 +14,10 @@ using namespace wxl;
 using namespace wxl::dsl;
 
 namespace {
+
+constexpr char8_t introText[] = {
+#include "Snippets/AccessibilityColorContrast/Intro.html.embed"
+};
 
 // Относительная яркость по WCAG: https://www.w3.org/WAI/GL/wiki/Relative_luminance
 double relativeLuminance(Color c) {
@@ -224,25 +227,7 @@ FrameworkElement gallery::accessibilityColorContrastPage() {
 
     return StackPanel {
         spacing = 12.0,
-        RichTextBlock {
-            Paragraph {
-                Run {u"Accessibility is about building experiences that make your Windows application usable by people of all abilities. "
-                     u"For more information about designing accessible apps: "},
-                Hyperlink {navigateUri = u"https://learn.microsoft.com/windows/apps/design/accessibility/accessibility-overview",
-                           Run {u"Accessibility overview"}},
-                Run {u"."},
-                LineBreak {},
-                LineBreak {},
-                Run {u"To ensure optimal accessibility and usability, apps should strive to use high-contrast and easy-to-read color "
-                     u"combinations for text and its background. Not only will this benefit users with lower visual acuity, but this will "
-                     u"also ensure visibility and legibility under a wide range of lighting conditions, screens, and device settings."},
-                LineBreak {},
-                LineBreak {},
-                Run {u"Check out the "},
-                Hyperlink {navigateUri = u"https://accessibilityinsights.io/", Run {u"Accessibility Insights"}},
-                Run {u" app to help you find and fix accessibility issues in your Windows apps."},
-            },
-        },
+        gallery::prose(gallery::snippet(introText)),
         TextBlock {Margin {0, 20, 0, 0}, styles.TextBlock.Subtitle, u"Color Contrast Checker"},
         TextBlock {Margin {0, 0, 0, 10}, styles.TextBlock.Body, textWrapping = TextWrapping::Wrap,
                    u"Use this tool to calculate the contrast ratio of two colors and measure them against the Web Content Accessibility "
