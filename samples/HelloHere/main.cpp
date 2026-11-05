@@ -43,31 +43,13 @@ std::wstring themeName(ElementTheme value)
     }
 }
 
-ElementTheme currentTheme = ElementTheme::Default;
-
-void updateThemeButton(Button const& themeButton) {
-    auto const next = nextTheme(currentTheme);
-    Apply {themeButton,
-        content = SymbolIcon {symbol = themeIcon(next)},
-        toolTip = L"Switch theme to " + themeName(next),
-    };
-}
-
-void updateTheme(Button const& themeButton) {
-    if (auto const root = themeButton.xamlRoot().content().try_as<FrameworkElement>())
-        root.requestedTheme(currentTheme);
-
-    updateThemeButton(themeButton);
-}
-
 wxl::Teardown wxl_launched() {
-    auto themeButton = Button {
-        Margin {16, 0},
-        onClick += [&](Button const& self) {
-            currentTheme = nextTheme(currentTheme);
-            updateTheme(self);
-        },
-    };
+    // The theme the root requests. It starts at Default, so the window follows the
+    // system until the button asks for Light or Dark. Its bindings own the controls
+    // they drive, so the Teardown keeps it as long as the window lives, and a handler
+    // on those controls refers to it without owning it.
+    auto const themeOwner = core::make_refcounted<core::observable<ElementTheme>>(ElementTheme::Default);
+    core::observable<ElementTheme>& theme = *themeOwner;
 
     auto topBar = Card {
         row = 0,
@@ -90,7 +72,16 @@ wxl::Teardown wxl_launched() {
             StackPanel {
                 orientation.horizontal,
                 hAlign.right,
-                themeButton,
+                Button {
+                    Margin {16, 0},
+                    content = BindOutput {theme, [](ElementTheme value) {
+                        return SymbolIcon {symbol = themeIcon(nextTheme(value))};
+                    }},
+                    toolTip = BindOutput {theme, [](ElementTheme value) {
+                        return L"Switch theme to " + themeName(nextTheme(value));
+                    }},
+                    onClick += [&theme] { theme.set(nextTheme(theme.get())); },
+                },
                 HyperlinkButton {
                     content = L" Github Project Repository ",
                     navigateUri = L"https://github.com/wxl-project/wxl",
@@ -163,6 +154,7 @@ wxl::Teardown wxl_launched() {
         Grid {
             RowDefinitions<u"auto,*,auto">,
             background = brushes.SolidBackgroundFillColor.Base,
+            requestedTheme = BindOutput {theme},
             topBar,
             card,
         },
@@ -172,8 +164,5 @@ wxl::Teardown wxl_launched() {
     appWindow.resize({800, 600});
     window.activate();
 
-    currentTheme = themeButton.actualTheme();
-    updateThemeButton(themeButton);
-
-    return {};
+    return [themeOwner](TeardownReason) {};
 }
