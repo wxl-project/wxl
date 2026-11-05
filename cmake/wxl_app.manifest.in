@@ -5,7 +5,7 @@
      wxl_target_manifest() knows it already.
 
      What it says is required by the library, not by the executable. An
-     unpackaged WinUI3 process has to name the Windows it was tested against,
+     unpackaged WinUI process has to name the Windows it was tested against,
      or the framework refuses to consider it a current-Windows one, and it has
      to declare that it handles per-monitor DPI itself, or its window is
      bitmap-stretched on a scaled display. Neither can be said from code: a

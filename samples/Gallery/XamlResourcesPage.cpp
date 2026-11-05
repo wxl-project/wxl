@@ -72,7 +72,7 @@ FrameworkElement gallery::xamlResourcesPage() {
         TextBlock {Margin {0, 24, 0, 4}, styles.TextBlock.Subtitle, u"Theme resources"},
         StackPanel {
             spacing = 12.0,
-            RichTextBlock {Paragraph {Run {u"WinUI 3 includes built-in theme resources for commonly used colors. See all brushes on the "},
+            RichTextBlock {Paragraph {Run {u"WinUI includes built-in theme resources for commonly used colors. See all brushes on the "},
                                       Hyperlink {onClick += [](auto&&...) { gallery::navigate({gallery::Place::Item, L"Color"}); }, Run {u"Color page"}},
                                       Run {u"."}}},
             RichTextBlock {

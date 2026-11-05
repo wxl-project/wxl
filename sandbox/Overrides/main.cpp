@@ -21,7 +21,7 @@
 // mocks below are test-only stand-ins: minimal, non-realistic COM objects
 // (their sub-interfaces don't share one COM identity the way a real
 // aggregate must) that exist purely to make wxl's own construction/dispatch
-// code run without a live WinUI3 runtime.
+// code run without a live WinUI runtime.
 #include <iostream>
 
 #include <wxl/impl/UIElement.h>

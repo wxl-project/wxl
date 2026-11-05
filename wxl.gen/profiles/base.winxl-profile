@@ -1,6 +1,6 @@
 {
     "name": "base",
-    "description": "Baseline WinUI3 surface for wxl: the WinForms-equivalent control set (layout, text, buttons, lists, indication, navigation containers, flyouts/menus), trimmed to the members needed to experiment with Flutter-style declarative UI and Command-based model binding. Application is pre-defined (hand-written, never generated), so it is deliberately absent; Window is generated in every profile as an implicit root (types.json) and is listed here only for the synthetic members WinUI3 does not have.",
+    "description": "Baseline WinUI surface for wxl: the WinForms-equivalent control set (layout, text, buttons, lists, indication, navigation containers, flyouts/menus), trimmed to the members needed to experiment with Flutter-style declarative UI and Command-based model binding. Application is pre-defined (hand-written, never generated), so it is deliberately absent; Window is generated in every profile as an implicit root (types.json) and is listed here only for the synthetic members WinUI does not have.",
     "extends": [],
 
     "packages": [
@@ -19,7 +19,7 @@
 
     "types": {
         "Microsoft.UI.Xaml.Window": {
-            "comment": "The window is an implicit root with its whole surface, so no member list here. What it is listed for is the property WinUI3 does not have: a minimum size lives on the window's presenter, three hops away, and a declarative UI has to be able to say it in one word.",
+            "comment": "The window is an implicit root with its whole surface, so no member list here. What it is listed for is the property WinUI does not have: a minimum size lives on the window's presenter, three hops away, and a declarative UI has to be able to say it in one word.",
             "syntheticMembers": {
                 "MinSize": {
                     "type": "Windows.Graphics.SizeInt32",
@@ -27,14 +27,14 @@
                     "include": "../impl/window_helpers.h"
                 },
                 "SizeToContent": {
-                    "comment": "Which sides of the window follow its content, as WPF's Window.SizeToContent says it: Manual, Width, Height, WidthAndHeight. WinUI3 has none -- a Flyout sizes to its content, a Window opens at a large default. The content is read when the window first activates, so the tag may stand before the content in the braces; the window is resized once, when the content has been laid out, to what the content wanted.",
+                    "comment": "Which sides of the window follow its content, as WPF's Window.SizeToContent says it: Manual, Width, Height, WidthAndHeight. WinUI has none -- a Flyout sizes to its content, a Window opens at a large default. The content is read when the window first activates, so the tag may stand before the content in the braces; the window is resized once, when the content has been laid out, to what the content wanted.",
                     "cppType": "SizeToContent",
                     "cppInclude": "../SizeToContent.h",
                     "function": "impl::set_size_to_content",
                     "include": "../impl/window_helpers.h"
                 },
                 "Placement": {
-                    "comment": "Where the window was last time and how: ordinary, maximized or full-screen, plus the rectangle it returns to. WinUI3 has none of it -- AppWindow gives Position and Size, and a window closed maximized reports the size of the screen, so remembering that hands the reader a monitor-sized window the moment they leave the maximized state. What has to be kept is Win32's restore rectangle. The value is text because that is what an application writes to its settings and hands back unread; reading it back is wxl::WindowNative::placement(), since a property tag is a way of setting and there is no braced form of asking.",
+                    "comment": "Where the window was last time and how: ordinary, maximized or full-screen, plus the rectangle it returns to. WinUI has none of it -- AppWindow gives Position and Size, and a window closed maximized reports the size of the screen, so remembering that hands the reader a monitor-sized window the moment they leave the maximized state. What has to be kept is Win32's restore rectangle. The value is text because that is what an application writes to its settings and hands back unread; reading it back is wxl::WindowNative::placement(), since a property tag is a way of setting and there is no braced form of asking.",
                     "type": "String",
                     "function": "impl::window_placement_setter::set",
                     "include": "../impl/window_helpers.h"
@@ -228,7 +228,7 @@
             ]
         },
         "Microsoft.UI.Xaml.Controls.Grid": {
-            "comment": "Rows and columns are also written as text -- Grid {RowDefinitions<u\"2*,*,auto,120\">, ColumnDefinitions<u\"*,*\">} -- which is what every other framework's grid is written as and what WinUI3 has no property for. The text is a template argument, parsed and checked when the code is compiled into a static array of GridLength (GridLengths.h); the value is a view on it, of a type of its own for rows and for columns, and written unnamed in the Grid's braces. Lengths a program computes go to the named tag as GridLength values. The names are the framework's own: the collection stays subscriptable.",
+            "comment": "Rows and columns are also written as text -- Grid {RowDefinitions<u\"2*,*,auto,120\">, ColumnDefinitions<u\"*,*\">} -- which is what every other framework's grid is written as and what WinUI has no property for. The text is a template argument, parsed and checked when the code is compiled into a static array of GridLength (GridLengths.h); the value is a view on it, of a type of its own for rows and for columns, and written unnamed in the Grid's braces. Lengths a program computes go to the named tag as GridLength values. The names are the framework's own: the collection stays subscriptable.",
             "syntheticMembers": {
                 "RowDefinitions": {
                     "cppType": "RowLengths",

@@ -8,23 +8,6 @@ import std;
 
 using namespace wxl::core;
 
-namespace {
-
-// The system's words for the code. Not std::error_code::message(): MSVC's STL takes them
-// from FormatMessageA, in the ANSI code page. A code of another category -- the generic
-// one, iostream's -- is rare here, the file system reporting the system's own codes; MSVC
-// words those from its own table, and they are repaired all the same, since nothing
-// promises that table is ASCII.
-u8_text explanation(std::error_code const& code) {
-    if (code.category() == std::system_category()) {
-        auto words = environment::error_explanation(static_cast<std::uint32_t>(code.value()));
-        if (!words.empty()) return words;
-    }
-    return unicode::repaired(code.message());
-}
-
-}  // namespace
-
 size_t environment::processor_count() {
     SYSTEM_INFO sysinfo;
     ::GetSystemInfo(&sysinfo);
@@ -126,6 +109,23 @@ u8_text environment::error_explanation(std::uint32_t const code) {
     return unicode::repaired(std::wstring_view{buffer, length}).to_utf8();
 }
 
+namespace {
+
+// The system's words for the code. Not std::error_code::message(): MSVC's STL takes them
+// from FormatMessageA, in the ANSI code page. A code of another category -- the generic
+// one, iostream's -- is rare here, the file system reporting the system's own codes; MSVC
+// words those from its own table, and they are repaired all the same, since nothing
+// promises that table is ASCII.
+u8_text error_explanation_impl(std::error_code const& code) {
+    if (code.category() == std::system_category()) {
+        auto words = environment::error_explanation(static_cast<std::uint32_t>(code.value()));
+        if (!words.empty()) return words;
+    }
+    return unicode::repaired(code.message());
+}
+
+}  // namespace
+
 u8_text environment::error_message(std::exception const& error) {
     auto const* const failed = dynamic_cast<std::filesystem::filesystem_error const*>(&error);
     if (!failed) return unicode::repaired(error.what());
@@ -137,6 +137,6 @@ u8_text environment::error_message(std::exception const& error) {
         message += unicode::to_utf8(*path);
     }
     if (!message.empty()) message += u8": ";
-    message += explanation(failed->code());
+    message += error_explanation_impl(failed->code());
     return message;
 }

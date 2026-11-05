@@ -270,7 +270,7 @@ INF-02: на него не опирается ни одна строка кат�
 - [Compositor.CreateBackdropBrush](https://learn.microsoft.com/windows/windows-app-sdk/api/winrt/microsoft.ui.composition.compositor.createbackdropbrush?view=windows-app-sdk-2.0)
 - [Composition native interop with DirectX and Direct2D](https://learn.microsoft.com/windows/apps/develop/composition/composition-native-interop)
 - [ICompositorInterop::CreateCompositionSurfaceForSwapChain](https://learn.microsoft.com/windows/win32/api/windows.ui.composition.interop/nf-windows-ui-composition-interop-icompositorinterop-createcompositionsurfaceforswapchain)
-- [Implicit transitions (WinUI 3)](https://learn.microsoft.com/windows/apps/develop/motion/implicit-transitions)
+- [Implicit transitions (WinUI)](https://learn.microsoft.com/windows/apps/develop/motion/implicit-transitions)
 - [UISettings.AnimationsEnabledChanged](https://learn.microsoft.com/uwp/api/windows.ui.viewmanagement.uisettings.animationsenabledchanged?view=winrt-28000)
 - [Tailoring effects and experiences](https://learn.microsoft.com/windows/apps/develop/composition/composition-tailoring#animations-settings)
 

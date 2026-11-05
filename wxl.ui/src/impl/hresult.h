@@ -17,7 +17,7 @@ inline constexpr std::int32_t e_accessdenied = static_cast<std::int32_t>(0x80070
 // (impl/winrt_helpers.h, impl/activator.h) don't need winrt::check_hresult or
 // winrt::hresult_error -- checking an HRESULT and throwing on failure is a
 // three-line problem, not worth pulling <winrt/base.h> in for. For both COM
-// boundaries wxl::impl has: incoming (check_hresult, calling into the WinUI3
+// boundaries wxl::impl has: incoming (check_hresult, calling into the WinUI
 // ABI) and outgoing (exception_to_hresult, an ABI method of an object of
 // wxl's own -- impl/sta_com.h -- answering what it threw).
 class hresult_error : public std::exception

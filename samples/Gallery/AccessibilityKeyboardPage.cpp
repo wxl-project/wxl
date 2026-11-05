@@ -94,6 +94,7 @@ FrameworkElement gallery::accessibilityKeyboardPage() {
 
     return StackPanel {
         spacing = 12.0,
+        // TODO: rewrite using HtmlBlock
         RichTextBlock {
             Paragraph {
                 Run {u"Accessibility is about building experiences that make your Windows application usable by people of all abilities. "
@@ -191,7 +192,7 @@ FrameworkElement gallery::accessibilityKeyboardPage() {
                 LineBreak {},
             },
             Paragraph {
-                Run {u"WinUI 3 offers 2 types of keyboard shortcuts: "},
+                Run {u"WinUI offers 2 types of keyboard shortcuts: "},
                 Bold {Run {u"Accelerators"}},
                 Run {u" and "},
                 Bold {Run {u"Access keys"}},

@@ -209,7 +209,7 @@ winrt::com_ptr<ID3D11Device> new_d3d_device() {
 /// queue begins to shut down: ShutdownStarting is the first of its shutdown events, raised before
 /// FrameworkShutdownStarting, in which XAML shuts down on the thread and closes its compositor
 /// (FrameworkApplication::StartOnCurrentThreadImpl, DCompTreeHost::ReleaseResources in the
-/// sources of WinUI 3) -- and SetRenderingDevice on a graphics device of a closed compositor
+/// sources of WinUI) -- and SetRenderingDevice on a graphics device of a closed compositor
 /// fails. The handler does not throw: close() stops on a failure of its own.
 watched_device device_backend::make(std::uint64_t generation) {
     if (!queue) {

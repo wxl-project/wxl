@@ -133,7 +133,7 @@ wxl::Teardown wxl_launched() {
                 row = 1,
                 background = brushes.Card.BackgroundFillColor.Default,
                 TextBlock {
-                    L"A modern C++23 library for declarative, Flutter-style WinUI 3 development.",
+                    L"A modern C++23 library for declarative, Flutter-style WinUI development.",
                     Margin { 16, 0 },
                     vAlign.bottom,
                     styles.TextBlock.Subtitle,

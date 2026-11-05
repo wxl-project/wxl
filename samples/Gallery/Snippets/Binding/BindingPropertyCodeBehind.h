@@ -1,5 +1,5 @@
 struct Model {
-    core::observable<core::u16_text> greeting {core::u16_text {u"Hello, WinUI 3!"}};
+    core::observable<core::u16_text> greeting {core::u16_text {u"Hello, WinUI!"}};
 };
 auto const model = gallery::hold<Model>();
 // The model outlives the controls and the controls hold no copy of it: a handler takes the field by address.

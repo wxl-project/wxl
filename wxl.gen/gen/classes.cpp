@@ -60,7 +60,7 @@ namespace {
 // Children, ItemsControl and MenuFlyout say Items, TabView says TabItems.
 // Reading it off the metadata means a profile aimed at another control
 // library gets the same treatment with nothing hand-written; the namespace
-// is either markup one, since WinUI3 kept the older spelling on the types
+// is either markup one, since WinUI kept the older spelling on the types
 // that came from it.
 std::string content_property_of(TypeDef const& type) {
     for (auto&& attribute : type.CustomAttribute()) {

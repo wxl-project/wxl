@@ -479,7 +479,7 @@ struct CompositionWindow::Impl : core::refcounted, core::intrusive_list_node<Imp
         }
 
         // Как у Microsoft.UI.Xaml.Window при закрытии (DesktopWindowImpl::CloseImpl и Shutdown
-        // в исходниках WinUI 3): части, держащие объекты XAML, уходят первыми, XamlRoot -- до
+        // в исходниках WinUI): части, держащие объекты XAML, уходят первыми, XamlRoot -- до
         // закрытия источника (отпущенный после закрытия XAML, он падал в своём деструкторе
         // нарушением доступа: деструктор разбирает службы, заведённые по требованию, а
         // всплывающее их заводит -- после клавиш масштаба), потом содержимое убрано и
@@ -499,7 +499,7 @@ struct CompositionWindow::Impl : core::refcounted, core::intrusive_list_node<Imp
         xaml::UIElement page{nullptr};  // содержимое приложения
 
         // Фокус клавиатуры -- как у Microsoft.UI.Xaml.Window (DesktopWindowImpl в
-        // исходниках WinUI 3). Пока остров показан, WM_ACTIVATE не доходит до
+        // исходниках WinUI). Пока остров показан, WM_ACTIVATE не доходит до
         // DefWindowProc: тот ставит фокус на само окно, и клавиши идут в WndProc
         // мимо XAML. Окно отдаёт фокус острову и возвращает его элементу, у
         // которого он был; уходя, запоминает дочернее окно с фокусом. Снаружи

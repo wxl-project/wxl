@@ -1,6 +1,6 @@
 #pragma once
 
-// What stands behind the window properties WinUI 3 has no property for, and the parts of a
+// What stands behind the window properties WinUI has no property for, and the parts of a
 // window's frame and place only Win32 and DWM keep.
 //
 // Private: the window arrives as the projection type the wrapper already holds, so this header is

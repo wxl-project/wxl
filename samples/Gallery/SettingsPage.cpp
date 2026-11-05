@@ -136,7 +136,7 @@ wxl::FrameworkElement gallery::settingsPage() {
                 sectionHeader(u"About"),
                 SettingsExpander {
                     header = u"WXL Gallery",
-                    description = u"A port of the WinUI 3 Gallery to wxl: the same types, no XAML.",
+                    description = u"A port of the WinUI Gallery to wxl: the same types, no XAML.",
                     headerIcon = BitmapIcon {uriSource = u"Assets/Tiles/BadgeLogo.png", showAsMonochrome = false},
                     TextBlock {GALLERY_VERSION, foreground = brushes.Text.FillColor.Secondary, isTextSelectionEnabled = true},
                     items[
@@ -166,7 +166,7 @@ wxl::FrameworkElement gallery::settingsPage() {
                             contentAlignment = SettingsCardContentAlignment::Vertical,
                             StackPanel {
                                 HyperlinkButton {u"Windows App SDK 2.4", navigateUri = u"https://aka.ms/windowsappsdk"},
-                                HyperlinkButton {u"WinUI 3", navigateUri = u"https://aka.ms/winui"},
+                                HyperlinkButton {u"WinUI", navigateUri = u"https://aka.ms/winui"},
                                 HyperlinkButton {u"Windows Community Toolkit", navigateUri = u"https://aka.ms/toolkit/windows"},
                                 HyperlinkButton {u"Win2D", navigateUri = u"https://github.com/Microsoft/Win2D"},
                             },

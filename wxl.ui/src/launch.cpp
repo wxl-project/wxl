@@ -197,7 +197,7 @@ int __stdcall wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
     _CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
 #endif
 
-    // The framework package first: without it no WinUI3 class can be
+    // The framework package first: without it no WinUI class can be
     // activated at all, and the failure is an unhelpful "class not
     // registered" far away from here.
     wxl::impl::ensure_windows_app_runtime_initialized();

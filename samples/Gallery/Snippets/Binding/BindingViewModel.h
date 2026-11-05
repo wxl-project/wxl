@@ -6,7 +6,7 @@ public:
     core::observable<core::u16_text const>& description() { return description_; }
 
     void welcome() {
-        title_.set(core::u16_text {u"Welcome to WinUI 3"});
+        title_.set(core::u16_text {u"Welcome to WinUI"});
         description_.set(core::u16_text {u"This is an example of binding to a view model."});
     }
     void farewell() {
