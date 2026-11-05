@@ -5,6 +5,7 @@
 #include "pch.h"
 
 using namespace wxl;
+using namespace wxl::core;
 using namespace wxl::dsl;
 
 // Presets are their arguments, and these are constants: laid out by the
@@ -31,25 +32,25 @@ FluentSymbol themeIcon(ElementTheme value)
     }
 }
 
-std::wstring themeName(ElementTheme value)
+std::u16string themeName(ElementTheme value)
 {
     switch(value) {
     case ElementTheme::Light:
-        return L"Light";
+        return u"Light";
     case ElementTheme::Dark:
-        return L"Dark";
+        return u"Dark";
     default:
-        return L"Default System";
+        return u"Default System";
     }
 }
 
-wxl::Teardown wxl_launched() {
+Teardown wxl_launched() {
     // The theme the root requests. It starts at Default, so the window follows the
     // system until the button asks for Light or Dark. Its bindings own the controls
     // they drive, so the Teardown keeps it as long as the window lives, and a handler
     // on those controls refers to it without owning it.
-    auto const themeOwner = core::make_refcounted<core::observable<ElementTheme>>(ElementTheme::Default);
-    core::observable<ElementTheme>& theme = *themeOwner;
+    auto const themeOwner = make_refcounted<observable<ElementTheme>>(ElementTheme::Default);
+    observable<ElementTheme>& theme = *themeOwner;
 
     auto topBar = Card {
         row = 0,
@@ -58,16 +59,16 @@ wxl::Teardown wxl_launched() {
         Padding {16, 8},
         Grid {
             HtmlBlock {
-                fontFamily = L"Segoe UI",
+                fontFamily = u"Segoe UI",
                 fontSize = 28,
                 FontWeight {600},
                 vAlign.center,
                 isTextSelectionEnabled = false,
                 // The markup string must be placed last: setters are evaluated from left to right,
                 // and the <sub> tag scales relative to the previously applied font size.
-                L"<font color=\"#0080ff\">W</font><sub>inUI</sub> "
-                L"<font color=\"#ff9d00\">X</font><sub>aml</sub>-"
-                L"<font color=\"#00a053\">L</font><sub>ess</sub>",
+                u"<font color=\"#0080ff\">W</font><sub>inUI</sub> "
+                u"<font color=\"#ff9d00\">X</font><sub>aml</sub>-"
+                u"<font color=\"#00a053\">L</font><sub>ess</sub>",
             },
             StackPanel {
                 orientation.horizontal,
@@ -78,13 +79,13 @@ wxl::Teardown wxl_launched() {
                         return SymbolIcon {symbol = themeIcon(nextTheme(value))};
                     }},
                     toolTip = BindOutput {theme, [](ElementTheme value) {
-                        return L"Switch theme to " + themeName(nextTheme(value));
+                        return u"Switch theme to " + themeName(nextTheme(value));
                     }},
                     onClick += [&theme] { theme.set(nextTheme(theme.get())); },
                 },
                 HyperlinkButton {
-                    content = L" Github Project Repository ",
-                    navigateUri = L"https://github.com/wxl-project/wxl",
+                    content = u" Github Project Repository ",
+                    navigateUri = u"https://github.com/wxl-project/wxl",
                     styles.ButtonBase.TextBlockButton,
                     Padding {3},
                 },
@@ -107,13 +108,13 @@ wxl::Teardown wxl_launched() {
                 orientation.horizontal,
                 Padding {110, 0},
                 Image {
-                    source = L"Assets/wxl.png",
+                    source = u"Assets/wxl.png",
                     Margin {8, 0},
                     width = 78,
                     height = 73.3333333,
                 },
                 TextBlock {
-                    text = L"WXL",
+                    text = u"WXL",
                     styles.TextBlock.Header,
                     vAlign.center,
                     hAlign.center,
@@ -124,15 +125,15 @@ wxl::Teardown wxl_launched() {
                 row = 1,
                 background = brushes.Card.BackgroundFillColor.Default,
                 TextBlock {
-                    L"A modern C++23 library for declarative, Flutter-style WinUI development.",
+                    u"A modern C++23 library for declarative, Flutter-style WinUI development.",
                     Margin { 16, 0 },
                     vAlign.bottom,
                     styles.TextBlock.Subtitle,
                     presets::centeredAndWrapped,
                 },
                 TextBlock {
-                    L"Leveraging C++ modules to eliminate heavy WinRT bloat, "
-                    L"it restores simplicity and control to native C++ GUI development.",
+                    u"Leveraging C++ modules to eliminate heavy WinRT bloat, "
+                    u"it restores simplicity and control to native C++ GUI development.",
                     Margin { 16, 14 },
                     vAlign.center,
                     presets::centeredAndWrapped,
@@ -141,15 +142,15 @@ wxl::Teardown wxl_launched() {
             Button {
                 row = 2,
                 Margin {0, 12},
-                content = L"Click",
-                onClick += [](Button const& self) { self.content(L"Thank You!"); },
+                content = u"Click",
+                onClick += [](Button const& self) { self.content(u"Thank You!"); },
                 hAlign.center,
             },
         },
     };
 
     auto window = Window {
-        title = L"Hello from WXL",
+        title = u"Hello from WXL",
         minSize = {500, 420},
         Grid {
             RowDefinitions<u"auto,*,auto">,
