@@ -1,4 +1,4 @@
-# wxl.ui -- the WinUI3 backend of wxl: the hand-written, pre-defined
+# wxl.ui -- the WinUI backend of wxl: the hand-written, pre-defined
 # levels (wxl::Object / wxl::DependencyObject and the impl:: plumbing they
 # rest on) plus everything winui-srcgen generates from the profiles.
 #
@@ -51,7 +51,7 @@ set(WXL_WINDOWSAPPSDK_FOUNDATION_DIR
     "${_wxl_foundation_dir}"
     CACHE INTERNAL "WindowsAppSDK.Foundation NuGet package (Bootstrap headers/lib/dll)")
 
-# WinUI3's native interop headers: microsoft.ui.xaml.window.h, which is how
+# WinUI's native interop headers: microsoft.ui.xaml.window.h, which is how
 # a Window hands out its HWND, and microsoft.ui.xaml.media.dxinterop.h, which
 # is how a SwapChainPanel is given a swap chain. Plain MIDL output, self
 # contained, and nothing here is generated from metadata.
@@ -445,7 +445,7 @@ wxl_set_target_folders(wxl.ui)
 wxl_set_target_folders(wxl.ui.surface-test PREFIX "tests")
 
 # The benchmarks (WXL_BUILD_BENCHMARKS at the root) are measurement tools, run
-# deliberately. These two are whole WinUI3 applications, so they also cost a
+# deliberately. These two are whole WinUI applications, so they also cost a
 # build the other targets do not.
 if(WXL_BUILD_BENCHMARKS)
     add_subdirectory(benchmarks)

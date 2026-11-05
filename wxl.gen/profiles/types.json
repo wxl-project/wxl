@@ -3,7 +3,7 @@
 // Unlike a profile, this file says nothing about *what* to generate -- it
 // says what the generator must not generate because wxl already has it, and
 // which properties carry a tag of their own. It describes wxl rather than a
-// selection of the WinUI3 API, so it is one shared file that every run reads
+// selection of the WinUI API, so it is one shared file that every run reads
 // rather than something a profile repeats.
 {
     "name": "types",

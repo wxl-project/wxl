@@ -205,7 +205,7 @@ private:
 };
 
 // The second pre-defined level. Every generated wrapper that wraps a
-// real DependencyObject-derived WinUI3 class inherits (directly or not)
+// real DependencyObject-derived WinUI class inherits (directly or not)
 // from this one.
 class DependencyObject : public Object
 {

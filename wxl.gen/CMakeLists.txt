@@ -1,4 +1,4 @@
-# wxl.gen -- the generator's code, an ordinary library: reads WinUI3 .winmd
+# wxl.gen -- the generator's code, an ordinary library: reads WinUI .winmd
 # metadata and writes wxl's wrappers. The profiles and the metadata walk it
 # shares with the profile editor come from wxl.gen.common through md.h; what
 # is here is the output side:

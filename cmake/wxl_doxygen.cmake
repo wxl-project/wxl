@@ -202,7 +202,7 @@ endfunction()
 # articles about the modules live in docs/. The READMEs of the areas of
 # wxl.core lie under its sources, and a pattern keeps them out.
 function(wxl_doxygen_tree_inputs input_var exclude_var images_var root)
-    # The generated WinUI3 projection is part of the surface, not an
+    # The generated WinUI projection is part of the surface, not an
     # implementation detail: wxl::Button and wxl::UIElement are what a
     # consumer writes, and without them the tag file an application's site
     # reads resolves nothing.

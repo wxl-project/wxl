@@ -1,6 +1,6 @@
 {
     "name": "full",
-    "description": "The rich profile plus every WinUI3 type that the WinUI 3 Gallery port (samples/Gallery) builds its pages from and the smaller profiles leave out. The port is meant to show that the whole Gallery can be written without XAML, with the same types, so this file grows by one group per stage of the porting plan, never by a type nobody asked for.",
+    "description": "The rich profile plus every WinUI type that the WinUI Gallery port (samples/Gallery) builds its pages from and the smaller profiles leave out. The port is meant to show that the whole Gallery can be written without XAML, with the same types, so this file grows by one group per stage of the porting plan, never by a type nobody asked for.",
     "extends": [
         "rich"
     ],

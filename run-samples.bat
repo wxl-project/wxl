@@ -26,7 +26,7 @@ set "about.Quadratic=квадратное уравнение на observable-п�
 set "about.Trayed=консоль чужой программы в своём окне, из трея"
 set "about.HtmlView=показ разметки HTML, BB и RSDN без тяжеловесного WebView2"
 set "about.CustomTitleBar=свой заголовок окна и масштаб всего острова"
-set "about.Gallery=WinUI 3 Gallery без XAML: страница на каждый перенесённый контрол"
+set "about.Gallery=WinUI Gallery без XAML: страница на каждый перенесённый контрол"
 
 echo Сборка примеров, Debug...
 call :build

@@ -6,7 +6,7 @@
 // header at all -- if a winrt:: name ever leaked into a public header, this
 // translation unit would stop compiling rather than quietly get slower.
 //
-// Nothing here runs: the WinUI3 runtime is not up in a test, and activating
+// Nothing here runs: the WinUI runtime is not up in a test, and activating
 // a real control without it fails. This is about the syntax and the types.
 //
 // The same target compiles wxl/schema_surface.cpp: one line per
@@ -76,7 +76,7 @@ using namespace wxl::dsl;
     };
 
     TextBlock text{
-        L"WinUI 3 in C++ Without XAML!",
+        L"WinUI in C++ Without XAML!",
         hAlign.center,
     };
 
@@ -103,7 +103,7 @@ using namespace wxl::dsl;
     block.appendParagraph();
     block.appendParagraph({.margin = Thickness{0, 0, 0, 8}, .alignment = TextAlignment::Center});
     block.pushStyle({.bold = true});
-    block.appendText(L"WinUI 3");
+    block.appendText(L"WinUI");
     block.popStyle();
     block.appendText(L" in C++ Without XAML!");
     block.appendLineBreak();
@@ -189,7 +189,7 @@ using namespace wxl::dsl;
 [[maybe_unused]] void children_list() {
     StackPanel panel{
         hAlign.center,
-        children[TextBlock{L"WinUI 3 in C++ Without XAML!", hAlign.center},
+        children[TextBlock{L"WinUI in C++ Without XAML!", hAlign.center},
                  Button{content = L"Click"}],
     };
 }
@@ -202,7 +202,7 @@ using namespace wxl::dsl;
         hAlign.center,
         orientation.horizontal,
         Image{source = L"Assets/logo.png", hAlign.right},
-        TextBlock{L"WinUI 3 in C++ Without XAML!"},
+        TextBlock{L"WinUI in C++ Without XAML!"},
         Button{content = L"Click"},
     };
 
@@ -635,7 +635,7 @@ struct WatchesTheWindow {
 // Style can only be the Style property.
 [[maybe_unused]] void named_style() {
     TextBlock title{
-        L"WinUI 3 in C++ Without XAML!",
+        L"WinUI in C++ Without XAML!",
         styles.TextBlock.Title,
         hAlign.center,
     };

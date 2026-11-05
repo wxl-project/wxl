@@ -1,7 +1,7 @@
 // What the reader is measured against: one real resource dictionary, with the
 // phases timed apart so a change to one of them is visible on its own.
 //
-// The document is WinUI3's generic.xaml, which ships inside a NuGet package
+// The document is WinUI's generic.xaml, which ships inside a NuGet package
 // rather than this repository, so its path is an argument. Any XML file works;
 // the numbers only mean something when the same one is used before and after.
 //
@@ -87,7 +87,7 @@ int wmain(int argc, wchar_t** argv) {
     if (argc < 2) {
         std::puts("usage: wxl.xml.bench <document.xml> [rounds]\n"
                   "\n"
-                  "The reference document is WinUI3's generic.xaml, e.g.\n"
+                  "The reference document is WinUI's generic.xaml, e.g.\n"
                   "  <nuget>/microsoft.windowsappsdk.winui/2.3.2/lib/native/Microsoft.UI/Themes/generic.xaml");
         return 2;
     }

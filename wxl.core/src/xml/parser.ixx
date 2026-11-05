@@ -42,7 +42,7 @@ struct options {
     /// its own, since a reader that copied the bytes between the tags would be
     /// charging for them whether or not anybody meant to look. What that buys
     /// is a node per run of text not built at all, which is what a document
-    /// read for its markup wants -- 34 136 of them in WinUI3's generic.xaml.
+    /// read for its markup wants -- 34 136 of them in WinUI's generic.xaml.
     ///
     /// Whitespace is kept as it stands, all of it. Between `</p>` and `<p>` it
     /// is indentation and between text and `<em>` it is a space the reader

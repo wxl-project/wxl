@@ -3,10 +3,10 @@
 // wxl::WindowNative -- what Win32 still owns of a WinUI window, as .NET's
 // WinRT.Interop.WindowNative names it.
 //
-// WinUI3 is a layer over Win32 and never claims otherwise: a file dialog, a task-bar call, a
+// WinUI is a layer over Win32 and never claims otherwise: a file dialog, a task-bar call, a
 // shell interface all want a window handle, there is no WinUI way to give them one, and several
 // things a desktop window plainly has -- an owner, files dropped on it, the colour behind its
-// island, the rectangle it returns to -- WinUI3 has no word for. So the handle is handed out, and
+// island, the rectangle it returns to -- WinUI has no word for. So the handle is handed out, and
 // those things are done here the way Win32 does them, through the handle. What WinUI itself can
 // do for a window stays out (sizeToContent, a tag of Window).
 //
@@ -81,7 +81,7 @@ public:
                                 std::function<void(std::vector<std::wstring> const&)> handler);
 
     /// Makes `dialog` modal to `owner` -- the owner is disabled until the dialog closes -- and
-    /// keeps it off the taskbar and out of Alt+Tab, with minimize and maximize turned off: WinUI3
+    /// keeps it off the taskbar and out of Alt+Tab, with minimize and maximize turned off: WinUI
     /// gives a Window no modal mode and no owner. The owner is set the Win32 way, and WinUI's
     /// OverlappedPresenter.IsModal disables it. Both windows must already be created; call it
     /// before activating `dialog`.

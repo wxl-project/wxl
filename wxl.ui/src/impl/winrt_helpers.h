@@ -52,7 +52,7 @@ winrt::Windows::Storage::Streams::RandomAccessStreamReference stream_reference_f
     winrt::Windows::Foundation::Uri const& uri);
 
 /// Ensures the Windows App Runtime framework package -- the redistributable backing
-/// WinUI3/Microsoft.UI.Xaml at run time, separate from the .winmd metadata the generator reads --
+/// WinUI/Microsoft.UI.Xaml at run time, separate from the .winmd metadata the generator reads --
 /// is resolved and available to this process, through the Windows App SDK bootstrapper
 /// (MddBootstrapInitialize). Idempotent: the initialization happens once, the first time any
 /// caller reaches it. wWinMain calls it, and so do the sandbox recipes that run WinUI without

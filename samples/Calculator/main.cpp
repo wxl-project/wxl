@@ -154,7 +154,7 @@ wxl::Teardown wxl_launched() {
                 args.handled(calc->press(args.character()));
             },
 
-            // Перехват системных горячих клавиш до стандартного роутинга диалогов WinUI 3
+            // Перехват системных горячих клавиш до стандартного роутинга диалогов WinUI
             onPreviewKeyDown += [calc](Object const&, KeyRoutedEventArgs& args) {
                 switch (args.key()) {
                     case VirtualKey::Enter:  calc->press(u'='); break;

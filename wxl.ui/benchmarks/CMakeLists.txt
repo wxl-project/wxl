@@ -9,7 +9,7 @@
 # to be asked for its numbers some other way.
 #
 # Both need the Windows App Runtime bootstrapper beside them, for the same
-# reason a sample does: unpackaged, no WinUI3 class activates until the
+# reason a sample does: unpackaged, no WinUI class activates until the
 # framework package is resolved.
 
 function(_wxl_scene_benchmark target)

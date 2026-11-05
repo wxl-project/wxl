@@ -1,7 +1,7 @@
 // What Win32 still owns of a WinUI window: its handle, the place it returns to, the surface behind
 // its island, the files dropped on it and its owner.
 //
-// The backdrop. A WinUI3 top-level window is an ordinary redirected Win32 window -- no
+// The backdrop. A WinUI top-level window is an ordinary redirected Win32 window -- no
 // WS_EX_NOREDIRECTIONBITMAP -- whose class background brush is COLOR_WINDOW+1, the system white.
 // The island lives in a child window (Microsoft.UI.Content.DesktopChildSiteBridge) that is resized
 // in lockstep with the frame, but its composition runs a tick or two behind; in the gap the

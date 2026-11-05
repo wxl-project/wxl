@@ -5,7 +5,7 @@ auto example = Button {
     content = u"Show notification",
     onClick += [](Button const&) {
         auto const notification = AppNotificationBuilder {}
-                                      .addText(u"Welcome to WinUI 3 Gallery")
+                                      .addText(u"Welcome to WinUI Gallery")
                                       .addText(u"Explore interactive samples and discover the power of modern Windows UI.")
                                       .buildNotification();
 

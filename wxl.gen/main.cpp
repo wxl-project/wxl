@@ -12,7 +12,7 @@ namespace {
 
 // The help, with the codes --doc-language takes filled in from the one list of
 // them (documentation_languages).
-constexpr std::string_view usage = R"(winui-srcgen -- generates wxl wrappers from WinUI3 metadata.
+constexpr std::string_view usage = R"(winui-srcgen -- generates wxl wrappers from WinUI metadata.
 
   winui-srcgen --profile <file.winxl-profile> [--profile <file.winxl-profile>]...
                --packages <restored-packages.json> --out <dir> [--parts <n>]
