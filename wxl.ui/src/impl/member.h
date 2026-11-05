@@ -197,7 +197,7 @@ void bind_property(Obj const& object, core::observable<T>& model, Fn const& fn) 
     constexpr bool paired = requires { Pair::bind(object, model, direction); };
 
     if constexpr (direction == bind_direction::output) {
-        constexpr bool settable = requires { property_setter<key>::set(object, fn(model.get())); };
+        constexpr bool settable = requires { property_setter<key>::set(object, std::invoke(fn, model.get())); };
         static_assert(settable || !two_way_pair<Pair>,
                       "wxl: BindOutput{} names a property the control takes only through its "
                       "pair, which answers back: the field says what the control did with the "
@@ -205,9 +205,9 @@ void bind_property(Obj const& object, core::observable<T>& model, Fn const& fn) 
         static_assert(settable || two_way_pair<Pair>,
                       "wxl: BindOutput{} names a property this control only reports and never "
                       "shows, so there is nothing to write to. It takes BindInput{}.");
-        property_setter<key>::set(object, fn(model.get()));
+        property_setter<key>::set(object, std::invoke(fn, model.get()));
         model.watch_for_binding([object, fn](T const& value) noexcept {
-            property_setter<key>::set(object, fn(value));
+            property_setter<key>::set(object, std::invoke(fn, value));
         });
     } else if constexpr (!paired) {
         static_assert(direction != bind_direction::input,
