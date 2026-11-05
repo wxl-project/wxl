@@ -110,26 +110,25 @@ struct Model {
 };
 
 auto example = StackPanel {
-    RichTextBlock {
-        Paragraph {
-            Run {u"DesktopAcrylicController provides a customizable way to apply the Desktop Acrylic material. It "
-                 u"supports the same customization properties as MicaController."},
-            LineBreak {},
-            LineBreak {},
-            Run {u"There are 2 kinds of Desktop Acrylic:"},
-            LineBreak {},
-            Run {u"1. "},
-            Run {u"Base", FontWeight {700}},
-            Run {u" — The default, darker appearance with less transparency."},
-            LineBreak {},
-            Run {u"2. "},
-            Run {u"Thin", FontWeight {700}},
-            Run {u" — A lighter appearance with more transparency."},
-            LineBreak {},
-            LineBreak {},
-            Run {u"Note: DesktopAcrylicBackdrop always uses the Base kind. To use the Thin kind, you must use "
-                 u"DesktopAcrylicController directly."},
-        },
+    TextBlock {
+        textWrapping = TextWrapping::WrapWholeWords,
+        Run {u"DesktopAcrylicController provides a customizable way to apply the Desktop Acrylic material. It "
+             u"supports the same customization properties as MicaController."},
+        LineBreak {},
+        LineBreak {},
+        Run {u"There are 2 kinds of Desktop Acrylic:"},
+        LineBreak {},
+        Run {u"1. "},
+        Run {u"Base", FontWeight {700}},
+        Run {u" — The default, darker appearance with less transparency."},
+        LineBreak {},
+        Run {u"2. "},
+        Run {u"Thin", FontWeight {700}},
+        Run {u" — A lighter appearance with more transparency."},
+        LineBreak {},
+        LineBreak {},
+        Run {u"Note: DesktopAcrylicBackdrop always uses the Base kind. To use the Thin kind, you must use "
+             u"DesktopAcrylicController directly."},
     },
     Button {
         Margin {0, 10, 0, 0},
