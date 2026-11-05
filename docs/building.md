@@ -100,10 +100,10 @@ build\x64-dynamic\samples\Quadratic\Debug\sample.quadratic.exe
   заголовка `WindowsAppSDK-VersionInfo.h` того же пакета.
 - **Обёртки — шаг сборки:** сборка собирает генератор `winui-srcgen`,
   запускает его с профилем `wxl.gen/profiles/full.winxl-profile` и
-  компилирует то, что он написал, в `wxl.ui`. Обёртки лежат в каталоге сборки,
+  компилирует то, что он написал, в `wxl.ui.full`. Обёртки лежат в каталоге сборки,
   `build/x64-dynamic/wxl.ui/full/wxl`: заголовки подключаются как `<wxl/X.h>`, а тела
   собраны в восемь единиц трансляции `parts/wrapper-00.cpp` …
-  `wrapper-07.cpp` (функция `wxl_add_ui_profile`,
+  `wrapper-07.cpp` (функция `wxl_add_ui_library`,
   `cmake/wxl_ui_profile.cmake`). Описаний из документации метаданных в них нет
   никогда: сайт документации генерирует свои (см. «Сайт документации»), и ни
   он, ни его язык не меняют того, что компилирует библиотека. Генератор
@@ -664,7 +664,7 @@ set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 
 add_subdirectory("${WXL_ROOT}" wxl)
 
-wxl_add_executable(myapp main.cpp)
+wxl_add_executable(myapp UI wxl::ui.full main.cpp)
 wxl_target_assets(myapp Assets)
 ```
 
@@ -744,7 +744,7 @@ wxl_target_assets(myapp Assets)
 После подключения проекту доступны цели модулей `wxl::core` — ядро, один
 модуль `wxl.core` со всеми его областями (`fmt`, `async`, `logging`, `xml`,
 `json`, `html`; подключение — `import wxl.core;`), — `wxl::highlight`,
-`wxl::bb`, `wxl::rsdn`; при `WXL_UI` — `wxl::ui`; при
+`wxl::bb`, `wxl::rsdn`; при `WXL_UI` — `wxl::ui.common` и библиотека профиля `wxl::ui.full`; при
 `WXL_TOOLS` — `Microsoft::CppWinRT`, проекция C++/WinRT для приложения, которое
 само к ней обращается (`target_link_libraries(<цель> PRIVATE
 Microsoft::CppWinRT)`, как в `sandbox/LightingLab/CMakeLists.txt`). Для тестов — `wxl::test`, заголовки
@@ -762,6 +762,7 @@ Microsoft::CppWinRT)`, как в `sandbox/LightingLab/CMakeLists.txt`). Для �
 
 ```cmake
 wxl_add_executable(sample.quadratic
+    UI wxl::ui.full
     main.cpp
 )
 
@@ -771,9 +772,11 @@ wxl_target_icon(sample.quadratic app.ico)
 wxl_target_assets(sample.quadratic Assets)
 ```
 
-- **`wxl_add_executable(<цель> <исходники>…)`:** объявляет оконный exe с
-  точкой входа из `wxl::ui` и вызывает `wxl_target_manifest` и
-  `wxl_target_runtime`.
+- **`wxl_add_executable(<цель> UI <библиотека> <исходники>…)`:** объявляет
+  оконный exe с точкой входа из `wxl::ui.common` и вызывает
+  `wxl_target_manifest` и `wxl_target_runtime`. Профиль выбирается в одном
+  месте, именем библиотеки в `UI` (например, `wxl::ui.full`); без `UI`
+  настройка останавливается.
 - **`wxl_target_manifest(<цель>)`:** добавляет к цели манифест из
   `cmake/wxl_app.manifest.in` с её именем: проверенную версию Windows,
   собственный масштаб для каждого монитора и кодовую страницу UTF-8.
@@ -793,9 +796,10 @@ wxl_target_assets(sample.quadratic Assets)
   программу GoogleTest с `main()` из `GTest::gtest_main` и регистрирует её
   тесты для `ctest`; фикстуру **wxl** программа получает, если в `DEPS`
   названа `wxl::test.gtest`.
-- **`wxl_add_module_library`, `wxl_add_ui_profile`, `wxl_add_doxygen_site`,
-  `wxl_doxygen_tree_inputs`:** библиотека из модулей C++, обёртки своего
-  профиля генератора (при `WXL_UI`, `cmake/wxl_ui_profile.cmake`) и сайт
+- **`wxl_add_module_library`, `wxl_add_ui_library`, `wxl_add_doxygen_site`,
+  `wxl_doxygen_tree_inputs`:** библиотека из модулей C++, библиотека профиля
+  генератора с его обёртками (`wxl::ui.<профиль>`, при `WXL_UI`,
+  `cmake/wxl_ui_profile.cmake`) и сайт
   документации проекта, читающий файл тегов **wxl** (`cmake/wxl_doxygen.cmake`).
 
 В исходниках подключаются заголовки `wxl.ui` (`ui.h` и соседние, как в
