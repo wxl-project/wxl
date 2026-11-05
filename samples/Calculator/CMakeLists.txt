@@ -2,6 +2,7 @@
 # - стилизация кнопок и дисплея;
 # - трюк с итерацией описания массива кнопок.
 wxl_add_executable(sample.calc
+    UI wxl::ui.full
     Calc.h
     Calc.cpp
     main.cpp

@@ -4,6 +4,7 @@
 # Исследовательский код на проекции cppwinrt напрямую, с журналом рядом с
 # исполняемым файлом, -- потому и живёт здесь, а не в samples.
 wxl_add_executable(sandbox.keyboard-zoom-probe
+    UI wxl::ui.full
     main.cpp
 )
 

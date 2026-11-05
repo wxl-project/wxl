@@ -2,7 +2,6 @@
 
 #include <coroutine>
 
-#include <wxl/Microsoft.UI.Dispatching.h>
 #include "impl/event_waits.h"
 
 // wxl::UiThread -- when work runs on the UI thread: post() hands it over from
@@ -54,6 +53,11 @@
 struct IInspectable;
 
 namespace wxl {
+
+// Declared, not included, for the same reason: the queue is taken by reference and the wrapper
+// is read only in UiThread.cpp, so what includes this -- the code under the wrappers among it --
+// does not have to reach a generated header.
+class DispatcherQueue;
 
 class UiThread
 {

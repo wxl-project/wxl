@@ -41,7 +41,7 @@ endif()
 
 # The generated wrappers the site documents, with the doc_language.txt the
 # generator left beside them. In the tree, a generation of the site's own: the
-# profile wxl.ui compiles, full, written documented in the language
+# profile wxl.ui.full compiles, full, written documented in the language
 # WXL_DOC_LANGUAGE names into <build>/docs/wrappers/wxl, by a step only the
 # site needs (docs.wrappers, not part of ALL), so that neither the language nor
 # the site touches what the library compiles (cmake/wxl_ui_profile.cmake). The

@@ -6,7 +6,7 @@ include_guard(GLOBAL)
 #
 # Two kinds of file, and they arrive by different roads.
 #
-# The Windows App Runtime bootstrapper is linked: wxl.ui declares it as an
+# The Windows App Runtime bootstrapper is linked: wxl.ui.common declares it as an
 # imported shared library, so CMake knows the DLL behind the import library and
 # $<TARGET_RUNTIME_DLLS> names it for whoever links wxl. Anything else of that
 # kind would be named too, without a line added here. The list is known only
@@ -27,7 +27,7 @@ function(wxl_target_runtime target)
         return()
     endif()
 
-    get_target_property(_files wxl::ui WXL_RUNTIME_FILES)
+    get_target_property(_files wxl::ui.common WXL_RUNTIME_FILES)
 
     if(_files)
         set(_copies "")
@@ -102,11 +102,15 @@ endfunction()
 # An application on wxl, declared the way every one of them is declared:
 #
 #     wxl_add_executable(sample.quadratic
+#         UI wxl::ui.full
 #         main.cpp)
 #
-# It is a windowed executable -- wxl owns wWinMain and there is no other kind
-# of application here -- it links wxl::ui and nothing else of wxl, it takes its
-# place in the IDE tree, and what wxl needs at run time lands beside it.
+# UI names the library of a profile the application stands on
+# (wxl_add_ui_library): the profile is chosen here, in the one place, and there
+# is no default. It is a windowed executable -- wxl owns wWinMain and there is
+# no other kind of application here -- it links that library and nothing else
+# of wxl, it takes its place in the IDE tree, and what wxl needs at run time
+# lands beside it.
 #
 # The manifest comes with it (wxl_target_manifest), and nobody writes or edits
 # one for an application. An application that passes a manifest of its own
@@ -116,9 +120,23 @@ endfunction()
 # call, on the target it made: another library, an icon (wxl_target_icon), a
 # folder shipped beside the executable (wxl_target_assets).
 function(wxl_add_executable target)
-    add_executable(${target} WIN32 ${ARGN})
+    cmake_parse_arguments(PARSE_ARGV 1 A "" "UI" "")
+    if(NOT A_UI)
+        message(FATAL_ERROR
+            "wxl_add_executable(${target}): no UI. The library of the profile the "
+            "application stands on is named in the call: "
+            "wxl_add_executable(<target> UI <library> <sources>...), "
+            "for example UI wxl::ui.full.")
+    endif()
+    if(NOT TARGET "${A_UI}")
+        message(FATAL_ERROR
+            "wxl_add_executable(${target}): UI ${A_UI} is not a target. It names the "
+            "library of a profile, made by wxl_add_ui_library (wxl::ui.full, say).")
+    endif()
 
-    target_link_libraries(${target} PRIVATE wxl::ui)
+    add_executable(${target} WIN32 ${A_UNPARSED_ARGUMENTS})
+
+    target_link_libraries(${target} PRIVATE ${A_UI})
 
     wxl_target_manifest(${target})
     wxl_set_target_folders(${target})

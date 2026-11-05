@@ -4,6 +4,7 @@
 # напрямую, с журналом рядом с исполняемым файлом, -- потому и живёт здесь, а
 # не в samples.
 wxl_add_executable(sandbox.zoom-gesture-probe
+    UI wxl::ui.full
     main.cpp
 )
 

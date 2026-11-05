@@ -6,6 +6,7 @@
 # исполняемым файлом и видит проекцию cppwinrt напрямую -- приложению на wxl
 # ни то, ни другое не нужно, потому проба и живёт здесь, а не в samples.
 wxl_add_executable(sandbox.titlebar-probe
+    UI wxl::ui.full
     main.cpp
 )
 

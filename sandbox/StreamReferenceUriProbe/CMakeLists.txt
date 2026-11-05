@@ -5,6 +5,7 @@
 # часть -- в начале main.cpp. Журнал -- stream-reference-uri-probe.log рядом с
 # исполняемым файлом.
 wxl_add_executable(sandbox.stream-reference-uri-probe
+    UI wxl::ui.full
     main.cpp
 )
 

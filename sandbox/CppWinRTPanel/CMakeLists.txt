@@ -4,7 +4,7 @@
 # ArrangeOverride.
 #
 # Устроена как sandbox/Aggregation и по тем же причинам: своя точка входа main,
-# а не wxl_add_executable() -- wxl::ui уводит вход на свой wWinMain; от wxl
+# а не wxl_add_executable() -- wxl::ui.common уводит вход на свой wWinMain; от wxl
 # взяты только загрузчик Windows App Runtime и throw_hresult к нему.
 # Приложение консольное, ответы идут в stdout.
 add_executable(sandbox.cppwinrt-panel

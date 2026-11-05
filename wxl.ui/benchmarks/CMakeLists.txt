@@ -28,15 +28,15 @@ endfunction()
 
 # ---- The declarative half ----
 #
-# An application as one written against wxl looks: it links wxl::ui and
-# nothing else, and it never sees the cppwinrt projection.
+# An application as one written against wxl looks: it links the library of the
+# full profile and nothing else, and it never sees the cppwinrt projection.
 add_executable(wxl.ui.scene-wxl-benchmark
     scene_shape.h
     scene_report.h
     scene_wxl.cpp
 )
 
-target_link_libraries(wxl.ui.scene-wxl-benchmark PRIVATE wxl::ui)
+target_link_libraries(wxl.ui.scene-wxl-benchmark PRIVATE wxl::ui.full)
 
 _wxl_scene_benchmark(wxl.ui.scene-wxl-benchmark)
 
@@ -67,7 +67,7 @@ target_link_libraries(wxl.ui.scene-winrt-benchmark PRIVATE
     runtimeobject.lib
 )
 
-# The same imported target wxl.ui links: this benchmark stands beside wxl
+# The same imported target wxl.ui.common links: this benchmark stands beside wxl
 # rather than on it, but the bootstrapper it needs is the very same one, and so
 # is the WindowsAppSDK-VersionInfo.h the target's include directory gives it.
 if(TARGET wxl.winappsdk.bootstrap)
