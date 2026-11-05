@@ -80,6 +80,12 @@ FrameworkElement prose(Snippet html, Thickness margin) {
             "prose: link scheme is not item:, http:// or https://: " +
             std::string{core::unicode::assume_valid(view).to_utf8().chars()});
     });
+    // Восстановление парсера — ошибка в .html страницы, как и заблокированная ссылка: тоже не глушится.
+    block.onError([](MarkupError const& error) {
+        throw std::invalid_argument(
+            "prose: markup error: " +
+            std::string{core::unicode::assume_valid(error.detail.view()).to_utf8().chars()});
+    });
     return block;
 }
 
