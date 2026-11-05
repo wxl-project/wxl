@@ -19,8 +19,12 @@ u16_text toText(auto value) {
     return format(u"{:.9g}", value);
 }
 
+// Ответ сравнивается, и равный ответ поля вывода не перезаписывает: observable::set
+// молчит, когда значение не изменилось.
 struct Answer {
     u16_text D, x1, x2;
+
+    bool operator==(Answer const&) const = default;
 };
 
 // Пустое поле NumberBox — это NaN, и текст, который числом ещё не стал, — тоже.
@@ -65,18 +69,15 @@ Answer solve(double a, double b, double c) {
 }
 
 // Коэффициенты пишут поля ввода, ответы показывают поля вывода. Любая правка
-// коэффициента пересчитывает ответы, пока все три — числа.
-class Equation : public noncopyable
-{
-public:
-    observable<Answer> answer;
+// коэффициента пересчитывает ответ, пока все три — числа. Коэффициенты объявлены
+// выше ответа: поля строятся в порядке объявления, а ответ при постройке читает их.
+struct Equation : sta_refcounted {
     observable<double> a{blank}, b{blank}, c{blank};
-
-    Equation() {
-        answer.follow(a, b, c, solve);
-    }
+    observable<Answer> answer{a, b, c, solve};
 };
 
+// Пресеты — это их аргументы, и здесь они константы: их раскладывает
+// компилятор, и при запуске для них ничего не выполняется.
 namespace presets {
     inline constexpr Preset common {
         fontSize = 18,
@@ -104,7 +105,7 @@ namespace presets {
 
 wxl::Teardown wxl_launched() {
     // Время жизни модели требуется продлить
-    auto const model = std::make_shared<Equation>();
+    auto const model = make_refcounted<Equation>();
     Equation & eq = *model;
 
     auto window = CompositionWindow {

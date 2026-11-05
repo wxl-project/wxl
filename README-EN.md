@@ -110,24 +110,11 @@ is built on binding reactive `observable` containers (business logic) to UI
 properties through declarative bindings.
 
 ```cpp
-class Equation : public noncopyable
+struct Equation : sta_refcounted
 {
-    observable<Answer> answer;
-
-public:
     observable<double> a{blank}, b{blank}, c{blank};
-    observable<u16_text> D, x1, x2;
-
-    Equation() {
-        // Declarative binding: three input numbers -> solve is called automatically
-        answer
-            .follow(a, b, c, solve)
-            .on_change([this](Answer const& answer) noexcept {
-                D.set(answer.D);
-                x1.set(answer.x1); // State update -> shown in the UI automatically
-                x2.set(answer.x2);
-            });
-    }
+    // Three input numbers -> solve is called automatically on every edit
+    observable<Answer> answer{a, b, c, solve};
 };
 
 // A preset that unifies the styling of input fields
@@ -145,7 +132,7 @@ NumberBox {
 // ...
 TextBox {
     output,
-    text = BindOutput {eq.D},
+    text = BindOutput {eq.answer, &Answer::D},
 },
 ```
 
