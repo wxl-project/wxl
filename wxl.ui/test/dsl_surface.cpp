@@ -768,6 +768,11 @@ inline Preset const stamp{
 // body is not something a requires-expression can see. The model is one
 // refcounted object whose observables are its fields, not handles.
 namespace {
+struct Reading {
+    std::u16string label;
+    bool ready = false;
+};
+
 struct BoundModel : core::sta_refcounted {
     core::observable<std::u16string> title{u"WXL"};
     core::observable<bool> busy;
@@ -775,6 +780,7 @@ struct BoundModel : core::sta_refcounted {
     core::observable<Color> tint;
     core::observable<int> row;
     core::observable<double> amount;
+    core::observable<Reading> reading;
 };
 }  // namespace
 
@@ -817,6 +823,10 @@ struct BoundModel : core::sta_refcounted {
     CheckBox{isChecked = Bind{model->busy, std::logical_not{}}};
     CheckBox{Bind{model->busy, std::logical_not{}}};
     Button{isEnabled = BindOutput{model->busy, std::logical_not{}}};
+
+    // Through a pointer to a member: the control shows one member of the value.
+    TextBlock{text = BindOutput{model->reading, &Reading::label}};
+    Button{isEnabled = BindOutput{model->reading, &Reading::ready}};
 
     // And unnamed, by the data's type, the way Bind{} goes.
     ToggleSwitch{BindInput{model->busy}};
