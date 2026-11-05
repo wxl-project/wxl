@@ -91,7 +91,7 @@ inline constexpr bool describes<brush_of<Index>> = true;
 // now, and subscribes so the same index is resolved again when that theme
 // changes.
 //
-// That is the live link `{ThemeResource}` gives in markup. WinUI 3 has no
+// That is the live link `{ThemeResource}` gives in markup. WinUI has no
 // runtime API that creates one -- SetResourceReference does not exist there,
 // and the built-in markup extensions are not projected types -- so wxl builds
 // the equivalent out of the two pieces it has: the key, kept in the type, and

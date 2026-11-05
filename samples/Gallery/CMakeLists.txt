@@ -1,4 +1,4 @@
-# Перенос WinUI 3 Gallery на wxl: те же типы, без XAML. Страница контрола — по
+# Перенос WinUI Gallery на wxl: те же типы, без XAML. Страница контрола — по
 # .cpp; общая раскладка примера (ControlExample оригинала) — в Presenter.cpp;
 # окно с NavigationView — в main.cpp.
 

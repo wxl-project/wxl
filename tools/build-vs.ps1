@@ -11,11 +11,11 @@
 # compiler (WindowsSDKVersion): see cmake/wxl_packages.cmake.
 #
 # Usage:
-#   tools\build.ps1                 # configure (if needed) and build Debug
-#   tools\build.ps1 -Config Release
-#   tools\build.ps1 -Configure      # force a re-configure first
-#   tools\build.ps1 -Target wxl.gen
-#   tools\build.ps1 -Configure -Define WXL_BUILD_BENCHMARKS=ON
+#   tools\build-vs.ps1                 # configure (if needed) and build Debug
+#   tools\build-vs.ps1 -Config Release
+#   tools\build-vs.ps1 -Configure      # force a re-configure first
+#   tools\build-vs.ps1 -Target wxl.gen
+#   tools\build-vs.ps1 -Configure -Define WXL_BUILD_BENCHMARKS=ON
 
 [CmdletBinding()]
 param(

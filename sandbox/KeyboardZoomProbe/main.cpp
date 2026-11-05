@@ -26,7 +26,7 @@
 // фокуса отдаёт его острову (NavigateFocus(Restore)).
 //
 // С ключом --window-like окно ведёт фокус, как Microsoft.UI.Xaml.Window
-// (DesktopWindowImpl в исходниках WinUI 3, microsoft-ui-xaml): WM_ACTIVATE не
+// (DesktopWindowImpl в исходниках WinUI, microsoft-ui-xaml): WM_ACTIVATE не
 // отдаёт DefWindowProc, при активации отдаёт фокус острову и возвращает его
 // элементу XAML, Tab за крайний элемент возвращает в остров. Этапы W1-W5 в
 // windowLikePhases().

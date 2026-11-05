@@ -3,7 +3,7 @@
 //
 // This is the other half of the comparison -- scene_wxl.cpp describes the
 // same scene declaratively. Nothing here is written to be slow: it is what an
-// ordinary WinUI3 application in C++ looks like when there is no XAML file,
+// ordinary WinUI application in C++ looks like when there is no XAML file,
 // down to the idioms -- a string reaches a Text property as a view, so
 // cppwinrt makes a stack HSTRING reference for it rather than allocating one,
 // and wxl's own setters now do exactly the same (impl/conversions.h).
@@ -536,7 +536,7 @@ struct App : mux::ApplicationT<App, mux::Markup::IXamlMetadataProvider> {
 }  // namespace
 
 int main() {
-    // The framework package first: without it no WinUI3 class can be
+    // The framework package first: without it no WinUI class can be
     // activated at all. The release of the restored Runtime package, by its
     // major version and version tag, as wxl's own bootstrap asks for it
     // (impl/bootstrap.cpp).

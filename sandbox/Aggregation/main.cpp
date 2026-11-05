@@ -3,7 +3,7 @@
 // got as far as RPC_E_WRONG_THREAD even with a real outer identity and a
 // manually-created DispatcherQueueController. Modeled after
 // M:\source\WxlApp1\WxlApp1\main.cpp (an existing, working unpackaged
-// WinUI3 C++/WinRT app) -- that project's OnLaunched is where real WinUI3
+// WinUI C++/WinRT app) -- that project's OnLaunched is where real WinUI
 // object creation actually happens, driven by Application::Start itself
 // (which sets up whatever thread registration a manually-created
 // DispatcherQueueController alone didn't). This file borrows that

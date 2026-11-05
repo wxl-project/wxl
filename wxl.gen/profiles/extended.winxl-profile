@@ -1,6 +1,6 @@
 {
     "name": "extended",
-    "description": "Everything in the base profile plus the modern WinUI3 controls with no WinForms counterpart: dialogs, info bars, command/menu bars, pickers, shapes and the richer button family. Exists both as the next step up from base and as the exercise of profile composition -- it adds to base rather than restating it.",
+    "description": "Everything in the base profile plus the modern WinUI controls with no WinForms counterpart: dialogs, info bars, command/menu bars, pickers, shapes and the richer button family. Exists both as the next step up from base and as the exercise of profile composition -- it adds to base rather than restating it.",
     "extends": [
         "base"
     ],
@@ -113,7 +113,7 @@
             ]
         },
         "Microsoft.UI.Xaml.Media.ThemeShadow": {
-            "comment": "The system shadow: blur and darkness are derived from Translation.Z, so a card says only how high it floats. Receivers is left out -- WinUI3 casts onto whatever lies beneath without being told, and the member would put Collection<UIElement> into the Media group, closing an include cycle with Microsoft.UI.Xaml.h that #pragma once resolves into truncated declarations.",
+            "comment": "The system shadow: blur and darkness are derived from Translation.Z, so a card says only how high it floats. Receivers is left out -- WinUI casts onto whatever lies beneath without being told, and the member would put Collection<UIElement> into the Media group, closing an include cycle with Microsoft.UI.Xaml.h that #pragma once resolves into truncated declarations.",
             "excludeMembers": [
                 "Receivers"
             ]

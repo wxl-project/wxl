@@ -28,11 +28,16 @@
 #   tools\build.ps1                 # configure (if needed) and build Debug in build\x64-dynamic
 #   tools\build.ps1 -Config Release
 #   tools\build.ps1 -Preset x64-static -Config Release -Target winui-srcgen
-#   tools\build.ps1 -Configure      # force a re-configure first
+#   tools\build.ps1 -Configure      # re-configure and stop, without building
 #   tools\build.ps1 -Target winui-srcgen
 #   tools\build.ps1 -Configure -Define WXL_BUILD_BENCHMARKS=ON
+#   tools\build.ps1 -Define WXL_BUILD_BENCHMARKS=ON   # re-configure, then build
 #   tools\build.ps1 -UpdatePackages # update the NuGet packages and the lock file, then build
 #   tools\build.ps1 -Toolset 14.52  # another installed MSVC toolset; the default is pinned below
+#
+# -Define takes a list: in PowerShell, -Define A=ON,B=OFF. From cmd.exe, where
+# `pwsh script.ps1` passes the commas on as text, run the script through
+# -Command: pwsh -NoProfile -Command ".\tools\build.ps1 -Define A=ON,B=OFF".
 
 [CmdletBinding()]
 param(
@@ -100,6 +105,9 @@ function Import-VisualStudioEnvironment {
     }
 }
 
+# -Configure stops before the build, so a target given with it would be dropped.
+if ($Configure -and $Target) { throw '-Configure stops before the build: -Target has nothing to build.' }
+
 Import-VisualStudioEnvironment
 
 $buildDir = Join-Path $root "build\$Preset"
@@ -110,6 +118,11 @@ if ($Configure -or $Define -or $UpdatePackages -or
     if ($UpdatePackages) { $configureArgs += '-DWXL_UPDATE_PACKAGES=ON' }
     cmake @configureArgs
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+    if ($Configure) {
+        Write-Host "Configuration completed successfully. Skipping build stage as requested." -ForegroundColor Green
+        exit 0
+    }
 }
 
 # The build directory by name rather than `--build --preset`: a build preset is

@@ -140,19 +140,21 @@ build\x64-dynamic\samples\Quadratic\Debug\sample.quadratic.exe
 ```powershell
 tools\build.ps1                                   # всё, Debug
 tools\build.ps1 -Target sample.calc               # одна цель
-tools\build.ps1 -Configure                        # настроить заново
-tools\build.ps1 -Define WXL_BUILD_DOCS=OFF,WXL_BUILD_BENCHMARKS=ON
+tools\build.ps1 -Configure                        # настроить заново и остановиться, без сборки
+tools\build.ps1 -Define WXL_BUILD_DOCS=OFF,WXL_BUILD_BENCHMARKS=ON   # настроить заново и собрать
 tools\build.ps1 -Preset x64-static -Config Release -Target winui-srcgen  # набор инструментов
 ```
+
+Значения `-Define` сохраняются в `CMakeCache.txt`, и следующий запуск без них
+оставляет их как есть. Из `cmd.exe` команда `pwsh tools\build.ps1 -Define A,B`
+передаёт список одной строкой, поэтому скрипт запускается через `-Command`:
+`pwsh -NoProfile -Command ".\tools\build.ps1 -Define A=ON,B=OFF"`.
 
 В Developer PowerShell набор инструментов берётся из уже поднятого
 окружения, и ключ `-Toolset` там игнорируется. В этой среде можно
 использовать пресеты: `cmake --preset x64-dynamic`, затем
 `cmake --build --preset x64-dynamic-debug` или `x64-dynamic-release` (о
-пресетах `x64-static` — в разделе «Два каталога сборки»). Ключи `-Define`
-сохраняются в `CMakeCache.txt`. Список ключей через запятую разбирает
-PowerShell; при запуске из `cmd` (`pwsh -File`) он передаётся одной строкой,
-поэтому оттуда задаётся по одному ключу за запуск.
+пресетах `x64-static` — в разделе «Два каталога сборки»).
 
 | Ключ | По умолчанию | Что делает |
 | --- | --- | --- |
@@ -169,6 +171,7 @@ PowerShell; при запуске из `cmd` (`pwsh -File`) он передаё�
 | `WXL_ENABLE_PCH` | `ON` | Включает предкомпилированный заголовок `src/pch.h` у `wxl.core`. Модульные единицы из него исключены (MSVC не принимает его перед объявлением модуля), поэтому ключ влияет только на время сборки обычных единиц трансляции. |
 | `WXL_WINXL` | `OFF` | Утилита `winxl`: цель `winxl` публикует её через `dotnet publish` в `<сборка>/winxl/winxl.exe` (см. «Утилита winxl»). Требует .NET SDK 10: без него настройка останавливается. |
 | `WXL_INSTALL` | `OFF`, чтобы `cmake --install` потребителя не переносил файлы **wxl** в его префикс | Включает правила установки и экспорта `wxl.core`. |
+| `WXL_LOCAL_SOURCE_DIR` | пусто | Каталог с локальными копиями зависимостей: `winmd`, `fmt`, `googletest`, `wxl_doxygen` и `wxl_doxygen_awesome`, каждая в подкаталоге с этим именем. Если ключ задан, зависимости берутся оттуда и не загружаются. Пустое значение возвращает загрузку. |
 
 Сквозная оптимизация (`/GL`, LTCG) не используется. Это решение принято по
 замеру, записанному в корневом `CMakeLists.txt` (сентябрь 2026). Без неё пул
