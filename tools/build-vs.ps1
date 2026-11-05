@@ -21,7 +21,7 @@
 param(
     [ValidateSet('Debug', 'Release')]
     [string]$Config = 'Debug',
-    [string]$Preset = 'x64',
+    [string]$Preset = 'x64-dynamic',
     [string]$Target,
     [switch]$Configure,
 

@@ -201,7 +201,8 @@ int wmain(int argc, wchar_t** argv) {
                 "no list of the restored packages: pass --packages "
                 "<build>/wxl.packages/restored-packages.json, which the configure of the build "
                 "writes from its NuGet restore (in the wxl tree, tools\\build.ps1 or "
-                "cmake --preset x64 writes build/x64/wxl.packages/restored-packages.json)");
+                "cmake --preset x64-dynamic writes "
+                "build/x64-dynamic/wxl.packages/restored-packages.json)");
         }
 
         // No default: where the output goes is the build's to say, and a guess would leave

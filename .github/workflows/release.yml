@@ -1,0 +1,125 @@
+# A release checks both build directories, one after the other: first the rows
+# of ci.yml on x64-dynamic -- the libraries, the samples and the tests with the
+# CRT linked dynamically -- called as a reusable workflow, then the tool set:
+# the generator winui-srcgen, the profile editor wxl.gen.ui and the utility
+# winxl, built in the x64-static build directory -- the CRT linked statically
+# (CMakePresets.json) -- in Release, run, tested and uploaded as the artifact
+# wxl-tools-x64.
+#
+# The static build directory is built and checked here only, at a release, and
+# not on a pull request.
+#
+# The toolset and the WinUI build tools are installed as in ci.yml, and the
+# restore of the configure runs in locked mode as there. winxl is published by
+# the .NET SDK 10 of the runner image (windows-2025 lists 10.0 SDKs among its
+# .NET Core tools); cmake/wxl_winxl.cmake stops the configure if it is missing.
+name: release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+# A tag push and a run by hand on the same ref wait for each other rather than
+# run side by side; a release is not cancelled by the next one. The group is
+# not release-<ref>: the rows of ci.yml called below take the caller's
+# workflow name into their own group, and the two must differ.
+concurrency:
+  group: release-run-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ci.yml needs no secrets: its only token is github.token, of the job that
+  # checks the commits of a pull request, which a release does not run.
+  dynamic:
+    uses: ./.github/workflows/ci.yml
+
+  tools:
+    name: tools (Release)
+    needs: [dynamic]
+    runs-on: windows-2025
+    timeout-minutes: 90
+    env:
+      DEVCMD: C:\BuildToolsInsiders\Common7\Tools\VsDevCmd.bat
+      VCVARS: -vcvars_ver=14.53
+      # The global packages folder of the restore, as in ci.yml.
+      NUGET_PACKAGES: C:\nuget-packages
+      # The restore resolves the versions of tools/packages.lock.json and stops
+      # on a lock file that does not match the pins (see ci.yml).
+      RestoreLockedMode: true
+    steps:
+      - uses: actions/checkout@v4
+
+      # The same installation as ci.yml's: MSVC 14.53 and the WinUI build tools.
+      - name: Install MSVC 14.53 and the WinUI build tools
+        shell: pwsh
+        run: |
+          $boot = Join-Path $env:RUNNER_TEMP 'vs_buildtools.exe'
+          Invoke-WebRequest -Uri 'https://aka.ms/vs/insiders/vs_buildtools.exe' -OutFile $boot -UseBasicParsing
+          $p = Start-Process -FilePath $boot -WorkingDirectory $env:RUNNER_TEMP -Wait -PassThru -ArgumentList @(
+            '--installPath', 'C:\BuildToolsInsiders',
+            '--add', 'Microsoft.VisualStudio.Component.VC.Preview.Tools.x86.x64',
+            '--add', 'Microsoft.VisualStudio.Workload.UniversalBuildTools',
+            '--add', 'Microsoft.VisualStudio.ComponentGroup.WindowsAppDevelopment.VC.BuildTools',
+            '--quiet', '--wait', '--norestart', '--nocache')
+          "exit code $($p.ExitCode)"
+          Get-ChildItem 'C:\BuildToolsInsiders\VC\Tools\MSVC' | ForEach-Object { $_.Name }
+          if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { throw "Build Tools install failed: $($p.ExitCode)" }
+
+      # BUILD_TESTING for the tests of the generator and of its common library,
+      # which the next steps build and run; WXL_WINXL for the utility.
+      - name: Configure
+        shell: cmd
+        run: |
+          call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
+          dotnet --list-sdks
+          cmake --preset x64-static -DBUILD_TESTING=ON -DWXL_WINXL=ON
+
+      - name: Build
+        shell: cmd
+        run: |
+          call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
+          cmake --build build\x64-static --config Release --target winui-srcgen wxl.gen.ui winxl wxl.gen.tests wxl.gen.common.tests -- -k 0
+
+      # Each executable started once: a tool linked with the static CRT has to
+      # load and answer before anything relies on it.
+      - name: Run the tools
+        shell: pwsh
+        run: |
+          & .\build\x64-static\wxl.gen\Release\winui-srcgen.exe --help
+          if ($LASTEXITCODE -ne 0) { throw "winui-srcgen --help exited with $LASTEXITCODE" }
+          & .\build\x64-static\winxl\winxl.exe --version
+          if ($LASTEXITCODE -ne 0) { throw "winxl --version exited with $LASTEXITCODE" }
+
+      # The tests of the tools, each from its own directory: the preset would
+      # list every program of the tree, and the ones not built would fail.
+      - name: Test
+        shell: cmd
+        run: |
+          call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
+          ctest --test-dir build\x64-static\wxl.gen\tests -C Release --output-on-failure --timeout 300 || exit /b 1
+          ctest --test-dir build\x64-static\wxl.gen.common\tests -C Release --output-on-failure --timeout 300 || exit /b 1
+
+      # The executables with what they need beside them -- the editor's folder
+      # holds its assets and the runtime libraries it loads -- without the
+      # debugging symbols.
+      - name: Collect the tools
+        shell: pwsh
+        run: |
+          $out = New-Item -ItemType Directory -Force -Path 'artifact\wxl-tools-x64'
+          Copy-Item 'build\x64-static\wxl.gen\Release\winui-srcgen.exe' $out
+          Copy-Item 'build\x64-static\winxl\winxl.exe' $out
+          $editor = New-Item -ItemType Directory -Force -Path (Join-Path $out 'wxl.gen.ui')
+          Copy-Item 'build\x64-static\wxl.gen.ui\Release\*' $editor -Recurse -Exclude '*.pdb', '*.ilk'
+          Get-ChildItem $out -Recurse -File | ForEach-Object { $_.FullName.Substring($out.FullName.Length + 1) }
+
+      - name: Upload the tools
+        uses: actions/upload-artifact@v4
+        with:
+          name: wxl-tools-x64
+          path: artifact/wxl-tools-x64/
+          if-no-files-found: error

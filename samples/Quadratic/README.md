@@ -22,7 +22,7 @@
 вычисление корней без потери точности.
 
 ```
-cmake --build --preset x64-debug --target sample.quadratic
+cmake --build --preset x64-dynamic-debug --target sample.quadratic
 ```
 
 ## Модель считает, интерфейс показывает

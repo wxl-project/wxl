@@ -173,6 +173,8 @@ TextBox {
 - **Windows SDK:** 10.0.26100.0 или новее
 - **Сборка:** CMake (версии 4.3 / 4.4) и Ninja
 - **Окружение:** PowerShell 7 (`pwsh`)
+- **.NET SDK 10:** для сборки утилиты `winxl`, которая устанавливает среду
+  выполнения; самой утилите .NET на машине не нужен
 
 ### Пошаговое развёртывание
 
@@ -182,18 +184,18 @@ TextBox {
 ```powershell
 # 1. Настройка и сборка всего дерева без сайта документации.
 #    Настройка восстанавливает пакеты NuGet (закрепления — tools/packages.json,
-#    результат — tools/packages.lock.json и список build\x64\wxl.packages\restored-packages.json)
+#    результат — tools/packages.lock.json и список build\x64-dynamic\wxl.packages\restored-packages.json)
 #    и строит проекцию cppwinrt в каталоге сборки; сборка собирает генератор
-#    winui-srcgen, пишет им обёртки WinUI полного профиля в build\x64\wxl.ui\full\wxl
-#    и компилирует их вместе с остальным
-tools\build.ps1 -Define WXL_BUILD_DOCS=OFF
+#    winui-srcgen, пишет им обёртки WinUI полного профиля в build\x64-dynamic\wxl.ui\full\wxl
+#    и компилирует их вместе с остальным; WXL_WINXL=ON собирает утилиту winxl
+tools\build.ps1 -Define WXL_BUILD_DOCS=OFF,WXL_WINXL=ON
 
 # 2. Развёртывание экспериментальной среды выполнения Windows App Runtime
 #    из пакета, который восстановила настройка
-pwsh -NoProfile -File tools\install-runtime.ps1
+build\x64-dynamic\winxl\winxl.exe runtime install --packages build\x64-dynamic\wxl.packages\restored-packages.json
 
 # 3. Запуск демонстрационного приложения Quadratic
-build\x64\samples\Quadratic\Debug\sample.quadratic.exe
+build\x64-dynamic\samples\Quadratic\Debug\sample.quadratic.exe
 ```
 
 Подробный разбор каждого шага автоматизации, поддерживаемые ключи

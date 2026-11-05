@@ -13,7 +13,7 @@
 # ctrlwheel <x> <y> <шаг колеса, 120 -- щелчок> -- колесо с Ctrl;
 # restore; rect; alive.
 param(
-    [string]$Exe = 'build\x64\sandbox\TitleBarProbe\Debug\sandbox.titlebar-probe.exe',
+    [string]$Exe = 'build\x64-dynamic\sandbox\TitleBarProbe\Debug\sandbox.titlebar-probe.exe',
     [string]$ProbeArgs = '',
     [string]$Do = 'wait 3000; shot start.png',
     [string]$ShotDir = '.',

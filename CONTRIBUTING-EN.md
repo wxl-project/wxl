@@ -108,7 +108,7 @@ was changed and why.
 - Before opening a pull request, it is enough to build and test in the
   Debug configuration only the targets affected by the change:
   `tools\build.ps1 -Target <target>` and the related tests with
-  `ctest --preset x64-debug -R <test>` (tests are built with
+  `ctest --preset x64-dynamic-debug -R <test>` (tests are built with
   `-Define BUILD_TESTING=ON`). The full configuration matrix is checked by
   CI in the merge queue.
 - Machine setup and building are described in

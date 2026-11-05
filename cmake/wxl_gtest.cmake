@@ -20,16 +20,24 @@
 # here asks for -- to it. GTest::gtest and GTest::gtest_main are googletest's
 # own aliases.
 #
-# gtest_force_shared_crt: the tree links the CRT dynamically (/MD and /MDd,
-# CMake's default runtime library), and gtest picks the static one when it is
-# the top-level project; the option states the requirement instead of relying
-# on gtest being nested. No gmock and no install rules: nothing here mocks, and
-# nothing installs gtest.
+# gtest_force_shared_crt follows the CRT of the configure,
+# CMAKE_MSVC_RUNTIME_LIBRARY: ON for the /MD family -- what the x64-dynamic
+# preset sets, and CMake's default when the variable is not set or empty -- and
+# OFF for the /MT family, which the x64-static preset sets. gtest picks the
+# static CRT itself only when it is the top-level project and the variable is
+# not defined (googletest/cmake/internal_utils.cmake, read at v1.18.0);
+# otherwise its targets take the variable like any other, and the option states
+# the same CRT instead of contradicting it. No gmock and no install rules:
+# nothing here mocks, and nothing installs gtest.
 
 include_guard(GLOBAL)
 include(FetchContent)
 
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+if("${CMAKE_MSVC_RUNTIME_LIBRARY}" STREQUAL "" OR CMAKE_MSVC_RUNTIME_LIBRARY MATCHES "DLL")
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+else()
+    set(gtest_force_shared_crt OFF CACHE BOOL "" FORCE)
+endif()
 set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(

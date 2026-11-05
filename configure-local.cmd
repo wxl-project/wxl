@@ -1,5 +1,5 @@
 @echo off
-rem Configures build\x64 with the dependencies taken from local copies in the
+rem Configures build\x64-dynamic with the dependencies taken from local copies in the
 rem given directory (see WXL_LOCAL_SOURCE_DIR in docs\building.md), without building.
 if "%~1"=="" (
     echo Usage: %~nx0 ^<directory with winmd, fmt, googletest, wxl_doxygen, wxl_doxygen_awesome^>

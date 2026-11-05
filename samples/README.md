@@ -9,7 +9,7 @@
 tools\build.ps1 -Target sample.gallery
 ```
 
-Исполняемый файл находится в `build\x64\samples\<Пример>\Debug\`.
+Исполняемый файл находится в `build\x64-dynamic\samples\<Пример>\Debug\`.
 
 | Пример | Цель сборки | Что показывает |
 | --- | --- | --- |

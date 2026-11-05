@@ -19,9 +19,15 @@
 # when the update succeeds, so the next one is an ordinary configure that takes
 # the versions of the lock file. Review the versions and commit the lock file.
 #
+# -Preset names the build dublet, the configure preset of CMakePresets.json and
+# the directory build\<preset> it configures: x64-dynamic, the default, builds
+# the libraries, the samples, the tests and the site with the CRT linked
+# dynamically; x64-static builds the tool set with the CRT linked statically.
+#
 # Usage:
-#   tools\build.ps1                 # configure (if needed) and build Debug
+#   tools\build.ps1                 # configure (if needed) and build Debug in build\x64-dynamic
 #   tools\build.ps1 -Config Release
+#   tools\build.ps1 -Preset x64-static -Config Release -Target winui-srcgen
 #   tools\build.ps1 -Configure      # re-configure and stop, without building
 #   tools\build.ps1 -Target winui-srcgen
 #   tools\build.ps1 -Configure -Define WXL_BUILD_BENCHMARKS=ON
@@ -37,7 +43,7 @@
 param(
     [ValidateSet('Debug', 'Release')]
     [string]$Config = 'Debug',
-    [string]$Preset = 'x64',
+    [string]$Preset = 'x64-dynamic',
     [string]$Target,
     [switch]$Configure,
 

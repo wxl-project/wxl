@@ -60,6 +60,9 @@
 - **Генератор:** Ninja. Генераторы Visual Studio не строят BMI
   (скомпилированные интерфейсы модулей) для импортированных целей.
 - **Командная оболочка:** PowerShell 7 (`pwsh`).
+- **.NET SDK 10:** только для сборки утилиты `winxl` (ключ `WXL_WINXL`, см.
+  «Утилита winxl»). Остальному дереву .NET не нужен, а самой `winxl` — и на
+  машине, где она запускается.
 - **Сетевое подключение:** необходимо при первой настройке для загрузки
   пакетов NuGet, зависимостей `winmd` и `fmt` через механизм `FetchContent`
   (при `BUILD_TESTING=ON` — и GoogleTest), а также Doxygen 1.18 и темы
@@ -73,9 +76,11 @@
 `pwsh` из корня дерева следующие команды:
 
 ```powershell
-tools\build.ps1 -Define WXL_BUILD_DOCS=OFF       # настройка (пакеты NuGet, проекция) и сборка, обёртки — её шаг
-pwsh -NoProfile -File tools\install-runtime.ps1  # экспериментальная среда Windows App Runtime
-build\x64\samples\Quadratic\Debug\sample.quadratic.exe
+# настройка (пакеты NuGet, проекция) и сборка, обёртки — её шаг; WXL_WINXL — утилита winxl
+tools\build.ps1 -Define WXL_BUILD_DOCS=OFF,WXL_WINXL=ON
+# экспериментальная среда Windows App Runtime
+build\x64-dynamic\winxl\winxl.exe runtime install --packages build\x64-dynamic\wxl.packages\restored-packages.json
+build\x64-dynamic\samples\Quadratic\Debug\sample.quadratic.exe
 ```
 
 - **Экспериментальный канал:** дерево собирается по одному выпуску
@@ -86,17 +91,17 @@ build\x64\samples\Quadratic\Debug\sample.quadratic.exe
   `WrapPanel`, `LayoutPanel`, `FlowLayout`, `PagerControl` и элементов
   рукописного ввода. Среда этого канала устанавливается для текущего
   пользователя рядом со стабильной; без неё приложение не запустится.
-  Сценарий `tools/install-runtime.ps1` берёт её установщики из пакета
+  Команда `winxl runtime install` берёт её установщики из пакета
   `Microsoft.WindowsAppSDK.Runtime`, каталог которого называет список
-  восстановления (`build/x64/wxl.packages/restored-packages.json`), поэтому
-  сценарий запускается после настройки. Метку выпуска и основную версию, по
+  восстановления (`build/x64-dynamic/wxl.packages/restored-packages.json`), поэтому
+  она запускается после настройки (см. «Утилита winxl»). Метку выпуска и основную версию, по
   которым приложение запрашивает пакет платформы Windows App Runtime
   (`Microsoft.WindowsAppRuntime.2-experimentalF`), загрузчик **wxl** берёт из
   заголовка `WindowsAppSDK-VersionInfo.h` того же пакета.
 - **Обёртки — шаг сборки:** сборка собирает генератор `winui-srcgen`,
   запускает его с профилем `wxl.gen/profiles/full.winxl-profile` и
   компилирует то, что он написал, в `wxl.ui`. Обёртки лежат в каталоге сборки,
-  `build/x64/wxl.ui/full/wxl`: заголовки подключаются как `<wxl/X.h>`, а тела
+  `build/x64-dynamic/wxl.ui/full/wxl`: заголовки подключаются как `<wxl/X.h>`, а тела
   собраны в восемь единиц трансляции `parts/wrapper-00.cpp` …
   `wrapper-07.cpp` (функция `wxl_add_ui_profile`,
   `cmake/wxl_ui_profile.cmake`). Описаний из документации метаданных в них нет
@@ -110,7 +115,7 @@ build\x64\samples\Quadratic\Debug\sample.quadratic.exe
   при настройке, поэтому сборка после первой, как и после запуска, который
   добавил или убрал заголовок, сначала настраивает дерево заново. Debug и
   Release одного каталога сборки пишут в один и тот же каталог обёрток и
-  запускают генератор под одним именем, `build/x64/wxl.gen/winui-srcgen.exe`
+  запускают генератор под одним именем, `build/x64-dynamic/wxl.gen/winui-srcgen.exe`
   (копия, которую обновляет каждая компоновка генератора): сборка другой
   конфигурации запускает генерацию снова, только если её генератор собран
   заново.
@@ -123,20 +128,21 @@ build\x64\samples\Quadratic\Debug\sample.quadratic.exe
   Чтобы собрать сайт документации и его тест, выполните
   `tools/build.ps1 -Define WXL_BUILD_DOCS=ON`.
 - **Расположение примеров:** собранный пример находится в
-  `build/x64/samples/<Папка>/<Конфигурация>/<цель>.exe` вместе с ресурсами и
+  `build/x64-dynamic/samples/<Папка>/<Конфигурация>/<цель>.exe` вместе с ресурсами и
   DLL. Список целей приведён в `samples/README.md`.
 
 ## Сборка
 
 Сценарий `tools/build.ps1` сам поднимает окружение Visual Studio с
 закреплённым набором инструментов (другой задаётся ключом `-Toolset`) и
-настраивает каталог `build/x64`, если тот ещё не настроен:
+настраивает каталог `build/x64-dynamic`, если тот ещё не настроен:
 
 ```powershell
 tools\build.ps1                                   # всё, Debug
 tools\build.ps1 -Target sample.calc               # одна цель
 tools\build.ps1 -Configure                        # настроить заново и остановиться, без сборки
 tools\build.ps1 -Define WXL_BUILD_DOCS=OFF,WXL_BUILD_BENCHMARKS=ON   # настроить заново и собрать
+tools\build.ps1 -Preset x64-static -Config Release -Target winui-srcgen  # набор инструментов
 ```
 
 Значения `-Define` сохраняются в `CMakeCache.txt`, и следующий запуск без них
@@ -146,8 +152,9 @@ tools\build.ps1 -Define WXL_BUILD_DOCS=OFF,WXL_BUILD_BENCHMARKS=ON   # наст�
 
 В Developer PowerShell набор инструментов берётся из уже поднятого
 окружения, и ключ `-Toolset` там игнорируется. В этой среде можно
-использовать пресеты: `cmake --preset x64`, затем
-`cmake --build --preset x64-debug` или `x64-release`.
+использовать пресеты: `cmake --preset x64-dynamic`, затем
+`cmake --build --preset x64-dynamic-debug` или `x64-dynamic-release` (о
+пресетах `x64-static` — в разделе «Два каталога сборки»).
 
 | Ключ | По умолчанию | Что делает |
 | --- | --- | --- |
@@ -157,11 +164,12 @@ tools\build.ps1 -Define WXL_BUILD_DOCS=OFF,WXL_BUILD_BENCHMARKS=ON   # наст�
 | `WXL_TOOLS` | `ON` | Генератор `winui-srcgen` (`wxl.gen.common`, `wxl.gen`), а с ним восстановление пакетов NuGet и загрузка `winmd`. |
 | `WXL_SAMPLES` | `ON`; в проекте, который подключает **wxl**, — `OFF` | Примеры `samples/`. Требует `WXL_UI`. |
 | `WXL_SANDBOX` | `ON`; в проекте, который подключает **wxl**, — `OFF` | Песочница `sandbox/`. Требует `WXL_UI`. |
-| `WXL_BUILD_DOCS` | `ON`; в проекте, который подключает **wxl**, — `OFF` | Включает сайт документации Doxygen: цель `docs`, результат — `build/x64/docs/wxl/html/index.html`. На то, что компилирует библиотека, не влияет. |
+| `WXL_BUILD_DOCS` | `ON`; в проекте, который подключает **wxl**, — `OFF` | Включает сайт документации Doxygen: цель `docs`, результат — `build/x64-dynamic/docs/wxl/html/index.html`. На то, что компилирует библиотека, не влияет. |
 | `WXL_DOC_LANGUAGE` | `en` | Язык сайта и описаний в обёртках, которые генерирует для него цель `docs`: код папки справочника Windows SDK, который сборка передаёт генератору как `--doc-language` (см. «Сайт документации»). |
 | `WXL_BUILD_BENCHMARKS` | `OFF` | Включает бенчмарки `wxl.core` (с его областями `fmt` и `async`) и `wxl.ui`. Бенчмарки читателя XML из `wxl.core` (`wxl.xml.bench`) и `wxl.gen.common` дерево, настроенное само, собирает всегда, а проект, который подключает **wxl**, — с этим ключом. |
 | `WXL_STRICT_CORO` | `OFF` | Оставляет проверки корутин области `async` модуля `wxl.core` в любой конфигурации сборки, а не только в Debug (см. [«Асинхронность»](async.md)). |
 | `WXL_ENABLE_PCH` | `ON` | Включает предкомпилированный заголовок `src/pch.h` у `wxl.core`. Модульные единицы из него исключены (MSVC не принимает его перед объявлением модуля), поэтому ключ влияет только на время сборки обычных единиц трансляции. |
+| `WXL_WINXL` | `OFF` | Утилита `winxl`: цель `winxl` публикует её через `dotnet publish` в `<сборка>/winxl/winxl.exe` (см. «Утилита winxl»). Требует .NET SDK 10: без него настройка останавливается. |
 | `WXL_INSTALL` | `OFF`, чтобы `cmake --install` потребителя не переносил файлы **wxl** в его префикс | Включает правила установки и экспорта `wxl.core`. |
 | `WXL_LOCAL_SOURCE_DIR` | пусто | Каталог с локальными копиями зависимостей: `winmd`, `fmt`, `googletest`, `wxl_doxygen` и `wxl_doxygen_awesome`, каждая в подкаталоге с этим именем. Если ключ задан, зависимости берутся оттуда и не загружаются. Пустое значение возвращает загрузку. |
 
@@ -173,6 +181,129 @@ tools\build.ps1 -Define WXL_BUILD_DOCS=OFF,WXL_BUILD_BENCHMARKS=ON   # наст�
 объектные файлы с `/GL` содержат промежуточное представление вместо кода:
 статические библиотеки дерева вырастают с 42 МБ до 1.7 ГБ, а каждая
 компоновка Release перекомпилирует программу целиком.
+
+## Два каталога сборки
+
+В одном каталоге сборки всё собирается с одной библиотекой времени выполнения
+C (CRT), а дереву нужны две. Поэтому в `CMakePresets.json` два пресета настройки, и
+каждый настраивает свой каталог, `build/<пресет>`:
+
+- **`x64-dynamic`** — CRT подключается динамически (`/MD`, в Debug `/MDd`).
+  Собирает всё, что собирает дерево: библиотеки, генератор и редактор
+  профилей, примеры, песочницу, тесты и сайт документации. Это каталог
+  повседневной работы: `tools\build.ps1` без ключа `-Preset` настраивает и
+  собирает его, и его же проверяет CI на каждом вливании.
+- **`x64-static`** — CRT подключается статически (`/MT`, в Debug `/MTd`).
+  Собирает набор инструментов: генератор `winui-srcgen`, редактор профилей
+  `wxl.gen.ui` и, с ключом `WXL_WINXL`, утилиту `winxl`. Пресет выключает
+  `WXL_SAMPLES`, `WXL_SANDBOX` и `WXL_BUILD_DOCS`: набору инструментов они не
+  нужны. Этот каталог собирается и проверяется только при выпуске, вместе с
+  `x64-dynamic`: сценарий `.github/workflows/release.yml` (запуск вручную и
+  метки `v*`) сначала прогоняет строки CI на `x64-dynamic` (`ci.yml`), а
+  затем собирает в `x64-static` инструменты в Release, запускает их,
+  прогоняет тесты `wxl.gen` и `wxl.gen.common` и выкладывает исполняемые
+  файлы артефактом `wxl-tools-x64`. На запросе на слияние он не проверяется.
+
+Пресет задаёт только `CMAKE_MSVC_RUNTIME_LIBRARY` (и у `x64-static` — три
+ключа выше). Эта переменная задаёт CRT целям каталога, в том числе
+`fmt.module` и GoogleTest, а ключ GoogleTest `gtest_force_shared_crt`
+выводится из неё же (`cmake/wxl_gtest.cmake`).
+Пресеты сборки и тестов называются `x64-dynamic-debug`,
+`x64-dynamic-release`, `x64-static-debug` и `x64-static-release`;
+`tools\build.ps1 -Preset x64-static` работает с каталогом
+`build/x64-static`. Оба каталога лежат рядом, у каждого свои восстановление
+пакетов, проекция, обёртки и кэш. Библиотеку одного каталога нельзя
+скомпоновать с объектами другого: заголовки MSVC записывают в каждый объект
+вид CRT, и компоновщик останавливается с ошибкой `LNK2038` (несовпадение
+`RuntimeLibrary`).
+
+Проект, который подключает **wxl** без этих пресетов и не задаёт
+`CMAKE_MSVC_RUNTIME_LIBRARY`, получает умолчание CMake — динамическую CRT,
+как в `x64-dynamic`; так и задумано. Чтобы собрать **wxl** со статической
+CRT, проект задаёт эту переменную до `add_subdirectory`, как это делает пресет
+`x64-static`.
+
+## Утилита winxl
+
+`winxl` — утилита командной строки дерева: программа на C# под .NET 10,
+опубликованная с Native AOT в один самодостаточный исполняемый файл. На
+машине, где она запускается, .NET не нужен; .NET SDK 10 нужен только для её
+сборки. Исходники лежат в `tools/winxl`.
+
+Утилиту собирает цель `winxl`, которая появляется с ключом `WXL_WINXL=ON` и
+входит в сборку по умолчанию только с ним. Цель вызывает
+`dotnet publish -c Release -r win-x64` и кладёт результат в
+`<сборка>/winxl/winxl.exe`, а промежуточные файлы — в
+`<сборка>/winxl/artifacts`, не в исходники. Конфигурация сборки CMake на
+публикацию не влияет. Версию, которую печатает `winxl --version`, цель берёт
+из `project()` корневого `CMakeLists.txt`. SDK, которым идёт публикация,
+закрепляет `tools/winxl/global.json`: выпущенный SDK 10.0 (10.0.100 или
+более новый того же 10.0), но не предварительный выпуск и не SDK другой
+старшей версии, даже если он на машине новее. Настройка ищет `dotnet` и
+проверяет, что среди его SDK есть выпущенный 10.0; если его нет, настройка
+останавливается, перечисляет найденные SDK и называет, что установить. Сама она ничего не загружает и не
+устанавливает. От CRT каталога сборки утилита не зависит, но входит в набор
+инструментов, поэтому при выпуске собирается в `x64-static`.
+
+Договор команд:
+
+- аргументы только именованные: после слов команды — `--<имя>` и
+  `--<имя> <значение>`, каждый не больше одного раза;
+- с `--json` команда печатает на stdout один объект с результатом, а журнал
+  для человека идёт в stderr; без `--json` журнал тоже идёт в stderr, а
+  результат печатается на stdout текстом;
+- код завершения: 0 — выполнено, 1 — неверный вызов, 2 — неверные входные
+  данные (переданный файл или пакет, который команда читает), 3 — окружение
+  (нет каталога пакета, ошибка диспетчера пакетов Windows);
+- ошибка печатается в stderr, а с `--json` ещё и объектом
+  `{ "error": { "code": "invocation" | "input" | "environment", "message": "…" } }`
+  на stdout; код в объекте соответствует коду завершения.
+
+Команды:
+
+- **`winxl --version [--json]`** печатает версию дерева, из которого собрана
+  утилита; с `--json` — `{ "version": "0.1.0" }`.
+- **`winxl runtime install --packages <список> [--json]`** устанавливает для
+  текущего пользователя экспериментальную среду Windows App Runtime из пакета
+  `Microsoft.WindowsAppSDK.Runtime`, который выбрало восстановление сборки.
+  Список — это `<сборка>/wxl.packages/restored-packages.json` (см.
+  «Пакеты NuGet и проекция cppwinrt»), поэтому команда запускается после
+  настройки:
+
+  ```powershell
+  build\x64-dynamic\winxl\winxl.exe runtime install --packages build\x64-dynamic\wxl.packages\restored-packages.json
+  ```
+
+  Установщики команда берёт из каталога `tools/MSIX/win10-x64` пакета: файлы
+  MSIX перечислены в его `MSIX.inventory`, а имя, издателя, версию и
+  архитектуру каждого пакета команда читает из манифеста внутри файла.
+  Каталог `win10-x64` выбран потому, что дерево собирает приложения x64, а
+  таким приложениям нужна среда x64 на любой Windows. Первым ставится пакет
+  платформы, за ним — пакеты, которые от него зависят: основной, singleton и
+  диспетчер времени жизни динамических зависимостей (DDLM). Пакет, который уже
+  зарегистрирован в той же или более новой версии, пропускается. Установка
+  идёт через API диспетчера пакетов Windows
+  (`Windows.Management.Deployment.PackageManager`). После установки команда
+  проверяет, что каждый пакет из `MSIX.inventory`, а среди них пакет
+  платформы и DDLM,
+  зарегистрирован в своей версии или новее; если это не так, она
+  останавливается с кодом 3. С `--json` результат выглядит так:
+
+  ```
+  {
+      "runtime": { "id": "Microsoft.WindowsAppSDK.Runtime", "version": "2.5.4-experimental", "directory": "<каталог пакета>" },
+      "packages": [
+          { "file": "Microsoft.WindowsAppRuntime.2-experimentalF.msix", "name": "Microsoft.WindowsAppRuntime.2-experimentalF",
+            "version": "2.5.4.0", "architecture": "x64", "framework": true, "action": "installed", "registered": "2.5.4.0" }
+      ]
+  }
+  ```
+
+  Поле `action` принимает значение `installed` или `skipped`, а `registered` —
+  версия, которая зарегистрирована после выполнения команды. Порядок установки и
+  проверку команда переняла у `WindowsAppRuntimeService` из
+  [winapp](https://github.com/microsoft/winappcli) (лицензия MIT, см.
+  `tools/winxl/NOTICE`).
 
 ## Пакеты NuGet и проекция cppwinrt
 
@@ -311,7 +442,7 @@ MSBuild.exe wxl.packages.vcxproj -restore -t:ResolveReferences,CppWinRTMakeProje
 - **Проекция.** Её строят цели пакета `Microsoft.Windows.CppWinRT`: проекцию
   Windows SDK (`winrt/base.h`, `winrt/Windows.*`) и проекцию метаданных пакетов
   (`winrt/Microsoft.*`, Win2D, WebView2). Результат находится в каталоге
-  сборки, `build/x64/wxl.packages/projection`. Цель `Microsoft::CppWinRT`
+  сборки, `build/x64-dynamic/wxl.packages/projection`. Цель `Microsoft::CppWinRT`
   передаёт этот каталог своим потребителям как каталог включаемых файлов;
   `wxl.ui` линкует её как `PRIVATE`.
 - **Каталоги пакетов.** Каталог каждого пакета настройка берёт из результата
@@ -344,8 +475,9 @@ MSBuild.exe wxl.packages.vcxproj -restore -t:ResolveReferences,CppWinRTMakeProje
   файлов этого Windows SDK. Без ключа генератор останавливается с ошибкой, а
   редактор показывает ошибку; в обеих сказано, откуда взять список. Тесты
   `wxl.gen` и `wxl.gen.common` получают путь к списку от CMake
-  (`wxl_restored_packages_file()`), а `tools/install-runtime.ps1` и
-  `run-gen-ui.cmd` берут список каталога `build/x64`. Формат списка и его
+  (`wxl_restored_packages_file()`), `winxl runtime install` получает его
+  ключом `--packages`, а `run-gen-ui.cmd` берёт список каталога
+  `build/x64-dynamic`. Формат списка и его
   запись описаны в `cmake/wxl_restored_packages.cmake`, тест записи —
   `ctest -R restored-packages`.
 - **Что выключено.** Вспомогательный проект выключает интеграцию vcpkg
@@ -371,7 +503,7 @@ MSBuild.exe wxl.packages.vcxproj -restore -t:ResolveReferences,CppWinRTMakeProje
   Изменение `tools/packages.json` или `tools/packages.lock.json` запускает
   настройку при следующей сборке.
 - **Ошибки.** Журнал MSBuild записывается в
-  `build/x64/wxl.packages/msbuild.log`. Если MSBuild завершается ошибкой или
+  `build/x64-dynamic/wxl.packages/msbuild.log`. Если MSBuild завершается ошибкой или
   результат не тот, что ожидается (нет файла блокировки, нет пакета, нет
   заголовков проекции), настройка останавливается и показывает вывод MSBuild,
   путь к журналу и то, что нужно сделать. После каждого восстановления
@@ -387,7 +519,7 @@ MSBuild.exe wxl.packages.vcxproj -restore -t:ResolveReferences,CppWinRTMakeProje
   минимум и последние версии списка. Кэш каталога сборки, в котором
   записан файл инструментов vcpkg (`CMAKE_TOOLCHAIN_FILE`), тоже останавливает
   настройку: дерево собирается без файла инструментов, и такой каталог
-  настраивается заново, `cmake --preset x64 --fresh`.
+  настраивается заново, `cmake --preset x64-dynamic --fresh`.
 
 Чтобы изменить закрепление, исправьте его в `tools/packages.json` — минимум
 (`1.4.0`), от которого восстановление берёт новейшую версию той же старшей
@@ -405,8 +537,8 @@ MSBuild.exe wxl.packages.vcxproj -restore -t:ResolveReferences,CppWinRTMakeProje
 
 ```powershell
 tools\build.ps1 -Define BUILD_TESTING=ON
-ctest --preset x64-debug                 # из корня: пресет ищется в текущем каталоге
-ctest --preset x64-debug -R docs         # сайт документации как тест, при WXL_BUILD_DOCS=ON
+ctest --preset x64-dynamic-debug          # из корня: пресет ищется в текущем каталоге
+ctest --preset x64-dynamic-debug -R docs  # сайт документации как тест, при WXL_BUILD_DOCS=ON
 ```
 
 - **Тесты GTest:** расположены по модулям (`<модуль>/tests` или `/test`);
@@ -450,7 +582,7 @@ ctest --preset x64-debug -R docs         # сайт документации к�
 Сайт строит Doxygen из каталога `docs/` и исходников. В дереве **wxl** это цель
 `docs`, доступная при `WXL_BUILD_DOCS=ON`. В сборку по умолчанию она не
 входит и строится только по запросу: `tools/build.ps1 -Target docs` или
-`cmake --build --preset x64-debug --target docs`.
+`cmake --build --preset x64-dynamic-debug --target docs`.
 
 Каталог `docs` также является самостоятельным проектом CMake без
 компилятора. Генератор Ninja задаётся явно: без `-G` CMake на Windows берёт
@@ -475,7 +607,7 @@ Doxygen читает исходники, не собирая их, поэтом�
 до первого релиза — по мере изменений. Он собирается на Windows вместе с
 обёртками **WinUI**: целью `docs` дерева при `WXL_BUILD_DOCS=ON`. Перед
 Doxygen она генерирует профиль `full` ещё раз, с описаниями, в отдельный
-каталог `build/x64/docs/wrappers/wxl` (цель `docs.wrappers`, которая в сборку
+каталог `build/x64-dynamic/docs/wrappers/wxl` (цель `docs.wrappers`, которая в сборку
 по умолчанию не входит), поэтому на сайте есть страницы обёрток, а у типов,
 для которых пакет поставляет документацию, — и их описания. Цель `docs` ждёт
 генерации, так что Doxygen не читает каталог, который генератор ещё пишет. Для pull request сайт собирается на Linux без
@@ -491,7 +623,7 @@ Doxygen она генерирует профиль `full` ещё раз, с оп
 `--docs` генератор записывает код языка и его имя для Doxygen в файл
 `doc_language.txt` рядом с обёртками. Язык известен только после генерации,
 поэтому настройка его не читает: шаг сборки `docs.language` после генерации
-читает этот файл и пишет `build/x64/docs/language.doxyfile` с языком и
+читает этот файл и пишет `build/x64-dynamic/docs/language.doxyfile` с языком и
 кратким описанием, который Doxyfile сайта включает последним
 (`docs/language.cmake`); если файла нет, подписи английские. Имена языков для
 Doxygen записаны в одном месте — в таблице генератора. Подписи и описания

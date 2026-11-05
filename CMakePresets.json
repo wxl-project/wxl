@@ -23,36 +23,76 @@
       }
     },
     {
-      "name": "x64",
-      "displayName": "x64 (Ninja Multi-Config)",
-      "inherits": "base"
+      "name": "x64-static",
+      "displayName": "x64, static CRT (Ninja Multi-Config)",
+      "description": "The tool set: the generator, the profile editor and winxl, with the CRT linked statically (/MT, /MTd). Built and checked at a release.",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded$<$<CONFIG:Debug>:Debug>",
+        "WXL_SAMPLES": "OFF",
+        "WXL_SANDBOX": "OFF",
+        "WXL_BUILD_DOCS": "OFF"
+      }
+    },
+    {
+      "name": "x64-dynamic",
+      "displayName": "x64, dynamic CRT (Ninja Multi-Config)",
+      "description": "The libraries, the samples, the tests and the site, with the CRT linked dynamically (/MD, /MDd).",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
+      }
     }
   ],
   "buildPresets": [
     {
-      "name": "x64-debug",
-      "displayName": "x64 Debug",
-      "configurePreset": "x64",
+      "name": "x64-static-debug",
+      "displayName": "x64 static CRT, Debug",
+      "configurePreset": "x64-static",
       "configuration": "Debug"
     },
     {
-      "name": "x64-release",
-      "displayName": "x64 Release",
-      "configurePreset": "x64",
+      "name": "x64-static-release",
+      "displayName": "x64 static CRT, Release",
+      "configurePreset": "x64-static",
+      "configuration": "Release"
+    },
+    {
+      "name": "x64-dynamic-debug",
+      "displayName": "x64 dynamic CRT, Debug",
+      "configurePreset": "x64-dynamic",
+      "configuration": "Debug"
+    },
+    {
+      "name": "x64-dynamic-release",
+      "displayName": "x64 dynamic CRT, Release",
+      "configurePreset": "x64-dynamic",
       "configuration": "Release"
     }
   ],
   "testPresets": [
     {
-      "name": "x64-debug",
-      "displayName": "x64 Debug",
-      "configurePreset": "x64",
+      "name": "x64-static-debug",
+      "displayName": "x64 static CRT, Debug",
+      "configurePreset": "x64-static",
       "configuration": "Debug"
     },
     {
-      "name": "x64-release",
-      "displayName": "x64 Release",
-      "configurePreset": "x64",
+      "name": "x64-static-release",
+      "displayName": "x64 static CRT, Release",
+      "configurePreset": "x64-static",
+      "configuration": "Release"
+    },
+    {
+      "name": "x64-dynamic-debug",
+      "displayName": "x64 dynamic CRT, Debug",
+      "configurePreset": "x64-dynamic",
+      "configuration": "Debug"
+    },
+    {
+      "name": "x64-dynamic-release",
+      "displayName": "x64 dynamic CRT, Release",
+      "configurePreset": "x64-dynamic",
       "configuration": "Release"
     }
   ]

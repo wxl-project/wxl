@@ -130,7 +130,7 @@ endforeach()
 # requirement list said "optional" about a package without which even the
 # configure step failed. One place says it now, and it is this one.
 #
-#     cmake --preset x64 -DBUILD_TESTING=ON      (sticks in CMakeCache.txt)
+#     cmake --preset x64-dynamic -DBUILD_TESTING=ON      (sticks in CMakeCache.txt)
 #     tools\build.ps1 -Define BUILD_TESTING=ON
 #
 # WXL_TESTS builds wxl's own tests -- of the modules, of the scripts in cmake/ --
@@ -312,6 +312,16 @@ set(WXL_DOC_LANGUAGE en CACHE STRING
     "Language of the site and of the wrappers it documents (winui-srcgen --doc-language)")
 if(WXL_BUILD_DOCS)
     add_subdirectory(docs)
+endif()
+
+# winxl, the command-line utility of the tree (tools/winxl), published by the
+# .NET SDK 10 (cmake/wxl_winxl.cmake). Off by default everywhere: nothing else
+# in the tree needs .NET, and a configure should not ask for an SDK it does not
+# use. A release turns it on, and so does the CI job that installs the Windows
+# App Runtime with it.
+option(WXL_WINXL "Build winxl, the command-line utility of the tree (needs the .NET SDK 10)." OFF)
+if(WXL_WINXL)
+    include(cmake/wxl_winxl.cmake)
 endif()
 
 # The shared CMake scripts, shown in the IDE tree without being built: in the

@@ -14,7 +14,7 @@ set "OLDCP=%OLDCP: =%"
 chcp 65001 >nul
 
 set "ROOT=%~dp0"
-set "SAMPLES=%ROOT%build\x64\samples"
+set "SAMPLES=%ROOT%build\x64-dynamic\samples"
 set "blank=0"
 set "exitcode=0"
 
@@ -33,7 +33,7 @@ call :build
 if errorlevel 1 (
     rem Ninja спотыкается на dyndep, когда в каталоге сборки остался выхлоп
     rem от другого набора целей; это лечит очистка конфигурации. Сам скрипт
-    rem её не делает: в build\x64 лежит рабочая Debug-сборка всего дерева, а
+    rem её не делает: в build\x64-dynamic лежит рабочая Debug-сборка всего дерева, а
     rem ошибку в коде или клон без обёрток пересборка с нуля не исправит.
     echo.
     echo Собрать примеры не удалось.

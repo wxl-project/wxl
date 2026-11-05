@@ -37,7 +37,7 @@
 
 ```powershell
 pwsh -NoProfile -File tools\build.ps1 -Target sandbox.list-binding-probe
-$exe = 'build\x64\sandbox\ListBindingProbe\Debug\sandbox.list-binding-probe.exe'
+$exe = 'build\x64-dynamic\sandbox\ListBindingProbe\Debug\sandbox.list-binding-probe.exe'
 $p = Start-Process $exe -Wait -PassThru
 Get-Content (Join-Path (Split-Path $exe) 'list-binding-probe.txt')
 "exit code: $($p.ExitCode)"
