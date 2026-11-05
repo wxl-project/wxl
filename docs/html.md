@@ -150,15 +150,15 @@ STA-пула, дети — `wxl::core::intrusive_slist` через поле в �
 | `<pre>` | `Paragraph` моноширинным шрифтом; `\n` → `LineBreak`; пробелы сохраняются | перенос строк отключить нельзя; ограничение принято |
 
 Заголовки только визуальные: кегль и жирность. Уровень заголовка для
-экранного диктора `RichTextBlock` из собственного текста не отдаёт. У
+программ чтения с экрана `RichTextBlock` из собственного текста не отдаёт. У
 провайдера текстового диапазона нет атрибута `StyleId`
-(`textrangeadapter.cpp`, `GetAttributeValueFromTextElement` — без
+([textrangeadapter.cpp](https://github.com/microsoft/microsoft-ui-xaml/blob/main/dxaml/xcp/core/text/common/textrangeadapter.cpp), `GetAttributeValueFromTextElement` — без
 `StyleIdAttribute`, по умолчанию `E_NOT_SUPPORTED`), а
 `AutomationProperties.HeadingLevel` на `Paragraph`/`Run` не действует: у
-`TextElement` нет automation peer (`TextElement_Partial.cpp`). Проверено на
+`Paragraph`/`Run` нет automation peer ([TextElement_Partial.cpp](https://github.com/microsoft/microsoft-ui-xaml/blob/main/dxaml/xcp/dxaml/lib/TextElement_Partial.cpp)). Проверено на
 работающем приложении: `StyleId` — `NotSupported`, `HeadingLevel` на
 `Paragraph` игнорируется. Приложению, которому заголовки должны быть видны
-экранному диктору, остаётся выносить их из блока как `TextBlock` с
+программам чтения с экрана, остаётся выносить их из блока как `TextBlock` с
 `automationHeadingLevel` — приём, который использует WinUI Gallery.
 
 Строчные теги:
