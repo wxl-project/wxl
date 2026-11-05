@@ -33,6 +33,7 @@ wxl_add_executable(sample.gallery
     pch.h
     main.cpp
     Presenter.cpp
+    Prose.cpp
     Catalog.cpp
     Contact.cpp
     CustomDataObject.cpp

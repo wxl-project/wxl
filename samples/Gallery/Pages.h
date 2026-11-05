@@ -59,6 +59,14 @@ PageSize& pageSize();
 // Один ControlExample: введение, показ с параметрами и исходник под ним.
 wxl::FrameworkElement controlExample(ExampleParts const& parts);
 
+// Текст сниппета: из UTF-8 в UTF-16, без BOM, без CR и без пустых строк по краям. Общий для Presenter (введение и
+// исходник) и prose (проза страницы).
+std::wstring snippetText(Snippet bytes);
+
+// Абзац прозы страницы из .html рядом со сниппетами: тот же HtmlBlock, что Presenter ставит введением к примеру, плюс
+// один обработчик ссылок — item:<id> ведёт на страницу контрола, http/https запускает адрес, иное останавливает.
+wxl::FrameworkElement prose(Snippet html);
+
 // Рост под указателем для кнопок самого приложения (заголовок страницы,
 // настройки, копирование кода), а не примеров: как у кнопок панели в примере
 // Effects.
