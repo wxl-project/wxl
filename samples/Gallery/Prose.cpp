@@ -6,7 +6,7 @@
 #include "Pages.h"
 #include "Shell.h"
 
-#include <cassert>
+#include <stdexcept>
 
 #include <wxl/Windows.System.h>
 
@@ -74,8 +74,11 @@ FrameworkElement prose(Snippet html, Thickness margin) {
             launch(target);
             return;
         }
-        // Схемы, которой в prose не бывает, быть не должно: это ошибка в .html страницы, и её не глушат.
-        assert(false && "prose: link scheme is not item:, http:// or https://");
+        // Схемы, которой в prose не бывает, быть не должно: это ошибка в .html страницы, и её не глушат — останавливает
+        // и в Release.
+        throw std::invalid_argument(
+            "prose: link scheme is not item:, http:// or https://: " +
+            std::string{core::unicode::assume_valid(view).to_utf8().chars()});
     });
     return block;
 }
