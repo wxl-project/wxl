@@ -52,11 +52,17 @@ std::wstring snippetText(Snippet bytes) {
     return std::wstring{body};
 }
 
-FrameworkElement prose(Snippet html) {
+FrameworkElement prose(Snippet html, Thickness margin) {
+    // Прозу страница пишет абзацами и переносами, как RichTextBlock оригинала: между <p> отступа нет, пустая
+    // строка — это <br>.
+    MarkupTheme theme;
+    theme.paragraphMargin = Thickness {0};
+
     auto block = HtmlBlock {
-        Margin {0, 0, 0, 12},
+        Margin {margin},
         isTextSelectionEnabled = true,
     };
+    block.theme(theme);
     block.html(snippetText(html));
     block.onLink([](zstring_view target) {
         auto const view = target.view();

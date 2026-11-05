@@ -157,47 +157,47 @@ FrameworkElement controlGroups() {
 FrameworkElement gallery::accessibilityScreenReaderPage() {
     return StackPanel {
         spacing = 12.0,
-        gallery::prose(gallery::snippet(introText)),
+        gallery::prose(gallery::snippet(introText), Thickness {}),
 
         heading2(u"Accessible names"),
-        gallery::prose(gallery::snippet(accessibleNamesText)),
+        gallery::prose(gallery::snippet(accessibleNamesText), Thickness {}),
 
         heading3(u"Getting an accessible name automatically"),
-        gallery::prose(gallery::snippet(automaticNameText)),
+        gallery::prose(gallery::snippet(automaticNameText), Thickness {}),
         nameFromContent(),
         nameFromHeader(),
 
         heading3(u"Setting an accessible name manually"),
-        gallery::prose(gallery::snippet(manualNameText)),
+        gallery::prose(gallery::snippet(manualNameText), Thickness {}),
         nameOnListView(),
         nameOnImage(),
 
         heading3(u"Using another control to provide an accessible name"),
-        gallery::prose(gallery::snippet(labeledByText)),
+        gallery::prose(gallery::snippet(labeledByText), Thickness {}),
         labeledBy(),
 
         heading2(u"Common accessibility properties"),
-        gallery::prose(gallery::snippet(commonPropertiesText)),
+        gallery::prose(gallery::snippet(commonPropertiesText), Thickness {}),
         describedControls(),
         positioned(),
 
         heading2(u"Visual tree"),
-        gallery::prose(gallery::snippet(visualTreeText)),
+        gallery::prose(gallery::snippet(visualTreeText), Thickness {}),
         removedFromTree(),
 
         heading2(u"Landmarks and headings"),
-        gallery::prose(gallery::snippet(landmarksHeadingsText)),
+        gallery::prose(gallery::snippet(landmarksHeadingsText), Thickness {}),
 
         bigHeading3(u"Landmarks"),
-        gallery::prose(gallery::snippet(landmarksText)),
+        gallery::prose(gallery::snippet(landmarksText), Thickness {}),
         landmarks(),
 
         bigHeading3(u"Headings"),
-        gallery::prose(gallery::snippet(headingsText)),
+        gallery::prose(gallery::snippet(headingsText), Thickness {}),
         headings(),
 
         bigHeading3(u"Associating smaller groups of controls"),
-        gallery::prose(gallery::snippet(controlGroupsText)),
+        gallery::prose(gallery::snippet(controlGroupsText), Thickness {}),
         controlGroups(),
     };
 }

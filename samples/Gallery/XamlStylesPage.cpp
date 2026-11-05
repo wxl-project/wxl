@@ -47,8 +47,8 @@ FrameworkElement gallery::xamlStylesPage() {
     return StackPanel {
         spacing = 12.0,
         TextBlock {Margin {0, 12, 0, 4}, styles.TextBlock.Subtitle, u"Creating and using styles"},
-        gallery::prose(gallery::snippet(definitionText)),
-        gallery::prose(gallery::snippet(styleKindsText)),
+        gallery::prose(gallery::snippet(definitionText), Thickness {}),
+        gallery::prose(gallery::snippet(styleKindsText), Thickness {}),
         applying(),
         implicit(),
     };

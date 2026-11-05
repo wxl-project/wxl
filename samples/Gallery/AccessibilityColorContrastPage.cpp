@@ -227,7 +227,7 @@ FrameworkElement gallery::accessibilityColorContrastPage() {
 
     return StackPanel {
         spacing = 12.0,
-        gallery::prose(gallery::snippet(introText)),
+        gallery::prose(gallery::snippet(introText), Thickness {}),
         TextBlock {Margin {0, 20, 0, 0}, styles.TextBlock.Subtitle, u"Color Contrast Checker"},
         TextBlock {Margin {0, 0, 0, 10}, styles.TextBlock.Body, textWrapping = TextWrapping::Wrap,
                    u"Use this tool to calculate the contrast ratio of two colors and measure them against the Web Content Accessibility "

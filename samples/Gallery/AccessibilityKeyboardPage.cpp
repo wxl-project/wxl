@@ -120,41 +120,41 @@ FrameworkElement gallery::accessibilityKeyboardPage() {
 
     return StackPanel {
         spacing = 12.0,
-        gallery::prose(gallery::snippet(introText)),
+        gallery::prose(gallery::snippet(introText), Thickness {}),
 
         section(u"Tab order", false),
-        gallery::prose(gallery::snippet(tabOrderText)),
+        gallery::prose(gallery::snippet(tabOrderText), Thickness {}),
 
         TextBlock {automationHeadingLevel = AutomationHeadingLevel::Level3, styles.TextBlock.BodyStrong, u"Automatic tab order"},
-        gallery::prose(gallery::snippet(automaticTabOrderText)),
+        gallery::prose(gallery::snippet(automaticTabOrderText), Thickness {}),
         automaticTabOrder(),
 
         TextBlock {automationHeadingLevel = AutomationHeadingLevel::Level3, styles.TextBlock.BodyStrong, u"Manual tab order"},
-        gallery::prose(gallery::snippet(manualTabOrderText)),
+        gallery::prose(gallery::snippet(manualTabOrderText), Thickness {}),
         manualTabOrder(),
 
         section(u"Arrow keys", true),
-        gallery::prose(gallery::snippet(arrowKeysText)),
+        gallery::prose(gallery::snippet(arrowKeysText), Thickness {}),
         TextBlock {Margin {0, 8, 0, 0}, u"See also:"},
         references,
 
         subsection(u"Automatically supporting arrow keys"),
-        gallery::prose(gallery::snippet(automaticArrowKeysText)),
+        gallery::prose(gallery::snippet(automaticArrowKeysText), Thickness {}),
         automaticArrowKeys(),
 
         subsection(u"Manually supporting arrow keys with XYFocusKeyboardNavigation"),
-        gallery::prose(gallery::snippet(manualArrowKeysText)),
+        gallery::prose(gallery::snippet(manualArrowKeysText), Thickness {}),
         manualArrowKeys(),
 
         section(u"Keyboard shortcuts", true),
-        gallery::prose(gallery::snippet(keyboardShortcutsText)),
+        gallery::prose(gallery::snippet(keyboardShortcutsText), Thickness {}),
 
         subsection(u"Accelerators"),
-        gallery::prose(gallery::snippet(acceleratorsText)),
+        gallery::prose(gallery::snippet(acceleratorsText), Thickness {}),
         accelerators(),
 
         subsection(u"Access keys"),
-        gallery::prose(gallery::snippet(accessKeysText)),
+        gallery::prose(gallery::snippet(accessKeysText), Thickness {}),
         accessKeys(),
     };
 }

@@ -65,7 +65,8 @@ std::wstring snippetText(Snippet bytes);
 
 // Абзац прозы страницы из .html рядом со сниппетами: тот же HtmlBlock, что Presenter ставит введением к примеру, плюс
 // один обработчик ссылок — item:<id> ведёт на страницу контрола, http/https запускает адрес, иное останавливает.
-wxl::FrameworkElement prose(Snippet html);
+// Отступ — как у RichTextBlock/TextBlock оригинала на этом месте страницы (обычно {0}, у некоторых страниц сверху).
+wxl::FrameworkElement prose(Snippet html, wxl::Thickness margin);
 
 // Рост под указателем для кнопок самого приложения (заголовок страницы,
 // настройки, копирование кода), а не примеров: как у кнопок панели в примере

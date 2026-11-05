@@ -125,21 +125,21 @@ FrameworkElement spacingExample(char16_t const* title, char16_t const* stem, dou
 
 FrameworkElement gallery::typographyPage() {
     return StackPanel {
-        gallery::prose(gallery::snippet(typographyIntroText)),
+        gallery::prose(gallery::snippet(typographyIntroText), Thickness {0, 4, 0, 0}),
         typographyExample(),
     };
 }
 
 FrameworkElement gallery::geometryPage() {
     return StackPanel {
-        gallery::prose(gallery::snippet(geometryIntroText)),
+        gallery::prose(gallery::snippet(geometryIntroText), Thickness {}),
         geometryExample(),
     };
 }
 
 FrameworkElement gallery::spacingPage() {
     return StackPanel {
-        gallery::prose(gallery::snippet(spacingIntroText)),
+        gallery::prose(gallery::snippet(spacingIntroText), Thickness {}),
         ScrollViewer {
             Margin {0, 24, 0, 0},
             horizontalScrollBarVisibility = ScrollBarVisibility::Auto,
