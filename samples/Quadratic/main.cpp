@@ -15,7 +15,7 @@ using namespace wxl::core;
 using namespace wxl::dsl;
 
 // Девять значащих цифр — у double и у обеих частей complex одинаково.
-u16_text to_string(auto value) {
+u16_text toText(auto value) {
     return format(u"{:.9g}", value);
 }
 
@@ -36,7 +36,7 @@ Answer solve(double a, double b, double c) {
 
     if (a == 0) {
         if (b != 0)
-            return {none, to_string(-c / b), none};
+            return {none, toText(-c / b), none};
 
         if (c == 0)
             return {none, u16_text{u"ℝ"}, none};
@@ -61,7 +61,7 @@ Answer solve(double a, double b, double c) {
         second = std::max(one, other);
     }
 
-    return {to_string(d), to_string(first), to_string(second)};
+    return {toText(d), toText(first), toText(second)};
 }
 
 // Коэффициенты пишут поля ввода, ответы показывают поля вывода. Любая правка
