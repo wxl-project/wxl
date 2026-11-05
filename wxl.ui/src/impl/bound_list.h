@@ -96,7 +96,7 @@ void bind_items(Control const& control, core::observable_list<T const>& list, Bu
     }
 
     bound_list_watch source{&list, list.size(),
-                            [&list, build](uint32_t at) -> Object { return build(list[at]); }};
+                            [&list, build](uint32_t at) -> Object { return std::invoke(build, list[at]); }};
     attach_items(control, source);
     list.watch_for_binding(std::move(source));
 }

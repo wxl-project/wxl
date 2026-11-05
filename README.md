@@ -112,24 +112,11 @@
 со свойствами интерфейса через декларативные привязки.
 
 ```cpp
-class Equation : public noncopyable
+struct Equation : sta_refcounted
 {
-    observable<Answer> answer;
-
-public:
     observable<double> a{blank}, b{blank}, c{blank};
-    observable<u16_text> D, x1, x2;
-
-    Equation() {
-        // Декларативное связывание: три числа на входе -> автоматический вызов solve
-        answer
-            .follow(a, b, c, solve)
-            .on_change([this](Answer const& answer) noexcept {
-                D.set(answer.D);
-                x1.set(answer.x1); // Обновление состояния -> автоматическое отображение в UI
-                x2.set(answer.x2);
-            });
-    }
+    // Три числа на входе -> автоматический вызов solve при любой правке
+    observable<Answer> answer{a, b, c, solve};
 };
 
 // Пресет для унификации стилей ввода
@@ -147,7 +134,7 @@ NumberBox {
 // ...
 TextBox {
     output,
-    text = BindOutput {eq.D},
+    text = BindOutput {eq.answer, &Answer::D},
 },
 ```
 

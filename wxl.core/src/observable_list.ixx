@@ -272,7 +272,7 @@ public:
         auto wire = [this]<std::size_t... I>(std::index_sequence<I...>, auto sources_and_fn) {
             auto recompute = [this, fn = std::get<sizeof...(I)>(std::move(sources_and_fn)),
                               ... sources = &std::get<I>(sources_and_fn)]() noexcept {
-                assign(fn(sources->get()...));
+                assign(std::invoke(fn, sources->get()...));
             };
             recompute();
             (std::get<I>(sources_and_fn).on_change([recompute](auto const&) noexcept {

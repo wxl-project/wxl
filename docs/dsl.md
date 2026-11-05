@@ -20,7 +20,7 @@ NumberBox {
 // …
 TextBox {
     output,
-    text = BindOutput {eq.D},
+    text = BindOutput {eq.answer, &Answer::D},
 },
 ```
 

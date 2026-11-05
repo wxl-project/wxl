@@ -126,6 +126,24 @@ namespace impl {
 template <class T>
 using readonly_observable = observable<T const>;
 
+// Whether fn, called with the value of each source, gives what a field of T takes.
+template <class T, class Fn, class... Sources>
+concept computes_from = requires(Fn const& fn, Sources&... sources) {
+    { std::invoke(fn, sources.get()...) } -> std::convertible_to<T>;
+};
+
+template <class T, class Tuple, std::size_t... I>
+constexpr bool computes_from_tuple(std::index_sequence<I...>) {
+    return computes_from<T, std::tuple_element_t<sizeof...(I), Tuple>, std::tuple_element_t<I, Tuple>...>;
+}
+
+// The arguments of follow: the sources, then the function of their values that gives
+// what a field of T takes.
+template <class T, class... Args>
+concept follows_into =
+    sizeof...(Args) >= 2 &&
+    computes_from_tuple<T, std::tuple<Args...>>(std::make_index_sequence<sizeof...(Args) - 1>{});
+
 }  // namespace impl
 
 /**
@@ -152,7 +170,7 @@ using readonly_observable = observable<T const>;
  * is let go with it.
  *
  * What it adds to its read-only base (`observable<T const>`, above) is setting:
- * set() and follow().
+ * set() and follow(), and the constructor that follows from the start.
  */
 template <class T>
 class observable : public impl::readonly_observable<T>
@@ -163,6 +181,25 @@ public:
     observable() = default;
     /// Constructs a field that holds \p value.
     explicit observable(T value) : readonly(std::move(value)) {}
+
+    /// Constructs a field that follows other fields from the start: its value is `fn` --
+    /// the last argument -- of the values of the sources, computed here and again on every
+    /// change of any of them, as follow() does. The form for a field of a model computed
+    /// from the fields beside it:
+    ///
+    ///     struct Equation : sta_refcounted {
+    ///         observable<double> a{blank}, b{blank}, c{blank};
+    ///         observable<Answer> answer{a, b, c, solve};
+    ///     };
+    ///
+    /// The sources are declared above the field. Members are constructed in the order of
+    /// their declaration, and this constructor reads the value of each source and adds its
+    /// watch: a source declared below the field is not constructed yet.
+    template <class... Args>
+        requires impl::follows_into<T, Args...>
+    explicit observable(Args&&... args)
+        : observable(std::forward_as_tuple(std::forward<Args>(args)...),
+                     std::make_index_sequence<sizeof...(Args) - 1>{}) {}
 
     /// Sets the value and, if it actually changed, tells the watchers. Setting
     /// it to what it already holds says nothing: a binding writing back the
@@ -194,23 +231,39 @@ public:
     /// Returns the field itself, so its own watch can follow in one expression:
     ///
     ///     answer.follow(va, vb, vc, solve).on_change(show);
+    ///
+    /// A field that follows from the moment it is made is declared with the sources and the
+    /// function instead (the constructor above).
     template <class... Args>
-        requires(sizeof...(Args) >= 2)
+        requires impl::follows_into<T, Args...>
     observable& follow(Args&&... args) {
         auto wire = [this]<std::size_t... I>(std::index_sequence<I...>, auto sources_and_fn) {
-            auto recompute = [this, fn = std::get<sizeof...(I)>(std::move(sources_and_fn)),
-                              ... sources = &std::get<I>(sources_and_fn)]() noexcept {
-                set(fn(sources->get()...));
-            };
-            recompute();
-            (std::get<I>(sources_and_fn).on_change([recompute](auto const&) noexcept {
-                recompute();
-            }),
-             ...);
+            auto& fn = std::get<sizeof...(I)>(sources_and_fn);
+            set(std::invoke(fn, std::get<I>(sources_and_fn).get()...));
+            follow_changes(std::move(fn), std::get<I>(sources_and_fn)...);
         };
         wire(std::make_index_sequence<sizeof...(Args) - 1>{},
              std::forward_as_tuple(std::forward<Args>(args)...));
         return *this;
+    }
+
+private:
+    // The value is computed as the field is made, rather than a default value set afterwards.
+    template <class Tuple, std::size_t... I>
+    observable(Tuple sources_and_fn, std::index_sequence<I...>)
+        : readonly(std::invoke(std::get<sizeof...(I)>(sources_and_fn),
+                               std::get<I>(sources_and_fn).get()...)) {
+        follow_changes(std::get<sizeof...(I)>(std::move(sources_and_fn)),
+                       std::get<I>(sources_and_fn)...);
+    }
+
+    // The watches that keep the field fn of its sources: a change of any of them sets it anew.
+    template <class Fn, class... Sources>
+    void follow_changes(Fn fn, Sources&... sources) {
+        auto recompute = [this, fn = std::move(fn), ... watched = &sources]() noexcept {
+            set(std::invoke(fn, watched->get()...));
+        };
+        (sources.on_change([recompute](auto const&) noexcept { recompute(); }), ...);
     }
 };
 

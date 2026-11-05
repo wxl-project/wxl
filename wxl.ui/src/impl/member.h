@@ -156,8 +156,8 @@ template <class T, class Fn, class Bind>
 void bind_transformed_input(core::observable<T>& model, Fn const& fn, Bind&& bind) {
     auto const own = core::make_refcounted<core::observable<T>>();
     bind(*own);
-    model.set(T(fn(own->get())));
-    own->on_change([&model, fn](T const& value) noexcept { model.set(T(fn(value))); });
+    model.set(T(std::invoke(fn, own->get())));
+    own->on_change([&model, fn](T const& value) noexcept { model.set(T(std::invoke(fn, value))); });
     model.watch_for_binding([own](T const&) noexcept {});
 }
 
@@ -171,10 +171,10 @@ void bind_mirrored(core::observable<T>& model, Fn const& fn, Bind&& bind) {
     static_assert(std::is_convertible_v<std::invoke_result_t<Fn const&, T const&>, T>,
                   "wxl: the function of a binding returns the field's own type, and is its own "
                   "inverse. For a one-way view of another type write BindOutput{field, fn}.");
-    auto const mirror = core::make_refcounted<core::observable<T>>(T(fn(model.get())));
+    auto const mirror = core::make_refcounted<core::observable<T>>(T(std::invoke(fn, model.get())));
     bind(*mirror);
-    mirror->on_change([&model, fn](T const& value) noexcept { model.set(T(fn(value))); });
-    model.watch_for_binding([mirror, fn](T const& value) noexcept { mirror->set(T(fn(value))); });
+    mirror->on_change([&model, fn](T const& value) noexcept { model.set(T(std::invoke(fn, value))); });
+    model.watch_for_binding([mirror, fn](T const& value) noexcept { mirror->set(T(std::invoke(fn, value))); });
 }
 
 // `property = Bind{field}`: the field's value now, and every value after.
