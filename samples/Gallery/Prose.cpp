@@ -1,7 +1,8 @@
 // Проза страницы Gallery: текст, который страница показывает между живыми примерами. Он лежит в .html рядом со
 // сниппетами страницы (Snippets/<Страница>/<Раздел>.html) и строится тем же HtmlBlock, что Presenter ставит введением
 // к примеру, с обработчиком ссылок (item:<id> — переход на страницу контрола, http/https — запуск адреса, иная
-// схема — ошибка) и onError: восстановление парсера и заблокированная ссылка тоже не маскируются.
+// схема — ошибка) и onError: восстановление парсера не маскируется, а останавливает. onLink установлен всегда, поэтому
+// BlockedLink — клик, погашенный политикой по умолчанию, когда обработчика ссылок нет, — здесь невозможен.
 
 #include "Pages.h"
 #include "Shell.h"
@@ -37,6 +38,26 @@ std::wstring snippetText(Snippet bytes) {
     return std::wstring{body};
 }
 
+// Имя рода ошибки разметки для сообщения об исключении — как зовётся сам элемент перечисления.
+char const* errorName(MarkupErrorKind kind) {
+    switch (kind) {
+        case MarkupErrorKind::UnknownTag: return "UnknownTag";
+        case MarkupErrorKind::UnpairedClose: return "UnpairedClose";
+        case MarkupErrorKind::MisnestedTags: return "MisnestedTags";
+        case MarkupErrorKind::BadEntity: return "BadEntity";
+        case MarkupErrorKind::MisplacedTag: return "MisplacedTag";
+        case MarkupErrorKind::UnknownStyle: return "UnknownStyle";
+        case MarkupErrorKind::BadColor: return "BadColor";
+        case MarkupErrorKind::BadFontSize: return "BadFontSize";
+        case MarkupErrorKind::BadDimension: return "BadDimension";
+        case MarkupErrorKind::MissingImage: return "MissingImage";
+        case MarkupErrorKind::RemoteImage: return "RemoteImage";
+        case MarkupErrorKind::ImageFailed: return "ImageFailed";
+        case MarkupErrorKind::BlockedLink: return "BlockedLink";
+    }
+    return "?";
+}
+
 FrameworkElement prose(Snippet html, Thickness margin) {
     // Прозу страница пишет абзацами и переносами, как RichTextBlock оригинала: между <p> отступа нет, пустая
     // строка — это <br>.
@@ -48,7 +69,9 @@ FrameworkElement prose(Snippet html, Thickness margin) {
         isTextSelectionEnabled = true,
     };
     block.theme(theme);
-    block.html(snippetText(html));
+    // Обработчики — до html(): парсер сообщает о восстановлениях по ходу html() в слив onError, и обработчик,
+    // поставленный после, их уже не увидит. onLink — тот же порядок ради одного места, где решено, что тут
+    // происходит с кликом.
     block.onLink([](zstring_view target) {
         auto const view = target.view();
         if (view.starts_with(u"item:")) {
@@ -65,12 +88,15 @@ FrameworkElement prose(Snippet html, Thickness margin) {
             "prose: link scheme is not item:, http:// or https://: " +
             std::string{core::unicode::assume_valid(view).to_utf8().chars()});
     });
-    // Восстановление парсера — ошибка в .html страницы, как и заблокированная ссылка: тоже не глушится.
+    // Восстановление парсера и сборщика — ошибка в .html страницы: тоже не глушится, а останавливает (и в Release). Род
+    // ошибки — в сообщении, рядом с деталью. BlockedLink сюда не придёт: onLink установлен всегда, и политика по
+    // умолчанию, которая одна и рождает BlockedLink, не вступает.
     block.onError([](MarkupError const& error) {
         throw std::invalid_argument(
-            "prose: markup error: " +
+            "prose: markup error (" + std::string{errorName(error.kind)} + "): " +
             std::string{core::unicode::assume_valid(error.detail.view()).to_utf8().chars()});
     });
+    block.html(snippetText(html));
     return block;
 }
 
