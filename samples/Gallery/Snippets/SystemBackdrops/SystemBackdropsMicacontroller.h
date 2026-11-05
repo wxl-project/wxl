@@ -125,6 +125,7 @@ auto example = StackPanel {
         Run {u"2. "},
         Run {u"Alt", FontWeight {700}},
         Run {u" — A darker appearance with stronger tinting of the desktop wallpaper."},
+        LineBreak {},
     },
     Button {
         Margin {0, 10, 0, 0},
