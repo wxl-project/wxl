@@ -237,4 +237,44 @@ TEST(Observable, follows_a_readonly_observable) {
     EXPECT_EQ(doubled.get(), 2);
 }
 
+struct Sum {
+    observable<int> a{1}, b{2};
+    observable<int> total{a, b, [](int x, int y) { return x + y; }};
+};
+
+TEST(Observable, follows_its_sources_from_construction) {
+    Sum sum;
+    EXPECT_EQ(sum.total.get(), 3);
+    int calls = 0;
+    sum.total.on_change([&](int const&) noexcept { ++calls; });
+
+    sum.a.set(5);
+    EXPECT_EQ(sum.total.get(), 7);
+    EXPECT_EQ(calls, 1);
+}
+
+struct Point {
+    int x = 0, y = 0;
+    bool operator==(Point const&) const = default;
+};
+
+// The function is invoked, so a pointer to a member selects a member of the source.
+TEST(Observable, follows_a_member_of_a_source) {
+    observable<Point> point{Point{1, 2}};
+    observable<int> x{point, &Point::x};
+    EXPECT_EQ(x.get(), 1);
+    int calls = 0;
+    x.on_change([&](int const&) noexcept { ++calls; });
+
+    point.set(Point{1, 5});
+    EXPECT_EQ(calls, 0);
+    point.set(Point{4, 5});
+    EXPECT_EQ(x.get(), 4);
+    EXPECT_EQ(calls, 1);
+
+    observable<int> y;
+    y.follow(point, &Point::y);
+    EXPECT_EQ(y.get(), 5);
+}
+
 }  // namespace
