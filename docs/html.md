@@ -144,10 +144,22 @@ STA-пула, дети — `wxl::core::intrusive_slist` через поле в �
 | `<p>` | `Paragraph` с вертикальным `Margin` из `wxl::MarkupTheme` | |
 | `<div>` | `Paragraph` без отступов | только граница блока; вложенные `<div>` разворачиваются в плоскую последовательность абзацев, стили наследуются вниз |
 | `<br>` | `LineBreak` | |
-| `<h1>`–`<h3>` | `Paragraph` + кегль и жирность из стилей | масштабы задаются в `MarkupTheme` |
+| `<h1>`–`<h3>` | `Paragraph` + кегль и жирность из стилей | масштабы задаются в `MarkupTheme`; только визуально — уровень заголовка экранному диктору не отдаётся (см. ниже) |
 | `<blockquote>` | `Paragraph` с левым `Margin` + вторичный цвет | фона и рамки у `Paragraph` нет; вертикальную полосу при необходимости может дать только `TextHighlighter` (вторая очередь) или элемент в контейнере |
 | `<ul>/<ol>/<li>` | `Paragraph` на пункт: «• » / «1. », висячий отступ левым `Margin` + отрицательным `TextIndent` | вложенность выражается увеличением левого `Margin` |
 | `<pre>` | `Paragraph` моноширинным шрифтом; `\n` → `LineBreak`; пробелы сохраняются | перенос строк отключить нельзя; ограничение принято |
+
+Заголовки только визуальные: кегль и жирность. Уровень заголовка для
+экранного диктора `RichTextBlock` из собственного текста не отдаёт. У
+провайдера текстового диапазона нет атрибута `StyleId`
+(`textrangeadapter.cpp`, `GetAttributeValueFromTextElement` — без
+`StyleIdAttribute`, по умолчанию `E_NOT_SUPPORTED`), а
+`AutomationProperties.HeadingLevel` на `Paragraph`/`Run` не действует: у
+`TextElement` нет automation peer (`TextElement_Partial.cpp`). Проверено на
+работающем приложении: `StyleId` — `NotSupported`, `HeadingLevel` на
+`Paragraph` игнорируется. Приложению, которому заголовки должны быть видны
+экранному диктору, остаётся выносить их из блока как `TextBlock` с
+`automationHeadingLevel` — приём, который использует WinUI Gallery.
 
 Строчные теги:
 
