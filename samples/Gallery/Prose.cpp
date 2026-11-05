@@ -35,7 +35,7 @@ namespace gallery {
 std::wstring snippetText(Snippet bytes) {
     auto const checked = core::unicode::checked(bytes);
     if (!checked) {
-        return {};
+        throw std::invalid_argument("snippetText: the snippet is not valid UTF-8");
     }
     std::wstring wide = checked->to_utf16();
     std::erase(wide, L'\r');
