@@ -6,6 +6,7 @@
 # Direct2D и Direct3D приложение зовёт само: рисование в DrawingSurface --
 # его дело, и заголовки этих API оно включает раньше заголовков wxl.
 wxl_add_executable(sandbox.lighting-lab
+    UI wxl::ui.full
     Lab.h
     pch.h
     main.cpp

@@ -3,5 +3,6 @@
 # а весь XAML остров масштабируется теми же клавишами, что и страницы в браузере.
 # Целью было дать возможность масштабировать в том числе и TitleBar.
 wxl_add_executable(sample.custom-titlebar
+    UI wxl::ui.full
     main.cpp
 )

@@ -5,8 +5,8 @@
 # FrameworkElement, изнутри Application::Start -- вне UI-потока XAML настоящий
 # элемент не создаётся вовсе (RPC_E_WRONG_THREAD).
 #
-# Не wxl_add_executable() и вообще не wxl::ui: у пробы своя точка входа main, а
-# wxl::ui уводит вход на свой wWinMain (target_link_options INTERFACE
+# Не wxl_add_executable() и вообще не wxl::ui.*: у пробы своя точка входа main, а
+# wxl::ui.common уводит вход на свой wWinMain (target_link_options INTERFACE
 # /ENTRY:wWinMainCRTStartup) -- тогда линковщик тянет из библиотеки её
 # собственный запуск и требует wxl_launched. Приложение консольное, результаты
 # идут в stdout.
@@ -34,7 +34,7 @@ target_link_libraries(sandbox.aggregation PRIVATE
 
 # Рядом с exe нужна одна DLL -- загрузчика, -- и она единственная, что линкуется
 # импортом, поэтому её называет сам CMake. wxl_target_runtime() здесь не к
-# месту: он кладёт то, что нужно wxl::ui (Win2D), а проба её не линкует.
+# месту: он кладёт то, что нужно wxl::ui.common (Win2D), а проба её не линкует.
 add_custom_command(TARGET sandbox.aggregation POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "$<TARGET_RUNTIME_DLLS:sandbox.aggregation>" "$<TARGET_FILE_DIR:sandbox.aggregation>"

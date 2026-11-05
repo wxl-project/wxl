@@ -26,6 +26,7 @@ foreach(_snippet IN LISTS _gallery_snippets)
 endforeach()
 
 wxl_add_executable(sample.gallery
+    UI wxl::ui.full
     Pages.h
     Catalog.h
     Shell.h

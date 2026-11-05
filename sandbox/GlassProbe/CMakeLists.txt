@@ -4,6 +4,7 @@
 # двух композиторах. Исследовательский код на проекции cppwinrt напрямую, с
 # журналом и снимками рядом с исполняемым файлом.
 wxl_add_executable(sandbox.glass-probe
+    UI wxl::ui.full
     main.cpp
 )
 
