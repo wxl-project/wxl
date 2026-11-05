@@ -23,6 +23,28 @@ project(
     LANGUAGES CXX
 )
 
+set(WXL_LOCAL_SOURCE_DIR "" CACHE PATH
+    "Directory with local copies of the dependencies, one subdirectory per dependency")
+file(TO_CMAKE_PATH "${WXL_LOCAL_SOURCE_DIR}" _wxl_local_source_dir)
+
+# The local copies reach FetchContent as normal variables, and FetchContent
+# copies each into its cache entry FETCHCONTENT_SOURCE_DIR_<DEP>, which would
+# outlive the option. So when the option changes or is cleared, the entries that
+# still name the copies it set are removed; an entry set to another directory by
+# hand stays.
+foreach(_dep IN ITEMS winmd fmt googletest wxl_doxygen wxl_doxygen_awesome)
+    string(TOUPPER "${_dep}" _dep_upper)
+    if(_WXL_APPLIED_LOCAL_SOURCE_DIR AND
+       NOT _WXL_APPLIED_LOCAL_SOURCE_DIR STREQUAL _wxl_local_source_dir AND
+       "$CACHE{FETCHCONTENT_SOURCE_DIR_${_dep_upper}}" STREQUAL "${_WXL_APPLIED_LOCAL_SOURCE_DIR}/${_dep}")
+        unset(FETCHCONTENT_SOURCE_DIR_${_dep_upper} CACHE)
+    endif()
+    if(_wxl_local_source_dir)
+        set(FETCHCONTENT_SOURCE_DIR_${_dep_upper} "${_wxl_local_source_dir}/${_dep}")
+    endif()
+endforeach()
+set(_WXL_APPLIED_LOCAL_SOURCE_DIR "${_wxl_local_source_dir}" CACHE INTERNAL "")
+
 # Whether the wxl tree is the top-level project or a project adds it (through
 # add_subdirectory or FetchContent) is PROJECT_IS_TOP_LEVEL from here on, in
 # this file and in every directory of the tree: none of them calls project() of
@@ -90,6 +112,7 @@ if(WXL_UI AND NOT WXL_TOOLS)
         "build, which runs the generator WXL_TOOLS builds (cmake/wxl_ui_profile.cmake): turn "
         "WXL_TOOLS on, or WXL_UI off.")
 endif()
+
 foreach(_wxl_option WXL_SAMPLES WXL_SANDBOX)
     if(${_wxl_option} AND NOT WXL_UI)
         message(FATAL_ERROR
