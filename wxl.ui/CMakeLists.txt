@@ -327,6 +327,8 @@ set(_wxl_ui_profile_sources
     src/impl/element_helpers.cpp
     src/impl/window_helpers.h
     src/impl/window_helpers.cpp
+    src/impl/backdrop_helpers.h
+    src/impl/backdrop_helpers.cpp
     src/impl/items_helpers.h
     src/impl/items_helpers.cpp
     src/impl/layout_helpers.h
