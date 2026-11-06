@@ -4,16 +4,6 @@
     "extends": [
         "base"
     ],
-
-    "packages": [
-        {
-            "id": "Microsoft.WindowsAppSDK.InteractiveExperiences",
-            "metadata": [
-                "10.0.18362.0/Microsoft.UI.winmd"
-            ],
-            "comment": "Microsoft.UI.Xaml.winmd only *references* Microsoft.UI.Windowing, .Composition and .Dispatching; without their metadata Window.appWindow, .compositor and .dispatcherQueue are dropped as unresolved. They arrive as bare shells, since a type the walk finds on its own generates no members."
-        }
-    ],
     "windowsMetadata": true,
 
     "types": {
