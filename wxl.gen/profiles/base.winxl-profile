@@ -73,8 +73,8 @@
                 "AutomationName": {
                     "comment": "The name a screen reader speaks, and nothing else -- the half of ToolTip that carries no hover hint. What needs it is the element whose face is already words but not text: a list row built out of a panel says nothing at all to automation, because a Button's accessible name comes from its content only when that content is a string. A hint on such a row would be noise, so the two are separate properties rather than one.",
                     "type": "String",
-                    "function": "impl::automation_properties::set_name",
-                    "include": "../impl/automation_properties.h"
+                    "function": "impl::set_automation_name",
+                    "include": "../impl/element_helpers.h"
                 },
                 "Cursor": {
                     "comment": "The pointer's shape over the element. WinUI keeps it on UIElement.ProtectedCursor, which the metadata marks protected -- but protected is a word for projections, not for the ABI: IUIElementProtected is an ordinary interface any element's object answers QueryInterface for, so the wrapper sets it on a plain Border with no subclass in between. The value is the metadata's own InputSystemCursorShape; a second vocabulary for Arrow, Hand and SizeWestEast would name nothing new.",
