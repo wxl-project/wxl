@@ -13,6 +13,13 @@
                 "Microsoft.UI.Xaml.winmd",
                 "Microsoft.UI.Text.winmd"
             ]
+        },
+        {
+            "id": "Microsoft.WindowsAppSDK.InteractiveExperiences",
+            "metadata": [
+                "10.0.18362.0/Microsoft.UI.winmd"
+            ],
+            "comment": "Microsoft.UI.Input, .Composition, .Dispatching and .Windowing are declared here, not in Microsoft.UI.Xaml.winmd. Without this file the type of UIElement.Cursor, InputSystemCursorShape, is not a metadata type, and Window.compositor, .dispatcherQueue and .appWindow are dropped as unresolved. Reading the file adds no roots: the three classes arrive as bare shells, since a type the walk finds on its own generates no members."
         }
     ],
     "windowsMetadata": true,
