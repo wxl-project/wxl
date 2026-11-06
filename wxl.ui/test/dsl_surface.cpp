@@ -42,6 +42,7 @@
 #include "Panels.h"
 #include "Relief.h"
 #include "UiThread.h"
+#include "WaitableTimer.h"
 #include "ui.h"
 #include <wxl/Microsoft.UI.Dispatching.h>
 #include "schema.h"
@@ -1246,6 +1247,14 @@ void handing_work_over(DispatcherQueue const& queue) {
         ui.post([found = std::move(found)] { (void)found; });
     };
     background(L"a file");
+}
+
+// A wait for a quiet moment on the UI thread's queue, which nobody names.
+async::task<> afterAQuietMoment(async::cancellation_token token) {
+    WaitableTimer timer{std::chrono::milliseconds{1500}, std::move(token)};
+    timer.restart();
+    co_await timer;
+    timer.signal();
 }
 
 // A class that is only its statics derives from Statics, not from Object.
