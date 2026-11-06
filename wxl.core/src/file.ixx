@@ -16,10 +16,10 @@ export namespace wxl::core {
 /// gigabytes of it, and a name for each of the two ways a file gets opened.
 /// What it does not add is a policy: nothing here throws, nothing here logs,
 /// and nothing here decides what a failure means. That decision belongs to the
-/// caller, and in this tree the caller is `wxl::async::async_file`, which turns
-/// a failure into the exception its coroutine catches. The one exception is
-/// read_all(): it names the short read the system leaves nameless, and its
-/// string can throw `std::bad_alloc`.
+/// caller, and in this tree the callers are `wxl::async::async_file` and the
+/// xml and json readers, each turning a failure into its own exception.
+/// read_all() alone allocates, and `std::bad_alloc` is the only thing that can
+/// leave it.
 ///
 /// The two ways of opening are two named functions rather than one function
 /// with a flag, because reading and writing differ in more than a bit: what is
@@ -149,6 +149,11 @@ public:
     /// (`unicode::checked`), and no codepage is asked for or applied. An empty
     /// file is an empty string, not an error.
     ///
+    /// The length is measured once and the read stops there: a file that grew
+    /// after the measure is read up to the measured length, and one that shrank
+    /// is an error (`ERROR_HANDLE_EOF`) -- unlike `async_file::read_all`, which
+    /// answers with what it got.
+    ///
     /// \param path as in open_read(): the characters, not a `path`.
     /// \return the bytes, or the error code of the call that failed. The one
     ///         exception to "nothing here throws" is `std::bad_alloc` from the
@@ -171,9 +176,12 @@ public:
 
         // resize_and_overwrite rather than resize, which would first fill a whole
         // file's worth of buffer with zeroes nobody will ever read.
-        ::SetLastError(ERROR_SUCCESS);
         bytes.resize_and_overwrite(static_cast<std::size_t>(*length),
                                    [&source](char* const data, const std::size_t room) {
+                                       // The last error is cleared right before the
+                                       // read, so what it holds after is the read's
+                                       // own, not a leftover from the allocation.
+                                       ::SetLastError(ERROR_SUCCESS);
                                        return source.read(
                                            std::as_writable_bytes(std::span(data, room)));
                                    });
@@ -181,14 +189,15 @@ public:
         if (bytes.size() != *length) {
             // A short read: either the read failed, or the file shrank since it
             // was measured. The last error tells them apart -- cleared above, so
-            // a clean end of file leaves ERROR_SUCCESS, and that is the shrank
-            // case: the end came before the measured length, the end of the
-            // handle, which is ERROR_HANDLE_EOF. A read that failed left its own
-            // code, and that is what is reported.
+            // a clean end of file leaves ERROR_SUCCESS or ERROR_HANDLE_EOF, and
+            // both mean the shrank case: the end came before the measured
+            // length, with no failure of the read to report. A read that failed
+            // left its own code, and that is what is reported.
             const DWORD why = ::GetLastError();
+            const bool clean_end = why == ERROR_SUCCESS || why == ERROR_HANDLE_EOF;
 
             return std::unexpected(std::error_code(
-                static_cast<int>(why == ERROR_SUCCESS ? ERROR_HANDLE_EOF : why),
+                static_cast<int>(clean_end ? ERROR_HANDLE_EOF : why),
                 std::system_category()));
         }
 
