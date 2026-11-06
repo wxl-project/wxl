@@ -1,5 +1,5 @@
-// windows.h for ERROR_FILE_NOT_FOUND: the code read_all() answers with when the
-// file is not there.
+// windows.h for ERROR_FILE_NOT_FOUND and ERROR_ACCESS_DENIED: the codes
+// read_all() answers with when the file is not there or is a directory.
 #include "platform.h"
 
 #include <gtest/gtest.h>
@@ -142,6 +142,10 @@ TEST(FileTest, MovingTakesTheHandleAndLeavesTheOtherClosed) {
 }
 
 // ---- read_all: the whole file by name --------------------------------------
+//
+// The short read -- a file that shrank after it was measured and before it was
+// read, which answers ERROR_HANDLE_EOF -- has no test: no test can shrink a
+// file between read_all's two calls deterministically.
 
 TEST(FileTest, ReadAllReturnsTheWholeFile) {
     const path p = temp_file(L"wxl_core_file_tests.read_all");
@@ -178,7 +182,7 @@ TEST(FileTest, ReadAllOfAMissingFileAnswersErrorFileNotFound) {
     const auto got = file::read_all(p.c_str());
 
     ASSERT_FALSE(got.has_value());
-    EXPECT_EQ(got.error().value(), ERROR_FILE_NOT_FOUND);
+    EXPECT_EQ(got.error(), std::error_code(ERROR_FILE_NOT_FOUND, std::system_category()));
 }
 
 TEST(FileTest, ReadAllOfADirectoryFails) {
@@ -189,7 +193,7 @@ TEST(FileTest, ReadAllOfADirectoryFails) {
     const auto got = file::read_all(p.c_str());
 
     ASSERT_FALSE(got.has_value());
-    EXPECT_NE(got.error().value(), 0);
+    EXPECT_EQ(got.error(), std::error_code(ERROR_ACCESS_DENIED, std::system_category()));
 
     std::filesystem::remove(p.native());
 }
