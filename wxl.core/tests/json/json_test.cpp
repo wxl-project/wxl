@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include <filesystem>
 #include <string>
 #include <string_view>
 
@@ -297,10 +298,20 @@ TEST(json, a_stream_is_read_to_its_end) {
     EXPECT_EQ(document.file_name(), "поток");
 }
 
+// A file that is not there is reported by name, so that of several documents
+// read together a caller sees which one did not load.
 TEST(json, a_file_that_is_not_there_is_reported_and_not_guessed) {
     json::document document;
+    const std::filesystem::path path = L"нет-такого-файла.json";
 
-    EXPECT_THROW(document.load_file("нет-такого-файла.json"), json::exception);
+    try {
+        document.load_file(path);
+        FAIL() << "a file that is not there has to throw";
+    } catch (const json::exception& e) {
+        const std::string name = std::string(core::unicode::to_utf8(path).chars());
+        EXPECT_NE(std::string_view(e.what()).find(name), std::string_view::npos)
+            << "the message was: " << e.what();
+    }
 }
 
 TEST(json, a_tree_can_be_built_without_a_document) {
