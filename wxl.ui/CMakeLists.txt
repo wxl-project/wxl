@@ -333,6 +333,10 @@ set(_wxl_ui_profile_sources
     src/impl/items_helpers.cpp
     src/impl/layout_helpers.h
     src/impl/layout_helpers.cpp
+    src/impl/scroll_controller_helpers.h
+    src/impl/scroll_controller_helpers.cpp
+    src/impl/shape_helpers.h
+    src/impl/shape_helpers.cpp
     src/impl/member.h
     src/impl/member.cpp
     src/WindowNative.h

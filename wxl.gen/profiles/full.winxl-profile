@@ -619,7 +619,7 @@
             "comment": "Shapes: the abstract geometry. A string of the path language of XAML builds one, as `data = u\"M 10,100 H 200\"` does; the framework's own converter makes the object.",
             "fromText": {
                 "function": "impl::geometry_from_text",
-                "include": "../impl/layout_helpers.h"
+                "include": "../impl/shape_helpers.h"
             }
         },
         "Microsoft.UI.Xaml.Media.GeometryGroup": {
@@ -667,7 +667,7 @@
                     "comment": "The vertices as text, in the form of XAML: points = u\"10,100 60,40 200,40\". Points is a collection of Point that wxl has no class for; the framework's own converter reads the text.",
                     "type": "String",
                     "function": "impl::set_points",
-                    "include": "../impl/layout_helpers.h"
+                    "include": "../impl/shape_helpers.h"
                 }
             }
         },
@@ -679,7 +679,7 @@
                     "comment": "The vertices as text, in the form of XAML: points = u\"10,100 60,40 200,40\". Points is a collection of Point that wxl has no class for; the framework's own converter reads the text.",
                     "type": "String",
                     "function": "impl::set_points",
-                    "include": "../impl/layout_helpers.h"
+                    "include": "../impl/shape_helpers.h"
                 }
             }
         },
@@ -1219,13 +1219,13 @@
                     "comment": "The bar that drives the view up and down, and is told where it is.",
                     "type": "Microsoft.UI.Xaml.Controls.AnnotatedScrollBar",
                     "function": "impl::set_vertical_scroll_controller",
-                    "include": "../impl/layout_helpers.h"
+                    "include": "../impl/scroll_controller_helpers.h"
                 },
                 "HorizontalScrollController": {
                     "comment": "The same, sideways.",
                     "type": "Microsoft.UI.Xaml.Controls.AnnotatedScrollBar",
                     "function": "impl::set_horizontal_scroll_controller",
-                    "include": "../impl/layout_helpers.h"
+                    "include": "../impl/scroll_controller_helpers.h"
                 }
             }
         },
