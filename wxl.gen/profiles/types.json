@@ -256,9 +256,8 @@
     // check when it is chosen and says so under Click alone. A
     // RadioMenuFlyoutItem derives from MenuFlyoutItem, not from
     // ToggleMenuFlyoutItem, so it has a pair of its own; its group unchecks
-    // the others without a click of
-    // theirs, so a field per item that must follow its group reads the
-    // group's choice from one field instead. A Selector's index is the
+    // the others without a click of theirs, so a field per item that must
+    // follow its group reads the group's choice from one field instead. A Selector's index is the
     // control's, -1 while nothing is chosen: a reset of its items clears the
     // choice, and the field hears -1. A NumberBox holds NaN while it is empty,
     // and a RatingControl -1 while it holds no rating.

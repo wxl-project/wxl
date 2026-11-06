@@ -14,9 +14,9 @@ import wxl.core;
 // Each pair is an explicit specialisation impl::binding_pair<key, owner>, and
 // a partial specialisation of impl::property_binder hands it every class
 // derived from the owner: a CheckBox binds isChecked through ToggleButton's
-// pair, a ComboBox selectedIndex through Selector's. The walk refused two pairs
-// of one key along one line of inheritance (crawl.h), so no class matches two
-// of these. The owners are declared, not included: the constraint and the
+// pair, a ComboBox selectedIndex through Selector's. Two pairs of one key along
+// one line of inheritance were refused before the walk (crawl.h), so no class
+// matches two of these. The owners are declared, not included: the constraint and the
 // conversion to the owner are checked where a binding is written, which has
 // the control's whole class.
 //
@@ -59,13 +59,13 @@ struct binding_pair<PropertyKey::{}, {}> {{
             if (pair.function.empty()) {
                 std::print(file,
                            "    static void bind({} const& control, core::observable<{}>& field,\n"
-                           "                     bind_direction direction);\n",
+                           "                     bind_direction asked);\n",
                            pair.owner, field.type);
             } else {
                 std::print(file,
                            "    static void bind({} const& control, core::observable<{}>& field,\n"
-                           "                     bind_direction direction) {{\n"
-                           "        {}(control, field, direction);\n"
+                           "                     bind_direction asked) {{\n"
+                           "        {}(control, field, asked);\n"
                            "    }}\n",
                            pair.owner, field.type, pair.function);
             }

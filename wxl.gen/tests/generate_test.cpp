@@ -96,7 +96,7 @@ TEST_F(stale_files, binding_pairs_are_those_of_the_classes_the_run_generates) {
                         "struct property_binder<PropertyKey::IsChecked, Control> : "
                         "binding_pair<PropertyKey::IsChecked, ToggleButton>",
                         "struct binding_pair<PropertyKey::IsFocused, UIElement>",
-                        "impl::apply_bind_focus(control, field, direction);"}) {
+                        "impl::apply_bind_focus(control, field, asked);"}) {
         EXPECT_NE(header.find(part), std::string::npos) << part;
     }
     EXPECT_EQ(header.find("NumberBox"), std::string::npos);

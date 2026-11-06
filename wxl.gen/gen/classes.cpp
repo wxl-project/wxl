@@ -1137,6 +1137,38 @@ void write_member_body(std::ostream& out, class_info const& info, member_info co
                member.returns_void ? call : substitute(member.result.from_winrt, call));
 }
 
+// The body of each bind() a binding pair of the metadata declares
+// (BindingPairs.h): the shared mechanism, impl::bind_pair, over the wrapper's
+// own getter, setter and events. Beside the owner's other bodies, so it is
+// compiled once, in a translation unit that has the owner whole; it names no
+// winrt. The direction is `asked`, as the static member `direction` of the
+// pair is the one it allows.
+void write_binding_pair_bodies(std::ostream& out, binding_pair_info const& pair) {
+    std::string events;
+    for (auto&& event : pair.events) {
+        events += std::format("{}EventKey::{}", events.empty() ? "" : ", ", event);
+    }
+    for (auto&& field : pair.fields) {
+        std::print(out, R"(
+void impl::binding_pair<PropertyKey::{0}, {1}>::bind({1} const& control,
+                                                     core::observable<{2}>& field,
+                                                     impl::bind_direction asked) {{
+    impl::bind_pair<{3}>(
+        control, field, asked, []({1} const& c) -> {2} {{ return {4}; }},
+        []({1} const& c, {2} const& value) {{ {5}; }});
+}}
+)",
+                   pair.key, pair.owner, field.type, events, field.get, field.set);
+    }
+}
+
+// Whether the class owns a pair of the metadata, whose bodies its part writes.
+bool has_binding_pairs(class_info const& info, std::vector<binding_pair_info> const& pairs) {
+    return std::ranges::any_of(pairs, [&info](binding_pair_info const& pair) {
+        return pair.owner == info.name && !pair.events.empty();
+    });
+}
+
 // The out-of-line bodies of a group (body_file): per class its runtime class
 // names, its constructors and members, and the one body of each try_as the
 // header promised -- the class's own translation unit has what that
@@ -1147,36 +1179,6 @@ void write_member_body(std::ostream& out, class_info const& info, member_info co
 // first, then the projection and private headers the bodies name. A group of
 // statics-only classes has no private header, and takes what that header
 // would include instead.
-// The body of each bind() a binding pair of the metadata declares
-// (BindingPairs.h): the shared mechanism, impl::bind_pair, over the wrapper's
-// own getter, setter and events. Beside the owner's other bodies, so it is
-// compiled once, in a translation unit that has the owner whole; it names no
-// winrt.
-void write_binding_pair_bodies(std::ostream& out, binding_pair_info const& pair) {
-    std::string events;
-    for (auto&& event : pair.events) {
-        events += std::format("{}EventKey::{}", events.empty() ? "" : ", ", event);
-    }
-    for (auto&& field : pair.fields) {
-        std::print(out, R"(
-void impl::binding_pair<PropertyKey::{0}, {1}>::bind({1} const& control,
-                                                     core::observable<{2}>& field,
-                                                     impl::bind_direction direction) {{
-    impl::bind_pair<{3}>(
-        control, field, direction, []({1} const& c) -> {2} {{ return {4}; }},
-        []({1} const& c, {2} const& value) {{ {5}; }});
-}}
-)",
-                   pair.key, pair.owner, field.type, events, field.get, field.set);
-    }
-}
-
-bool has_binding_pairs(class_info const& info, std::vector<binding_pair_info> const& pairs) {
-    return std::ranges::any_of(pairs, [&info](binding_pair_info const& pair) {
-        return pair.owner == info.name && !pair.events.empty();
-    });
-}
-
 body_file group_bodies(std::string_view ns, std::vector<class_info> const& classes,
                        std::map<std::string, std::string> const& group_of,
                        std::set<std::string> const& instantiations,
@@ -2197,12 +2199,17 @@ void finish_schema(std::vector<std::pair<std::string, schema::member>>& attached
 
     // A binding pair joins the class it is on, as the run generates it: a
     // bound member as the anchor of its own, a pair of the metadata once per
-    // field type, over the anchor its property already has.
+    // field type, over the anchor its property already has. The owner of a
+    // pair is a class the run generates, and every one of them has a schema
+    // class by now; a pair with none would leave its binding out of the
+    // schema and the surface test, so it stops the run.
     for (auto&& pair : m.binding_pairs) {
         auto const owner = std::find_if(sch.classes.begin(), sch.classes.end(),
                                         [&pair](auto&& klass) { return klass.name == pair.owner; });
         if (owner == sch.classes.end()) {
-            continue;
+            throw std::runtime_error(std::format(
+                "the binding pair {}.{} is on a class the schema has no entry for", pair.owner,
+                pair.name));
         }
         for (auto&& field : pair.fields) {
             schema::member member{pair.events.empty() ? schema::member::kind_t::Bound
