@@ -15,28 +15,6 @@ using namespace wxl::dsl;
 
 namespace {
 
-// Текст сниппета: из UTF-8 в UTF-16, без BOM, без CR (git на Windows мог
-// отдать файл с CRLF) и без пустых строк по краям.
-std::wstring snippetText(gallery::Snippet bytes) {
-    auto const checked = core::unicode::checked(bytes);
-    if (!checked) {
-        return {};
-    }
-    std::wstring wide = checked->to_utf16();
-    std::erase(wide, L'\r');
-    std::wstring_view body{wide};
-    if (body.starts_with(L'﻿')) {
-        body.remove_prefix(1);
-    }
-    while (!body.empty() && body.front() == L'\n') {
-        body.remove_prefix(1);
-    }
-    while (!body.empty() && body.back() == L'\n') {
-        body.remove_suffix(1);
-    }
-    return std::wstring{body};
-}
-
 // Код на плоском фоне, как в SampleCodePresenter: подложку карточки,
 // отступы и подъём, которые тема даёт `<pre>`, здесь убираем.
 MarkupTheme flatCode() {

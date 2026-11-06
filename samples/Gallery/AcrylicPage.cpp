@@ -8,6 +8,10 @@ using namespace wxl::dsl;
 
 namespace {
 
+constexpr char8_t introText[] = {
+#include "Snippets/Acrylic/Intro.html.embed"
+};
+
 constexpr char8_t defaultBrushHeader[] = {
 #include "Snippets/Acrylic/DefaultAppAcrylicBrush.html.embed"
 };
@@ -65,19 +69,5 @@ FrameworkElement luminosity() {
 
 wxl::FrameworkElement gallery::acrylicPage() {
     return StackPanel {
-        RichTextBlock {
-            Paragraph {
-                Run {u"Acrylic Brush might fall back to SolidColorbrush in certain scenarios. If you can't see the Acrylic effect, please refer to "},
-                Hyperlink {
-                    navigateUri = u"https://learn.microsoft.com/windows/apps/design/style/acrylic#usability-and-adaptability",
-                    Run {u"Acrylic brush adaptability documentation"},
-                },
-                Run {u". Acrylic Brush uses in-app acrylic. See "},
-                Hyperlink {
-                    onClick += [](Object const&, HyperlinkClickEventArgs&) { navigate({Place::Item, L"SystemBackdrops"}); },
-                    Run {u"SystemBackdrops (Mica/Acrylic)"},
-                },
-                Run {u" for background acrylic."},
-            },
-        },defaultBrush(), customBrush(), luminosity()};
+        gallery::prose(gallery::snippet(introText), Thickness {}), defaultBrush(), customBrush(), luminosity()};
 }

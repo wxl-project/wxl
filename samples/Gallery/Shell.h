@@ -53,6 +53,10 @@ void trackWindow(wxl::CompositionWindow const& window, std::shared_ptr<void> sta
 // или под дочерним от него — иначе её некому кончить до выхода.
 wxl::async::cancellation_token exitToken();
 
+// Запуск адреса по ссылке http/https (prose): задача живёт в оболочке, пока адрес не открыт; кончившаяся сметается
+// при следующем запуске, и неудавшийся запуск (false или брошенный) останавливает, а не молчит.
+void launchUri(wxl::zstring_view uri);
+
 // Строит модель и отдаёт её оболочке: `auto const model = gallery::hold<Model>();`
 template <class Model, class... Arguments>
 std::shared_ptr<Model> hold(Arguments&&... arguments) {
