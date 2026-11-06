@@ -253,8 +253,10 @@
     //
     // Indeterminate, the third state of a three-state box, raises neither
     // Checked nor Unchecked and reads as not checked. A menu item flips its
-    // check when it is chosen and says so under Click alone; a
-    // RadioMenuFlyoutItem's group unchecks the others without a click of
+    // check when it is chosen and says so under Click alone. A
+    // RadioMenuFlyoutItem derives from MenuFlyoutItem, not from
+    // ToggleMenuFlyoutItem, so it has a pair of its own; its group unchecks
+    // the others without a click of
     // theirs, so a field per item that must follow its group reads the
     // group's choice from one field instead. A Selector's index is the
     // control's, -1 while nothing is chosen: a reset of its items clears the
