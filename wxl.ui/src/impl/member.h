@@ -64,13 +64,20 @@ using event_args_of_t = typename event_args_of<Member>::type;
 template <PropertyKey key>
 struct property_setter;
 
-// A property the control writes itself, paired with the event that says so.
-// Specialised in impl/binding.h per (property, control) with a static
-// `bind(control, field, direction)` and a `direction` of its own: both for
-// a property the control shows and edits, input for one it only reports.
-// The primary is empty on purpose: `text = Bind{...}` on a TextBlock, which
-// has no such pair, finds no bind() here and is refused by bind_property
-// below, which says what to write instead.
+// A property the control writes itself, paired with the events that say so:
+// binding_pair<key, Owner> for the class that has the pair, with a static
+// `bind(control, field, direction)` per field type and a `direction` of its
+// own -- both for a property the control shows and edits, input for one it
+// only reports. Specialised in the generated BindingPairs.h, one per pair of
+// a class the profile generates.
+template <PropertyKey key, typename Owner>
+struct binding_pair;
+
+// The pair a binding on `Obj` finds: in BindingPairs.h, binding_pair<key, Owner>
+// for every Obj derived from its Owner. The primary is empty on purpose:
+// `text = Bind{...}` on a TextBlock, which has no such pair, finds no bind()
+// here and is refused by bind_property below, which says what to write
+// instead.
 template <PropertyKey key, typename Obj>
 struct property_binder {
 };
@@ -235,7 +242,7 @@ void bind_property(Obj const& object, core::observable<T>& model, Fn const& fn) 
 
 // A binding of a list -- `itemsSource = BindOutput{list, build}` (Bind.h). It is not one
 // property following one field: it gives the control its items and the template that
-// builds their elements, so it applies itself to the control, as it does unnamed.
+// builds their elements, so it binds itself to the control (bind_to).
 template <typename T>
 inline constexpr bool is_list_binding = false;
 
@@ -259,7 +266,7 @@ struct setter_op {
             static_assert(key == PropertyKey::ItemsSource,
                           "wxl: a list is bound as the items of a list control: itemsSource = "
                           "BindOutput{list, fn}.");
-            value_(object);
+            value_.bind_to(object);
         } else if constexpr (is_bind<T>) {
             bind_property<key, T::direction>(object, *value_.model, value_.fn);
         } else {

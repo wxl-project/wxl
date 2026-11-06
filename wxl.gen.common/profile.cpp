@@ -97,6 +97,19 @@ value const& read_json(wxl::json::document& file, std::filesystem::path const& p
     return document;
 }
 
+// An entry whose keys are all known: a key misspelt, or one the entry does not
+// have, would otherwise read exactly like the key left out. `where` names the
+// entry.
+void refuse_other_keys(value const& entry, std::filesystem::path const& source,
+                       std::string_view where, std::initializer_list<std::string_view> known) {
+    for (value const& member : entry.members()) {
+        std::string_view const key = member.name().chars();
+        if (std::ranges::find(known, key) == known.end()) {
+            fail(source, std::format("{}: '{}' is not a key of this entry", where, key));
+        }
+    }
+}
+
 std::set<std::string> read_string_set(value const& array, std::filesystem::path const& source,
                                       std::string_view what) {
     if (!array.is_array()) {
@@ -950,6 +963,7 @@ type_map load_type_map(std::filesystem::path const& path) {
     auto const& document = read_json(file, path, "a type map must be a JSON object");
 
     type_map map;
+    map.source = path;
     if (value const* const listed = document.find("predefined")) {
         map.predefined = read_string_set(*listed, path, "predefined");
     }
@@ -1019,16 +1033,57 @@ type_map load_type_map(std::filesystem::path const& path) {
                 if (!entry.is_object()) {
                     fail(path, "every bound member must be an object");
                 }
+                std::string const where = std::format(
+                    "bound member {}.{}", required_string(entry, path, "class", "bound member"),
+                    required_string(entry, path, "property", "bound member"));
+                refuse_other_keys(entry, path, where,
+                                  {"class", "property", "value", "direction", "function", "include"});
+                // Output alone is no pair: a property with a setter takes BindOutput
+                // through the setter, and one without has nothing to show it with.
                 std::string direction = required_string(entry, path, "direction", "bound member");
-                if (direction != "input" && direction != "output" && direction != "both") {
-                    fail(path, "a bound member's 'direction' is \"input\", \"output\" or \"both\"");
+                if (direction != "input" && direction != "both") {
+                    fail(path, std::format("{}: 'direction' is \"input\" or \"both\"", where));
                 }
                 map.bound_members.push_back(
                     {required_string(entry, path, "class", "bound member"),
                      required_string(entry, path, "property", "bound member"),
                      required_string(entry, path, "value", "bound member"), std::move(direction),
-                     string_or(entry, path, "include", {})});
+                     required_string(entry, path, "function", "bound member"),
+                     required_string(entry, path, "include", "bound member")});
             }
+        }
+    }
+
+    if (value const* const array = document.find("bindingPairs")) {
+        if (!array->is_array()) {
+            fail(path, "'bindingPairs' must be an array");
+        }
+        for (value const& entry : array->elements()) {
+            if (!entry.is_object()) {
+                fail(path, "every binding pair must be an object");
+            }
+            type_map::binding_pair pair{required_string(entry, path, "class", "binding pair"),
+                                        required_string(entry, path, "property", "binding pair"),
+                                        {}};
+            std::string const where =
+                std::format("binding pair {}.{}", pair.class_name, pair.property);
+            refuse_other_keys(entry, path, where, {"class", "property", "events"});
+            value const& events = entry["events"];
+            if (!events.is_array() || events.elements().empty()) {
+                fail(path, std::format("{}: 'events' must be an array naming at least one event",
+                                       where));
+            }
+            for (value const& event : events.elements()) {
+                if (!event.is_string()) {
+                    fail(path, std::format("{}: 'events' must contain strings only", where));
+                }
+                std::string name = text(event);
+                if (std::ranges::contains(pair.events, name)) {
+                    fail(path, std::format("{}: the event {} is named twice", where, name));
+                }
+                pair.events.push_back(std::move(name));
+            }
+            map.binding_pairs.push_back(std::move(pair));
         }
     }
     return map;

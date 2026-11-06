@@ -157,6 +157,7 @@ void write_all(output const& out, model const& m) {
     gen::write_enums_and_structs(out, m, em);
     gen::write_classes(out, m, em, bodies);
     gen::write_dsl(out, m.dsl, em);
+    gen::write_binding_pairs(out, m, em);
     gen::write_schema(out, m, em);
     gen::write_event_args(out, m, em, bodies);
     gen::write_styles(out, m, em);

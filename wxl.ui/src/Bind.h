@@ -8,7 +8,6 @@
 //     };
 //
 //     ToggleSwitch { isOn = Bind{settings.minimizeOnClose} }   // both ways: the control edits
-//     ToggleSwitch { Bind{settings.minimizeOnClose} }          // the same, by the data's type
 //     CheckBox { isChecked = BindInput{model->done} }          // a checked box writes the field
 //     CheckBox { isChecked = BindInput{model->enabled, std::logical_not{}} }  // "disable" over "enabled"
 //     Button { isEnabled = BindOutput{model->done, std::logical_not{}} } // shows fn of the field
@@ -19,13 +18,17 @@
 //     ScrollViewer { verticalOffset = Bind{note.top} }    // scrolls there, says where it is
 //
 // Three forms, one shape each, and a property takes the form its shape allows.
+// Each is written on the property it binds, as XAML writes `IsOn="{x:Bind ...}"`:
+// a control has several properties of one type -- isEnabled and visibility are
+// both bool -- and the type alone cannot choose, so a form written unnamed in
+// the braces is refused with the named form to write.
 //
 // Bind runs both ways: the control opens showing the value, follows every
 // change, and writes back what is edited on it, by nobody's hand. It takes a
 // property the control writes itself -- isOn under Toggled, text under
-// TextChanged -- which is a pair in impl/binding.h. A property the control
-// only shows has no way back and refuses it, naming BindOutput instead: a
-// binding that silently ran one way would look like the other.
+// TextChanged -- which is a binding pair (<wxl/BindingPairs.h>). A property the
+// control only shows has no way back and refuses it, naming BindOutput instead:
+// a binding that silently ran one way would look like the other.
 //
 // BindOutput runs from the field to the control only: the control opens
 // showing the value and follows every change, and what is typed into it stays
@@ -49,15 +52,6 @@
 // takes Bind and BindInput; BindOutput, which would leave the field saying what
 // was asked, is refused.
 //
-// Unnamed, `Bind{field}` inside the braces rides the route every unnamed
-// argument does -- a callable applied to the object -- and binds the control's
-// canonical property by the data's type (observable<bool> on a ToggleSwitch ->
-// isOn). Only the pairs have that route, and BindInput and BindOutput take it
-// the same way -- the state pairs excepted: every element has a focus, and a
-// bool alone would mean it. A binding of any other property names it, because
-// a control has several of one type (isEnabled and visibility are both bool)
-// and the type alone cannot choose.
-//
 // A binding holds the field by address and never owns it. The field is a
 // member of a model that outlives the description, and the binding is a watch
 // inside that field: it owns the control, the control holds nothing back, and
@@ -65,15 +59,16 @@
 
 #include "core.h"
 
-#include "impl/binding.h"
+#include <wxl/BindingPairs.h>
 #include "impl/bound_list.h"
 
 namespace wxl {
 
 namespace impl {
 
-// What the three spellings share: the field by address, and the direction,
-// applied to whatever control the braces are building.
+// What the three spellings share: the field by address, and the direction.
+// The property it binds is the one it is assigned to (setter_op in
+// impl/member.h, which hands both to bind_property).
 template <class T, bind_direction way, class Fn = std::identity>
 struct bound_field {
     static constexpr bind_direction direction = way;
@@ -87,22 +82,15 @@ struct bound_field {
 
     bound_field(core::observable<T>& field, Fn function) : model(&field), fn(std::move(function)) {}
 
+    // Written unnamed in the braces, a binding takes the route every unnamed
+    // argument does, a callable applied to the object, and is refused there
+    // with the form to write.
     template <class Control>
-    void operator()(Control const& control) const {
-        if constexpr (std::is_same_v<Fn, std::identity>) {
-            apply_bind(control, *model, direction);
-        } else if constexpr (direction == bind_direction::both) {
-            bind_mirrored(*model, fn, [&](core::observable<T>& mirror) {
-                apply_bind(control, mirror, direction);
-            });
-        } else if constexpr (direction == bind_direction::input) {
-            bind_transformed_input(
-                *model, fn, [&](core::observable<T>& own) { apply_bind(control, own, direction); });
-        } else {
-            static_assert(bind_always_false<Fn>,
-                          "wxl: a function on BindOutput{} is written with the property named: "
-                          "`isEnabled = BindOutput{field, fn}`.");
-        }
+    void operator()(Control const&) const {
+        static_assert(bind_always_false<Control>,
+                      "wxl: a binding is written on the property it binds -- `isOn = Bind{field}`, "
+                      "`text = BindInput{field}`, `isEnabled = BindOutput{field}`: a control has "
+                      "several properties of one type, and the type alone does not choose.");
     }
 };
 
@@ -159,9 +147,10 @@ BindOutput(core::observable<T>&, Fn) -> BindOutput<T, Fn>;
 //     }
 //
 // On a ListView, a GridView, an ItemsView (whose items are ItemContainers) and an ItemsRepeater,
-// named or unnamed. The list and the function are one value, so the type of the items is
-// checked against the function where the binding is written. Each change of the list reaches
-// the control as that change: an item inserted is one more row, not a list built again.
+// named itemsSource: unnamed in the braces it is refused, as every binding is. The list and
+// the function are one value, so the type of the items is checked against the function where
+// the binding is written. Each change of the list reaches the control as that change: an item
+// inserted is one more row, not a list built again.
 //
 // The function is called each time an item comes into view, with the item, and returns its
 // element. It may bind -- `text = BindOutput{card->progress}` on a card the list holds by
@@ -187,9 +176,17 @@ struct BindOutput<core::observable_list<T const>, Build> {
     BindOutput(core::observable_list<T const>& list, Build build)
         : model(&list), fn(std::move(build)) {}
 
+    // The binding, applied by `itemsSource = ...` (setter_op in impl/member.h).
     template <class Control>
-    void operator()(Control const& control) const {
+    void bind_to(Control const& control) const {
         impl::bind_items(control, *model, fn);
+    }
+
+    template <class Control>
+    void operator()(Control const&) const {
+        static_assert(impl::bind_always_false<Control>,
+                      "wxl: a list is bound as the items of a list control, named: "
+                      "`itemsSource = BindOutput{list, fn}`.");
     }
 };
 

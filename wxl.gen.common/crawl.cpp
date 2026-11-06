@@ -371,6 +371,7 @@ struct crawler {
             process_inheritance(type, cat, filter);
             if (cat == category::class_type) {
                 process_profile_additions(type);
+                process_binding_pairs(type);
                 process_activation_factory(type, filter);
             }
             process_members(type, filter);
@@ -472,6 +473,48 @@ struct crawler {
                 result.property_names.insert(setter.method.substr(3));
             }
         }
+    }
+
+    // What a binding pair of the type map is made of: the property and the
+    // events the control writes it under. A class the walk reaches has its
+    // pairs, so their members come in with it, each at the level that declares
+    // it -- Slider's Value and ValueChanged are RangeBase's. That they exist
+    // was checked before the walk (check_binding_pairs).
+    void process_binding_pairs(TypeDef const& type) {
+        std::string const name = full_name(type);
+        for (auto&& pair : types.binding_pairs) {
+            if (pair.class_name != name) {
+                continue;
+            }
+            because(dependency_reason::kind_t::Added, pair.property);
+            enqueue(declaring_level(type, member_kind::Property, pair.property),
+                    member_filter::allow({pair.property}));
+            for (auto&& event : pair.events) {
+                enqueue(declaring_level(type, member_kind::Event, event),
+                        member_filter::allow({event}));
+            }
+        }
+    }
+
+    // The class that declares a member of `type`: the type itself or the
+    // nearest class it derives from, counting the interfaces each implements;
+    // empty when none does.
+    static TypeDef declaring_level(TypeDef const& type, member_kind kind, std::string_view name) {
+        for (TypeDef level = type; level; level = base_of(level)) {
+            if (!declarations_of(level, kind, name).empty()) {
+                return level;
+            }
+        }
+        return {};
+    }
+
+    static bool derives_from(TypeDef const& type, TypeDef const& base) {
+        for (TypeDef level = base_of(type); level; level = base_of(level)) {
+            if (level == base) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // What a class reaches through its activation factory rather than
@@ -929,6 +972,79 @@ std::string undeclared_root(std::string_view name, profile_set const& profiles) 
                        name, listing.chars());
 }
 
+// The binding pairs and the bound members of the type map, held to the
+// metadata: a class it declares, and for a pair a property and events the
+// class or a class it derives from declares. A bound member's property is
+// wxl's own and is not looked for. A pair serves the classes derived from its
+// own (BindingPairs.h), so two entries of one property along one line of
+// inheritance would both claim the derived class; that, and one property
+// named twice on one class, stops the run with both entries named, before a
+// binding written on such a class fails to compile.
+void check_binding_pairs(type_map const& types, cache const& db) {
+    auto const fail = [&types](std::string_view message) {
+        throw std::runtime_error(std::format(
+            "{}: {}", wxl::core::unicode::to_utf8(types.source).chars(), message));
+    };
+    auto const class_named = [&](std::string_view where, std::string const& name) {
+        TypeDef const type = name.contains('.') ? db.find(name) : TypeDef{};
+        if (!type || get_category(type) != category::class_type) {
+            fail(std::format("{}: the metadata read declares no class {}", where, name));
+        }
+        return type;
+    };
+
+    struct entry {
+        std::string where;
+        std::string property;
+        TypeDef type;
+    };
+    std::vector<entry> entries;
+    for (auto&& pair : types.binding_pairs) {
+        std::string where = std::format("binding pair {}.{}", pair.class_name, pair.property);
+        TypeDef const type = class_named(where, pair.class_name);
+        if (!crawler::declaring_level(type, member_kind::Property, pair.property)) {
+            fail(std::format("{}: {} declares no property {}, and no class it derives from does",
+                             where, pair.class_name, pair.property));
+        }
+        for (auto&& event : pair.events) {
+            if (!crawler::declaring_level(type, member_kind::Event, event)) {
+                fail(std::format("{}: {} declares no event {}, and no class it derives from does",
+                                 where, pair.class_name, event));
+            }
+        }
+        entries.push_back({std::move(where), pair.property, type});
+    }
+    for (auto&& member : types.bound_members) {
+        std::string where = std::format("bound member {}.{}", member.class_name, member.name);
+        TypeDef const type = class_named(where, member.class_name);
+        entries.push_back({std::move(where), member.name, type});
+    }
+
+    for (std::size_t at = 0; at != entries.size(); ++at) {
+        for (std::size_t other = at + 1; other != entries.size(); ++other) {
+            auto const& a = entries[at];
+            auto const& b = entries[other];
+            if (a.property != b.property) {
+                continue;
+            }
+            if (a.type == b.type) {
+                fail(std::format("{} and {}: one property of one class is bound twice", a.where,
+                                 b.where));
+            }
+            bool const a_derived = crawler::derives_from(a.type, b.type);
+            if (a_derived || crawler::derives_from(b.type, a.type)) {
+                auto const& base = a_derived ? b : a;
+                auto const& derived = a_derived ? a : b;
+                fail(std::format("{} and {}: {} derives from {}, whose pair of {} serves it "
+                                 "already; two pairs of one property along one line of "
+                                 "inheritance would make a binding of it ambiguous -- remove one",
+                                 a.where, b.where, full_name(derived.type), full_name(base.type),
+                                 a.property));
+            }
+        }
+    }
+}
+
 }  // namespace
 
 closure crawl(profile_set const& raw_profiles, type_map const& types, cache const& db) {
@@ -953,6 +1069,7 @@ closure crawl(profile_set const& raw_profiles, type_map const& types, cache cons
             release, profiles.sdk.version, wxl::core::unicode::to_utf8(profiles.restored_from).chars(),
             missing));
     }
+    check_binding_pairs(types, db);
 
     crawler cr{profiles, types, db};
 

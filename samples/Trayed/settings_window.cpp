@@ -36,12 +36,13 @@ constexpr double kFormWidth = 460.0;
 // A ComboBox filled from a runtime list and bound to the index of the chosen
 // row, under a label -- ComboBox has no Header in this profile. Built here
 // rather than in the window's braces because the rows come from a vector, and
-// the declarative form spreads fixed children, not a run-time list.
+// the declarative form spreads fixed children, not a run-time list. Bound once
+// the rows are there: the index it is given has to name one.
 StackPanel labeledCombo(zstring_view label, std::vector<std::wstring> const& options,
                         core::observable<int>& model) {
     ComboBox combo;
     for (std::wstring const& option : options) combo.setPositional(ComboBoxItem{option});
-    Bind{model}(combo);
+    Apply{combo, selectedIndex = Bind{model}};
 
     return StackPanel{
         spacing = 4.0,
@@ -65,18 +66,18 @@ Window buildSettingsWindow(Settings& settings) {
             spacing = 16.0,
             ToggleSwitch{
                 header = L"Сворачивать в трей при закрытии окна",
-                Bind{settings.minimizeOnClose},
+                isOn = Bind{settings.minimizeOnClose},
             },
             TextBox{
                 header = L"Заголовок окна",
-                Bind{settings.windowTitle},
+                text = Bind{settings.windowTitle},
             },
             labeledCombo(L"Шрифт консоли", fontFamilies(), settings.fontFamily),
             NumberBox{
                 header = L"Размер шрифта, пикселей",
                 minimum = 8.0,
                 maximum = 48.0,
-                Bind{settings.fontSize},
+                value = Bind{settings.fontSize},
             },
             labeledCombo(L"Цветовая тема", themeNames(), settings.theme),
         },

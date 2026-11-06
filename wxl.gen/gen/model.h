@@ -293,6 +293,34 @@ struct dsl {
     std::set<std::string> includes;  // public headers the value types live in
 };
 
+// ---- BindingPairs.h ----
+
+// One type of field a binding pair binds its property to, and how the value
+// crosses: `get` reads the control `c` as that type, `set` writes the field's
+// `value` into it.
+struct binding_field {
+    std::string type;  // "int"
+    std::string get;   // "static_cast<int>(c.value())"
+    std::string set;   // "c.value(value)"
+};
+
+// One binding pair of a class the run generates: impl::binding_pair<key,
+// owner>, declared in BindingPairs.h, and the property_binder that hands it
+// every class derived from the owner. A pair of the type map's bindingPairs
+// is written under its events, with a bind() per field, and defined beside
+// the owner's bodies; a bound member's calls its hand-written function and is
+// defined where it is declared.
+struct binding_pair_info {
+    std::string key;    // the PropertyKey enumerator: "IsOn"
+    std::string owner;  // the wxl class: "ToggleSwitch"
+    std::string name;   // as the DSL spells it: "isOn"
+    std::string direction;  // "both" or "input"
+    std::vector<std::string> events;  // the EventKey enumerators; none for a bound member
+    std::vector<binding_field> fields;  // a bound member's has one, with no get or set
+    std::string function;  // a bound member's: "impl::apply_bind_focus"
+    std::set<std::string> includes;  // what the declaration needs: the field types, the function
+};
+
 // ---- schema.h ----
 
 // The same vocabulary as Members.h, but reached through the class that
@@ -309,9 +337,13 @@ struct dsl {
 struct schema {
     struct member {
         // Bound: a property that exists on this class as a binding target
-        // alone -- no setter, a hand-written pair in impl/binding.h reads it
-        // off the control -- so its anchor takes Bind forms and nothing else.
-        enum class kind_t { Property, Collection, Event, Bound };
+        // alone -- no setter, a hand-written function binds it -- so its
+        // anchor takes Bind forms and nothing else.
+        //
+        // Paired: a binding pair of a property the class has an anchor for
+        // already, its own or inherited, one per field type. It declares
+        // nothing in schema.h; its test line binds the anchor both ways.
+        enum class kind_t { Property, Collection, Event, Bound, Paired };
 
         kind_t kind = kind_t::Property;
         std::string key;   // the PropertyKey / EventKey enumerator
@@ -338,7 +370,7 @@ struct schema {
         // is not assigned to the tag: the test line hands it to the class's positional route.
         bool positional = false;
 
-        // Bound only: "input", "output" or "both" -- which Bind form the
+        // Bound and Paired only: "input" or "both" -- which Bind form the
         // pair takes, and so which one the test line writes.
         std::string direction;
     };
@@ -438,7 +470,10 @@ struct model {
     // Members.h and schema.h
     gen::dsl dsl;
     gen::schema schema;
-    std::vector<std::string> unplaced_bound_members;  // "Ns.Class.Member", reported
+
+    // BindingPairs.h, in the order the type map lists them: its bindingPairs,
+    // then its bound members.
+    std::vector<gen::binding_pair_info> binding_pairs;
 
     // EventArgs
     std::vector<gen::event_args_file> event_args_files;

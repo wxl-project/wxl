@@ -7,6 +7,7 @@
 #include "wxl.gen.h"
 
 import std;
+import wxl.core;
 
 // Class wrappers, grouped into three files per file group -- a WinRT
 // namespace, or several whose base classes reach into each other
@@ -1136,6 +1137,38 @@ void write_member_body(std::ostream& out, class_info const& info, member_info co
                member.returns_void ? call : substitute(member.result.from_winrt, call));
 }
 
+// The body of each bind() a binding pair of the metadata declares
+// (BindingPairs.h): the shared mechanism, impl::bind_pair, over the wrapper's
+// own getter, setter and events. Beside the owner's other bodies, so it is
+// compiled once, in a translation unit that has the owner whole; it names no
+// winrt. The direction is `asked`, as the static member `direction` of the
+// pair is the one it allows.
+void write_binding_pair_bodies(std::ostream& out, binding_pair_info const& pair) {
+    std::string events;
+    for (auto&& event : pair.events) {
+        events += std::format("{}EventKey::{}", events.empty() ? "" : ", ", event);
+    }
+    for (auto&& field : pair.fields) {
+        std::print(out, R"(
+void impl::binding_pair<PropertyKey::{0}, {1}>::bind({1} const& control,
+                                                     core::observable<{2}>& field,
+                                                     impl::bind_direction asked) {{
+    impl::bind_pair<{3}>(
+        control, field, asked, []({1} const& c) -> {2} {{ return {4}; }},
+        []({1} const& c, {2} const& value) {{ {5}; }});
+}}
+)",
+                   pair.key, pair.owner, field.type, events, field.get, field.set);
+    }
+}
+
+// Whether the class owns a pair of the metadata, whose bodies its part writes.
+bool has_binding_pairs(class_info const& info, std::vector<binding_pair_info> const& pairs) {
+    return std::ranges::any_of(pairs, [&info](binding_pair_info const& pair) {
+        return pair.owner == info.name && !pair.events.empty();
+    });
+}
+
 // The out-of-line bodies of a group (body_file): per class its runtime class
 // names, its constructors and members, and the one body of each try_as the
 // header promised -- the class's own translation unit has what that
@@ -1148,10 +1181,14 @@ void write_member_body(std::ostream& out, class_info const& info, member_info co
 // would include instead.
 body_file group_bodies(std::string_view ns, std::vector<class_info> const& classes,
                        std::map<std::string, std::string> const& group_of,
-                       std::set<std::string> const& instantiations) {
+                       std::set<std::string> const& instantiations,
+                       std::vector<binding_pair_info> const& pairs) {
     body_file file{.name = std::string{ns}};
 
     auto includes = source_includes(classes, factory_use_of(classes));
+    if (std::ranges::any_of(classes, [&pairs](auto&& info) { return has_binding_pairs(info, pairs); })) {
+        includes.insert({"../impl/binding.h", "BindingPairs.h", "Members.h"});
+    }
     if (has_impl(classes)) {
         file.includes.push_back(std::format("{}.impl.h", ns));
     } else {
@@ -1171,6 +1208,11 @@ body_file group_bodies(std::string_view ns, std::vector<class_info> const& class
         if (!info.statics_only) {
             std::print(out, "\ntemplate {0} Object::try_as<{0}>() const;\n", info.name);
             std::print(out, "template bool Object::is<{0}>() const;\n", info.name);
+        }
+        for (auto&& pair : pairs) {
+            if (pair.owner == info.name && !pair.events.empty()) {
+                write_binding_pair_bodies(out, pair);
+            }
         }
         if (auto text = std::move(out).str(); !text.empty()) {
             file.classes.push_back(std::move(text));
@@ -1990,9 +2032,147 @@ void add_hand_written_vocabulary(type_map const& types, dsl& d) {
 
     // A bound-only member needs the same key and tag; the setter the tag
     // dispatches to is constrained on the member's existence, so on a class
-    // that has none the assignment is refused rather than compiled.
+    // that has none the assignment is refused rather than compiled. Its
+    // include is its function's, which BindingPairs.h needs and Members.h
+    // does not.
     for (auto&& member : types.bound_members) {
-        add(member);
+        auto [it, inserted] = d.property_value_type.emplace(member.name, member.value_type);
+        if (!inserted && it->second != member.value_type) {
+            it->second.clear();
+        }
+    }
+}
+
+// The fields a property binds to, by the property's type: one rule per type,
+// so that every pair of one type converts alike, and none for a type no rule
+// covers. `c` is the control and `value` the field's value; `name` is the
+// property as the wrapper spells it.
+//
+// A double binds as it is and as an int, truncated on the way in. A nullable
+// bool -- IsChecked, whose third state a three-state box has -- binds as a
+// bool, empty reading false. A string binds as core::u16_text: the control
+// hands back units nothing guaranteed -- a paste is whatever the clipboard
+// held -- and repaired() makes them checked text, an odd surrogate becoming
+// U+FFFD; the repaired text written back reads the same on the control's own
+// change event, which observable::set then ends. The checked text goes to the
+// control as it is: hstring_param takes u16_text.
+std::vector<binding_field> binding_fields(std::string_view type, std::string_view name) {
+    auto const as_is = [name](std::string_view field) {
+        return binding_field{std::string{field}, std::format("c.{}()", name),
+                             std::format("c.{}(value)", name)};
+    };
+    if (type == "bool" || type == "Color" || type == "double") {
+        auto fields = std::vector{as_is(type)};
+        if (type == "double") {
+            fields.push_back({"int", std::format("static_cast<int>(c.{}())", name),
+                              std::format("c.{}(value)", name)});
+        }
+        return fields;
+    }
+    if (type == "int32_t") {
+        return {as_is("int")};
+    }
+    if (type == "core::nullable<bool>") {
+        return {{"bool", std::format("c.{}().value_or(false)", name),
+                 std::format("c.{}(value)", name)}};
+    }
+    if (type == "hstring") {
+        return {{"core::u16_text", std::format("core::unicode::repaired(c.{}())", name),
+                 std::format("c.{}(value)", name)}};
+    }
+    return {};
+}
+
+// The binding pairs of the classes this run generates (BindingPairs.h); a
+// class it does not generate has none. A pair of the type map's bindingPairs
+// is made of the wrapper's own getter, setter and events, on its class or the
+// nearest level above that has them. The walk brought them in, so a level
+// without one is a member the run could not map, and that stops the run
+// rather than leave the class without its pair; so does a property of a type
+// no rule binds.
+void add_binding_pairs(std::vector<class_source> const& sources,
+                       std::map<std::string, std::string> const& base_of, type_map const& types,
+                       model& m) {
+    std::map<std::string, class_source const*> by_metadata_name;
+    std::map<std::string, class_source const*> by_name;
+    for (auto&& source : sources) {
+        by_metadata_name.emplace(source.info.metadata_name, &source);
+        by_name.emplace(source.info.name, &source);
+    }
+    auto const fail = [&types](std::string_view message) {
+        throw std::runtime_error(std::format(
+            "{}: {}", wxl::core::unicode::to_utf8(types.source).chars(), message));
+    };
+    auto const find_member = [&](class_source const& owner, auto const& matches) {
+        for (auto&& level : ancestry(owner.info.name, base_of)) {
+            auto const at = by_name.find(level);
+            if (at == by_name.end()) {
+                break;
+            }
+            for (auto&& member : at->second->info.members) {
+                if (!member.is_static && matches(member)) {
+                    return &member;
+                }
+            }
+        }
+        return static_cast<member_info const*>(nullptr);
+    };
+
+    for (auto&& pair : types.binding_pairs) {
+        auto const owner = by_metadata_name.find(pair.class_name);
+        if (owner == by_metadata_name.end()) {
+            continue;
+        }
+        auto const& source = *owner->second;
+        std::string const where = std::format("binding pair {}.{}", pair.class_name, pair.property);
+        auto const* const getter = find_member(source, [&pair](member_info const& member) {
+            return member.is_property_getter && member.winrt_name == pair.property;
+        });
+        auto const* const setter = find_member(source, [&pair](member_info const& member) {
+            return member.kind == member_info::kind_t::Forward && member.is_property_setter &&
+                   member.winrt_name == pair.property;
+        });
+        if (!getter || !setter) {
+            fail(std::format("{}: the wrapper of {} has no {} of {}; the members skipped say why",
+                             where, source.info.name, getter ? "setter" : "getter", pair.property));
+        }
+
+        binding_pair_info info{pair.property, source.info.name, getter->name, "both"};
+        for (auto&& event : pair.events) {
+            if (!find_member(source, [&event](member_info const& member) {
+                    return member.kind == member_info::kind_t::EventAdd && member.winrt_name == event;
+                })) {
+                fail(std::format("{}: the wrapper of {} has no event {}; the members skipped say why",
+                                 where, source.info.name, event));
+            }
+            info.events.push_back(event);
+        }
+        info.fields = binding_fields(getter->result.value_type, getter->name);
+        if (info.fields.empty()) {
+            fail(std::format("{}: no rule binds a field to a property of type {}", where,
+                             getter->result.value_type));
+        }
+        info.includes.insert("../core.h");
+        for (auto&& field : info.fields) {
+            if (field.type == getter->result.value_type) {
+                info.includes.insert(getter->result.public_includes.begin(),
+                                     getter->result.public_includes.end());
+            }
+        }
+        m.binding_pairs.push_back(std::move(info));
+    }
+
+    for (auto&& bound : types.bound_members) {
+        auto const owner = by_metadata_name.find(bound.class_name);
+        if (owner == by_metadata_name.end()) {
+            continue;
+        }
+        binding_pair_info info{bound.name, owner->second->info.name, member_name(bound.name),
+                               bound.direction};
+        info.fields.push_back({bound.value_type, {}, {}});
+        info.function = bound.function;
+        info.includes = {"../core.h", bound.include};
+        m.binding_pairs.push_back(std::move(info));
     }
 }
 
@@ -2007,7 +2187,7 @@ void add_hand_written_vocabulary(type_map const& types, dsl& d) {
 // whoever typed its name -- which means a class below it has to inherit
 // from the nearest ancestor that does have one.
 void finish_schema(std::vector<std::pair<std::string, schema::member>>& attached_elsewhere,
-                   type_map const& types, model& m) {
+                   model& m) {
     auto& sch = m.schema;
     for (auto&& [target, member] : attached_elsewhere) {
         auto const owner = std::find_if(sch.classes.begin(), sch.classes.end(),
@@ -2017,21 +2197,27 @@ void finish_schema(std::vector<std::pair<std::string, schema::member>>& attached
         }
     }
 
-    // A bound-only member joins the class it is written on (types.json). The
-    // class has to be in the closure: a member on a class nobody generates
-    // would anchor to nothing, and is reported rather than dropped.
-    for (auto&& bound : types.bound_members) {
-        std::string const name = bound.class_name.substr(bound.class_name.rfind('.') + 1);
+    // A binding pair joins the class it is on, as the run generates it: a
+    // bound member as the anchor of its own, a pair of the metadata once per
+    // field type, over the anchor its property already has. The owner of a
+    // pair is a class the run generates, and every one of them has a schema
+    // class by now; a pair with none would leave its binding out of the
+    // schema and the surface test, so it stops the run.
+    for (auto&& pair : m.binding_pairs) {
         auto const owner = std::find_if(sch.classes.begin(), sch.classes.end(),
-                                        [&name](auto&& klass) { return klass.name == name; });
+                                        [&pair](auto&& klass) { return klass.name == pair.owner; });
         if (owner == sch.classes.end()) {
-            m.unplaced_bound_members.push_back(std::format("{}.{}", bound.class_name, bound.name));
-            continue;
+            throw std::runtime_error(std::format(
+                "the binding pair {}.{} is on a class the schema has no entry for", pair.owner,
+                pair.name));
         }
-        schema::member member{schema::member::kind_t::Bound, bound.name, member_name(bound.name),
-                              bound.value_type};
-        member.direction = bound.direction;
-        owner->members.push_back(std::move(member));
+        for (auto&& field : pair.fields) {
+            schema::member member{pair.events.empty() ? schema::member::kind_t::Bound
+                                                      : schema::member::kind_t::Paired,
+                                  pair.key, pair.name, field.type};
+            member.direction = pair.direction;
+            owner->members.push_back(std::move(member));
+        }
     }
 
     std::map<std::string, std::string> schema_base;  // every class -> its base, before pruning
@@ -2095,10 +2281,11 @@ type_index analyze_classes(type_kinds const& kinds, closure const& cl, type_map 
         vocabulary.finish();
     }
 
+    add_binding_pairs(sources, base_of, types, m);
     group_classes(sources, m);
     add_enumerators(kinds, cl, m.dsl);
     add_hand_written_vocabulary(types, m.dsl);
-    finish_schema(attached_elsewhere, types, m);
+    finish_schema(attached_elsewhere, m);
     return index;
 }
 
@@ -2154,8 +2341,8 @@ void write_classes(output const& out, model const& m, emitted& em,
             em.add(impl_header);
         }
 
-        bodies.push_back(
-            group_bodies(group.name, group.classes, m.group_of, group.collections_defined));
+        bodies.push_back(group_bodies(group.name, group.classes, m.group_of,
+                                      group.collections_defined, m.binding_pairs));
 
         classes += group.classes.size();
         for (auto&& info : group.classes) {

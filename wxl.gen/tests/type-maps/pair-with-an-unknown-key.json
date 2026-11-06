@@ -1,0 +1,6 @@
+// A binding pair that spells "events" as "event": refused as it is read.
+{
+    "bindingPairs": [
+        { "class": "Microsoft.UI.Xaml.Controls.ToggleSwitch", "property": "IsOn", "event": "Toggled" }
+    ]
+}

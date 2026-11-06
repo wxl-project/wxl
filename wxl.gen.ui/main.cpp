@@ -374,30 +374,30 @@ wxl::Teardown wxl_launched() {
             TextBlock {u"Settings", styles.TextBlock.Subtitle},
             ToggleSwitch {
                 header = u"Hide dependency properties",
-                Bind {settings->hideDependencyProperties},
+                isOn = Bind {settings->hideDependencyProperties},
             },
             ToggleSwitch {
                 header = u"Hide event args",
-                Bind {settings->hideEventArgs},
+                isOn = Bind {settings->hideEventArgs},
             },
             ToggleSwitch {
                 header = u"Hide pre-defined types",
-                Bind {settings->hidePredefined},
+                isOn = Bind {settings->hidePredefined},
             },
             ToggleSwitch {
                 header = u"Show signatures in trees",
-                Bind {settings->showSignatures},
+                isOn = Bind {settings->showSignatures},
             },
             ToggleSwitch {
                 header = u"Documentation in English",
-                Bind {settings->englishDocumentation},
+                isOn = Bind {settings->englishDocumentation},
             },
             NumberBox {
                 header = u"Details font size",
                 minimum = 12.0,
                 maximum = 24.0,
                 spinButtonPlacementMode = NumberBoxSpinButtonPlacementMode::Inline,
-                Bind {settings->detailsFontSize},
+                value = Bind {settings->detailsFontSize},
             },
             TextBlock {u"Keyboard focus"},
             ComboBox {
@@ -405,7 +405,7 @@ wxl::Teardown wxl_launched() {
                 ComboBoxItem {u"System frame"},
                 ComboBoxItem {u"Lift"},
                 ComboBoxItem {u"Glow"},
-                Bind {settings->focusLook},
+                selectedIndex = Bind {settings->focusLook},
             },
         },
     };
