@@ -10,9 +10,7 @@
 
 #include <unknwn.h>
 
-#include "Object.impl.h"
 #include "UiThread.h"
-#include <wxl/Microsoft.UI.Dispatching.impl.h>
 
 namespace wxl {
 namespace {
@@ -26,14 +24,12 @@ using handler_t = winrt::Microsoft::UI::Dispatching::DispatcherQueueHandler;
 
 }  // namespace
 
-UiThread::UiThread(DispatcherQueue const& queue) {
+UiThread UiThread::current() {
     ensureCurrent();
 
-    // A copy of the queue, detached: from here on this class owns a plain COM
-    // reference and no wxl wrapper is involved -- which is the whole point,
-    // since a wrapper is what may not cross threads.
-    queue_t native = Object::Impl::as<queue_t>(queue);
-    queue_ = static_cast<::IInspectable*>(winrt::detach_abi(native));
+    queue_t queue = queue_t::GetForCurrentThread();
+    if (!queue) core::abort("wxl: the UI thread has no dispatcher queue");
+    return UiThread{static_cast<::IInspectable*>(winrt::detach_abi(queue))};
 }
 
 UiThread::UiThread(UiThread const& other) noexcept : queue_(other.queue_) {

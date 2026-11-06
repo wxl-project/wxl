@@ -383,9 +383,8 @@ public:
         mouseHook_ = ::SetWindowsHookExW(WH_MOUSE_LL, &Trayed::mouseHook,
                                          ::GetModuleHandleW(nullptr), 0);
 
-        // Taken on this thread, where a wrapper may be touched; what is kept is
-        // the queue underneath, which the pool thread posts to.
-        ui_ = wxl::UiThread{wxl::DispatcherQueue::getForCurrentThread()};
+        // Taken on this thread; the pool thread posts to it.
+        ui_ = wxl::UiThread::current();
         ::SetConsoleCtrlHandler(&Trayed::onConsoleEvent, TRUE);
 
         createHost();
