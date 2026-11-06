@@ -18,15 +18,16 @@
 // never shows it, so it takes BindInput and nothing else.
 //
 // Three pairs are functions of their own, each in a file of its own that
-// reaches only the wrapper of its class: isFocused (focus_pair.h),
-// verticalOffset (vertical_offset_pair.h) and a NumberBox's intermediateValue
-// (intermediate_value_pair.h). The type map names each with its function and
-// that header ("boundMembers"), and the generated pair calls it. Two of them
-// bind state the control takes only on its own terms -- isFocused and a
-// ScrollViewer's verticalOffset (impl/state_pair.h). They have no setter: the
-// field asks, the control does what it can, and the field says what it did. So
-// they take Bind or BindInput, never BindOutput, which would leave the field
-// saying what was asked.
+// includes only generated headers every profile with its class has:
+// isFocused (focus_pair.h), verticalOffset (vertical_offset_pair.h) and a
+// NumberBox's intermediateValue (intermediate_value_pair.h). The type map
+// names each with its function and that header ("boundMembers"), and the
+// generated pair calls it. Two of them bind state the control takes only on
+// its own terms -- isFocused and a ScrollViewer's verticalOffset
+// (impl/state_pair.h). They have no setter: the field asks, the control does
+// what it can, and the field says what it did. So they take Bind or
+// BindInput, never BindOutput, which would leave the field saying what was
+// asked.
 
 #include "core.h"
 
