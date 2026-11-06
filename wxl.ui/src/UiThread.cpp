@@ -11,6 +11,7 @@
 #include <unknwn.h>
 
 #include "UiThread.h"
+#include "impl/dispatcher.h"
 
 namespace wxl {
 namespace {
@@ -25,10 +26,7 @@ using handler_t = winrt::Microsoft::UI::Dispatching::DispatcherQueueHandler;
 }  // namespace
 
 UiThread UiThread::current() {
-    ensureCurrent();
-
-    queue_t queue = queue_t::GetForCurrentThread();
-    if (!queue) core::abort("wxl: the UI thread has no dispatcher queue");
+    queue_t queue = impl::ui_queue();
     return UiThread{static_cast<::IInspectable*>(winrt::detach_abi(queue))};
 }
 
