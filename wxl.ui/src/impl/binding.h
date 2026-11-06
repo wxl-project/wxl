@@ -1,130 +1,148 @@
 #pragma once
 
-// The winrt-free face of the binding pairs: what Bind{}, BindInput{} and
-// BindOutput{} call, declared here and defined in binding.cpp where the
-// projection is allowed.
+// The binding pairs, the winrt-free side: a control property <-> an observable
+// field, both ways or the one asked for.
 //
-// One pair per property a control writes itself, with the event that says so.
-// This is the only table binding needs: a property the control does not write
-// is bound one way, from the field, by the setter the generator already emits
-// (bind_property in member.h), and has no entry here. The set is hand-written
-// for now -- the controls a settings dialog reaches for -- and is where the
-// generator will one day emit an entry per such property.
+// A pair is a property the control writes itself, with the events it says so
+// under. The generator writes one per pair the type map names
+// (wxl.gen/profiles/types.json, "bindingPairs") for every class the profile
+// generates, as impl::binding_pair<key, class> in <wxl/BindingPairs.h>, and
+// each of them is bind_pair below over the wrapper's own getter, setter and
+// events. A property the control does not write has no pair: it is bound one
+// way, from the field, by the setter the generator already emits
+// (bind_property in member.h).
 //
 // A pair runs both ways unless `direction` keeps one: input is the control ->
 // field half alone, output the field -> control half alone. A pair whose own
 // direction is input has that half only: the control reports the property and
 // never shows it, so it takes BindInput and nothing else.
 //
-// Two pairs bind state the control takes only on its own terms -- isFocused
-// and a ScrollViewer's verticalOffset (impl/state_pair.h). They have no
-// setter: the field asks, the control does what it can, and the field says
-// what it did. So they take Bind or BindInput, never BindOutput, which would
-// leave the field saying what was asked.
-//
-// Declared with wrapper types and observables and no winrt, so Bind.h (and the
-// application that includes it) never sees the projection.
+// Three pairs are functions of their own, declared here and defined in
+// binding.cpp, where the projection is allowed: the type map names each with
+// its function ("boundMembers"), and the generated pair calls it. Two of them
+// bind state the control takes only on its own terms -- isFocused and a
+// ScrollViewer's verticalOffset (impl/state_pair.h). They have no setter: the
+// field asks, the control does what it can, and the field says what it did. So
+// they take Bind or BindInput, never BindOutput, which would leave the field
+// saying what was asked.
 
 #include "core.h"
 
-#include "Color.h"
+#include "../events.h"
 #include "member.h"
 
 namespace wxl {
-class Selector;
-class ToggleSwitch;
-class ToggleButton;
-class CheckBox;
 class NumberBox;
-class TextBox;
-class RadioButtons;
-class Slider;
-class RatingControl;
-class ColorPicker;
-class ToggleMenuFlyoutItem;
-class RadioMenuFlyoutItem;
-class PipsPager;
-class PagerControl;
 class UIElement;
 class ScrollViewer;
 }  // namespace wxl
 
 namespace wxl::impl {
 
-/// ToggleSwitch.isOn <-> observable<bool>, under Toggled.
-void apply_bind(ToggleSwitch const& control, core::observable<bool>& model,
-                bind_direction direction = bind_direction::both);
+// The control-side half of a binding pair, and the reason its handlers may
+// hold the field by bare address. The revoker lives inside the field's own
+// watch (bind_pair below), so it goes when the watch does -- with the field,
+// or through unbind() -- and takes the handlers off the control first.
+// Nothing is ever left on a control that could write to a field that is gone.
+//
+// It owns the control, as the watch it lives in has to anyway: a control is a
+// temporary in the description tree, and the watch writes to it. One token
+// per event, each empty where nothing was added.
+template <class Control, EventKey... keys>
+struct handler_revoker {
+    Control control;
+    std::array<EventToken, sizeof...(keys)> tokens;
 
-/// ToggleButton.isChecked <-> observable<bool>, under Checked and Unchecked --
-/// a CheckBox, a RadioButton or a ToggleButton itself. Indeterminate is not
-/// a bool and is left alone: a field that has it is a nullable, not this.
-void apply_bind(ToggleButton const& control, core::observable<bool>& model,
-                bind_direction direction = bind_direction::both);
+    handler_revoker(Control const& c, std::array<EventToken, sizeof...(keys)> t)
+        : control(c), tokens(std::move(t)) {}
 
-/// Selector.selectedIndex <-> observable<int>, under SelectionChanged -- the
-/// chosen item, by position, -1 while none is: a ComboBox, a ListView or a
-/// GridView, a FlipView (the page shown). The index is the control's: a reset
-/// of its items clears the choice, and the field hears -1.
-void apply_bind(Selector const& control, core::observable<int>& model,
-                bind_direction direction = bind_direction::both);
+    // Moved into the watch's closure once; a token's own move leaves the
+    // source with nothing to remove, so that only one of the two ever does.
+    handler_revoker(handler_revoker&& other) noexcept
+        : control(std::move(other.control)), tokens(std::move(other.tokens)) {}
 
-/// NumberBox.value <-> observable<int>, under ValueChanged -- the number,
-/// rounded to whole.
-void apply_bind(NumberBox const& control, core::observable<int>& model,
-                bind_direction direction = bind_direction::both);
+    handler_revoker(handler_revoker const&) = delete;
+    handler_revoker& operator=(handler_revoker const&) = delete;
+    handler_revoker& operator=(handler_revoker&&) = delete;
 
-/// NumberBox.value <-> observable<double>, under ValueChanged -- the number
-/// as the box holds it, NaN while the box is empty.
-void apply_bind(NumberBox const& control, core::observable<double>& model,
-                bind_direction direction = bind_direction::both);
+    ~handler_revoker() {
+        [this]<std::size_t... at>(std::index_sequence<at...>) {
+            ((tokens[at] ? static_cast<void>(event_adder<keys>::remove(control, tokens[at]))
+                         : static_cast<void>(0)),
+             ...);
+        }(std::make_index_sequence<sizeof...(keys)>{});
+    }
+};
 
-/// TextBox.text <-> observable<u16_text>, under TextChanged -- validated
-/// UTF-16, repaired on the way in.
-void apply_bind(TextBox const& control, core::observable<core::u16_text>& model,
-                bind_direction direction = bind_direction::both);
+// The shape shared by every binding pair, whatever the control and the value:
+// the events that say the control wrote the property, and two little
+// operations for how the property is read and written.
+//
+//  - `set` writes the field's value into the control. It runs once at the start
+//    so the control opens showing the value, and again on every change.
+//  - `get` reads the value back out for the control -> field direction, under
+//    each of the events: a checked box says so under Checked and Unchecked.
+//
+// Asked for one direction, the pair keeps that half alone: input adds the
+// handlers and writes the control never, output writes the control and hears
+// it never. The watch stays either way, with nothing to write for input, since
+// it is what holds the revoker.
+//
+// The control -> field handlers name the control as their sender and the
+// field by address, so they hold neither: the sender is read rather than
+// captured, and the address is good for as long as the handlers exist, which
+// the revoker sees to. The field -> control watch owns the control, through
+// the revoker. So the ownership runs one way -- model -> watch -> control --
+// and there is no cycle to break: the model goes, its watches go, the
+// handlers come off, the control is let go. Only a model that outlives its
+// window needs unbind(), and then the revoker does the same on the way out.
+//
+// No re-entry guard: writing the control raises its change event, which
+// writes the same value back, and observable::set says nothing when nothing
+// changed. NaN, a NumberBox's word for empty, equals nothing, so set cannot end
+// that echo; the box raises no ValueChanged for NaN over NaN, which does.
+template <EventKey... keys, class Control, class T, class Get, class Set>
+void bind_pair(Control const& control, core::observable<T>& field, bind_direction direction,
+               Get get, Set set) {
+    bool const shows = direction != bind_direction::input;
+    bool const edits = direction != bind_direction::output;
 
-/// RadioButtons.selectedIndex <-> observable<int>, under SelectionChanged --
-/// the chosen button, by position, -1 while none is.
-void apply_bind(RadioButtons const& control, core::observable<int>& model,
-                bind_direction direction = bind_direction::both);
+    if (shows) {
+        set(control, field.get());
+    } else if (edits) {
+        // Input alone: the field takes what the control has right now, so the
+        // two agree from the first moment and the first change is a change.
+        field.set(get(control));
+    }
 
-/// Slider.value <-> observable<double>, under ValueChanged.
-void apply_bind(Slider const& control, core::observable<double>& model,
-                bind_direction direction = bind_direction::both);
+    auto const listen = [&]<EventKey key>() {
+        using Args = typename event_adder<key>::template args_t<Control>;
+        return event_adder<key>::add(control, [&field, get](Control const& sender, EventArgsRef<Args>) {
+            field.set(get(sender));
+        });
+    };
+    handler_revoker<Control, keys...> revoker{
+        control, [&]() -> std::array<EventToken, sizeof...(keys)> {
+            if (!edits) return {};
+            return {listen.template operator()<keys>()...};
+        }()};
 
-/// RatingControl.value <-> observable<double>, under ValueChanged -- -1 while
-/// the control holds no rating.
-void apply_bind(RatingControl const& control, core::observable<double>& model,
-                bind_direction direction = bind_direction::both);
-
-/// ColorPicker.color <-> observable<Color>, under ColorChanged.
-void apply_bind(ColorPicker const& control, core::observable<Color>& model,
-                bind_direction direction = bind_direction::both);
-
-/// ToggleMenuFlyoutItem.isChecked <-> observable<bool>, under Click -- the item
-/// flips itself when it is chosen, and says nothing else.
-void apply_bind(ToggleMenuFlyoutItem const& control, core::observable<bool>& model,
-                bind_direction direction = bind_direction::both);
-
-/// RadioMenuFlyoutItem.isChecked <-> observable<bool>, under Click. The group
-/// unchecks the others without a click of theirs: a field per item that must
-/// follow its group reads the group's choice from one field instead.
-void apply_bind(RadioMenuFlyoutItem const& control, core::observable<bool>& model,
-                bind_direction direction = bind_direction::both);
-
-/// PipsPager.selectedPageIndex <-> observable<int>, under SelectedIndexChanged.
-void apply_bind(PipsPager const& control, core::observable<int>& model,
-                bind_direction direction = bind_direction::both);
-
-/// PagerControl.selectedPageIndex <-> observable<int>, under SelectedIndexChanged.
-void apply_bind(PagerControl const& control, core::observable<int>& model,
-                bind_direction direction = bind_direction::both);
+    if (shows) {
+        field.watch_for_binding([revoker = std::move(revoker), set](T const& value) noexcept {
+            set(revoker.control, value);
+        });
+    } else {
+        field.watch_for_binding([revoker = std::move(revoker)](T const&) noexcept {});
+    }
+}
 
 /// NumberBox.intermediateValue -> observable<double>: the number as it is
 /// being typed, parsed by the box's own NumberFormatter on every change of
 /// its text, NaN while the text is not a number yet. Input alone -- the box
-/// commits to Value on its own terms, and this is the value before that.
-void apply_bind_intermediate_value(NumberBox const& control, core::observable<double>& model);
+/// commits to Value on its own terms, and this is the value before that --
+/// so the direction is always input.
+void apply_bind_intermediate_value(NumberBox const& control, core::observable<double>& model,
+                                   bind_direction direction);
 
 /// UIElement.isFocused <-> observable<bool>, under GotFocus and LostFocus: whether
 /// the element itself has the focus. True asks for it -- an element out of the
@@ -133,7 +151,7 @@ void apply_bind_intermediate_value(NumberBox const& control, core::observable<do
 /// giving it to another element, so a focused element reads true again. A
 /// control that hands its focus to a part of its template reads false.
 void apply_bind_focus(UIElement const& control, core::observable<bool>& model,
-                      bind_direction direction = bind_direction::both);
+                      bind_direction direction);
 
 /// ScrollViewer.verticalOffset <-> observable<double>, under ViewChanged once the
 /// view has settled. A value scrolls the viewer there without animation, clamped
@@ -141,177 +159,6 @@ void apply_bind_focus(UIElement const& control, core::observable<bool>& model,
 /// loaded. The field says where the viewer is, or is going: the offset it was
 /// clamped to, or the one it stays at when the viewer refuses.
 void apply_bind_vertical_offset(ScrollViewer const& control, core::observable<double>& model,
-                                bind_direction direction = bind_direction::both);
-
-// The same pairs by property, for the named form `isOn = Bind{...}`. A
-// specialisation is what tells bind_property that this property is the
-// control's to write, and so bound both ways -- or the one way asked for;
-// every other (property, control) meets the empty primary in member.h and
-// takes BindOutput alone.
-
-template <>
-struct property_binder<PropertyKey::IsOn, ToggleSwitch> {
-    static constexpr bind_direction direction = bind_direction::both;
-    static void bind(ToggleSwitch const& control, core::observable<bool>& model,
-                     bind_direction asked) {
-        apply_bind(control, model, asked);
-    }
-};
-
-template <>
-struct property_binder<PropertyKey::IsChecked, ToggleButton> {
-    static constexpr bind_direction direction = bind_direction::both;
-    static void bind(ToggleButton const& control, core::observable<bool>& model,
-                     bind_direction asked) {
-        apply_bind(control, model, asked);
-    }
-};
-
-// A template member, not a function: converting a CheckBox to its ToggleButton
-// base needs the CheckBox complete, and this header only declares it. The body
-// is compiled where the binding is written, which has the whole class.
-template <>
-struct property_binder<PropertyKey::IsChecked, CheckBox> {
-    static constexpr bind_direction direction = bind_direction::both;
-    template <class Control>
-    static void bind(Control const& control, core::observable<bool>& model, bind_direction asked) {
-        apply_bind(control, model, asked);
-    }
-};
-
-// Every selector chooses by index the same way, so the pair is one partial
-// specialisation over whatever derives from Selector. The constraint and the
-// conversion to Selector are checked where a binding is written, which has the
-// control's whole class.
-template <class Control>
-    requires std::derived_from<Control, Selector>
-struct property_binder<PropertyKey::SelectedIndex, Control> {
-    static constexpr bind_direction direction = bind_direction::both;
-    static void bind(Selector const& control, core::observable<int>& model, bind_direction asked) {
-        apply_bind(control, model, asked);
-    }
-};
-
-template <>
-struct property_binder<PropertyKey::Value, NumberBox> {
-    static constexpr bind_direction direction = bind_direction::both;
-    static void bind(NumberBox const& control, core::observable<int>& model, bind_direction asked) {
-        apply_bind(control, model, asked);
-    }
-    static void bind(NumberBox const& control, core::observable<double>& model,
-                     bind_direction asked) {
-        apply_bind(control, model, asked);
-    }
-};
-
-template <>
-struct property_binder<PropertyKey::SelectedIndex, RadioButtons> {
-    static constexpr bind_direction direction = bind_direction::both;
-    static void bind(RadioButtons const& control, core::observable<int>& model,
-                     bind_direction asked) {
-        apply_bind(control, model, asked);
-    }
-};
-
-template <>
-struct property_binder<PropertyKey::Value, Slider> {
-    static constexpr bind_direction direction = bind_direction::both;
-    static void bind(Slider const& control, core::observable<double>& model, bind_direction asked) {
-        apply_bind(control, model, asked);
-    }
-};
-
-template <>
-struct property_binder<PropertyKey::Value, RatingControl> {
-    static constexpr bind_direction direction = bind_direction::both;
-    static void bind(RatingControl const& control, core::observable<double>& model,
-                     bind_direction asked) {
-        apply_bind(control, model, asked);
-    }
-};
-
-template <>
-struct property_binder<PropertyKey::Color, ColorPicker> {
-    static constexpr bind_direction direction = bind_direction::both;
-    static void bind(ColorPicker const& control, core::observable<Color>& model,
-                     bind_direction asked) {
-        apply_bind(control, model, asked);
-    }
-};
-
-template <>
-struct property_binder<PropertyKey::IsChecked, ToggleMenuFlyoutItem> {
-    static constexpr bind_direction direction = bind_direction::both;
-    static void bind(ToggleMenuFlyoutItem const& control, core::observable<bool>& model,
-                     bind_direction asked) {
-        apply_bind(control, model, asked);
-    }
-};
-
-template <>
-struct property_binder<PropertyKey::IsChecked, RadioMenuFlyoutItem> {
-    static constexpr bind_direction direction = bind_direction::both;
-    static void bind(RadioMenuFlyoutItem const& control, core::observable<bool>& model,
-                     bind_direction asked) {
-        apply_bind(control, model, asked);
-    }
-};
-
-template <>
-struct property_binder<PropertyKey::SelectedPageIndex, PipsPager> {
-    static constexpr bind_direction direction = bind_direction::both;
-    static void bind(PipsPager const& control, core::observable<int>& model, bind_direction asked) {
-        apply_bind(control, model, asked);
-    }
-};
-
-template <>
-struct property_binder<PropertyKey::SelectedPageIndex, PagerControl> {
-    static constexpr bind_direction direction = bind_direction::both;
-    static void bind(PagerControl const& control, core::observable<int>& model,
-                     bind_direction asked) {
-        apply_bind(control, model, asked);
-    }
-};
-
-template <>
-struct property_binder<PropertyKey::IntermediateValue, NumberBox> {
-    static constexpr bind_direction direction = bind_direction::input;
-    static void bind(NumberBox const& control, core::observable<double>& model, bind_direction) {
-        apply_bind_intermediate_value(control, model);
-    }
-};
-
-// Every element has a focus, so the pair is one partial specialisation over
-// whatever derives from UIElement rather than one per class. The constraint is
-// checked where a binding is written, which has the control's whole class; the
-// conversion to UIElement happens there too.
-template <class Element>
-    requires std::derived_from<Element, UIElement>
-struct property_binder<PropertyKey::IsFocused, Element> {
-    static constexpr bind_direction direction = bind_direction::both;
-    static void bind(UIElement const& control, core::observable<bool>& model,
-                     bind_direction asked) {
-        apply_bind_focus(control, model, asked);
-    }
-};
-
-template <>
-struct property_binder<PropertyKey::VerticalOffset, ScrollViewer> {
-    static constexpr bind_direction direction = bind_direction::both;
-    static void bind(ScrollViewer const& control, core::observable<double>& model,
-                     bind_direction asked) {
-        apply_bind_vertical_offset(control, model, asked);
-    }
-};
-
-template <>
-struct property_binder<PropertyKey::Text, TextBox> {
-    static constexpr bind_direction direction = bind_direction::both;
-    static void bind(TextBox const& control, core::observable<core::u16_text>& model,
-                     bind_direction asked) {
-        apply_bind(control, model, asked);
-    }
-};
+                                bind_direction direction);
 
 }  // namespace wxl::impl

@@ -761,12 +761,14 @@ inline Preset const stamp{
 }
 
 // A binding written on a property, in the one form its shape allows. Bind
-// takes a property the control shows and writes itself -- a pair in
-// impl/binding.h; BindOutput takes any property with a setter; BindInput takes
-// a pair, both ways or input alone. Each written elsewhere is refused with the
-// form to write instead, which no line here can show: a static_assert in a
-// body is not something a requires-expression can see. The model is one
-// refcounted object whose observables are its fields, not handles.
+// takes a property the control shows and writes itself -- a binding pair
+// (<wxl/BindingPairs.h>), which serves the classes derived from its own;
+// BindOutput takes any property with a setter; BindInput takes a pair, both
+// ways or input alone. Each written elsewhere, or written unnamed, is refused
+// with the form to write instead, which no line here can show: a
+// static_assert in a body is not something a requires-expression can see. The
+// model is one refcounted object whose observables are its fields, not
+// handles.
 namespace {
 struct Reading {
     std::u16string label;
@@ -789,18 +791,20 @@ struct BoundModel : core::sta_refcounted {
 
     // Both ways: the control writes the property itself.
     TextBox{text = Bind{model->name}};
-    ToggleSwitch{isOn = Bind{model->busy}};  // named
-    ToggleSwitch{Bind{model->busy}};         // by the data's type
-    ComboBox{selectedIndex = Bind{model->row}};
+    ToggleSwitch{isOn = Bind{model->busy}};
+    ComboBox{selectedIndex = Bind{model->row}};  // Selector's pair
     NumberBox{value = Bind{model->amount}};
-    CheckBox{isChecked = Bind{model->busy}};
-    CheckBox{Bind{model->busy}};
+    NumberBox{value = Bind{model->row}};  // a double property binds an int as well
+    CheckBox{isChecked = Bind{model->busy}};  // ToggleButton's pair
     ToggleButton{isChecked = Bind{model->busy}};
     RadioButtons{selectedIndex = Bind{model->row}};
     Slider{value = Bind{model->amount}};
     RatingControl{value = Bind{model->amount}};
     ColorPicker{color = Bind{model->tint}};
-    Slider{Bind{model->amount}};
+    ToggleMenuFlyoutItem{isChecked = Bind{model->busy}};
+    RadioMenuFlyoutItem{isChecked = Bind{model->busy}};
+    PipsPager{selectedPageIndex = Bind{model->row}};
+    PagerControl{selectedPageIndex = Bind{model->row}};
 
     // From the field: the control shows, pair or no pair.
     TextBlock{text = BindOutput{model->title}};   // no pair: the only form a TextBlock's text takes
@@ -819,25 +823,22 @@ struct BoundModel : core::sta_refcounted {
 
     // Through a function: two ways when it is its own inverse, one way for any.
     CheckBox{isChecked = BindInput{model->busy, std::logical_not{}}};
-    CheckBox{BindInput{model->busy, std::logical_not{}}};
     CheckBox{isChecked = Bind{model->busy, std::logical_not{}}};
-    CheckBox{Bind{model->busy, std::logical_not{}}};
     Button{isEnabled = BindOutput{model->busy, std::logical_not{}}};
 
     // Through a pointer to a member: the control shows one member of the value.
     TextBlock{text = BindOutput{model->reading, &Reading::label}};
     Button{isEnabled = BindOutput{model->reading, &Reading::ready}};
 
-    // And unnamed, by the data's type, the way Bind{} goes.
-    ToggleSwitch{BindInput{model->busy}};
-    ToggleSwitch{BindOutput{model->busy}};
+    // Applied to a control built already, as a ComboBox filled at run time is.
+    ComboBox combo;
+    Apply{combo, selectedIndex = Bind{model->row}};
 }
 
 // State the control takes only on its own terms, bound as a pair that answers
 // back: isFocused on any element, verticalOffset on a ScrollViewer. Bind and
 // BindInput, never BindOutput -- the field says what the control did, not what
-// was asked -- and never unnamed: a bool would otherwise mean focus to every
-// element.
+// was asked.
 [[maybe_unused]] void binding_state_pairs() {
     auto const model = core::make_refcounted<BoundModel>();
 
@@ -2636,8 +2637,8 @@ static_assert(!impl::invocation_answerable<sliced_answer const&>);
     ListView{itemContainerStyle = Preset{padding = Thickness{4}}, TextBlock{u"item"}};
 }
 
-// A list bound to an observable_list: itemsSource = BindOutput{list, fn} on the four list controls, named, unnamed and
-// through the schema; a read-only list; an item held by pointer whose own field is bound inside its element; the item
+// A list bound to an observable_list: itemsSource = BindOutput{list, fn} on the four list controls, named and through
+// the schema; a read-only list; an item held by pointer whose own field is bound inside its element; the item
 // back from what a click hands out (boundItem); the selection as a field of any Selector.
 namespace {
 struct BoardCard : ::wxl::core::sta_refcounted {
@@ -2667,9 +2668,6 @@ struct Board {
     ItemsView{itemsSource = BindOutput{board.words, [](core::u16_text const& word) {
                                            return ItemContainer{child = TextBlock{text = word}};
                                        }}};
-    ListView{
-        BindOutput{board.words, row}};  // unnamed: what a list control binds a list to is its items
-    ItemsRepeater{BindOutput{board.words, row}};
     ListView{itemsSource = BindOutput{board.shown(), row}};  // read-only: only the model changes it
     ListView{schema::ItemsControl::itemsSource = BindOutput{board.words, row}};
 
@@ -2691,7 +2689,6 @@ struct Board {
     };
     ListView{itemsSource = BindOutput{board.words, row}, selectedIndex = BindInput{board.chosen}};
     GridView{itemsSource = BindOutput{board.words, row}, selectedIndex = BindOutput{board.chosen}};
-    ListView{Bind{board.chosen}};  // unnamed: an int on a selector is its index
     FlipView{selectedIndex = Bind{board.chosen}};
-    ComboBox{Bind{board.chosen}};
+    ComboBox{selectedIndex = Bind{board.chosen}};
 }
