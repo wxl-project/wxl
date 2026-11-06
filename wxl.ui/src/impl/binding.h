@@ -17,9 +17,11 @@
 // direction is input has that half only: the control reports the property and
 // never shows it, so it takes BindInput and nothing else.
 //
-// Three pairs are functions of their own, declared here and defined in
-// binding.cpp, where the projection is allowed: the type map names each with
-// its function ("boundMembers"), and the generated pair calls it. Two of them
+// Three pairs are functions of their own, each in a file of its own that
+// reaches only the wrapper of its class: isFocused (focus_pair.h),
+// verticalOffset (vertical_offset_pair.h) and a NumberBox's intermediateValue
+// (intermediate_value_pair.h). The type map names each with its function and
+// that header ("boundMembers"), and the generated pair calls it. Two of them
 // bind state the control takes only on its own terms -- isFocused and a
 // ScrollViewer's verticalOffset (impl/state_pair.h). They have no setter: the
 // field asks, the control does what it can, and the field says what it did. So
@@ -30,12 +32,6 @@
 
 #include "../events.h"
 #include "member.h"
-
-namespace wxl {
-class NumberBox;
-class UIElement;
-class ScrollViewer;
-}  // namespace wxl
 
 namespace wxl::impl {
 
@@ -135,30 +131,5 @@ void bind_pair(Control const& control, core::observable<T>& field, bind_directio
         field.watch_for_binding([revoker = std::move(revoker)](T const&) noexcept {});
     }
 }
-
-/// NumberBox.intermediateValue -> observable<double>: the number as it is
-/// being typed, parsed by the box's own NumberFormatter on every change of
-/// its text, NaN while the text is not a number yet. Input alone -- the box
-/// commits to Value on its own terms, and this is the value before that --
-/// so the direction is always input.
-void apply_bind_intermediate_value(NumberBox const& control, core::observable<double>& model,
-                                   bind_direction direction);
-
-/// UIElement.isFocused <-> observable<bool>, under GotFocus and LostFocus: whether
-/// the element itself has the focus. True asks for it -- an element out of the
-/// tree is asked when it is loaded -- and the field then says whether the
-/// element took it; false is no request, since XAML gives focus up only by
-/// giving it to another element, so a focused element reads true again. A
-/// control that hands its focus to a part of its template reads false.
-void apply_bind_focus(UIElement const& control, core::observable<bool>& model,
-                      bind_direction direction);
-
-/// ScrollViewer.verticalOffset <-> observable<double>, under ViewChanged once the
-/// view has settled. A value scrolls the viewer there without animation, clamped
-/// to the content's extent; a viewer out of the tree is scrolled when it is
-/// loaded. The field says where the viewer is, or is going: the offset it was
-/// clamped to, or the one it stays at when the viewer refuses.
-void apply_bind_vertical_offset(ScrollViewer const& control, core::observable<double>& model,
-                                bind_direction direction);
 
 }  // namespace wxl::impl

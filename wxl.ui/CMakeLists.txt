@@ -376,7 +376,12 @@ set(_wxl_ui_profile_sources
     src/ZoomEffect.h
     src/ZoomEffect.cpp
     src/impl/binding.h
-    src/impl/binding.cpp
+    src/impl/focus_pair.h
+    src/impl/focus_pair.cpp
+    src/impl/vertical_offset_pair.h
+    src/impl/vertical_offset_pair.cpp
+    src/impl/intermediate_value_pair.h
+    src/impl/intermediate_value_pair.cpp
     src/WindowShade.h
     src/WindowShade.cpp
     src/ShowDialog.h

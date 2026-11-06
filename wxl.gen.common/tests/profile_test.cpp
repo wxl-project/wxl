@@ -381,7 +381,7 @@ TEST(type_map, reads_the_binding_pairs_and_the_function_of_a_bound_member) {
                                          &type_map::bound_member::name);
     ASSERT_NE(focus, types.bound_members.end());
     EXPECT_EQ(focus->function, "impl::apply_bind_focus");
-    EXPECT_EQ(focus->include, "../impl/binding.h");
+    EXPECT_EQ(focus->include, "../impl/focus_pair.h");
     EXPECT_EQ(focus->direction, "both");
 }
 
