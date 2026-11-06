@@ -18,6 +18,7 @@
 #include "CompositionWindow.h"
 #include <wxl/Microsoft.Windows.AppNotifications.h>
 #include <wxl/Microsoft.UI.Windowing.h>
+#include <wxl/Windows.System.h>
 
 import wxl.core;
 
@@ -298,10 +299,16 @@ struct Shell {
     // Выбор в панели ставит сам `select`; его событие не должно вести
     // на страницу второй раз.
     bool selecting = false;
-    // Сохранения состояния, которые идут (см. saveState), — последним полем:
-    // уходят первыми. Каждое несёт полное состояние, поэтому новое не
-    // останавливает прежнее, а кончившиеся сметаются при следующем.
+    // Сохранения состояния, которые идут (см. saveState), и запуски адресов (см. launchUri) — последними полями:
+    // уходят первыми, до остановки пула. Каждое несёт полное состояние, поэтому новое не останавливает прежнее, а
+    // кончившиеся сметаются при следующем.
     std::vector<async::task<>> saves;
+    // Запуск адреса: target — для сообщения, task — true, если адрес открыт, false или брошенное — неудача.
+    struct Launch {
+        std::string target;
+        async::task<bool> task;
+    };
+    std::vector<Launch> launches;
 };
 
 std::shared_ptr<Shell> shell;
@@ -704,6 +711,21 @@ Window const& mainWindow() {
 
 async::cancellation_token exitToken() {
     return shell->exitSource.token();
+}
+
+void launchUri(zstring_view uri) {
+    // Кончившиеся запуски сметаются с чтением итога: false или брошенное останавливают, а не молчат.
+    std::erase_if(shell->launches, [](Shell::Launch& each) {
+        if (!each.task.done()) {
+            return false;
+        }
+        if (!each.task.result()) {
+            throw std::runtime_error("prose: failed to launch " + each.target);
+        }
+        return true;
+    });
+    shell->launches.push_back(
+        {std::string{core::unicode::assume_valid(uri.view()).to_utf8().chars()}, Launcher::launchUriAsync(uri)});
 }
 
 void trackWindow(Window const& window, std::shared_ptr<void> state) {

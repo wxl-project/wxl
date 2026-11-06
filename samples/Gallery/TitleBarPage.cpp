@@ -8,6 +8,10 @@ using namespace wxl::dsl;
 
 namespace {
 
+constexpr char8_t introText[] = {
+#include "Snippets/TitleBar/Intro.html.embed"
+};
+
 constexpr char8_t configurationHeader[] = {
 #include "Snippets/TitleBar/TitlebarConfiguration.html.embed"
 };
@@ -65,14 +69,5 @@ FrameworkElement endToEnd() {
 wxl::FrameworkElement gallery::titleBarPage() {
     return StackPanel {
         Margin {0, 12, 0, 0},
-        RichTextBlock {
-            Paragraph {
-                Run {u"For full title bar customization without using the TitleBar control, see the "},
-                Hyperlink {
-                    onClick += [](Object const&, HyperlinkClickEventArgs&) { navigate({Place::Item, L"AppWindowTitleBar"}); },
-                    Run {u"AppWindowTitleBar"},
-                },
-                Run {u" sample"},
-            },
-        },configurationExample(), dragRegions(), endToEnd()};
+        gallery::prose(gallery::snippet(introText), Thickness {}), configurationExample(), dragRegions(), endToEnd()};
 }
