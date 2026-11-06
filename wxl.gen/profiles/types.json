@@ -216,7 +216,7 @@
                 "value": "double",
                 "direction": "input",
                 "function": "impl::apply_bind_intermediate_value",
-                "include": "../impl/binding.h"
+                "include": "../impl/intermediate_value_pair.h"
             },
             {
                 "class": "Microsoft.UI.Xaml.UIElement",
@@ -224,7 +224,7 @@
                 "value": "bool",
                 "direction": "both",
                 "function": "impl::apply_bind_focus",
-                "include": "../impl/binding.h"
+                "include": "../impl/focus_pair.h"
             },
             {
                 "class": "Microsoft.UI.Xaml.Controls.ScrollViewer",
@@ -232,7 +232,7 @@
                 "value": "double",
                 "direction": "both",
                 "function": "impl::apply_bind_vertical_offset",
-                "include": "../impl/binding.h"
+                "include": "../impl/vertical_offset_pair.h"
             }
         ]
     },

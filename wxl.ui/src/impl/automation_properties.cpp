@@ -13,11 +13,6 @@ namespace wxl::impl {
 
 namespace automation = winrt::Microsoft::UI::Xaml::Automation;
 
-void automation_properties::set_name(winrt::Microsoft::UI::Xaml::UIElement const& element,
-                                     hstring_param const& name) {
-    automation::AutomationProperties::SetName(element, to_winrt(name));
-}
-
 void automation_properties::set_automation_id(winrt::Microsoft::UI::Xaml::UIElement const& element,
                                               hstring_param const& id) {
     automation::AutomationProperties::SetAutomationId(element, to_winrt(id));

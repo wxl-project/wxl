@@ -32,6 +32,14 @@ void set_cursor(winrt::Microsoft::UI::Xaml::UIElement const& element, InputSyste
 /// whose face is a glyph rather than a word, and such a control needs naming in both places.
 void set_tool_tip(winrt::Microsoft::UI::Xaml::UIElement const& element, hstring_param const& text);
 
+/// `automationName = u"..."`: the name a screen reader speaks, and nothing else -- the half of
+/// toolTip that carries no hover hint. A Button's accessible name comes from its content only when
+/// that content is a string, so a list row built out of a panel is nameless to automation however
+/// much text it shows; a hover hint there would only repeat what is on screen, so this is a
+/// property of its own rather than a use of toolTip.
+void set_automation_name(winrt::Microsoft::UI::Xaml::UIElement const& element,
+                         hstring_param const& name);
+
 /// The tip as an element of its own -- content that is not text, a placement, an offset. Only
 /// the hover half: an element has no words to give a screen reader.
 void set_tool_tip_element(winrt::Microsoft::UI::Xaml::UIElement const& element, ToolTip const& tip);

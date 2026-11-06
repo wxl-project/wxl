@@ -5,9 +5,10 @@
 #include <wxl/Microsoft.UI.Xaml.Automation.Peers.Enums.h>
 #include "../hstring_param.h"
 
-// What stands behind `automationName = u"..."`, `automationId = u"..."`,
+// What stands behind `automationId = u"..."`,
 // `automationLiveSetting = AutomationLiveSetting::Polite` and the other automation tags on any
-// element: WinUI's AutomationProperties, its setters by their own names. The id is what a test or a
+// element: WinUI's AutomationProperties, its setters by their own names. The name a screen reader
+// speaks, `automationName`, is set beside toolTip, in element_helpers.h. The id is what a test or a
 // screen reader's script finds the element by; the live setting says that a change of the
 // element's text is to be announced (Polite: when the reader is idle, Assertive: at once).
 //
@@ -24,14 +25,6 @@ class automation_properties
 {
 public:
     automation_properties() = delete;
-
-    /// The name a screen reader speaks, and nothing else -- the half of toolTip that carries no
-    /// hover hint. A Button's accessible name comes from its content only when that content is a
-    /// string, so a list row built out of a panel is nameless to automation however much text it
-    /// shows; a hover hint there would only repeat what is on screen, so this is a property of its
-    /// own rather than a use of toolTip.
-    static void set_name(winrt::Microsoft::UI::Xaml::UIElement const& element,
-                         hstring_param const& name);
 
     static void set_automation_id(winrt::Microsoft::UI::Xaml::UIElement const& element,
                                   hstring_param const& id);

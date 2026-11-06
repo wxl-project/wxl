@@ -6,9 +6,10 @@
 // headers cannot share a translation unit with that import. The result is the
 // exit code.
 //
-// The field is a real observable, watched the way binding.cpp watches it, so
-// what is checked includes the field set again from inside its own watch: the
-// application hears where the element ended, never a value it could not take.
+// The field is a real observable, watched the way focus_pair.cpp and
+// vertical_offset_pair.cpp watch it, so what is checked includes the field set
+// again from inside its own watch: the application hears where the element
+// ended, never a value it could not take.
 //
 // Checked: a request made out of the tree waits for Loaded; refused focus
 // returns the field to false, and the next request is a change again; false on
@@ -79,7 +80,7 @@ struct fake_viewer {
     }
 };
 
-// Both ways, as binding.cpp binds: the watch first, then the field settled once.
+// Both ways, as focus_pair.cpp binds: the watch first, then the field settled once.
 template <class Element>
 void bind_focus(Element const& element, observable<bool>& field) {
     field.watch_for_binding(

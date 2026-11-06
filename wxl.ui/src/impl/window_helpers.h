@@ -19,11 +19,6 @@
 #include "../hstring_param.h"
 #include <wxl/Windows.Graphics.Structs.h>
 
-namespace wxl {
-class MicaController;
-class DesktopAcrylicController;
-}  // namespace wxl
-
 namespace wxl::impl {
 
 /// A window this code made and owns: destroyed when its owner goes. One the system destroyed
@@ -124,19 +119,5 @@ void frame_caption(HWND__* hwnd, uint32_t face, uint32_t ink) noexcept;
 /// always drags, false is always clickable, and an empty value gives the choice back.
 void set_drag_region(winrt::Microsoft::UI::Xaml::UIElement const& element,
                      core::nullable<bool> const& value);
-
-// `micaController = ...`, `desktopAcrylicController = ...` and `noSystemBackdrop = true` on a
-// Window. A system backdrop controller is told which window to draw under by the window's
-// ICompositionSupportsSystemBackdrop, an interface no wrapper declares and the window answers to
-// QueryInterface alone; the controller then needs its configuration and, when the window closes,
-// Close.
-
-void clear_system_backdrop(winrt::Microsoft::UI::Xaml::Window const& window, bool clear);
-
-void set_mica_controller(winrt::Microsoft::UI::Xaml::Window const& window,
-                         MicaController const& controller);
-
-void set_desktop_acrylic_controller(winrt::Microsoft::UI::Xaml::Window const& window,
-                                    DesktopAcrylicController const& controller);
 
 }  // namespace wxl::impl

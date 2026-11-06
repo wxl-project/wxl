@@ -327,10 +327,16 @@ set(_wxl_ui_profile_sources
     src/impl/element_helpers.cpp
     src/impl/window_helpers.h
     src/impl/window_helpers.cpp
+    src/impl/backdrop_helpers.h
+    src/impl/backdrop_helpers.cpp
     src/impl/items_helpers.h
     src/impl/items_helpers.cpp
     src/impl/layout_helpers.h
     src/impl/layout_helpers.cpp
+    src/impl/scroll_controller_helpers.h
+    src/impl/scroll_controller_helpers.cpp
+    src/impl/shape_helpers.h
+    src/impl/shape_helpers.cpp
     src/impl/member.h
     src/impl/member.cpp
     src/WindowNative.h
@@ -374,7 +380,12 @@ set(_wxl_ui_profile_sources
     src/ZoomEffect.h
     src/ZoomEffect.cpp
     src/impl/binding.h
-    src/impl/binding.cpp
+    src/impl/focus_pair.h
+    src/impl/focus_pair.cpp
+    src/impl/vertical_offset_pair.h
+    src/impl/vertical_offset_pair.cpp
+    src/impl/intermediate_value_pair.h
+    src/impl/intermediate_value_pair.cpp
     src/WindowShade.h
     src/WindowShade.cpp
     src/ShowDialog.h

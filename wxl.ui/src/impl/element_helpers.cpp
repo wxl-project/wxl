@@ -56,6 +56,11 @@ void set_tool_tip(winrt::Microsoft::UI::Xaml::UIElement const& element, hstring_
     winrt::Microsoft::UI::Xaml::Automation::AutomationProperties::SetName(element, value);
 }
 
+void set_automation_name(winrt::Microsoft::UI::Xaml::UIElement const& element,
+                         hstring_param const& name) {
+    winrt::Microsoft::UI::Xaml::Automation::AutomationProperties::SetName(element, to_winrt(name));
+}
+
 void set_tool_tip_element(winrt::Microsoft::UI::Xaml::UIElement const& element,
                           ToolTip const& tip) {
     winrt::Microsoft::UI::Xaml::Controls::ToolTipService::SetToolTip(
