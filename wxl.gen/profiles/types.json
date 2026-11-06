@@ -252,9 +252,10 @@
     // in).
     //
     // Indeterminate, the third state of a three-state box, raises neither
-    // Checked nor Unchecked and reads as not checked. A RadioMenuFlyoutItem
-    // is a ToggleMenuFlyoutItem, and its group unchecks the others without a
-    // click of theirs: a field per item that must follow its group reads the
+    // Checked nor Unchecked and reads as not checked. A menu item flips its
+    // check when it is chosen and says so under Click alone; a
+    // RadioMenuFlyoutItem's group unchecks the others without a click of
+    // theirs, so a field per item that must follow its group reads the
     // group's choice from one field instead. A Selector's index is the
     // control's, -1 while nothing is chosen: a reset of its items clears the
     // choice, and the field hears -1. A NumberBox holds NaN while it is empty,
@@ -278,6 +279,7 @@
         { "class": "Microsoft.UI.Xaml.Controls.RatingControl", "property": "Value", "events": ["ValueChanged"] },
         { "class": "Microsoft.UI.Xaml.Controls.ColorPicker", "property": "Color", "events": ["ColorChanged"] },
         { "class": "Microsoft.UI.Xaml.Controls.ToggleMenuFlyoutItem", "property": "IsChecked", "events": ["Click"] },
+        { "class": "Microsoft.UI.Xaml.Controls.RadioMenuFlyoutItem", "property": "IsChecked", "events": ["Click"] },
         { "class": "Microsoft.UI.Xaml.Controls.PipsPager", "property": "SelectedPageIndex", "events": ["SelectedIndexChanged"] },
         { "class": "Microsoft.UI.Xaml.Controls.PagerControl", "property": "SelectedPageIndex", "events": ["SelectedIndexChanged"] }
     ]
