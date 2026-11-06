@@ -53,9 +53,12 @@ std::string read_file(const std::filesystem::path& path) {
     // not with which of opening, measuring or reading failed, so the system's
     // words for the code carry what the three messages used to.
     if (!bytes)
-        throw exception(std::format("cannot read {}: {}",
-                                    wxl::core::unicode::to_utf8(path).chars(),
-                                    bytes.error().message()));
+        throw exception(std::format(
+            "cannot read {}: {} (system error code = {})",
+            wxl::core::unicode::to_utf8(path).chars(),
+            core::environment::error_explanation(
+                static_cast<std::uint32_t>(bytes.error().value())).chars(),
+            bytes.error().value()));
 
     return std::move(*bytes);
 }
