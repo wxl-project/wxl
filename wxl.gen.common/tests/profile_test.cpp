@@ -361,3 +361,75 @@ TEST(profile, takes_its_name_from_a_file_named_in_cyrillic) {
 
     std::filesystem::remove_all(directory);
 }
+
+// The binding pairs of the type map come as the file lists them, each with the events
+// its control writes the property under, and a bound member with the function that
+// binds it and the header declaring that function.
+TEST(type_map, reads_the_binding_pairs_and_the_function_of_a_bound_member) {
+    auto const file = profiles_dir / "types.json";
+    auto const types = load_type_map(file);
+    EXPECT_TRUE(same_path(types.source, file));
+
+    auto const toggle = std::ranges::find(types.binding_pairs,
+                                          "Microsoft.UI.Xaml.Controls.Primitives.ToggleButton",
+                                          &type_map::binding_pair::class_name);
+    ASSERT_NE(toggle, types.binding_pairs.end());
+    EXPECT_EQ(toggle->property, "IsChecked");
+    EXPECT_EQ(toggle->events, (std::vector<std::string>{"Checked", "Unchecked"}));
+
+    auto const focus = std::ranges::find(types.bound_members, "IsFocused",
+                                         &type_map::bound_member::name);
+    ASSERT_NE(focus, types.bound_members.end());
+    EXPECT_EQ(focus->function, "impl::apply_bind_focus");
+    EXPECT_EQ(focus->include, "../impl/binding.h");
+    EXPECT_EQ(focus->direction, "both");
+}
+
+// An entry of "bindingPairs" or "boundMembers" that is not what the key says stops the
+// read, with the file and the entry named: a key the entry does not have, events that
+// are missing, empty, not text or named twice, a bound member without its function or
+// with a direction that is no pair's.
+TEST(type_map, a_malformed_binding_pair_names_the_file_and_the_entry) {
+    auto const directory = scratch(L"malformed_binding_pair");
+    auto const file = directory / L"types.json";
+    auto const refused = [&](std::string_view text) {
+        write(file, text);
+        return stops_with([&] { load_type_map(file); });
+    };
+    std::string const pair = R"("class": "A.Box", "property": "IsOn")";
+    std::string const bound = R"("class": "A.Box", "property": "IsOn", "value": "bool")";
+
+    struct refusal {
+        std::string text;
+        std::string says;
+    };
+    std::vector<refusal> const refusals{
+        {R"({"bindingPairs": {}})", "'bindingPairs' must be an array"},
+        {R"({"bindingPairs": [{"class": "A.Box", "events": ["Toggled"]}]})",
+         "every binding pair needs a string 'property'"},
+        {"{\"bindingPairs\": [{" + pair + R"(, "events": ["Toggled"], "event": "Toggled"}]})",
+         "binding pair A.Box.IsOn: 'event' is not a key of this entry"},
+        {"{\"bindingPairs\": [{" + pair + "}]}",
+         "binding pair A.Box.IsOn: 'events' must be an array naming at least one event"},
+        {"{\"bindingPairs\": [{" + pair + R"(, "events": []}]})",
+         "binding pair A.Box.IsOn: 'events' must be an array naming at least one event"},
+        {"{\"bindingPairs\": [{" + pair + R"(, "events": [1]}]})",
+         "binding pair A.Box.IsOn: 'events' must contain strings only"},
+        {"{\"bindingPairs\": [{" + pair + R"(, "events": ["Toggled", "Toggled"]}]})",
+         "binding pair A.Box.IsOn: the event Toggled is named twice"},
+        {"{\"handWrittenMembers\": {\"boundMembers\": [{" + bound +
+             R"(, "direction": "both", "include": "../impl/binding.h"}]}})",
+         "every bound member needs a string 'function'"},
+        {"{\"handWrittenMembers\": {\"boundMembers\": [{" + bound +
+             R"(, "direction": "output", "function": "impl::f", "include": "../f.h"}]}})",
+         "bound member A.Box.IsOn: 'direction' is \"input\" or \"both\""},
+        {"{\"handWrittenMembers\": {\"boundMembers\": [{" + bound +
+             R"(, "direction": "both", "function": "impl::f", "include": "../f.h", "valueInclude": "../v.h"}]}})",
+         "bound member A.Box.IsOn: 'valueInclude' is not a key of this entry"},
+    };
+    for (auto&& [text, message] : refusals) {
+        EXPECT_TRUE(says(refused(text), {utf8(file), message})) << text;
+    }
+
+    std::filesystem::remove_all(directory);
+}

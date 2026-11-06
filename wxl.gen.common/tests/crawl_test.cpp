@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -42,14 +43,18 @@ std::string walk_error(profile_set const& profiles, type_map const& types) {
 }
 
 // A profile that reads Microsoft.UI.Xaml.winmd alone and lists `types`, written
-// into a directory of the test's own.
-std::filesystem::path write_profile(std::wstring_view test, std::string_view types) {
+// into a directory of the test's own. A walk that runs to the end needs the
+// Windows metadata as well, which the signatures and attributes of WinUI name.
+std::filesystem::path write_profile(std::wstring_view test, std::string_view types,
+                                    bool windows_metadata = false) {
     auto const directory = std::filesystem::temp_directory_path() / L"wxl.gen.common.crawl" / test;
     std::filesystem::remove_all(directory);
     std::filesystem::create_directories(directory);
     auto const profile = directory / L"p.winxl-profile";
     std::ofstream{profile} << R"({"packages": [{"id": "Microsoft.WindowsAppSDK.WinUI",
                                                 "metadata": ["Microsoft.UI.Xaml.winmd"]}],
+                                 "windowsMetadata": )"
+                           << (windows_metadata ? "true" : "false") << R"(,
                                  "types": )"
                            << types << "}";
     return profile;
@@ -154,4 +159,130 @@ TEST(profile, a_replaced_call_reaches_the_merged_profiles) {
     EXPECT_EQ(call->second.function, "impl::stream_reference_from_uri");
     EXPECT_EQ(call->second.include, "../impl/winrt_helpers.h");
     EXPECT_EQ(type->second.size(), 1u);
+}
+
+namespace {
+
+// The members the walk kept, by member name, over every type it reached: what a
+// class's interfaces declare is kept on the interface, not on the class. Read
+// while the metadata is open, which the types of the closure point into.
+std::set<std::string> kept_members(profile_set const& profiles, type_map const& types) {
+    std::vector<std::string> files;
+    for (auto&& file : profiles.metadata) {
+        files.push_back(utf8(file));
+    }
+    winmd::reader::cache const db{files};
+    std::set<std::string> kept;
+    for (auto&& [type, members] : crawl(profiles, types, db).members) {
+        kept.insert(members.begin(), members.end());
+    }
+    return kept;
+}
+
+}  // namespace
+
+// A class the walk reaches brings in what its binding pairs are made of, though
+// the profile keeps none of its members: the property and the events, at the level
+// that declares each -- Slider's Value and ValueChanged are RangeBase's, through
+// IRangeBase. A class the walk does not reach brings nothing.
+TEST(crawl, a_binding_pair_brings_its_members_with_its_class) {
+    auto const profile = write_profile(L"pair_members", R"({
+        "Microsoft.UI.Xaml.Controls.ToggleSwitch": {"members": []},
+        "Microsoft.UI.Xaml.Controls.Slider": {"members": []}
+    })", /*windows_metadata=*/true);
+    auto types = load_type_map(profiles_dir / "types.json");
+    types.binding_pairs = {
+        {"Microsoft.UI.Xaml.Controls.ToggleSwitch", "IsOn", {"Toggled"}},
+        {"Microsoft.UI.Xaml.Controls.Slider", "Value", {"ValueChanged"}},
+        {"Microsoft.UI.Xaml.Controls.ColorPicker", "Color", {"ColorChanged"}},
+    };
+    auto const kept = kept_members(
+        resolve_profiles({profile}, load_restored_packages(restored_packages_file)), types);
+
+    for (auto&& name : {"IsOn", "Toggled", "Value", "ValueChanged"}) {
+        EXPECT_TRUE(kept.contains(name)) << name;
+    }
+    EXPECT_FALSE(kept.contains("ColorChanged"));
+
+    std::filesystem::remove_all(profile.parent_path());
+}
+
+// A binding pair the metadata does not back up stops the walk, with the type map and
+// the pair named: a class it does not declare, a property or an event neither the
+// class nor a class it derives from declares, and a bound member's class.
+TEST(crawl, a_binding_pair_the_metadata_does_not_declare_stops_the_walk) {
+    auto const profile =
+        write_profile(L"undeclared_pair", R"({"Microsoft.UI.Xaml.Controls.Button": {}})");
+    auto const profiles = resolve_profiles({profile}, load_restored_packages(restored_packages_file));
+    auto const file = profiles_dir / "types.json";
+
+    struct refusal {
+        type_map::binding_pair pair;
+        std::string says;
+    };
+    std::vector<refusal> const refusals{
+        {{"Microsoft.UI.Xaml.Controls.NoSuchBox", "IsOn", {"Toggled"}},
+         "binding pair Microsoft.UI.Xaml.Controls.NoSuchBox.IsOn: the metadata read declares no "
+         "class Microsoft.UI.Xaml.Controls.NoSuchBox"},
+        {{"Microsoft.UI.Xaml.Controls.ToggleSwitch", "IsLit", {"Toggled"}},
+         "binding pair Microsoft.UI.Xaml.Controls.ToggleSwitch.IsLit: "
+         "Microsoft.UI.Xaml.Controls.ToggleSwitch declares no property IsLit, and no class it "
+         "derives from does"},
+        {{"Microsoft.UI.Xaml.Controls.ToggleSwitch", "IsOn", {"Checked"}},
+         "binding pair Microsoft.UI.Xaml.Controls.ToggleSwitch.IsOn: "
+         "Microsoft.UI.Xaml.Controls.ToggleSwitch declares no event Checked, and no class it "
+         "derives from does"},
+    };
+    for (auto&& [pair, message] : refusals) {
+        auto types = load_type_map(file);
+        types.binding_pairs = {pair};
+        auto const error = walk_error(profiles, types);
+        EXPECT_NE(error.find(utf8(file)), std::string::npos) << error;
+        EXPECT_NE(error.find(message), std::string::npos) << error;
+    }
+
+    auto types = load_type_map(file);
+    types.bound_members.push_back({"Microsoft.UI.Xaml.Controls.NoSuchBox", "IsLit", "bool", "both",
+                                   "impl::f", "../f.h"});
+    auto const error = walk_error(profiles, types);
+    EXPECT_NE(error.find("bound member Microsoft.UI.Xaml.Controls.NoSuchBox.IsLit: the metadata "
+                         "read declares no class Microsoft.UI.Xaml.Controls.NoSuchBox"),
+              std::string::npos)
+        << error;
+
+    std::filesystem::remove_all(profile.parent_path());
+}
+
+// A pair serves the classes derived from its own, so a second pair of the same
+// property on a derived class -- CheckBox under ToggleButton -- would make a binding of
+// it on a CheckBox match two; that stops the walk with both named, and so does one
+// property bound twice on one class. Pairs of one property on unrelated classes are
+// two lines, and stand.
+TEST(crawl, two_pairs_of_one_property_along_one_line_stop_the_walk) {
+    auto const profile =
+        write_profile(L"pair_on_derived", R"({"Microsoft.UI.Xaml.Controls.Button": {}})");
+    auto const profiles = resolve_profiles({profile}, load_restored_packages(restored_packages_file));
+    type_map::binding_pair const toggle{"Microsoft.UI.Xaml.Controls.Primitives.ToggleButton",
+                                        "IsChecked", {"Checked", "Unchecked"}};
+
+    auto types = load_type_map(profiles_dir / "types.json");
+    types.binding_pairs = {
+        {"Microsoft.UI.Xaml.Controls.CheckBox", "IsChecked", {"Checked"}},
+        toggle,
+        {"Microsoft.UI.Xaml.Controls.ToggleMenuFlyoutItem", "IsChecked", {"Click"}},
+    };
+    auto error = walk_error(profiles, types);
+    EXPECT_NE(error.find("binding pair Microsoft.UI.Xaml.Controls.CheckBox.IsChecked and binding "
+                         "pair Microsoft.UI.Xaml.Controls.Primitives.ToggleButton.IsChecked: "
+                         "Microsoft.UI.Xaml.Controls.CheckBox derives from "
+                         "Microsoft.UI.Xaml.Controls.Primitives.ToggleButton"),
+              std::string::npos)
+        << error;
+    EXPECT_EQ(error.find("ToggleMenuFlyoutItem"), std::string::npos) << error;
+
+    types.binding_pairs = {toggle, toggle};
+    error = walk_error(profiles, types);
+    EXPECT_NE(error.find("one property of one class is bound twice"), std::string::npos) << error;
+
+    std::filesystem::remove_all(profile.parent_path());
 }

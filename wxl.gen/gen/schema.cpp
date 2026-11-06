@@ -95,6 +95,15 @@ std::string qualified(std::string_view type) {
     return out;
 }
 
+// A type as a part of a function's name: core::u16_text -> core_u16_text.
+std::string identifier_of(std::string_view type) {
+    std::string name;
+    for (char const c : type) {
+        name += std::isalnum(static_cast<unsigned char>(c)) ? c : '_';
+    }
+    return name;
+}
+
 std::string property_anchor(std::string_view key, std::string_view value_type,
                             std::string_view owner) {
     return std::format("::wxl::impl::property_tag<::wxl::PropertyKey::{}, {}, ::wxl::{}>", key,
@@ -136,6 +145,12 @@ std::string declare(schema::class_t const& owner, schema::member const& member,
     // observable's, and the only assignment it survives is a Bind form.
     if (member.kind == kind_t::Bound) {
         return property_anchor(member.key, member.type, owner.name);
+    }
+
+    // A pair of a property the class already has an anchor for, its own or
+    // inherited: the anchor takes the pair as it is.
+    if (member.kind == kind_t::Paired) {
+        return {};
     }
 
     if (member.kind == kind_t::Collection) {
@@ -293,9 +308,19 @@ void write_schema_test(std::filesystem::path const& path, schema const& sch, dsl
 }}
 )",
                                klass.name, member.name, object, path_to, qualified(member.type),
-                               member.direction == "input"    ? "BindInput"
-                               : member.direction == "output" ? "BindOutput"
-                                                              : "Bind");
+                               member.direction == "input" ? "BindInput" : "Bind");
+                    break;
+
+                // Both ways, once per field type the pair takes: the line that
+                // proves the anchor reaches the pair (BindingPairs.h) on this
+                // class, and that the pair takes a field of that type.
+                case schema::member::kind_t::Paired:
+                    std::print(file, R"([[maybe_unused]] void {0}_{1}_paired_{2}({3}, ::wxl::core::observable<{4}>& field) {{
+    ::wxl::impl::apply_argument(object, {5} = ::wxl::Bind{{field}});
+}}
+)",
+                               klass.name, member.name, identifier_of(member.type), object,
+                               qualified(member.type), path_to);
                     break;
             }
 
@@ -311,11 +336,6 @@ void write_schema_test(std::filesystem::path const& path, schema const& sch, dsl
 }  // namespace
 
 void write_schema(output const& out, model const& m, emitted& em) {
-    for (auto&& name : m.unplaced_bound_members) {
-        std::print(stderr, "warning: bound member {} names a class the profile does not generate\n",
-                   name);
-    }
-
     auto const& sch = m.schema;
     auto const& d = m.dsl;
 

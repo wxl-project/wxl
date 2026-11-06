@@ -233,17 +233,31 @@ struct type_map {
 
     // A property a generated class has as a binding target alone -- NumberBox's
     // IntermediateValue, the number as it is being typed: no metadata declares
-    // it and no setter writes it, a pair in impl/binding.h reads it off the
-    // control. It gets the key, the tag, the class's schema anchor and a test
-    // line binding it in the direction the pair takes.
+    // it and no setter writes it, a hand-written function binds it. It gets the
+    // key, the tag, the class's schema anchor and a test line binding it in the
+    // direction the pair takes; where the class is generated, the binding pair
+    // that calls the function (BindingPairs.h).
     struct bound_member {
         std::string class_name;  // "Microsoft.UI.Xaml.Controls.NumberBox"
         std::string name;        // "IntermediateValue", as metadata would spell it
         std::string value_type;  // "double" -- the observable's type, under namespace wxl
-        std::string direction;   // "input", "output" or "both"
-        std::string include;     // header defining that type, or empty
+        std::string direction;   // "input" or "both"
+        std::string function;    // "impl::apply_bind_intermediate_value", under namespace wxl
+        std::string include;     // header declaring the function, as the output writes it
     };
 
+    // A property of the metadata that the control writes itself, and the events
+    // it says so under: ToggleSwitch.IsOn under Toggled, ToggleButton.IsChecked
+    // under Checked and Unchecked. Where the class is generated, the generator
+    // writes the binding pair over the class's own getter, setter and events,
+    // and the pair serves every class derived from it.
+    struct binding_pair {
+        std::string class_name;           // "Microsoft.UI.Xaml.Controls.ToggleSwitch"
+        std::string property;             // "IsOn", as metadata spells it
+        std::vector<std::string> events;  // {"Toggled"}, as metadata spells them
+    };
+
+    std::filesystem::path source;  // the file, for the messages that name it
     std::set<std::string> predefined;
     std::set<std::string> implicit_roots;
     std::vector<projection> projections;
@@ -254,10 +268,14 @@ struct type_map {
     std::vector<hand_written_property> hand_written_properties;
     std::set<std::string> hand_written_events;
     std::vector<bound_member> bound_members;
+    std::vector<binding_pair> binding_pairs;
 };
 
 // Reads profiles/types.json. Throws std::runtime_error naming the file on
-// malformed JSON or an entry missing a required key.
+// malformed JSON, an entry missing a required key, and an entry of
+// "bindingPairs" or "boundMembers" with a key it does not have. Whether a
+// binding pair's class, property and events exist is the metadata's to say,
+// and the walk checks it (crawl.h).
 type_map load_type_map(std::filesystem::path const& path);
 
 // The Windows SDK a build projects: its version, which also names the folder of

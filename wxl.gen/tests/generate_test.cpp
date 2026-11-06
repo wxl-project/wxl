@@ -67,3 +67,49 @@ TEST_F(stale_files, one_named_in_cyrillic_is_removed) {
     EXPECT_TRUE(std::filesystem::exists(dir_ / L"parts" / L"wrapper-01.cpp"));
     EXPECT_TRUE(std::filesystem::exists(dir_ / L"parts" / L"schema_surface.cpp"));
 }
+
+namespace {
+
+std::string read_file(std::filesystem::path const& path) {
+    std::ifstream file{path, std::ios::binary};
+    return {std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{}};
+}
+
+}  // namespace
+
+// The binding pairs of a run are those of the classes it generates: the base profile
+// has ToggleSwitch and ToggleButton and no NumberBox, so BindingPairs.h has the first
+// two and nothing of the third. Each pair is the owner's binding_pair, handed by
+// property_binder to every class derived from the owner, and a pair of the metadata
+// has its bodies in a part, over impl::bind_pair; a bound member's pair calls its
+// function in the header.
+TEST_F(stale_files, binding_pairs_are_those_of_the_classes_the_run_generates) {
+    auto const profiles = resolve_profiles({profiles_dir / "base.winxl-profile"},
+                                           load_restored_packages(restored_packages_file));
+    auto const types = load_type_map(profiles_dir / "types.json");
+    run(profiles, types, {}, out(), nullptr);
+
+    auto const header = read_file(dir_ / L"BindingPairs.h");
+    for (auto&& part : {"struct binding_pair<PropertyKey::IsOn, ToggleSwitch>",
+                        "struct binding_pair<PropertyKey::IsChecked, ToggleButton>",
+                        "requires std::derived_from<Control, ToggleButton>",
+                        "struct property_binder<PropertyKey::IsChecked, Control> : "
+                        "binding_pair<PropertyKey::IsChecked, ToggleButton>",
+                        "struct binding_pair<PropertyKey::IsFocused, UIElement>",
+                        "impl::apply_bind_focus(control, field, direction);"}) {
+        EXPECT_NE(header.find(part), std::string::npos) << part;
+    }
+    EXPECT_EQ(header.find("NumberBox"), std::string::npos);
+    EXPECT_EQ(header.find("winrt"), std::string::npos);
+
+    std::string parts;
+    for (auto&& name : {L"wrapper-00.cpp", L"wrapper-01.cpp"}) {
+        parts += read_file(dir_ / L"parts" / name);
+    }
+    EXPECT_NE(parts.find("impl::bind_pair<EventKey::Checked, EventKey::Unchecked>("),
+              std::string::npos);
+    EXPECT_NE(parts.find("c.isChecked().value_or(false)"), std::string::npos);
+
+    auto const surface = read_file(dir_ / L"parts" / L"schema_surface.cpp");
+    EXPECT_NE(surface.find("ToggleSwitch_isOn_paired_bool"), std::string::npos);
+}

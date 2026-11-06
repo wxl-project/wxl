@@ -217,6 +217,13 @@ struct closure {
 // such type, the profile that lists it and the Windows App SDK release of the
 // restore: the metadata read is the restore's, and a release that lacks a type
 // the profiles project cannot be projected from.
+//
+// The binding pairs of the type map are held to the metadata before the walk:
+// a pair whose class, property or event the metadata does not declare, a bound
+// member whose class it does not declare, one property bound twice on one
+// class, and two pairs of one property on a class and a class derived from it
+// stop it with std::runtime_error naming the type map and the entries. A class
+// the walk reaches brings in the members its pairs are made of.
 closure crawl(profile_set const& profiles, type_map const& types, winmd::reader::cache const& db);
 
 // The kinds of member a profile names. A Constant is an enumerator.

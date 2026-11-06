@@ -40,6 +40,7 @@ wxl_add_module_library(wxl.gen STATIC
         gen/event_args.cpp
         gen/classes.cpp
         gen/dsl.cpp
+        gen/binding_pairs.cpp
         gen/schema.cpp
         gen/doc_language.cpp
         gen/parts.cpp

@@ -193,12 +193,14 @@
         "events": ["ClientSizeChanged", "Closing", "GeometryChanged"],
 
         // A property a generated class has as a binding target alone: no
-        // metadata declares it and no setter writes it -- the pair in
-        // impl/binding.h reads it off the control. It gets the key and the
-        // tag, the class's schema anchor and a test line binding it the way
-        // the pair allows. NumberBox commits Value only on Enter, a spin or
-        // the focus leaving; the number as it is being typed goes under the
-        // Slider's own name for a value not yet committed.
+        // metadata declares it and no setter writes it -- the hand-written
+        // function named here binds it, `function(control, field, direction)`,
+        // declared in `include`. It gets the key and the tag, the class's
+        // schema anchor and a test line binding it the way the pair allows,
+        // and, where the class is generated, the binding pair that calls the
+        // function. NumberBox commits Value only on Enter, a spin or the focus
+        // leaving; the number as it is being typed goes under the Slider's own
+        // name for a value not yet committed.
         //
         // IsFocused and ScrollViewer's VerticalOffset are state a control has
         // and takes only on its own terms: focus through Focus(), which an
@@ -212,20 +214,71 @@
                 "class": "Microsoft.UI.Xaml.Controls.NumberBox",
                 "property": "IntermediateValue",
                 "value": "double",
-                "direction": "input"
+                "direction": "input",
+                "function": "impl::apply_bind_intermediate_value",
+                "include": "../impl/binding.h"
             },
             {
                 "class": "Microsoft.UI.Xaml.UIElement",
                 "property": "IsFocused",
                 "value": "bool",
-                "direction": "both"
+                "direction": "both",
+                "function": "impl::apply_bind_focus",
+                "include": "../impl/binding.h"
             },
             {
                 "class": "Microsoft.UI.Xaml.Controls.ScrollViewer",
                 "property": "VerticalOffset",
                 "value": "double",
-                "direction": "both"
+                "direction": "both",
+                "function": "impl::apply_bind_vertical_offset",
+                "include": "../impl/binding.h"
             }
         ]
-    }
+    },
+
+    // The properties of the metadata a control writes itself, each with the
+    // events it says so under: what `isOn = Bind{field}` binds both ways. For
+    // a class the profiles generate, the generator writes the pair over the
+    // class's own getter, setter and events -- and brings them into the walk,
+    // so a profile that has the class has its pair -- and a profile without
+    // the class has no pair of it. The pair on a class serves every class
+    // derived from it, so a key has one pair along a line of inheritance.
+    //
+    // The field's type follows the property's, one rule per type: a bool and
+    // a Color as they are, an int32 as an int, a double as a double and as an
+    // int (truncated on the way in), a nullable bool as a bool (empty reads
+    // false), a string as checked UTF-16, core::u16_text (repaired on the way
+    // in).
+    //
+    // Indeterminate, the third state of a three-state box, raises neither
+    // Checked nor Unchecked and reads as not checked. A RadioMenuFlyoutItem
+    // is a ToggleMenuFlyoutItem, and its group unchecks the others without a
+    // click of theirs: a field per item that must follow its group reads the
+    // group's choice from one field instead. A Selector's index is the
+    // control's, -1 while nothing is chosen: a reset of its items clears the
+    // choice, and the field hears -1. A NumberBox holds NaN while it is empty,
+    // and a RatingControl -1 while it holds no rating.
+    "bindingPairs": [
+        { "class": "Microsoft.UI.Xaml.Controls.ToggleSwitch", "property": "IsOn", "events": ["Toggled"] },
+        {
+            "class": "Microsoft.UI.Xaml.Controls.Primitives.ToggleButton",
+            "property": "IsChecked",
+            "events": ["Checked", "Unchecked"]
+        },
+        {
+            "class": "Microsoft.UI.Xaml.Controls.Primitives.Selector",
+            "property": "SelectedIndex",
+            "events": ["SelectionChanged"]
+        },
+        { "class": "Microsoft.UI.Xaml.Controls.RadioButtons", "property": "SelectedIndex", "events": ["SelectionChanged"] },
+        { "class": "Microsoft.UI.Xaml.Controls.TextBox", "property": "Text", "events": ["TextChanged"] },
+        { "class": "Microsoft.UI.Xaml.Controls.NumberBox", "property": "Value", "events": ["ValueChanged"] },
+        { "class": "Microsoft.UI.Xaml.Controls.Slider", "property": "Value", "events": ["ValueChanged"] },
+        { "class": "Microsoft.UI.Xaml.Controls.RatingControl", "property": "Value", "events": ["ValueChanged"] },
+        { "class": "Microsoft.UI.Xaml.Controls.ColorPicker", "property": "Color", "events": ["ColorChanged"] },
+        { "class": "Microsoft.UI.Xaml.Controls.ToggleMenuFlyoutItem", "property": "IsChecked", "events": ["Click"] },
+        { "class": "Microsoft.UI.Xaml.Controls.PipsPager", "property": "SelectedPageIndex", "events": ["SelectedIndexChanged"] },
+        { "class": "Microsoft.UI.Xaml.Controls.PagerControl", "property": "SelectedPageIndex", "events": ["SelectedIndexChanged"] }
+    ]
 }
