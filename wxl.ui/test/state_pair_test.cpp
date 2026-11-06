@@ -6,9 +6,10 @@
 // headers cannot share a translation unit with that import. The result is the
 // exit code.
 //
-// The field is a real observable, watched the way the two pairs watch it, so
-// what is checked includes the field set again from inside its own watch: the
-// application hears where the element ended, never a value it could not take.
+// The field is a real observable, watched the way focus_pair.cpp and
+// vertical_offset_pair.cpp watch it, so what is checked includes the field set
+// again from inside its own watch: the application hears where the element
+// ended, never a value it could not take.
 //
 // Checked: a request made out of the tree waits for Loaded; refused focus
 // returns the field to false, and the next request is a change again; false on
