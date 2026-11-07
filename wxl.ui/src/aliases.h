@@ -30,7 +30,13 @@ inline constexpr struct {
     static constexpr VerticalAlignment stretch = VerticalAlignment::Stretch;
 } vAlign;
 
-// inline constexpr HorizontalAlignmentShortcuts hAlign;
-// inline constexpr VerticalAlignmentShortcuts vAlign;
+// The wrapping of a text block, written without the argument name:
+// `TextBlock {textWrap.wholeWords, text}`. TextWrapping::NoWrap is `none`, so
+// that the one value which does not wrap does not read as "wrap".
+inline constexpr struct {
+    static constexpr TextWrapping none = TextWrapping::NoWrap;
+    static constexpr TextWrapping wrap = TextWrapping::Wrap;
+    static constexpr TextWrapping wholeWords = TextWrapping::WrapWholeWords;
+} textWrap;
 
 }  // namespace wxl::dsl
