@@ -1,0 +1,10 @@
+{
+  "name": "number_box",
+  "needs": [],
+  "sources": [
+    "impl/intermediate_value_pair.cpp",
+    "impl/intermediate_value_pair.h"
+  ],
+  "libraries": [],
+  "comment": "The binding pair of NumberBox.IntermediateValue."
+}

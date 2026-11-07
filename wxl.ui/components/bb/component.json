@@ -1,0 +1,15 @@
+{
+  "name": "bb",
+  "needs": [
+    "markup"
+  ],
+  "sources": [
+    "BbBlock.cpp",
+    "BbBlock.h",
+    "BbBlock.impl.h"
+  ],
+  "libraries": [
+    "wxl::bb"
+  ],
+  "comment": "The BB-code block."
+}

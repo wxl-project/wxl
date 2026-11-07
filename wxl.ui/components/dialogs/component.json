@@ -1,0 +1,13 @@
+{
+  "name": "dialogs",
+  "needs": [],
+  "sources": [
+    "Announce.cpp",
+    "Announce.h",
+    "impl/show_dialog.h",
+    "ShowDialog.cpp",
+    "ShowDialog.h"
+  ],
+  "libraries": [],
+  "comment": "Content dialogs and screen reader announcements."
+}

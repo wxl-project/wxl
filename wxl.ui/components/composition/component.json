@@ -1,0 +1,19 @@
+{
+  "name": "composition",
+  "needs": [
+    "window"
+  ],
+  "sources": [
+    "CompositionWindow.cpp",
+    "CompositionWindow.h",
+    "DrawingSurface.cpp",
+    "DrawingSurface.h",
+    "impl/background_load.h",
+    "TextureCache.cpp",
+    "TextureCache.h",
+    "ThemeBrush.cpp",
+    "ThemeBrush.h"
+  ],
+  "libraries": [],
+  "comment": "Composition window, drawing surface, texture cache and theme brush."
+}

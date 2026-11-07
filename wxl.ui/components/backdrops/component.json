@@ -1,0 +1,12 @@
+{
+  "name": "backdrops",
+  "needs": [
+    "window"
+  ],
+  "sources": [
+    "impl/backdrop_helpers.cpp",
+    "impl/backdrop_helpers.h"
+  ],
+  "libraries": [],
+  "comment": "Mica, acrylic and the drag region, which need the system backdrop types."
+}

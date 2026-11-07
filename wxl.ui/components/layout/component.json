@@ -1,0 +1,21 @@
+{
+  "name": "layout",
+  "needs": [],
+  "sources": [
+    "AvailableSizeLayout.cpp",
+    "AvailableSizeLayout.h",
+    "CustomLayout.cpp",
+    "CustomLayout.h",
+    "CustomVirtualizingLayout.cpp",
+    "CustomVirtualizingLayout.h",
+    "GridLengths.h",
+    "impl/layout_helpers.cpp",
+    "impl/layout_helpers.h",
+    "Panels.cpp",
+    "Panels.h",
+    "SplitPanel.cpp",
+    "SplitPanel.h"
+  ],
+  "libraries": [],
+  "comment": "Grid lengths, panels, split panel and the custom layouts."
+}

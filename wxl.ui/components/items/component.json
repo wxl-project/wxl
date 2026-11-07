@@ -1,0 +1,15 @@
+{
+  "name": "items",
+  "needs": [],
+  "sources": [
+    "impl/item_factory.cpp",
+    "impl/item_template.cpp",
+    "impl/items_helpers.cpp",
+    "impl/items_helpers.h",
+    "ItemContainerPreset.h",
+    "ItemTemplate.cpp",
+    "ItemTemplate.h"
+  ],
+  "libraries": [],
+  "comment": "Item templates, item factories and container presets of the list controls."
+}

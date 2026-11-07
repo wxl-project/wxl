@@ -1,0 +1,18 @@
+{
+  "name": "window",
+  "needs": [],
+  "sources": [
+    "impl/window_frame.cpp",
+    "impl/window_helpers.cpp",
+    "impl/window_helpers.h",
+    "SizeToContent.h",
+    "TrayIcon.cpp",
+    "TrayIcon.h",
+    "WindowNative.cpp",
+    "WindowNative.h",
+    "WindowShade.cpp",
+    "WindowShade.h"
+  ],
+  "libraries": [],
+  "comment": "The window: native handle, frame, size, shade and tray icon."
+}
