@@ -15,8 +15,6 @@
     "MarkupBlock.h",
     "MarkupBlock.impl.h"
   ],
-  "libraries": [
-    "wxl::html"
-  ],
+  "libraries": [],
   "comment": "Formatted text blocks and the HTML block."
 }
