@@ -563,7 +563,7 @@ private:
             case tag_t::h2:
             case tag_t::h3: {
                 const int rank = static_cast<int>(element.tag()) - static_cast<int>(tag_t::h1);
-                push(entered, {.fontSize = base_size_ * theme_.headingScale[rank], .bold = true});
+                push(entered, {.fontSize = base_size_ * theme_.headingScale[rank], .weight = fontWeightBold});
                 open_block(entered, {.margin = theme_.headingMargin}, named);
                 break;
             }
@@ -581,7 +581,7 @@ private:
                 open_block(entered, {}, named);
                 break;
             case tag_t::th:
-                push(entered, {.bold = true});
+                push(entered, {.weight = fontWeightBold});
                 open_block(entered, {}, named);
                 break;
             case tag_t::ul:
@@ -602,7 +602,7 @@ private:
                 open_block(entered, {.margin = theme_.preMargin}, named);
                 break;
             case tag_t::b:
-                push(entered, {.bold = true}, named);
+                push(entered, {.weight = fontWeightBold}, named);
                 break;
             case tag_t::i:
                 push(entered, {.italic = true}, named);
@@ -877,7 +877,7 @@ private:
             content.onError(
                 [box = impl_.onError_](MarkupError const& error) { box->invoke(error); });
             if (cell.header) {
-                content.pushStyle({.bold = true});
+                content.pushStyle({.weight = fontWeightBold});
                 content.appendParagraph({.alignment = TextAlignment::Center});
             }
             builder nested(content, root_, impl_, depth_ + 1);

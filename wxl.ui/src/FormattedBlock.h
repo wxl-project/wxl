@@ -38,11 +38,18 @@ struct TextStyle {
     core::nullable<Color> color;
     core::nullable<double> fontSize;
     FontFamily fontFamily;  // its own empty value is "inherit": a null FontFamily to WinUI
-    core::nullable<bool> bold;
+    core::nullable<double> weight;  // CSS font-weight: 400 Normal (the explicit off), 700 Bold, 600 SemiBold
     core::nullable<bool> italic;
     core::nullable<bool> underline;
     core::nullable<bool> strikethrough;
 };
+
+// The named weight the markup's own tags wear. Bold is what <b> and
+// <strong> mean; any other weight arrives from a registered style (SemiBold
+// is 600), and 400 is the explicit off. A plain double rather than WinRT's
+// FontWeight, so the public header stays free of the projection -- apply()
+// casts it at the boundary.
+inline constexpr double fontWeightBold = 700.0;
 
 // What a paragraph itself can wear: the block-level facets, worn once at
 // appendParagraph() rather than stacked -- a paragraph has one margin and
