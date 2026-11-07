@@ -192,7 +192,8 @@ options parse_options(int argc, wchar_t** argv) {
         std::ranges::sort(names);
         throw std::runtime_error(std::format(
             "the build names components (--component: {}) and no directory to find them in "
-            "(--component-dir)",
+            "(--component-dir): pass the directory that holds them, <dir>/<name>/component.json, "
+            "as the build does (wxl.ui/components of the wxl tree)",
             wxl::core::join(names, ", ")));
     }
     if (language && !opts.docs) {

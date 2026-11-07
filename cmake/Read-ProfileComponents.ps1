@@ -172,7 +172,8 @@ foreach ($name in $chainComponents) {
 foreach ($name in $selected) {
     $comp = $loaded[$name]
     $manifest = Find-ComponentManifest $name $ComponentDir
-    $dir = (Split-Path $manifest -Parent).Replace('\','/')
+    # One spelling per directory: CMake declares the manifest beneath it as a dependency.
+    $dir = [IO.Path]::GetFullPath((Split-Path $manifest -Parent)).Replace('\','/')
     Write-Output "component:$name"
     Write-Output "dir:$dir"
     if ($comp.sources) {
