@@ -8,18 +8,13 @@
 // (`ControlExample` оригинала) пишет `controlExample` из Presenter.cpp.
 //
 // Код каждого примера — файл `Snippets/<Контрол>/X.h`: он включается #include
-// в функцию, строящую пример, и он же, вшитый байтами, показывается под
-// примером. `X.h.embed` делает CMake (embed.cmake): это ровно то, что вернул
-// бы `#embed "X.h"`, а MSVC 14.51 его пока не знает. Показанное и работающее —
-// один текст. Введение к примеру — `X.html` рядом.
-//
-// Пилот RadialGradientBrushPage берёт эти два файла не из вшитых байтов, а
-// читает их рядом с exe при первом обращении (LazyLoadedText): текст тот же.
+// в функцию, строящую пример, и он же, прочитанный рядом с exe при первом
+// обращении (LazyLoadedText), показывается под примером. Показанное и
+// работающее — один текст. Введение к примеру — `X.html` рядом.
 
 #include "Catalog.h"
 #include "pch.h"
 
-#include <cstddef>
 #include <span>
 #include <string>
 #include <string_view>
@@ -27,18 +22,11 @@
 
 namespace gallery {
 
-// Байты сниппета: вшитые в exe (ниже — snippet из массива) или прочитанные с
-// диска при первом обращении (LazyLoadedText). char8_t, потому что байты идут
-// числами 0..255, а `char` старше 127 в фигурных скобках — сужение.
+// Байты сниппета, прочитанные с диска при первом обращении (LazyLoadedText).
 using Snippet = std::u8string_view;
 
-template <std::size_t N>
-constexpr Snippet snippet(const char8_t (&bytes)[N]) {
-    return Snippet{bytes, N};
-}
-
-// Сниппет, который читается с диска при первом обращении, а не вшит в exe:
-// пилот на RadialGradientBrushPage. Держит относительный путь (узкий ASCII,
+// Сниппет, который читается с диска при первом обращении. Держит
+// относительный путь (узкий ASCII,
 // напр. "Snippets/RadialGradientBrush/RadialGradientBrushSample.html") как
 // string_view на строковый литерал — копии нет, литерал живёт всё время — и
 // прочитанные байты; load_or_get() читает один раз и отдаёт std::u8string_view над
@@ -61,8 +49,8 @@ private:
     std::string bytes_;         // прочитанные байты (пустая — ещё не читано)
 };
 
-// Тот же snippet(), что для вшитых байтов, но из LazyLoadedText: страница
-// зовёт snippet(sampleHeader) и не знает, откуда байты. Ссылка не const —
+// Тот же snippet(), что зовут страницы, но из LazyLoadedText: страница зовёт
+// snippet(sampleHeader) и не знает, откуда байты. Ссылка не const —
 // load_or_get() при первом вызове читает файл в байты.
 Snippet snippet(LazyLoadedText& lazy);
 
