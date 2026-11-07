@@ -12,6 +12,9 @@
 // примером. `X.h.embed` делает CMake (embed.cmake): это ровно то, что вернул
 // бы `#embed "X.h"`, а MSVC 14.51 его пока не знает. Показанное и работающее —
 // один текст. Введение к примеру — `X.html` рядом.
+//
+// Пилот RadialGradientBrushPage берёт эти два файла не из вшитых байтов, а
+// читает их рядом с exe при первом обращении (LazyLoadedText): текст тот же.
 
 #include "Catalog.h"
 #include "pch.h"
@@ -24,7 +27,8 @@
 
 namespace gallery {
 
-// Байты файла из Snippets/, вшитые в exe. char8_t, потому что байты идут
+// Байты сниппета: вшитые в exe (ниже — snippet из массива) или прочитанные с
+// диска при первом обращении (LazyLoadedText). char8_t, потому что байты идут
 // числами 0..255, а `char` старше 127 в фигурных скобках — сужение.
 using Snippet = std::u8string_view;
 
@@ -32,6 +36,31 @@ template <std::size_t N>
 constexpr Snippet snippet(const char8_t (&bytes)[N]) {
     return Snippet{bytes, N};
 }
+
+// Сниппет, который читается с диска при первом обращении, а не вшит в exe:
+// пилот на RadialGradientBrushPage. Держит относительный путь (узкий ASCII,
+// напр. "Snippets/RadialGradientBrush/RadialGradientBrushSample.html") и
+// прочитанные байты; bytes() читает один раз и отдаёт std::u8string_view над
+// ними. UTF-8 не проверяет — это делает snippetText. Чтение синхронное:
+// страница строится на STA-потоке, и чтение маленькое. Неудачное чтение
+// бросает std::runtime_error с путём, словами системы о коде и самим кодом —
+// той же формы, что у xml/json в wxl.core.
+class LazyLoadedText {
+public:
+    explicit LazyLoadedText(std::string_view relative);
+
+    // Байты файла: читаются при первом вызове и держатся до конца жизни.
+    Snippet bytes() const;
+
+private:
+    std::string relative_;        // путь относительно папки exe
+    mutable std::string bytes_;   // прочитанные байты (после bytes())
+    mutable bool loaded_ = false; // bytes() уже читал
+};
+
+// Тот же snippet(), что для вшитых байтов, но из LazyLoadedText: страница
+// зовёт snippet(sampleHeader) и не знает, откуда байты.
+Snippet snippet(LazyLoadedText const& lazy);
 
 // Что кладёт в раскладку один пример.
 struct ExampleParts {
