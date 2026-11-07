@@ -11,8 +11,8 @@
 #include <winrt/Microsoft.Windows.Storage.Pickers.h>
 
 #include "core.h"
-#include "../ItemTemplate.h"
-#include "../ItemContainerPreset.h"
+#include "ItemTemplate.h"
+#include "ItemContainerPreset.h"
 #include "FileTypeChoice.h"
 #include "Thickness.h"
 #include "hstring_param.h"

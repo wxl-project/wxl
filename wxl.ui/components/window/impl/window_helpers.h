@@ -14,7 +14,7 @@
 #include <optional>
 #include <string_view>
 
-#include "../SizeToContent.h"
+#include "SizeToContent.h"
 #include "core.h"
 #include "hstring_param.h"
 #include <wxl/Windows.Graphics.Structs.h>

@@ -8,7 +8,7 @@
 // Несёт import модуля, поэтому включается в .cpp последним — после
 // системных и всех остальных заголовков (правило импорта MSVC).
 
-#include "../MarkupBlock.impl.h"
+#include "MarkupBlock.impl.h"
 
 import wxl.core;
 

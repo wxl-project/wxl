@@ -8,7 +8,7 @@
 
 #include <winrt/Microsoft.UI.Xaml.Controls.h>
 
-#include "../GridLengths.h"
+#include "GridLengths.h"
 
 namespace wxl::impl {
 
