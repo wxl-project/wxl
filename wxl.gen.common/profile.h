@@ -460,7 +460,8 @@ struct component_search {
 
     // The components the build read from the profile chain on its own, compared as a set with
     // what the chain names in "components" before "needs" adds to them, whenever `directories`
-    // is given: a chain naming none matches an empty list. Without directories, no comparison.
+    // is given: a chain naming none matches an empty list. Without directories there is nothing
+    // to compare, and a list given anyway is refused.
     std::vector<std::string> expected;
 
     // The directory of what no component owns (the library's include directory, wxl.ui/src

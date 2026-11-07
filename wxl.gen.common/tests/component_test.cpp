@@ -260,7 +260,8 @@ TEST(component, the_list_of_the_build_must_match_the_profiles) {
     std::filesystem::remove_all(directory);
 }
 
-// A name listed twice in "components" or "needs" is a mistake, not a repetition to fold.
+// A name listed twice in "components", "needs", "sources" or "libraries" is a mistake, not a
+// repetition to fold.
 TEST(component, a_name_listed_twice_is_refused) {
     auto const directory = scratch(L"listed_twice");
     auto const profile = write_profile(directory, R"("window", "window")");
@@ -270,6 +271,15 @@ TEST(component, a_name_listed_twice_is_refused) {
     auto const manifest = write_component(directory, "grid", R"("needs": ["core", "core"])");
     EXPECT_TRUE(says(stops_with([&] { load_component(manifest); }),
                      {utf8(manifest), "'needs'", "\"core\" twice"}));
+
+    auto const sources = write_component(directory, "items", R"("sources": ["a.cpp", "a.cpp"])");
+    EXPECT_TRUE(says(stops_with([&] { load_component(sources); }),
+                     {utf8(sources), "'sources'", "\"a.cpp\" twice"}));
+
+    auto const libraries =
+        write_component(directory, "html", R"("libraries": ["wxl::html", "wxl::html"])");
+    EXPECT_TRUE(says(stops_with([&] { load_component(libraries); }),
+                     {utf8(libraries), "'libraries'", "\"wxl::html\" twice"}));
 
     std::filesystem::remove_all(directory);
 }
@@ -286,6 +296,21 @@ TEST(component, no_list_of_the_build_is_an_empty_one) {
                                           {.directories = {components}});
                      }),
                      {"build:    (none)", "profiles: window"}));
+
+    std::filesystem::remove_all(directory);
+}
+
+// A list of the build with no directory to find its components in is refused, not dropped.
+TEST(component, a_list_of_the_build_without_directories_is_refused) {
+    auto const directory = scratch(L"cross_check_no_dirs");
+    auto const profile = directory / L"p.winxl-profile";
+    write(profile, "{}");
+
+    EXPECT_TRUE(says(stops_with([&] {
+                         resolve_profiles({profile}, no_packages(directory),
+                                          {.expected = {"window"}});
+                     }),
+                     {"--component: window", "--component-dir"}));
 
     std::filesystem::remove_all(directory);
 }

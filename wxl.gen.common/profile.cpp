@@ -981,6 +981,13 @@ std::string list_of(std::vector<std::string> names) {
 // compiles the components it read, and the projection is made for those the chain names.
 void check_named_components(profile_set const& result, component_search const& search) {
     if (search.directories.empty()) {
+        // A list with nowhere to look is a build that lost its directories, not one to ignore.
+        if (!search.expected.empty()) {
+            throw std::runtime_error(std::format(
+                "the build names components (--component: {}) and no directory to find them in "
+                "(--component-dir)",
+                list_of(search.expected)));
+        }
         return;
     }
     std::vector<std::string> names;
