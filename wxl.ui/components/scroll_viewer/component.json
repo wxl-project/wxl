@@ -1,6 +1,8 @@
 {
   "name": "scroll_viewer",
-  "needs": [],
+  "needs": [
+    "dsl"
+  ],
   "sources": [
     "impl/vertical_offset_pair.cpp",
     "impl/vertical_offset_pair.h"

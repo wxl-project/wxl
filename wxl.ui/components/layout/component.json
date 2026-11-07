@@ -1,6 +1,8 @@
 {
   "name": "layout",
-  "needs": [],
+  "needs": [
+    "dsl"
+  ],
   "sources": [
     "AvailableSizeLayout.cpp",
     "AvailableSizeLayout.h",

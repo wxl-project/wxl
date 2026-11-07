@@ -1,6 +1,8 @@
 {
   "name": "elements",
-  "needs": [],
+  "needs": [
+    "dsl"
+  ],
   "sources": [
     "impl/element_helpers.cpp",
     "impl/element_helpers.h",

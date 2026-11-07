@@ -1,6 +1,8 @@
 {
   "name": "items",
-  "needs": [],
+  "needs": [
+    "dsl"
+  ],
   "sources": [
     "impl/item_factory.cpp",
     "impl/item_template.cpp",

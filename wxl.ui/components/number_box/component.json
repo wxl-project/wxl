@@ -1,6 +1,8 @@
 {
   "name": "number_box",
-  "needs": [],
+  "needs": [
+    "dsl"
+  ],
   "sources": [
     "impl/intermediate_value_pair.cpp",
     "impl/intermediate_value_pair.h"

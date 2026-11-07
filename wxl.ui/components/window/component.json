@@ -1,6 +1,8 @@
 {
   "name": "window",
-  "needs": [],
+  "needs": [
+    "composition"
+  ],
   "sources": [
     "impl/window_frame.cpp",
     "impl/window_helpers.cpp",

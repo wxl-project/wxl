@@ -1,7 +1,8 @@
 {
   "name": "effects",
   "needs": [
-    "composition"
+    "composition",
+    "dsl"
   ],
   "sources": [
     "BevelEffect.cpp",

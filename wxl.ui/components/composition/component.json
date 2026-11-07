@@ -1,7 +1,8 @@
 {
   "name": "composition",
   "needs": [
-    "window"
+    "window",
+    "dsl"
   ],
   "sources": [
     "CompositionWindow.cpp",
