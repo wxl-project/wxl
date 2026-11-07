@@ -97,7 +97,9 @@ auto example = StackPanel {
             u8"(<span style=\"semibold\">HasBorder = true</span>). Setting <span style=\"semibold\">HasBorder</span> to "
             u8"<span style=\"semibold\">false</span> while <span style=\"semibold\">HasTitleBar</span> is "
             u8"<span style=\"semibold\">true</span> will result in a fatal error.",
-            Thickness {0, -16, 16, 16}),
+            Thickness {0, -16, 16, 16},
+            // The original InfoBar content kept selection off; keep this warning unselectable.
+            false),
     },
     Button {content = u"Show window", onClick += [model](Button const&) { model->open(); }},
 };

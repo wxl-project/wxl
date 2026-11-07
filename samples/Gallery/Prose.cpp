@@ -58,15 +58,17 @@ char const* errorName(MarkupErrorKind kind) {
     return "?";
 }
 
-FrameworkElement prose(Snippet html, Thickness margin) {
+FrameworkElement prose(Snippet html, Thickness margin, bool textSelection) {
     // Прозу страница пишет абзацами и переносами, как RichTextBlock оригинала: между <p> отступа нет, пустая
     // строка — это <br>.
     MarkupTheme theme;
     theme.paragraphMargin = Thickness {0};
 
+    // Выбор текста — как у RichTextBlock по умолчанию; единственное место, которому нужен false, — контент
+    // InfoBar (оригинал держал выбор выключенным), и оно передаёт его параметром.
     auto block = HtmlBlock {
         Margin {margin},
-        isTextSelectionEnabled = true,
+        isTextSelectionEnabled = textSelection,
     };
     block.theme(theme);
     // Полужирный вес 600 — то, чего не умеет ни один тег разметки (<b>/<strong> — это 700), поэтому он приходит
