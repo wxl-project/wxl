@@ -589,29 +589,12 @@ void member_filter::merge(member_filter const& other) {
     names = std::move(rest);
 }
 
-profile load_profile(std::filesystem::path const& path) {
-    wxl::json::document file;
-    auto const& document = read_json(file, path, "a profile must be a JSON object");
+namespace {
 
-    profile prof;
-    prof.source = path;
-    prof.name = string_or(document, path, "name", wxl::core::unicode::to_utf8(path.stem()).chars());
-    prof.description = string_or(document, path, "description", {});
-
-    if (value const* const extends = document.find("extends")) {
-        auto const names = read_string_set(*extends, path, "extends");
-        prof.extends.assign(names.begin(), names.end());
-    }
-
-    // The release read is the one the build's restore resolved, so a key that
-    // names one is a mistake to report.
-    if (document.find("windowsAppSdk")) {
-        fail(path, "'windowsAppSdk' is not a key of a profile: the Windows App SDK release read "
-                   "is the one the build's NuGet restore resolves, and a profile whose types need "
-                   "a certain release names the lowest one they need as 'minimumWindowsAppSdk'");
-    }
-    prof.minimum_windows_app_sdk = minimum_or_empty(document, path, "minimumWindowsAppSdk", {});
-
+// What the walk is asked to start from -- the packages, the listed types with everything
+// written under them, and the Windows metadata: the keys a profile and the `requires` of a
+// component share.
+void read_requirements(value const& document, std::filesystem::path const& path, profile& prof) {
     if (value const* const packages = document.find("packages")) {
         if (!packages->is_array()) {
             fail(path, "'packages' must be an array");
@@ -653,6 +636,36 @@ profile load_profile(std::filesystem::path const& path) {
         }
     }
 
+    prof.windows_metadata = bool_or(document, path, "windowsMetadata", false);
+}
+
+}  // namespace
+
+profile load_profile(std::filesystem::path const& path) {
+    wxl::json::document file;
+    auto const& document = read_json(file, path, "a profile must be a JSON object");
+
+    profile prof;
+    prof.source = path;
+    prof.name = string_or(document, path, "name", wxl::core::unicode::to_utf8(path.stem()).chars());
+    prof.description = string_or(document, path, "description", {});
+
+    if (value const* const extends = document.find("extends")) {
+        auto const names = read_string_set(*extends, path, "extends");
+        prof.extends.assign(names.begin(), names.end());
+    }
+
+    // The release read is the one the build's restore resolved, so a key that
+    // names one is a mistake to report.
+    if (document.find("windowsAppSdk")) {
+        fail(path, "'windowsAppSdk' is not a key of a profile: the Windows App SDK release read "
+                   "is the one the build's NuGet restore resolves, and a profile whose types need "
+                   "a certain release names the lowest one they need as 'minimumWindowsAppSdk'");
+    }
+    prof.minimum_windows_app_sdk = minimum_or_empty(document, path, "minimumWindowsAppSdk", {});
+
+    read_requirements(document, path, prof);
+
     // Types the walk discovers on its own (through base classes and member
     // signatures) rather than finding listed: "none" generates the type
     // but none of its members, "all" generates everything it declares.
@@ -670,7 +683,6 @@ profile load_profile(std::filesystem::path const& path) {
         prof.brushes = member_filter::allow(read_string_set(*brushes, path, "brushes"));
     }
 
-    prof.windows_metadata = bool_or(document, path, "windowsMetadata", false);
     return prof;
 }
 
