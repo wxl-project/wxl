@@ -1250,7 +1250,7 @@ void handing_work_over(DispatcherQueue const& queue) {
 }
 
 // A wait for a quiet moment on the UI thread's queue, which nobody names.
-async::task<> afterAQuietMoment(async::cancellation_token token) {
+async::task<> after_a_quiet_moment(async::cancellation_token token) {
     WaitableTimer timer{std::chrono::milliseconds{1500}, std::move(token)};
     timer.restart();
     co_await timer;
