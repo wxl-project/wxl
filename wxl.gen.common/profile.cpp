@@ -727,6 +727,9 @@ profile load_profile(std::filesystem::path const& path) {
                    "is the one the build's NuGet restore resolves, and a profile whose types need "
                    "a certain release names the lowest one they need as 'minimumWindowsAppSdk'");
     }
+    refuse_other_keys(document, path, "profile",
+                      {"name", "description", "extends", "components", "minimumWindowsAppSdk",
+                       "packages", "types", "windowsMetadata", "discoveredTypes", "brushes"});
     prof.minimum_windows_app_sdk = minimum_or_empty(document, path, "minimumWindowsAppSdk", {});
 
     read_requirements(document, path, prof);

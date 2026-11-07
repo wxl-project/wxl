@@ -65,9 +65,9 @@ constexpr std::string_view usage = R"(winui-srcgen -- generates wxl wrappers fro
                  <dir>/N/component.json. The chain's "needs" are resolved
                  from the directories given.
   --component    A component the build read from the chain; repeatable. When
-                 given, the list is compared with what the chain names in
-                 "components" as sets, and a mismatch stops the run with both
-                 lists named.
+                 given, the list is compared as a set with the chain's own
+                 "components", before "needs" adds to them, and a mismatch
+                 stops the run with both lists named.
   --common-dir   The directory of what no component owns. When set, every
                  include a profile or a selected component gives must be a
                  file of a selected component or of this directory, or one the

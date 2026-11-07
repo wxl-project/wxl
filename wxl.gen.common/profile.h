@@ -360,7 +360,7 @@ struct profile_set {
 };
 
 // Reads a single profile file. Throws std::runtime_error with the file
-// name on malformed JSON, on an unknown key shape, on a type that
+// name on malformed JSON, on a key a profile does not have, on an unknown key shape, on a type that
 // carries both "members" and "excludeMembers" (mutually exclusive by
 // design -- a member named in both would be a straight contradiction),
 // on a minimum that is not a NuGet version, and on the keys that name a
