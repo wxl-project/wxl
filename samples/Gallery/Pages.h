@@ -147,8 +147,8 @@ inline std::wstring wide(std::u16string_view text) {
 }
 
 // Каталог для примеров с поиском: все слова запроса есть в тексте (без учёта
-// регистра); названия перенесённых контролов, подходящие под запрос; контрол
-// по названию; путь к картинке из каталога (`ms-appx:///Assets/…`).
+// регистра); названия зарегистрированных контролов, подходящие под запрос;
+// контрол по названию; путь к картинке из каталога (`ms-appx:///Assets/…`).
 bool containsWords(std::u16string_view text, std::u16string_view query);
 std::vector<std::u16string> controlTitles(std::u16string_view query);
 ControlInfo const* controlByTitle(std::u16string_view title);
