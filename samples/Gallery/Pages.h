@@ -86,7 +86,7 @@ wxl::FrameworkElement sampleSettingsPage();
 
 // Выбор цвета: образец на кнопке и ColorPicker в её выпадающей части
 // (ColorSelector оригинала). Цвет — поле модели.
-wxl::FrameworkElement colorSelector(wxl::core::observable<wxl::Color>& color, char16_t const* name);
+wxl::FrameworkElement colorSelector(wxl::core::observable<wxl::Color>& color, std::u16string_view name);
 
 // Функция, строящая страницу примеров одного контрола.
 using ControlPage = wxl::FrameworkElement (*)();
