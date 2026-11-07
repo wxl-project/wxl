@@ -11,12 +11,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t looksHeader[] = {
-#include "Snippets/PersonPicture/PersonPictureSelectDifferentLooksPerson.html.embed"
-};
-constexpr char8_t looksCode[] = {
-#include "Snippets/PersonPicture/PersonPictureSelectDifferentLooksPerson.h.embed"
-};
+gallery::LazyLoadedText looksHeader{"Snippets/PersonPicture/PersonPictureSelectDifferentLooksPerson.html"};
+gallery::LazyLoadedText looksCode{"Snippets/PersonPicture/PersonPictureSelectDifferentLooksPerson.h"};
 
 FrameworkElement looks() {
 #include "Snippets/PersonPicture/PersonPictureSelectDifferentLooksPerson.h"

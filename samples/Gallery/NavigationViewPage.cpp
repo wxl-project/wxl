@@ -17,12 +17,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t defaultModeHeader[] = {
-#include "Snippets/NavigationView/NavigationviewDefaultPanedisplaymode.html.embed"
-};
-constexpr char8_t defaultModeCode[] = {
-#include "Snippets/NavigationView/NavigationviewDefaultPanedisplaymode.h.embed"
-};
+gallery::LazyLoadedText defaultModeHeader{"Snippets/NavigationView/NavigationviewDefaultPanedisplaymode.html"};
+gallery::LazyLoadedText defaultModeCode{"Snippets/NavigationView/NavigationviewDefaultPanedisplaymode.h"};
 
 FrameworkElement defaultMode() {
 #include "Snippets/NavigationView/NavigationviewDefaultPanedisplaymode.h"
@@ -34,12 +30,8 @@ FrameworkElement defaultMode() {
     });
 }
 
-constexpr char8_t topModeHeader[] = {
-#include "Snippets/NavigationView/NavigationviewPanedisplaymodeTop.html.embed"
-};
-constexpr char8_t topModeCode[] = {
-#include "Snippets/NavigationView/NavigationviewPanedisplaymodeTop.h.embed"
-};
+gallery::LazyLoadedText topModeHeader{"Snippets/NavigationView/NavigationviewPanedisplaymodeTop.html"};
+gallery::LazyLoadedText topModeCode{"Snippets/NavigationView/NavigationviewPanedisplaymodeTop.h"};
 
 FrameworkElement topMode() {
 #include "Snippets/NavigationView/NavigationviewPanedisplaymodeTop.h"
@@ -51,12 +43,8 @@ FrameworkElement topMode() {
     });
 }
 
-constexpr char8_t switchingModeHeader[] = {
-#include "Snippets/NavigationView/NavigationviewSwitchesPaneOrientation.html.embed"
-};
-constexpr char8_t switchingModeCode[] = {
-#include "Snippets/NavigationView/NavigationviewSwitchesPaneOrientation.h.embed"
-};
+gallery::LazyLoadedText switchingModeHeader{"Snippets/NavigationView/NavigationviewSwitchesPaneOrientation.html"};
+gallery::LazyLoadedText switchingModeCode{"Snippets/NavigationView/NavigationviewSwitchesPaneOrientation.h"};
 
 FrameworkElement switchingMode() {
 #include "Snippets/NavigationView/NavigationviewSwitchesPaneOrientation.h"
@@ -68,12 +56,8 @@ FrameworkElement switchingMode() {
     });
 }
 
-constexpr char8_t tabsPatternHeader[] = {
-#include "Snippets/NavigationView/NavigationViewTyingSelectionFocusTabs.html.embed"
-};
-constexpr char8_t tabsPatternCode[] = {
-#include "Snippets/NavigationView/NavigationViewTyingSelectionFocusTabs.h.embed"
-};
+gallery::LazyLoadedText tabsPatternHeader{"Snippets/NavigationView/NavigationViewTyingSelectionFocusTabs.html"};
+gallery::LazyLoadedText tabsPatternCode{"Snippets/NavigationView/NavigationViewTyingSelectionFocusTabs.h"};
 
 FrameworkElement tabsPattern() {
 #include "Snippets/NavigationView/NavigationViewTyingSelectionFocusTabs.h"
@@ -85,12 +69,8 @@ FrameworkElement tabsPattern() {
     });
 }
 
-constexpr char8_t dataBindingHeader[] = {
-#include "Snippets/NavigationView/NavigationViewDataBinding.html.embed"
-};
-constexpr char8_t dataBindingCode[] = {
-#include "Snippets/NavigationView/NavigationViewDataBinding.h.embed"
-};
+gallery::LazyLoadedText dataBindingHeader{"Snippets/NavigationView/NavigationViewDataBinding.html"};
+gallery::LazyLoadedText dataBindingCode{"Snippets/NavigationView/NavigationViewDataBinding.h"};
 
 FrameworkElement dataBinding() {
 #include "Snippets/NavigationView/NavigationViewDataBinding.h"
@@ -102,12 +82,8 @@ FrameworkElement dataBinding() {
     });
 }
 
-constexpr char8_t footerItemsHeader[] = {
-#include "Snippets/NavigationView/NavigationviewFooterMenuItems.html.embed"
-};
-constexpr char8_t footerItemsCode[] = {
-#include "Snippets/NavigationView/NavigationviewFooterMenuItems.h.embed"
-};
+gallery::LazyLoadedText footerItemsHeader{"Snippets/NavigationView/NavigationviewFooterMenuItems.html"};
+gallery::LazyLoadedText footerItemsCode{"Snippets/NavigationView/NavigationviewFooterMenuItems.h"};
 
 FrameworkElement footerItems() {
 #include "Snippets/NavigationView/NavigationviewFooterMenuItems.h"
@@ -120,12 +96,8 @@ FrameworkElement footerItems() {
     });
 }
 
-constexpr char8_t hierarchicalHeader[] = {
-#include "Snippets/NavigationView/HierarchicalNavigationview.html.embed"
-};
-constexpr char8_t hierarchicalCode[] = {
-#include "Snippets/NavigationView/HierarchicalNavigationview.h.embed"
-};
+gallery::LazyLoadedText hierarchicalHeader{"Snippets/NavigationView/HierarchicalNavigationview.html"};
+gallery::LazyLoadedText hierarchicalCode{"Snippets/NavigationView/HierarchicalNavigationview.h"};
 
 FrameworkElement hierarchical() {
 #include "Snippets/NavigationView/HierarchicalNavigationview.h"
@@ -138,12 +110,8 @@ FrameworkElement hierarchical() {
     });
 }
 
-constexpr char8_t apiActionHeader[] = {
-#include "Snippets/NavigationView/NavigationViewApiAction.html.embed"
-};
-constexpr char8_t apiActionCode[] = {
-#include "Snippets/NavigationView/NavigationViewApiAction.h.embed"
-};
+gallery::LazyLoadedText apiActionHeader{"Snippets/NavigationView/NavigationViewApiAction.html"};
+gallery::LazyLoadedText apiActionCode{"Snippets/NavigationView/NavigationViewApiAction.h"};
 
 FrameworkElement apiAction() {
 #include "Snippets/NavigationView/NavigationViewApiAction.h"

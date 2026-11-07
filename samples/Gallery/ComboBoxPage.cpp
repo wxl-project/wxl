@@ -16,12 +16,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t inlineHeader[] = {
-#include "Snippets/ComboBox/Inline.html.embed"
-};
-constexpr char8_t inlineCode[] = {
-#include "Snippets/ComboBox/Inline.h.embed"
-};
+gallery::LazyLoadedText inlineHeader{"Snippets/ComboBox/Inline.html"};
+gallery::LazyLoadedText inlineCode{"Snippets/ComboBox/Inline.h"};
 
 FrameworkElement inlineExample() {
 #include "Snippets/ComboBox/Inline.h"
@@ -33,12 +29,8 @@ FrameworkElement inlineExample() {
     });
 }
 
-constexpr char8_t sourceHeader[] = {
-#include "Snippets/ComboBox/ItemsSource.html.embed"
-};
-constexpr char8_t sourceCode[] = {
-#include "Snippets/ComboBox/ItemsSource.h.embed"
-};
+gallery::LazyLoadedText sourceHeader{"Snippets/ComboBox/ItemsSource.html"};
+gallery::LazyLoadedText sourceCode{"Snippets/ComboBox/ItemsSource.h"};
 
 FrameworkElement sourceExample() {
 #include "Snippets/ComboBox/ItemsSource.h"
@@ -50,12 +42,8 @@ FrameworkElement sourceExample() {
     });
 }
 
-constexpr char8_t editableHeader[] = {
-#include "Snippets/ComboBox/Editable.html.embed"
-};
-constexpr char8_t editableCode[] = {
-#include "Snippets/ComboBox/Editable.h.embed"
-};
+gallery::LazyLoadedText editableHeader{"Snippets/ComboBox/Editable.html"};
+gallery::LazyLoadedText editableCode{"Snippets/ComboBox/Editable.h"};
 
 FrameworkElement editableExample() {
 #include "Snippets/ComboBox/Editable.h"

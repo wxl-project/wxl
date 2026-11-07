@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t simpleHeader[] = {
-#include "Snippets/MenuBar/Simple.html.embed"
-};
-constexpr char8_t simpleCode[] = {
-#include "Snippets/MenuBar/Simple.h.embed"
-};
+gallery::LazyLoadedText simpleHeader{"Snippets/MenuBar/Simple.html"};
+gallery::LazyLoadedText simpleCode{"Snippets/MenuBar/Simple.h"};
 
 FrameworkElement simple() {
 #include "Snippets/MenuBar/Simple.h"
@@ -25,12 +21,8 @@ FrameworkElement simple() {
     });
 }
 
-constexpr char8_t acceleratorsHeader[] = {
-#include "Snippets/MenuBar/KeyboardAccelerators.html.embed"
-};
-constexpr char8_t acceleratorsCode[] = {
-#include "Snippets/MenuBar/KeyboardAccelerators.h.embed"
-};
+gallery::LazyLoadedText acceleratorsHeader{"Snippets/MenuBar/KeyboardAccelerators.html"};
+gallery::LazyLoadedText acceleratorsCode{"Snippets/MenuBar/KeyboardAccelerators.h"};
 
 FrameworkElement accelerators() {
 #include "Snippets/MenuBar/KeyboardAccelerators.h"
@@ -42,12 +34,8 @@ FrameworkElement accelerators() {
     });
 }
 
-constexpr char8_t submenusHeader[] = {
-#include "Snippets/MenuBar/Submenus.html.embed"
-};
-constexpr char8_t submenusCode[] = {
-#include "Snippets/MenuBar/Submenus.h.embed"
-};
+gallery::LazyLoadedText submenusHeader{"Snippets/MenuBar/Submenus.html"};
+gallery::LazyLoadedText submenusCode{"Snippets/MenuBar/Submenus.h"};
 
 FrameworkElement submenus() {
 #include "Snippets/MenuBar/Submenus.h"

@@ -17,24 +17,12 @@ struct Flags {
     core::observable<bool> legacyMode {false};
 };
 
-constexpr char8_t elementsHeader[] = {
-#include "Snippets/CustomXamlConditionals/CustomXamlConditionalsConditionalElements.html.embed"
-};
-constexpr char8_t elementsCode[] = {
-#include "Snippets/CustomXamlConditionals/CustomXamlConditionalsConditionalElements.h.embed"
-};
-constexpr char8_t attributesHeader[] = {
-#include "Snippets/CustomXamlConditionals/CustomXamlConditionalsConditionalAttributes.html.embed"
-};
-constexpr char8_t attributesCode[] = {
-#include "Snippets/CustomXamlConditionals/CustomXamlConditionalsConditionalAttributes.h.embed"
-};
-constexpr char8_t settersHeader[] = {
-#include "Snippets/CustomXamlConditionals/CustomXamlConditionalsConditionalSettersStyle.html.embed"
-};
-constexpr char8_t settersCode[] = {
-#include "Snippets/CustomXamlConditionals/CustomXamlConditionalsConditionalSettersStyle.h.embed"
-};
+gallery::LazyLoadedText elementsHeader{"Snippets/CustomXamlConditionals/CustomXamlConditionalsConditionalElements.html"};
+gallery::LazyLoadedText elementsCode{"Snippets/CustomXamlConditionals/CustomXamlConditionalsConditionalElements.h"};
+gallery::LazyLoadedText attributesHeader{"Snippets/CustomXamlConditionals/CustomXamlConditionalsConditionalAttributes.html"};
+gallery::LazyLoadedText attributesCode{"Snippets/CustomXamlConditionals/CustomXamlConditionalsConditionalAttributes.h"};
+gallery::LazyLoadedText settersHeader{"Snippets/CustomXamlConditionals/CustomXamlConditionalsConditionalSettersStyle.html"};
+gallery::LazyLoadedText settersCode{"Snippets/CustomXamlConditionals/CustomXamlConditionalsConditionalSettersStyle.h"};
 
 FrameworkElement elements(std::shared_ptr<Flags> const& flags) {
 #include "Snippets/CustomXamlConditionals/CustomXamlConditionalsConditionalElements.h"

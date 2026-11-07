@@ -12,12 +12,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t expressionsHeader[] = {
-#include "Snippets/NumberBox/EvaluatesExpressions.html.embed"
-};
-constexpr char8_t expressionsCode[] = {
-#include "Snippets/NumberBox/EvaluatesExpressions.h.embed"
-};
+gallery::LazyLoadedText expressionsHeader{"Snippets/NumberBox/EvaluatesExpressions.html"};
+gallery::LazyLoadedText expressionsCode{"Snippets/NumberBox/EvaluatesExpressions.h"};
 
 FrameworkElement expressions() {
     return gallery::controlExample({
@@ -29,12 +25,8 @@ FrameworkElement expressions() {
     });
 }
 
-constexpr char8_t spinHeader[] = {
-#include "Snippets/NumberBox/SpinButton.html.embed"
-};
-constexpr char8_t spinCode[] = {
-#include "Snippets/NumberBox/SpinButton.h.embed"
-};
+gallery::LazyLoadedText spinHeader{"Snippets/NumberBox/SpinButton.html"};
+gallery::LazyLoadedText spinCode{"Snippets/NumberBox/SpinButton.h"};
 
 FrameworkElement spinButton() {
 #include "Snippets/NumberBox/SpinButton.h"
@@ -47,12 +39,8 @@ FrameworkElement spinButton() {
     });
 }
 
-constexpr char8_t formattedHeader[] = {
-#include "Snippets/NumberBox/FormattedRoundsNearest.html.embed"
-};
-constexpr char8_t formattedCode[] = {
-#include "Snippets/NumberBox/FormattedRoundsNearest.h.embed"
-};
+gallery::LazyLoadedText formattedHeader{"Snippets/NumberBox/FormattedRoundsNearest.html"};
+gallery::LazyLoadedText formattedCode{"Snippets/NumberBox/FormattedRoundsNearest.h"};
 
 FrameworkElement formatted() {
 #include "Snippets/NumberBox/FormattedRoundsNearest.h"

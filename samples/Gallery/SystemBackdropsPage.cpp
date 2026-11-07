@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t backdropTypesHeader[] = {
-#include "Snippets/SystemBackdrops/SystemBackdropsBackdropTypes.html.embed"
-};
-constexpr char8_t backdropTypesCode[] = {
-#include "Snippets/SystemBackdrops/SystemBackdropsBackdropTypes.h.embed"
-};
+gallery::LazyLoadedText backdropTypesHeader{"Snippets/SystemBackdrops/SystemBackdropsBackdropTypes.html"};
+gallery::LazyLoadedText backdropTypesCode{"Snippets/SystemBackdrops/SystemBackdropsBackdropTypes.h"};
 
 FrameworkElement backdropTypes() {
 #include "Snippets/SystemBackdrops/SystemBackdropsBackdropTypes.h"
@@ -25,12 +21,8 @@ FrameworkElement backdropTypes() {
     });
 }
 
-constexpr char8_t micaBackdropHeader[] = {
-#include "Snippets/SystemBackdrops/SystemBackdropsMicacontroller.html.embed"
-};
-constexpr char8_t micaBackdropCode[] = {
-#include "Snippets/SystemBackdrops/SystemBackdropsMicacontroller.h.embed"
-};
+gallery::LazyLoadedText micaBackdropHeader{"Snippets/SystemBackdrops/SystemBackdropsMicacontroller.html"};
+gallery::LazyLoadedText micaBackdropCode{"Snippets/SystemBackdrops/SystemBackdropsMicacontroller.h"};
 
 FrameworkElement micaBackdropExample() {
 #include "Snippets/SystemBackdrops/SystemBackdropsMicacontroller.h"
@@ -42,12 +34,8 @@ FrameworkElement micaBackdropExample() {
     });
 }
 
-constexpr char8_t acrylicBackdropHeader[] = {
-#include "Snippets/SystemBackdrops/SystemBackdropsDesktopacryliccontroller.html.embed"
-};
-constexpr char8_t acrylicBackdropCode[] = {
-#include "Snippets/SystemBackdrops/SystemBackdropsDesktopacryliccontroller.h.embed"
-};
+gallery::LazyLoadedText acrylicBackdropHeader{"Snippets/SystemBackdrops/SystemBackdropsDesktopacryliccontroller.html"};
+gallery::LazyLoadedText acrylicBackdropCode{"Snippets/SystemBackdrops/SystemBackdropsDesktopacryliccontroller.h"};
 
 FrameworkElement acrylicBackdropExample() {
 #include "Snippets/SystemBackdrops/SystemBackdropsDesktopacryliccontroller.h"

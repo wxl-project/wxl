@@ -27,12 +27,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t previewHeader[] = {
-#include "Snippets/CaptureElementPreview/CaptureElementPreviewMediacapturePreviewDisplayedVia.html.embed"
-};
-constexpr char8_t previewCode[] = {
-#include "Snippets/CaptureElementPreview/CaptureElementPreviewMediacapturePreviewDisplayedVia.h.embed"
-};
+gallery::LazyLoadedText previewHeader{"Snippets/CaptureElementPreview/CaptureElementPreviewMediacapturePreviewDisplayedVia.html"};
+gallery::LazyLoadedText previewCode{"Snippets/CaptureElementPreview/CaptureElementPreviewMediacapturePreviewDisplayedVia.h"};
 
 FrameworkElement preview() {
 #include "Snippets/CaptureElementPreview/CaptureElementPreviewMediacapturePreviewDisplayedVia.h"

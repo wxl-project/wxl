@@ -16,12 +16,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t growingHeader[] = {
-#include "Snippets/BoundCollection/BoundCollectionGrowing.html.embed"
-};
-constexpr char8_t growingCode[] = {
-#include "Snippets/BoundCollection/BoundCollectionGrowing.h.embed"
-};
+gallery::LazyLoadedText growingHeader{"Snippets/BoundCollection/BoundCollectionGrowing.html"};
+gallery::LazyLoadedText growingCode{"Snippets/BoundCollection/BoundCollectionGrowing.h"};
 
 FrameworkElement growingExample() {
 #include "Snippets/BoundCollection/BoundCollectionGrowing.h"
@@ -29,12 +25,8 @@ FrameworkElement growingExample() {
     return gallery::controlExample({.header = gallery::snippet(growingHeader), .example = example, .code = gallery::snippet(growingCode)});
 }
 
-constexpr char8_t itemFieldHeader[] = {
-#include "Snippets/BoundCollection/BoundCollectionItemField.html.embed"
-};
-constexpr char8_t itemFieldCode[] = {
-#include "Snippets/BoundCollection/BoundCollectionItemField.h.embed"
-};
+gallery::LazyLoadedText itemFieldHeader{"Snippets/BoundCollection/BoundCollectionItemField.html"};
+gallery::LazyLoadedText itemFieldCode{"Snippets/BoundCollection/BoundCollectionItemField.h"};
 
 FrameworkElement itemFieldExample() {
 #include "Snippets/BoundCollection/BoundCollectionItemField.h"
@@ -42,12 +34,8 @@ FrameworkElement itemFieldExample() {
     return gallery::controlExample({.header = gallery::snippet(itemFieldHeader), .example = example, .code = gallery::snippet(itemFieldCode)});
 }
 
-constexpr char8_t filterHeader[] = {
-#include "Snippets/BoundCollection/BoundCollectionFilter.html.embed"
-};
-constexpr char8_t filterCode[] = {
-#include "Snippets/BoundCollection/BoundCollectionFilter.h.embed"
-};
+gallery::LazyLoadedText filterHeader{"Snippets/BoundCollection/BoundCollectionFilter.html"};
+gallery::LazyLoadedText filterCode{"Snippets/BoundCollection/BoundCollectionFilter.h"};
 
 FrameworkElement filterExample() {
 #include "Snippets/BoundCollection/BoundCollectionFilter.h"

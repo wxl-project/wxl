@@ -15,12 +15,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t pinHeader[] = {
-#include "Snippets/MapControl/MapControlShowingPinMap.html.embed"
-};
-constexpr char8_t pinCode[] = {
-#include "Snippets/MapControl/MapControlShowingPinMap.h.embed"
-};
+gallery::LazyLoadedText pinHeader{"Snippets/MapControl/MapControlShowingPinMap.html"};
+gallery::LazyLoadedText pinCode{"Snippets/MapControl/MapControlShowingPinMap.h"};
 
 FrameworkElement pin() {
 #include "Snippets/MapControl/MapControlShowingPinMap.h"

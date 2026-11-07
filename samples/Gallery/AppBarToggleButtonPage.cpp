@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t symbolIconHeader[] = {
-#include "Snippets/AppBarToggleButton/SymbolIcon.html.embed"
-};
-constexpr char8_t symbolIconCode[] = {
-#include "Snippets/AppBarToggleButton/SymbolIcon.h.embed"
-};
+gallery::LazyLoadedText symbolIconHeader{"Snippets/AppBarToggleButton/SymbolIcon.html"};
+gallery::LazyLoadedText symbolIconCode{"Snippets/AppBarToggleButton/SymbolIcon.h"};
 
 FrameworkElement symbolIcon() {
 #include "Snippets/AppBarToggleButton/SymbolIcon.h"
@@ -25,12 +21,8 @@ FrameworkElement symbolIcon() {
     });
 }
 
-constexpr char8_t bitmapIconHeader[] = {
-#include "Snippets/AppBarToggleButton/BitmapIcon.html.embed"
-};
-constexpr char8_t bitmapIconCode[] = {
-#include "Snippets/AppBarToggleButton/BitmapIcon.h.embed"
-};
+gallery::LazyLoadedText bitmapIconHeader{"Snippets/AppBarToggleButton/BitmapIcon.html"};
+gallery::LazyLoadedText bitmapIconCode{"Snippets/AppBarToggleButton/BitmapIcon.h"};
 
 FrameworkElement bitmapIcon() {
 #include "Snippets/AppBarToggleButton/BitmapIcon.h"
@@ -42,12 +34,8 @@ FrameworkElement bitmapIcon() {
     });
 }
 
-constexpr char8_t fontIconHeader[] = {
-#include "Snippets/AppBarToggleButton/FontIcon.html.embed"
-};
-constexpr char8_t fontIconCode[] = {
-#include "Snippets/AppBarToggleButton/FontIcon.h.embed"
-};
+gallery::LazyLoadedText fontIconHeader{"Snippets/AppBarToggleButton/FontIcon.html"};
+gallery::LazyLoadedText fontIconCode{"Snippets/AppBarToggleButton/FontIcon.h"};
 
 FrameworkElement fontIcon() {
 #include "Snippets/AppBarToggleButton/FontIcon.h"
@@ -59,12 +47,8 @@ FrameworkElement fontIcon() {
     });
 }
 
-constexpr char8_t threeStateHeader[] = {
-#include "Snippets/AppBarToggleButton/ThreeState.html.embed"
-};
-constexpr char8_t threeStateCode[] = {
-#include "Snippets/AppBarToggleButton/ThreeState.h.embed"
-};
+gallery::LazyLoadedText threeStateHeader{"Snippets/AppBarToggleButton/ThreeState.html"};
+gallery::LazyLoadedText threeStateCode{"Snippets/AppBarToggleButton/ThreeState.h"};
 
 FrameworkElement threeState() {
 #include "Snippets/AppBarToggleButton/ThreeState.h"

@@ -7,12 +7,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t simpleHeader[] = {
-#include "Snippets/DropDownButton/Simple.html.embed"
-};
-constexpr char8_t simpleCode[] = {
-#include "Snippets/DropDownButton/Simple.h.embed"
-};
+gallery::LazyLoadedText simpleHeader{"Snippets/DropDownButton/Simple.html"};
+gallery::LazyLoadedText simpleCode{"Snippets/DropDownButton/Simple.h"};
 
 FrameworkElement simple() {
     return gallery::controlExample({
@@ -24,12 +20,8 @@ FrameworkElement simple() {
     });
 }
 
-constexpr char8_t iconHeader[] = {
-#include "Snippets/DropDownButton/Icon.html.embed"
-};
-constexpr char8_t iconCode[] = {
-#include "Snippets/DropDownButton/Icon.h.embed"
-};
+gallery::LazyLoadedText iconHeader{"Snippets/DropDownButton/Icon.html"};
+gallery::LazyLoadedText iconCode{"Snippets/DropDownButton/Icon.h"};
 
 FrameworkElement withIcon() {
     return gallery::controlExample({

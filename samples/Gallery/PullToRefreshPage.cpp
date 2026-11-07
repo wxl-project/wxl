@@ -11,12 +11,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t basicHeader[] = {
-#include "Snippets/PullToRefresh/BasicPulltorefresh.html.embed"
-};
-constexpr char8_t basicCode[] = {
-#include "Snippets/PullToRefresh/BasicPulltorefresh.h.embed"
-};
+gallery::LazyLoadedText basicHeader{"Snippets/PullToRefresh/BasicPulltorefresh.html"};
+gallery::LazyLoadedText basicCode{"Snippets/PullToRefresh/BasicPulltorefresh.h"};
 
 FrameworkElement basic() {
 #include "Snippets/PullToRefresh/BasicPulltorefresh.h"
@@ -28,12 +24,8 @@ FrameworkElement basic() {
     });
 }
 
-constexpr char8_t customIconHeader[] = {
-#include "Snippets/PullToRefresh/CustomIconPulltorefresh.html.embed"
-};
-constexpr char8_t customIconCode[] = {
-#include "Snippets/PullToRefresh/CustomIconPulltorefresh.h.embed"
-};
+gallery::LazyLoadedText customIconHeader{"Snippets/PullToRefresh/CustomIconPulltorefresh.html"};
+gallery::LazyLoadedText customIconCode{"Snippets/PullToRefresh/CustomIconPulltorefresh.h"};
 
 FrameworkElement customIcon() {
 #include "Snippets/PullToRefresh/CustomIconPulltorefresh.h"

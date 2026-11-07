@@ -11,12 +11,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t basicHeader[] = {
-#include "Snippets/Image/BasicImageLocalFile.html.embed"
-};
-constexpr char8_t basicCode[] = {
-#include "Snippets/Image/BasicImageLocalFile.h.embed"
-};
+gallery::LazyLoadedText basicHeader{"Snippets/Image/BasicImageLocalFile.html"};
+gallery::LazyLoadedText basicCode{"Snippets/Image/BasicImageLocalFile.h"};
 
 FrameworkElement basic() {
 #include "Snippets/Image/BasicImageLocalFile.h"
@@ -28,12 +24,8 @@ FrameworkElement basic() {
     });
 }
 
-constexpr char8_t decodedHeader[] = {
-#include "Snippets/Image/ImageDecodedRenderingSize.html.embed"
-};
-constexpr char8_t decodedCode[] = {
-#include "Snippets/Image/ImageDecodedRenderingSize.h.embed"
-};
+gallery::LazyLoadedText decodedHeader{"Snippets/Image/ImageDecodedRenderingSize.html"};
+gallery::LazyLoadedText decodedCode{"Snippets/Image/ImageDecodedRenderingSize.h"};
 
 FrameworkElement decoded() {
 #include "Snippets/Image/ImageDecodedRenderingSize.h"
@@ -45,12 +37,8 @@ FrameworkElement decoded() {
     });
 }
 
-constexpr char8_t stretchingHeader[] = {
-#include "Snippets/Image/ImageStretching.html.embed"
-};
-constexpr char8_t stretchingCode[] = {
-#include "Snippets/Image/ImageStretching.h.embed"
-};
+gallery::LazyLoadedText stretchingHeader{"Snippets/Image/ImageStretching.html"};
+gallery::LazyLoadedText stretchingCode{"Snippets/Image/ImageStretching.h"};
 
 FrameworkElement stretching() {
 #include "Snippets/Image/ImageStretching.h"
@@ -63,12 +51,8 @@ FrameworkElement stretching() {
     });
 }
 
-constexpr char8_t nineGridImagesHeader[] = {
-#include "Snippets/Image/NineGridImages.html.embed"
-};
-constexpr char8_t nineGridImagesCode[] = {
-#include "Snippets/Image/NineGridImages.h.embed"
-};
+gallery::LazyLoadedText nineGridImagesHeader{"Snippets/Image/NineGridImages.html"};
+gallery::LazyLoadedText nineGridImagesCode{"Snippets/Image/NineGridImages.h"};
 
 FrameworkElement nineGridImages() {
 #include "Snippets/Image/NineGridImages.h"
@@ -80,12 +64,8 @@ FrameworkElement nineGridImages() {
     });
 }
 
-constexpr char8_t svgHeader[] = {
-#include "Snippets/Image/SvgImage.html.embed"
-};
-constexpr char8_t svgCode[] = {
-#include "Snippets/Image/SvgImage.h.embed"
-};
+gallery::LazyLoadedText svgHeader{"Snippets/Image/SvgImage.html"};
+gallery::LazyLoadedText svgCode{"Snippets/Image/SvgImage.h"};
 
 FrameworkElement svg() {
 #include "Snippets/Image/SvgImage.h"
@@ -97,12 +77,8 @@ FrameworkElement svg() {
     });
 }
 
-constexpr char8_t animatedGifHeader[] = {
-#include "Snippets/Image/AnimatedGif.html.embed"
-};
-constexpr char8_t animatedGifCode[] = {
-#include "Snippets/Image/AnimatedGif.h.embed"
-};
+gallery::LazyLoadedText animatedGifHeader{"Snippets/Image/AnimatedGif.html"};
+gallery::LazyLoadedText animatedGifCode{"Snippets/Image/AnimatedGif.h"};
 
 FrameworkElement animatedGif() {
 #include "Snippets/Image/AnimatedGif.h"

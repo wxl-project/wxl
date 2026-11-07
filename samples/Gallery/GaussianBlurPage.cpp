@@ -10,12 +10,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t KeycapHeader[] = {
-#include "Snippets/GaussianBlur/Keycap.html.embed"
-};
-constexpr char8_t KeycapCode[] = {
-#include "Snippets/GaussianBlur/Keycap.h.embed"
-};
+gallery::LazyLoadedText KeycapHeader{"Snippets/GaussianBlur/Keycap.html"};
+gallery::LazyLoadedText KeycapCode{"Snippets/GaussianBlur/Keycap.h"};
 
 FrameworkElement keycapExample() {
 #include "Snippets/GaussianBlur/Keycap.h"
@@ -27,12 +23,8 @@ FrameworkElement keycapExample() {
     });
 }
 
-constexpr char8_t CompareHeader[] = {
-#include "Snippets/GaussianBlur/Compare.html.embed"
-};
-constexpr char8_t CompareCode[] = {
-#include "Snippets/GaussianBlur/Compare.h.embed"
-};
+gallery::LazyLoadedText CompareHeader{"Snippets/GaussianBlur/Compare.html"};
+gallery::LazyLoadedText CompareCode{"Snippets/GaussianBlur/Compare.h"};
 
 FrameworkElement compareExample() {
 #include "Snippets/GaussianBlur/Compare.h"
@@ -44,12 +36,8 @@ FrameworkElement compareExample() {
     });
 }
 
-constexpr char8_t GammaHeader[] = {
-#include "Snippets/GaussianBlur/Gamma.html.embed"
-};
-constexpr char8_t GammaCode[] = {
-#include "Snippets/GaussianBlur/Gamma.h.embed"
-};
+gallery::LazyLoadedText GammaHeader{"Snippets/GaussianBlur/Gamma.html"};
+gallery::LazyLoadedText GammaCode{"Snippets/GaussianBlur/Gamma.h"};
 
 FrameworkElement gammaExample() {
 #include "Snippets/GaussianBlur/Gamma.h"
@@ -61,12 +49,8 @@ FrameworkElement gammaExample() {
     });
 }
 
-constexpr char8_t OnTopHeader[] = {
-#include "Snippets/GaussianBlur/OnTop.html.embed"
-};
-constexpr char8_t OnTopCode[] = {
-#include "Snippets/GaussianBlur/OnTop.h.embed"
-};
+gallery::LazyLoadedText OnTopHeader{"Snippets/GaussianBlur/OnTop.html"};
+gallery::LazyLoadedText OnTopCode{"Snippets/GaussianBlur/OnTop.h"};
 
 FrameworkElement onTopExample() {
 #include "Snippets/GaussianBlur/OnTop.h"
@@ -78,12 +62,8 @@ FrameworkElement onTopExample() {
     });
 }
 
-constexpr char8_t NeonSignHeader[] = {
-#include "Snippets/GaussianBlur/NeonSign.html.embed"
-};
-constexpr char8_t NeonSignCode[] = {
-#include "Snippets/GaussianBlur/NeonSign.h.embed"
-};
+gallery::LazyLoadedText NeonSignHeader{"Snippets/GaussianBlur/NeonSign.html"};
+gallery::LazyLoadedText NeonSignCode{"Snippets/GaussianBlur/NeonSign.h"};
 
 FrameworkElement neonSignExample() {
 #include "Snippets/GaussianBlur/NeonSign.h"

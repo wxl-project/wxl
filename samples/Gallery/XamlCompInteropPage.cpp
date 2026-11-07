@@ -18,12 +18,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t naturalMotionHeader[] = {
-#include "Snippets/XamlCompInterop/XamlCompInteropNaturalMotionCompositionAnimation.html.embed"
-};
-constexpr char8_t naturalMotionCode[] = {
-#include "Snippets/XamlCompInterop/XamlCompInteropNaturalMotionCompositionAnimation.h.embed"
-};
+gallery::LazyLoadedText naturalMotionHeader{"Snippets/XamlCompInterop/XamlCompInteropNaturalMotionCompositionAnimation.html"};
+gallery::LazyLoadedText naturalMotionCode{"Snippets/XamlCompInterop/XamlCompInteropNaturalMotionCompositionAnimation.h"};
 
 FrameworkElement naturalMotion() {
 #include "Snippets/XamlCompInterop/XamlCompInteropNaturalMotionCompositionAnimation.h"
@@ -36,12 +32,8 @@ FrameworkElement naturalMotion() {
     });
 }
 
-constexpr char8_t ellipseHeader[] = {
-#include "Snippets/XamlCompInterop/XamlCompInteropExpressionanimationEllipseElement.html.embed"
-};
-constexpr char8_t ellipseCode[] = {
-#include "Snippets/XamlCompInterop/XamlCompInteropExpressionanimationEllipseElement.h.embed"
-};
+gallery::LazyLoadedText ellipseHeader{"Snippets/XamlCompInterop/XamlCompInteropExpressionanimationEllipseElement.html"};
+gallery::LazyLoadedText ellipseCode{"Snippets/XamlCompInterop/XamlCompInteropExpressionanimationEllipseElement.h"};
 
 FrameworkElement ellipse() {
 #include "Snippets/XamlCompInterop/XamlCompInteropExpressionanimationEllipseElement.h"
@@ -53,12 +45,8 @@ FrameworkElement ellipse() {
     });
 }
 
-constexpr char8_t severalHeader[] = {
-#include "Snippets/XamlCompInterop/XamlCompInteropDrivingSeveralRelatedAnimations.html.embed"
-};
-constexpr char8_t severalCode[] = {
-#include "Snippets/XamlCompInterop/XamlCompInteropDrivingSeveralRelatedAnimations.h.embed"
-};
+gallery::LazyLoadedText severalHeader{"Snippets/XamlCompInterop/XamlCompInteropDrivingSeveralRelatedAnimations.html"};
+gallery::LazyLoadedText severalCode{"Snippets/XamlCompInterop/XamlCompInteropDrivingSeveralRelatedAnimations.h"};
 
 FrameworkElement several() {
 #include "Snippets/XamlCompInterop/XamlCompInteropDrivingSeveralRelatedAnimations.h"
@@ -70,12 +58,8 @@ FrameworkElement several() {
     });
 }
 
-constexpr char8_t circleHeader[] = {
-#include "Snippets/XamlCompInterop/XamlCompInteropReferenceActualsizeExpressionanimationsMake.html.embed"
-};
-constexpr char8_t circleCode[] = {
-#include "Snippets/XamlCompInterop/XamlCompInteropReferenceActualsizeExpressionanimationsMake.h.embed"
-};
+gallery::LazyLoadedText circleHeader{"Snippets/XamlCompInterop/XamlCompInteropReferenceActualsizeExpressionanimationsMake.html"};
+gallery::LazyLoadedText circleCode{"Snippets/XamlCompInterop/XamlCompInteropReferenceActualsizeExpressionanimationsMake.h"};
 
 FrameworkElement circle() {
 #include "Snippets/XamlCompInterop/XamlCompInteropReferenceActualsizeExpressionanimationsMake.h"
@@ -88,12 +72,8 @@ FrameworkElement circle() {
     });
 }
 
-constexpr char8_t actualOffsetHeader[] = {
-#include "Snippets/XamlCompInterop/XamlCompInteropReferenceActualoffsetActualsizeExpressionanimations.html.embed"
-};
-constexpr char8_t actualOffsetCode[] = {
-#include "Snippets/XamlCompInterop/XamlCompInteropReferenceActualoffsetActualsizeExpressionanimations.h.embed"
-};
+gallery::LazyLoadedText actualOffsetHeader{"Snippets/XamlCompInterop/XamlCompInteropReferenceActualoffsetActualsizeExpressionanimations.html"};
+gallery::LazyLoadedText actualOffsetCode{"Snippets/XamlCompInterop/XamlCompInteropReferenceActualoffsetActualsizeExpressionanimations.h"};
 
 FrameworkElement actualOffset() {
 #include "Snippets/XamlCompInterop/XamlCompInteropReferenceActualoffsetActualsizeExpressionanimations.h"

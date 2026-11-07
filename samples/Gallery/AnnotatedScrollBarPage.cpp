@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t linkedHeader[] = {
-#include "Snippets/AnnotatedScrollBar/LinkedScrollView.html.embed"
-};
-constexpr char8_t linkedCode[] = {
-#include "Snippets/AnnotatedScrollBar/LinkedScrollView.h.embed"
-};
+gallery::LazyLoadedText linkedHeader{"Snippets/AnnotatedScrollBar/LinkedScrollView.html"};
+gallery::LazyLoadedText linkedCode{"Snippets/AnnotatedScrollBar/LinkedScrollView.h"};
 
 FrameworkElement linked() {
 #include "Snippets/AnnotatedScrollBar/LinkedScrollView.h"

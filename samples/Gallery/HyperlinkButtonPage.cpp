@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t navigateHeader[] = {
-#include "Snippets/HyperlinkButton/Navigate.html.embed"
-};
-constexpr char8_t navigateCode[] = {
-#include "Snippets/HyperlinkButton/Navigate.h.embed"
-};
+gallery::LazyLoadedText navigateHeader{"Snippets/HyperlinkButton/Navigate.html"};
+gallery::LazyLoadedText navigateCode{"Snippets/HyperlinkButton/Navigate.h"};
 
 FrameworkElement navigateExample() {
 #include "Snippets/HyperlinkButton/Navigate.h"
@@ -26,12 +22,8 @@ FrameworkElement navigateExample() {
     });
 }
 
-constexpr char8_t clickHeader[] = {
-#include "Snippets/HyperlinkButton/Click.html.embed"
-};
-constexpr char8_t clickCode[] = {
-#include "Snippets/HyperlinkButton/Click.h.embed"
-};
+gallery::LazyLoadedText clickHeader{"Snippets/HyperlinkButton/Click.html"};
+gallery::LazyLoadedText clickCode{"Snippets/HyperlinkButton/Click.h"};
 
 FrameworkElement clickExample() {
     return gallery::controlExample({

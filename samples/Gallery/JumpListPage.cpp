@@ -12,12 +12,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t tasksHeader[] = {
-#include "Snippets/JumpList/AddingTasksJumpList.html.embed"
-};
-constexpr char8_t tasksCode[] = {
-#include "Snippets/JumpList/AddingTasksJumpList.h.embed"
-};
+gallery::LazyLoadedText tasksHeader{"Snippets/JumpList/AddingTasksJumpList.html"};
+gallery::LazyLoadedText tasksCode{"Snippets/JumpList/AddingTasksJumpList.h"};
 
 FrameworkElement tasks() {
 #include "Snippets/JumpList/AddingTasksJumpList.h"
@@ -29,12 +25,8 @@ FrameworkElement tasks() {
     });
 }
 
-constexpr char8_t groupHeader[] = {
-#include "Snippets/JumpList/JumpListAddingItemsCustomGroup.html.embed"
-};
-constexpr char8_t groupCode[] = {
-#include "Snippets/JumpList/JumpListAddingItemsCustomGroup.h.embed"
-};
+gallery::LazyLoadedText groupHeader{"Snippets/JumpList/JumpListAddingItemsCustomGroup.html"};
+gallery::LazyLoadedText groupCode{"Snippets/JumpList/JumpListAddingItemsCustomGroup.h"};
 
 FrameworkElement group() {
 #include "Snippets/JumpList/JumpListAddingItemsCustomGroup.h"

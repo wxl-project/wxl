@@ -8,16 +8,10 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t introText[] = {
-#include "Snippets/Acrylic/Intro.html.embed"
-};
+gallery::LazyLoadedText introText{"Snippets/Acrylic/Intro.html"};
 
-constexpr char8_t defaultBrushHeader[] = {
-#include "Snippets/Acrylic/DefaultAppAcrylicBrush.html.embed"
-};
-constexpr char8_t defaultBrushCode[] = {
-#include "Snippets/Acrylic/DefaultAppAcrylicBrush.h.embed"
-};
+gallery::LazyLoadedText defaultBrushHeader{"Snippets/Acrylic/DefaultAppAcrylicBrush.html"};
+gallery::LazyLoadedText defaultBrushCode{"Snippets/Acrylic/DefaultAppAcrylicBrush.h"};
 
 FrameworkElement defaultBrush() {
 #include "Snippets/Acrylic/DefaultAppAcrylicBrush.h"
@@ -29,12 +23,8 @@ FrameworkElement defaultBrush() {
     });
 }
 
-constexpr char8_t customBrushHeader[] = {
-#include "Snippets/Acrylic/CustomAcrylicAppBrush.html.embed"
-};
-constexpr char8_t customBrushCode[] = {
-#include "Snippets/Acrylic/CustomAcrylicAppBrush.h.embed"
-};
+gallery::LazyLoadedText customBrushHeader{"Snippets/Acrylic/CustomAcrylicAppBrush.html"};
+gallery::LazyLoadedText customBrushCode{"Snippets/Acrylic/CustomAcrylicAppBrush.h"};
 
 FrameworkElement customBrush() {
 #include "Snippets/Acrylic/CustomAcrylicAppBrush.h"
@@ -47,12 +37,8 @@ FrameworkElement customBrush() {
     });
 }
 
-constexpr char8_t luminosityHeader[] = {
-#include "Snippets/Acrylic/LuminosityAppAcrylic.html.embed"
-};
-constexpr char8_t luminosityCode[] = {
-#include "Snippets/Acrylic/LuminosityAppAcrylic.h.embed"
-};
+gallery::LazyLoadedText luminosityHeader{"Snippets/Acrylic/LuminosityAppAcrylic.html"};
+gallery::LazyLoadedText luminosityCode{"Snippets/Acrylic/LuminosityAppAcrylic.h"};
 
 FrameworkElement luminosity() {
 #include "Snippets/Acrylic/LuminosityAppAcrylic.h"

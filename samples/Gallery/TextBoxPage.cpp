@@ -7,12 +7,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t simpleHeader[] = {
-#include "Snippets/TextBox/Simple.html.embed"
-};
-constexpr char8_t simpleCode[] = {
-#include "Snippets/TextBox/Simple.h.embed"
-};
+gallery::LazyLoadedText simpleHeader{"Snippets/TextBox/Simple.html"};
+gallery::LazyLoadedText simpleCode{"Snippets/TextBox/Simple.h"};
 
 FrameworkElement simple() {
     return gallery::controlExample({
@@ -24,12 +20,8 @@ FrameworkElement simple() {
     });
 }
 
-constexpr char8_t headerHeader[] = {
-#include "Snippets/TextBox/HeaderPlaceholderText.html.embed"
-};
-constexpr char8_t headerCode[] = {
-#include "Snippets/TextBox/HeaderPlaceholderText.h.embed"
-};
+gallery::LazyLoadedText headerHeader{"Snippets/TextBox/HeaderPlaceholderText.html"};
+gallery::LazyLoadedText headerCode{"Snippets/TextBox/HeaderPlaceholderText.h"};
 
 FrameworkElement headerPlaceholder() {
     return gallery::controlExample({
@@ -41,12 +33,8 @@ FrameworkElement headerPlaceholder() {
     });
 }
 
-constexpr char8_t readOnlyHeader[] = {
-#include "Snippets/TextBox/ReadOnlyVarious.html.embed"
-};
-constexpr char8_t readOnlyCode[] = {
-#include "Snippets/TextBox/ReadOnlyVarious.h.embed"
-};
+gallery::LazyLoadedText readOnlyHeader{"Snippets/TextBox/ReadOnlyVarious.html"};
+gallery::LazyLoadedText readOnlyCode{"Snippets/TextBox/ReadOnlyVarious.h"};
 
 FrameworkElement readOnlyVarious() {
     return gallery::controlExample({
@@ -58,12 +46,8 @@ FrameworkElement readOnlyVarious() {
     });
 }
 
-constexpr char8_t multiHeader[] = {
-#include "Snippets/TextBox/MultiLineSpell.html.embed"
-};
-constexpr char8_t multiCode[] = {
-#include "Snippets/TextBox/MultiLineSpell.h.embed"
-};
+gallery::LazyLoadedText multiHeader{"Snippets/TextBox/MultiLineSpell.html"};
+gallery::LazyLoadedText multiCode{"Snippets/TextBox/MultiLineSpell.h"};
 
 FrameworkElement multiLine() {
     return gallery::controlExample({

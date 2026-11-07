@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t withHeaderHeader[] = {
-#include "Snippets/DatePicker/Header.html.embed"
-};
-constexpr char8_t withHeaderCode[] = {
-#include "Snippets/DatePicker/Header.h.embed"
-};
+gallery::LazyLoadedText withHeaderHeader{"Snippets/DatePicker/Header.html"};
+gallery::LazyLoadedText withHeaderCode{"Snippets/DatePicker/Header.h"};
 
 FrameworkElement withHeader() {
     return gallery::controlExample({
@@ -25,12 +21,8 @@ FrameworkElement withHeader() {
     });
 }
 
-constexpr char8_t dayFormattedYearHeader[] = {
-#include "Snippets/DatePicker/DayFormattedYear.html.embed"
-};
-constexpr char8_t dayFormattedYearCode[] = {
-#include "Snippets/DatePicker/DayFormattedYear.h.embed"
-};
+gallery::LazyLoadedText dayFormattedYearHeader{"Snippets/DatePicker/DayFormattedYear.html"};
+gallery::LazyLoadedText dayFormattedYearCode{"Snippets/DatePicker/DayFormattedYear.h"};
 
 FrameworkElement dayFormattedYear() {
 #include "Snippets/DatePicker/DayFormattedYear.h"

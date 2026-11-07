@@ -9,12 +9,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t buttonHeader[] = {
-#include "Snippets/Flyout/ButtonFlyout.html.embed"
-};
-constexpr char8_t buttonCode[] = {
-#include "Snippets/Flyout/ButtonFlyout.h.embed"
-};
+gallery::LazyLoadedText buttonHeader{"Snippets/Flyout/ButtonFlyout.html"};
+gallery::LazyLoadedText buttonCode{"Snippets/Flyout/ButtonFlyout.h"};
 
 FrameworkElement button() {
 #include "Snippets/Flyout/ButtonFlyout.h"

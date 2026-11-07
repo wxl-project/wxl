@@ -20,12 +20,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t drawingHeader[] = {
-#include "Snippets/InkCanvas/InkCanvasDrawing.html.embed"
-};
-constexpr char8_t drawingCode[] = {
-#include "Snippets/InkCanvas/InkCanvasDrawing.h.embed"
-};
+gallery::LazyLoadedText drawingHeader{"Snippets/InkCanvas/InkCanvasDrawing.html"};
+gallery::LazyLoadedText drawingCode{"Snippets/InkCanvas/InkCanvasDrawing.h"};
 
 FrameworkElement drawing() {
 #include "Snippets/InkCanvas/InkCanvasDrawing.h"
@@ -38,12 +34,8 @@ FrameworkElement drawing() {
     });
 }
 
-constexpr char8_t toolbarHeader[] = {
-#include "Snippets/InkCanvas/InkCanvasToolbar.html.embed"
-};
-constexpr char8_t toolbarCode[] = {
-#include "Snippets/InkCanvas/InkCanvasToolbar.h.embed"
-};
+gallery::LazyLoadedText toolbarHeader{"Snippets/InkCanvas/InkCanvasToolbar.html"};
+gallery::LazyLoadedText toolbarCode{"Snippets/InkCanvas/InkCanvasToolbar.h"};
 
 FrameworkElement toolbar() {
 #include "Snippets/InkCanvas/InkCanvasToolbar.h"
@@ -56,12 +48,8 @@ FrameworkElement toolbar() {
     });
 }
 
-constexpr char8_t strokesHeader[] = {
-#include "Snippets/InkCanvas/InkCanvasStrokes.html.embed"
-};
-constexpr char8_t strokesCode[] = {
-#include "Snippets/InkCanvas/InkCanvasStrokes.h.embed"
-};
+gallery::LazyLoadedText strokesHeader{"Snippets/InkCanvas/InkCanvasStrokes.html"};
+gallery::LazyLoadedText strokesCode{"Snippets/InkCanvas/InkCanvasStrokes.h"};
 
 FrameworkElement strokes() {
 #include "Snippets/InkCanvas/InkCanvasStrokes.h"

@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t lineHeader[] = {
-#include "Snippets/Line/Line.html.embed"
-};
-constexpr char8_t lineCode[] = {
-#include "Snippets/Line/Line.h.embed"
-};
+gallery::LazyLoadedText lineHeader{"Snippets/Line/Line.html"};
+gallery::LazyLoadedText lineCode{"Snippets/Line/Line.h"};
 
 FrameworkElement line() {
 #include "Snippets/Line/Line.h"
@@ -26,12 +22,8 @@ FrameworkElement line() {
     });
 }
 
-constexpr char8_t polylineHeader[] = {
-#include "Snippets/Line/Polyline.html.embed"
-};
-constexpr char8_t polylineCode[] = {
-#include "Snippets/Line/Polyline.h.embed"
-};
+gallery::LazyLoadedText polylineHeader{"Snippets/Line/Polyline.html"};
+gallery::LazyLoadedText polylineCode{"Snippets/Line/Polyline.h"};
 
 FrameworkElement polyline() {
 #include "Snippets/Line/Polyline.h"
@@ -44,12 +36,8 @@ FrameworkElement polyline() {
     });
 }
 
-constexpr char8_t pathHeader[] = {
-#include "Snippets/Line/LinePath.html.embed"
-};
-constexpr char8_t pathCode[] = {
-#include "Snippets/Line/LinePath.h.embed"
-};
+gallery::LazyLoadedText pathHeader{"Snippets/Line/LinePath.html"};
+gallery::LazyLoadedText pathCode{"Snippets/Line/LinePath.h"};
 
 FrameworkElement path() {
 #include "Snippets/Line/LinePath.h"
@@ -62,12 +50,8 @@ FrameworkElement path() {
     });
 }
 
-constexpr char8_t geometryGroupHeader[] = {
-#include "Snippets/Line/LineGeometrygroup.html.embed"
-};
-constexpr char8_t geometryGroupCode[] = {
-#include "Snippets/Line/LineGeometrygroup.h.embed"
-};
+gallery::LazyLoadedText geometryGroupHeader{"Snippets/Line/LineGeometrygroup.html"};
+gallery::LazyLoadedText geometryGroupCode{"Snippets/Line/LineGeometrygroup.h"};
 
 FrameworkElement geometryGroup() {
 #include "Snippets/Line/LineGeometrygroup.h"

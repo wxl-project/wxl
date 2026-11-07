@@ -10,12 +10,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t CalcPanelHeader[] = {
-#include "Snippets/Bevel/CalcPanel.html.embed"
-};
-constexpr char8_t CalcPanelCode[] = {
-#include "Snippets/Bevel/CalcPanel.h.embed"
-};
+gallery::LazyLoadedText CalcPanelHeader{"Snippets/Bevel/CalcPanel.html"};
+gallery::LazyLoadedText CalcPanelCode{"Snippets/Bevel/CalcPanel.h"};
 
 FrameworkElement calcPanelExample() {
 #include "Snippets/Bevel/CalcPanel.h"
@@ -27,12 +23,8 @@ FrameworkElement calcPanelExample() {
     });
 }
 
-constexpr char8_t StretchHeader[] = {
-#include "Snippets/Bevel/Stretch.html.embed"
-};
-constexpr char8_t StretchCode[] = {
-#include "Snippets/Bevel/Stretch.h.embed"
-};
+gallery::LazyLoadedText StretchHeader{"Snippets/Bevel/Stretch.html"};
+gallery::LazyLoadedText StretchCode{"Snippets/Bevel/Stretch.h"};
 
 FrameworkElement stretchExample() {
 #include "Snippets/Bevel/Stretch.h"
@@ -44,12 +36,8 @@ FrameworkElement stretchExample() {
     });
 }
 
-constexpr char8_t KeypadHeader[] = {
-#include "Snippets/Bevel/Keypad.html.embed"
-};
-constexpr char8_t KeypadCode[] = {
-#include "Snippets/Bevel/Keypad.h.embed"
-};
+gallery::LazyLoadedText KeypadHeader{"Snippets/Bevel/Keypad.html"};
+gallery::LazyLoadedText KeypadCode{"Snippets/Bevel/Keypad.h"};
 
 FrameworkElement keypadExample() {
 #include "Snippets/Bevel/Keypad.h"

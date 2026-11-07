@@ -19,12 +19,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t simpleHeader[] = {
-#include "Snippets/RichEditBox/SimpleTextEditor.html.embed"
-};
-constexpr char8_t simpleCode[] = {
-#include "Snippets/RichEditBox/SimpleTextEditor.h.embed"
-};
+gallery::LazyLoadedText simpleHeader{"Snippets/RichEditBox/SimpleTextEditor.html"};
+gallery::LazyLoadedText simpleCode{"Snippets/RichEditBox/SimpleTextEditor.h"};
 
 FrameworkElement simple() {
     return gallery::controlExample({
@@ -36,12 +32,8 @@ FrameworkElement simple() {
     });
 }
 
-constexpr char8_t customHeader[] = {
-#include "Snippets/RichEditBox/CustomEditor.html.embed"
-};
-constexpr char8_t customCode[] = {
-#include "Snippets/RichEditBox/CustomEditor.h.embed"
-};
+gallery::LazyLoadedText customHeader{"Snippets/RichEditBox/CustomEditor.html"};
+gallery::LazyLoadedText customCode{"Snippets/RichEditBox/CustomEditor.h"};
 
 FrameworkElement customEditor() {
 #include "Snippets/RichEditBox/CustomEditor.h"
@@ -53,12 +45,8 @@ FrameworkElement customEditor() {
     });
 }
 
-constexpr char8_t mathHeader[] = {
-#include "Snippets/RichEditBox/Math.html.embed"
-};
-constexpr char8_t mathCode[] = {
-#include "Snippets/RichEditBox/Math.h.embed"
-};
+gallery::LazyLoadedText mathHeader{"Snippets/RichEditBox/Math.html"};
+gallery::LazyLoadedText mathCode{"Snippets/RichEditBox/Math.h"};
 
 FrameworkElement math() {
 #include "Snippets/RichEditBox/Math.h"
@@ -70,12 +58,8 @@ FrameworkElement math() {
     });
 }
 
-constexpr char8_t mathmlHeader[] = {
-#include "Snippets/RichEditBox/WorkingMathml.html.embed"
-};
-constexpr char8_t mathmlCode[] = {
-#include "Snippets/RichEditBox/WorkingMathml.h.embed"
-};
+gallery::LazyLoadedText mathmlHeader{"Snippets/RichEditBox/WorkingMathml.html"};
+gallery::LazyLoadedText mathmlCode{"Snippets/RichEditBox/WorkingMathml.h"};
 
 FrameworkElement workingMathml() {
 #include "Snippets/RichEditBox/WorkingMathml.h"

@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t indeterminateHeader[] = {
-#include "Snippets/ProgressBar/IndeterminateProgressBar.html.embed"
-};
-constexpr char8_t indeterminateCode[] = {
-#include "Snippets/ProgressBar/IndeterminateProgressBar.h.embed"
-};
+gallery::LazyLoadedText indeterminateHeader{"Snippets/ProgressBar/IndeterminateProgressBar.html"};
+gallery::LazyLoadedText indeterminateCode{"Snippets/ProgressBar/IndeterminateProgressBar.h"};
 
 FrameworkElement indeterminate() {
 #include "Snippets/ProgressBar/IndeterminateProgressBar.h"
@@ -26,12 +22,8 @@ FrameworkElement indeterminate() {
     });
 }
 
-constexpr char8_t determinateHeader[] = {
-#include "Snippets/ProgressBar/DeterminateProgressBar.html.embed"
-};
-constexpr char8_t determinateCode[] = {
-#include "Snippets/ProgressBar/DeterminateProgressBar.h.embed"
-};
+gallery::LazyLoadedText determinateHeader{"Snippets/ProgressBar/DeterminateProgressBar.html"};
+gallery::LazyLoadedText determinateCode{"Snippets/ProgressBar/DeterminateProgressBar.h"};
 
 FrameworkElement determinate() {
 #include "Snippets/ProgressBar/DeterminateProgressBar.h"

@@ -7,12 +7,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t twoHeader[] = {
-#include "Snippets/CheckBox/TwoState.html.embed"
-};
-constexpr char8_t twoCode[] = {
-#include "Snippets/CheckBox/TwoState.h.embed"
-};
+gallery::LazyLoadedText twoHeader{"Snippets/CheckBox/TwoState.html"};
+gallery::LazyLoadedText twoCode{"Snippets/CheckBox/TwoState.h"};
 
 FrameworkElement twoState() {
 #include "Snippets/CheckBox/TwoState.h"
@@ -25,12 +21,8 @@ FrameworkElement twoState() {
     });
 }
 
-constexpr char8_t threeHeader[] = {
-#include "Snippets/CheckBox/ThreeState.html.embed"
-};
-constexpr char8_t threeCode[] = {
-#include "Snippets/CheckBox/ThreeState.h.embed"
-};
+gallery::LazyLoadedText threeHeader{"Snippets/CheckBox/ThreeState.html"};
+gallery::LazyLoadedText threeCode{"Snippets/CheckBox/ThreeState.h"};
 
 FrameworkElement threeState() {
 #include "Snippets/CheckBox/ThreeState.h"
@@ -43,12 +35,8 @@ FrameworkElement threeState() {
     });
 }
 
-constexpr char8_t allHeader[] = {
-#include "Snippets/CheckBox/SelectAll.html.embed"
-};
-constexpr char8_t allCode[] = {
-#include "Snippets/CheckBox/SelectAll.h.embed"
-};
+gallery::LazyLoadedText allHeader{"Snippets/CheckBox/SelectAll.html"};
+gallery::LazyLoadedText allCode{"Snippets/CheckBox/SelectAll.h"};
 
 FrameworkElement selectAll() {
 #include "Snippets/CheckBox/SelectAll.h"
