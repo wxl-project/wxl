@@ -1,5 +1,6 @@
 wxl_add_gtest(wxl.gen.common.tests
     SRC
+        component_test.cpp
         crawl_test.cpp
         documentation_test.cpp
         member_filter_test.cpp
