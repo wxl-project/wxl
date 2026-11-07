@@ -1,3 +1,7 @@
+// windows.h for ERROR_FILE_NOT_FOUND and ERROR_ACCESS_DENIED: the codes
+// read_all() answers with when the file is not there or is a directory.
+#include "platform.h"
+
 #include <gtest/gtest.h>
 
 import std;
@@ -133,6 +137,77 @@ TEST(FileTest, MovingTakesTheHandleAndLeavesTheOtherClosed) {
 
     // Closing twice is not an error: close() is also what the destructor calls.
     second.close();
+
+    std::filesystem::remove(p.native());
+}
+
+// ---- read_all: the whole file by name --------------------------------------
+//
+// The short read -- a file that shrank after it was measured and before it was
+// read, which answers ERROR_HANDLE_EOF -- has no test: no test can shrink a
+// file between read_all's two calls deterministically.
+
+TEST(FileTest, ReadAllReturnsTheWholeFile) {
+    const path p = temp_file(L"wxl_core_file_tests.read_all");
+    const std::string content = "the whole of a file, opened, measured, read and closed.";
+
+    given_a_file(p, content);
+
+    const auto got = file::read_all(p.c_str());
+
+    ASSERT_TRUE(got.has_value());
+    EXPECT_EQ(*got, content);
+
+    std::filesystem::remove(p.native());
+}
+
+TEST(FileTest, ReadAllOfAnEmptyFileIsAnEmptyString) {
+    const path p = temp_file(L"wxl_core_file_tests.read_all_empty");
+
+    given_a_file(p, "");
+
+    const auto got = file::read_all(p.c_str());
+
+    ASSERT_TRUE(got.has_value());
+    EXPECT_TRUE(got->empty());
+
+    std::filesystem::remove(p.native());
+}
+
+TEST(FileTest, ReadAllOfAMissingFileAnswersErrorFileNotFound) {
+    const path p = temp_file(L"wxl_core_file_tests.read_all_missing");
+
+    std::filesystem::remove(p.native());
+
+    const auto got = file::read_all(p.c_str());
+
+    ASSERT_FALSE(got.has_value());
+    EXPECT_EQ(got.error(), std::error_code(ERROR_FILE_NOT_FOUND, std::system_category()));
+}
+
+TEST(FileTest, ReadAllOfADirectoryFails) {
+    const path p = temp_file(L"wxl_core_file_tests.read_all_directory");
+
+    std::filesystem::create_directory(p.native());
+
+    const auto got = file::read_all(p.c_str());
+
+    ASSERT_FALSE(got.has_value());
+    EXPECT_EQ(got.error(), std::error_code(ERROR_ACCESS_DENIED, std::system_category()));
+
+    std::filesystem::remove(p.native());
+}
+
+TEST(FileTest, ReadAllReadsAPathWhoseNameIsNotAscii) {
+    const path p = temp_file(L"wxl_core_file_tests.read_all.привет");
+    const std::string content = "a file whose name is not ascii";
+
+    given_a_file(p, content);
+
+    const auto got = file::read_all(p.c_str());
+
+    ASSERT_TRUE(got.has_value());
+    EXPECT_EQ(*got, content);
 
     std::filesystem::remove(p.native());
 }

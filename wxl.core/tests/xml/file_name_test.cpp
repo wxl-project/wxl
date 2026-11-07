@@ -31,6 +31,22 @@ TEST(xml, file_name) {
     EXPECT_EQ(lines, expected_lines);
 }
 
+// A file that is not there is reported by name, so that of several documents
+// read together a caller sees which one did not load.
+TEST(xml, a_file_that_is_not_there_is_reported_by_name) {
+    document p;
+    const std::filesystem::path path = WXL_XML_TEST_DATA_DIR "no-such-file.xml";
+
+    try {
+        p.load_file(path);
+        FAIL() << "a file that is not there has to throw";
+    } catch (const exception& e) {
+        const std::string name = std::string(wxl::core::unicode::to_utf8(path).chars());
+        EXPECT_NE(std::string_view(e.what()).find(name), std::string_view::npos)
+            << "the message was: " << e.what();
+    }
+}
+
 // An node is reported at the '<' it opens with -- where a reader looking
 // for it would put the cursor.
 TEST(xml, position_of_an_element) {

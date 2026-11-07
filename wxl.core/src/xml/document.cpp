@@ -44,32 +44,23 @@ std::string read_whole_stream(std::istream& source) {
 std::string read_file(const std::filesystem::path& path) {
     // Straight to the platform, at some 3 GB/s: on a document of a few
     // megabytes reading it would otherwise cost more than parsing it does.
-    // wxl::core::file is that call with the handle owned and the read looped;
-    // it takes the characters rather than a path, so it is given them.
-    core::file source = core::file::open_read(path.c_str());
+    // wxl::core::file::read_all is that call, the handle owned and the read
+    // looped inside one operation; it takes the characters rather than a path,
+    // so it is given them.
+    std::expected<std::string, std::error_code> bytes = core::file::read_all(path.c_str());
 
-    if (!source.opened())
-        throw exception(std::format("cannot open {}", wxl::core::unicode::to_utf8(path).chars()));
+    // One message for the whole read: read_all answers with the error code but
+    // not with which of opening, measuring or reading failed, so the system's
+    // words for the code carry what the three messages used to.
+    if (!bytes)
+        throw exception(std::format(
+            "cannot read {}: {} (system error code = {})",
+            wxl::core::unicode::to_utf8(path).chars(),
+            core::environment::error_explanation(
+                static_cast<std::uint32_t>(bytes.error().value())).chars(),
+            bytes.error().value()));
 
-    const core::nullable<std::uint64_t> size = source.size();
-
-    if (!size)
-        throw exception(std::format("cannot measure {}", wxl::core::unicode::to_utf8(path).chars()));
-
-    std::string bytes;
-
-    // resize_and_overwrite rather than resize, which would first fill a whole
-    // document's worth of buffer with zeroes nobody will ever read.
-    bytes.resize_and_overwrite(static_cast<std::size_t>(*size),
-                               [&source](char* const data, const std::size_t room) {
-                                   return source.read(
-                                       std::as_writable_bytes(std::span(data, room)));
-                               });
-
-    if (bytes.size() != *size)
-        throw exception(std::format("cannot read {}", wxl::core::unicode::to_utf8(path).chars()));
-
-    return bytes;
+    return std::move(*bytes);
 }
 
 // ---- document ----

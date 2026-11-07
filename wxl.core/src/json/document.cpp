@@ -470,11 +470,21 @@ const value& document::load_file(const std::filesystem::path& path) {
     // surrogate is allowed. The name enters error messages repaired, not as is.
     std::string name(core::unicode::to_utf8(path).chars());
 
-    std::ifstream file(path, std::ios::binary);
+    // The whole file in one read, as xml::read_file takes it: the reader wants
+    // the bytes in one buffer, and core::file::read_all owns the handle and the
+    // loop. A failure is one error code, whose words and number the message
+    // carries.
+    std::expected<std::string, std::error_code> bytes = core::file::read_all(path.c_str());
 
-    if (!file) throw exception(std::format("cannot open {}", name));
+    if (!bytes)
+        throw exception(std::format(
+            "cannot read {}: {} (system error code = {})",
+            name,
+            core::environment::error_explanation(
+                static_cast<std::uint32_t>(bytes.error().value())).chars(),
+            bytes.error().value()));
 
-    return load(file, name);
+    return load(std::move(*bytes), name);
 }
 
 const value& document::parse_source() {
