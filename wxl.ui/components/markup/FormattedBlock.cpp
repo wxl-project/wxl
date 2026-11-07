@@ -4,7 +4,6 @@
 // wxl's own headers carry the wxl.core import, and a standard header
 // included after that import is one the compiler has already seen through
 // the std module.
-#include <winrt/Microsoft.UI.Text.h>
 #include <winrt/Microsoft.UI.Xaml.Controls.Primitives.h>
 #include <winrt/Microsoft.UI.Xaml.Controls.h>
 #include <winrt/Microsoft.UI.Xaml.Documents.h>
@@ -65,7 +64,7 @@ TextStyle merged(std::span<const TextStyle> styles) {
         if (style.color) result.color = style.color;
         if (style.fontSize) result.fontSize = style.fontSize;
         if (!style.fontFamily.empty()) result.fontFamily = style.fontFamily;
-        if (style.bold) result.bold = style.bold;
+        if (style.weight) result.weight = style.weight;
         if (style.italic) result.italic = style.italic;
         if (style.underline) result.underline = style.underline;
         if (style.strikethrough) result.strikethrough = style.strikethrough;
@@ -77,9 +76,9 @@ TextStyle merged(std::span<const TextStyle> styles) {
 // stays untouched and inherits from the block, which is what lets the
 // block-wide font settings keep working under styled fragments.
 void apply(docs::TextElement const& element, TextStyle const& style) {
-    if (style.bold) {
-        element.FontWeight(*style.bold ? winrt::Microsoft::UI::Text::FontWeights::Bold()
-                                       : winrt::Microsoft::UI::Text::FontWeights::Normal());
+    if (style.weight) {
+        element.FontWeight(
+            winrt::Windows::UI::Text::FontWeight{static_cast<std::uint16_t>(*style.weight)});
     }
     if (style.italic) {
         element.FontStyle(*style.italic ? winrt::Windows::UI::Text::FontStyle::Italic
@@ -247,8 +246,8 @@ void FormattedBlock::appendScript(hstring_param const& text, double scale, doubl
     winrt::Microsoft::UI::Xaml::Controls::TextBlock script;
     script.Text(impl::to_winrt(text));
     script.FontSize(base * scale);
-    if (style.bold.value_or(false)) {
-        script.FontWeight(winrt::Microsoft::UI::Text::FontWeights::Bold());
+    if (style.weight) {
+        script.FontWeight(winrt::Windows::UI::Text::FontWeight{static_cast<std::uint16_t>(*style.weight)});
     }
     if (style.italic.value_or(false)) {
         script.FontStyle(winrt::Windows::UI::Text::FontStyle::Italic);

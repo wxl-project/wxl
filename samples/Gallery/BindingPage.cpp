@@ -86,17 +86,22 @@ FrameworkElement masterDetailExample() {
 static FrameworkElement bindingPage() {
     return StackPanel {
         spacing = 12.0,
-        RichTextBlock {
-            Paragraph {fontWeight = FontWeight {600}, Run {u"Key concepts"}},
-            Paragraph {Run {u"\u2022 Target: the property of a control to which data is bound (Text, Background, Visibility)."}},
-            Paragraph {Run {u"\u2022 Source: a field of a model, an observable. It is held by address and never owned by the binding: the model "
-                            u"outlives the description, and the binding is a watch inside the field."}},
-            Paragraph {Run {u"\u2022 Direction is the word that is written:"}},
-            Paragraph {Run {u"    \u25E6 BindOutput updates the target when the source changes (OneWay)."}},
-            Paragraph {Run {u"    \u25E6 Bind updates both the target and the source (TwoWay)."}},
-            Paragraph {Run {u"    \u25E6 BindInput updates the source from the target alone."}},
-            Paragraph {Run {u"    \u25E6 A plain value sets the target once (OneTime)."}},
-        },
+        gallery::prose(
+            u8"<p><span style=\"semibold\">Key concepts</span></p>"
+            u8"<ul>"
+            u8"<li>Target: the property of a control to which data is bound (Text, Background, Visibility).</li>"
+            u8"<li>Source: a field of a model, an observable. It is held by address and never owned by the binding: the model "
+            u8"outlives the description, and the binding is a watch inside the field.</li>"
+            u8"<li>Direction is the word that is written:"
+            u8"<ul>"
+            u8"<li>BindOutput updates the target when the source changes (OneWay).</li>"
+            u8"<li>Bind updates both the target and the source (TwoWay).</li>"
+            u8"<li>BindInput updates the source from the target alone.</li>"
+            u8"<li>A plain value sets the target once (OneTime).</li>"
+            u8"</ul>"
+            u8"</li>"
+            u8"</ul>",
+            Thickness {}),
         RichTextBlock {Paragraph {Run {u"The Quadratic sample of wxl is built on this: three fields in, a field that follows them, answers out."}}},
         controlsExample(),
         propertyFieldExample(),

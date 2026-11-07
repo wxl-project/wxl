@@ -72,7 +72,7 @@ wxl::Teardown wxl_launched() {
     // The named styles the appended chunk below exercises; foreign markup
     // whose style="..." holds real CSS finds nothing here and stays plain.
     view.registerStyles({
-        {u"warn", {.text = {.color = rgb(192, 57, 43), .bold = true}}},
+        {u"warn", {.text = {.color = rgb(192, 57, 43), .weight = fontWeightBold}}},
         {u"note", {.text = {.color = rgb(128, 128, 128), .italic = true}}},
     });
 

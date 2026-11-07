@@ -91,29 +91,15 @@ auto example = StackPanel {
         isClosable = false,
         isOpen = true,
         severity = InfoBarSeverity::Warning,
-        content = RichTextBlock {
-            Margin {0, -16, 16, 16},
-            isTextSelectionEnabled = false,
-            Paragraph {
-                Run {u"For an "},
-                Run {u"AppWindow", FontWeight {600}},
-                Run {u" with "},
-                Run {u"OverlappedPresenter", FontWeight {600}},
-                Run {u", if the title bar ("},
-                Run {u"HasTitleBar = true", FontWeight {600}},
-                Run {u") is enabled, the window must have a border ("},
-                Run {u"HasBorder = true", FontWeight {600}},
-                Run {u"). Setting "},
-                Run {u"HasBorder", FontWeight {600}},
-                Run {u" to "},
-                Run {u"false", FontWeight {600}},
-                Run {u" while "},
-                Run {u"HasTitleBar", FontWeight {600}},
-                Run {u" is "},
-                Run {u"true", FontWeight {600}},
-                Run {u" will result in a fatal error."},
-            },
-        },
+        content = gallery::prose(
+            u8"For an <span style=\"semibold\">AppWindow</span> with <span style=\"semibold\">OverlappedPresenter</span>, "
+            u8"if the title bar (<span style=\"semibold\">HasTitleBar = true</span>) is enabled, the window must have a border "
+            u8"(<span style=\"semibold\">HasBorder = true</span>). Setting <span style=\"semibold\">HasBorder</span> to "
+            u8"<span style=\"semibold\">false</span> while <span style=\"semibold\">HasTitleBar</span> is "
+            u8"<span style=\"semibold\">true</span> will result in a fatal error.",
+            Thickness {0, -16, 16, 16},
+            // The original InfoBar content kept selection off; keep this warning unselectable.
+            false),
     },
     Button {content = u"Show window", onClick += [model](Button const&) { model->open(); }},
 };

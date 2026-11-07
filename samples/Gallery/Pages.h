@@ -89,7 +89,8 @@ std::wstring snippetText(Snippet bytes);
 // восстановления парсера тоже бросают (onError), а не молчат. Обработчик ссылок установлен всегда, поэтому BlockedLink
 // — клик, погашенный политикой по умолчанию, когда обработчика ссылок нет, — здесь не бывает.
 // Отступ — как у RichTextBlock/TextBlock оригинала на этом месте страницы (обычно {0}, у некоторых страниц сверху).
-wxl::FrameworkElement prose(Snippet html, wxl::Thickness margin);
+// Выбор текста — по умолчанию как у RichTextBlock (true); контент InfoBar передаёт false, как в оригинале.
+wxl::FrameworkElement prose(Snippet html, wxl::Thickness margin, bool textSelection = true);
 
 // Рост под указателем для кнопок самого приложения (заголовок страницы,
 // настройки, копирование кода), а не примеров: как у кнопок панели в примере

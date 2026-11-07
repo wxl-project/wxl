@@ -103,7 +103,7 @@ using namespace wxl::dsl;
     });
     block.appendParagraph();
     block.appendParagraph({.margin = Thickness{0, 0, 0, 8}, .alignment = TextAlignment::Center});
-    block.pushStyle({.bold = true});
+    block.pushStyle({.weight = fontWeightBold});
     block.appendText(L"WinUI");
     block.popStyle();
     block.appendText(L" in C++ Without XAML!");
@@ -147,8 +147,9 @@ using namespace wxl::dsl;
     markup.registerStyle(L"quote",
                          {.text = {.italic = true}, .block = {.margin = Thickness{24, 4, 0, 4}}});
     markup.registerStyles({
-        {L"warn", {.text = {.color = rgb(192, 57, 43), .bold = true}}},
+        {L"warn", {.text = {.color = rgb(192, 57, 43), .weight = fontWeightBold}}},
         {L"note", {.text = {.color = rgb(96, 96, 96)}}},
+        {L"semibold", {.text = {.weight = 600.0}}},
     });
     markup.onLink([](zstring_view) {});
     markup.onError([](MarkupError const&) {});
