@@ -63,6 +63,8 @@ FrameworkElement cocktailExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::magnifyPage() {
+static wxl::FrameworkElement magnifyPage() {
     return StackPanel {buttonExample(), toolbarExample(), cocktailExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"Magnify", magnifyPage);

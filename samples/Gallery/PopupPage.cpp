@@ -29,6 +29,8 @@ FrameworkElement offsetExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::popupPage() {
+static wxl::FrameworkElement popupPage() {
     return StackPanel {offsetExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"Popup", popupPage);

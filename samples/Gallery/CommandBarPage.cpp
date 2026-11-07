@@ -28,6 +28,8 @@ FrameworkElement labelsSide() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::commandBarPage() {
+static wxl::FrameworkElement commandBarPage() {
     return StackPanel {labelsSide()};
 }
+
+REGISTER_GALLERY_PAGE(L"CommandBar", commandBarPage);

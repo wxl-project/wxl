@@ -113,6 +113,8 @@ FrameworkElement symbolIcon() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::iconElementPage() {
+static wxl::FrameworkElement iconElementPage() {
     return StackPanel {bitmapIcon(), fontIcon(), imageIcon(), svgIcon(), pathIcon(), symbolIcon()};
 }
+
+REGISTER_GALLERY_PAGE(L"IconElement", iconElementPage);

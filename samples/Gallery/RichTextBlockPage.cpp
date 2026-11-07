@@ -65,6 +65,8 @@ FrameworkElement overflow() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::richTextBlockPage() {
+static wxl::FrameworkElement richTextBlockPage() {
     return StackPanel {simple(), customSelection(), overflow()};
 }
+
+REGISTER_GALLERY_PAGE(L"RichTextBlock", richTextBlockPage);

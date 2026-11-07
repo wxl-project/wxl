@@ -100,6 +100,8 @@ FrameworkElement workingMathml() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::richEditBoxPage() {
+static wxl::FrameworkElement richEditBoxPage() {
     return StackPanel {simple(), customEditor(), math(), workingMathml()};
 }
+
+REGISTER_GALLERY_PAGE(L"RichEditBox", richEditBoxPage);

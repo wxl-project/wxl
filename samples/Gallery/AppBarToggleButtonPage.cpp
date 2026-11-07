@@ -78,6 +78,8 @@ FrameworkElement threeState() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::appBarToggleButtonPage() {
+static wxl::FrameworkElement appBarToggleButtonPage() {
     return StackPanel {symbolIcon(), bitmapIcon(), fontIcon(), threeState()};
 }
+
+REGISTER_GALLERY_PAGE(L"AppBarToggleButton", appBarToggleButtonPage);

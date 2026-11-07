@@ -64,6 +64,8 @@ FrameworkElement display() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::infoBarPage() {
+static wxl::FrameworkElement infoBarPage() {
     return StackPanel {change(), longShort(), display()};
 }
+
+REGISTER_GALLERY_PAGE(L"InfoBar", infoBarPage);

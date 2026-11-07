@@ -28,7 +28,7 @@ FrameworkElement controls() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::compactSizingPage() {
+static wxl::FrameworkElement compactSizingPage() {
     return StackPanel {
         RichTextBlock {
             Margin {0, 24, 0, 0},
@@ -57,3 +57,5 @@ wxl::FrameworkElement gallery::compactSizingPage() {
             },
         },controls()};
 }
+
+REGISTER_GALLERY_PAGE(L"CompactSizing", compactSizingPage);

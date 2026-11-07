@@ -31,6 +31,8 @@ FrameworkElement looks() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::personPicturePage() {
+static wxl::FrameworkElement personPicturePage() {
     return StackPanel {looks()};
 }
+
+REGISTER_GALLERY_PAGE(L"PersonPicture", personPicturePage);

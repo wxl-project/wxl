@@ -45,6 +45,8 @@ FrameworkElement determinate() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::progressBarPage() {
+static wxl::FrameworkElement progressBarPage() {
     return StackPanel {indeterminate(), determinate()};
 }
+
+REGISTER_GALLERY_PAGE(L"ProgressBar", progressBarPage);

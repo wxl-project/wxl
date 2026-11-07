@@ -27,6 +27,8 @@ FrameworkElement separated() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::appBarSeparatorPage() {
+static wxl::FrameworkElement appBarSeparatorPage() {
     return StackPanel {separated()};
 }
+
+REGISTER_GALLERY_PAGE(L"AppBarSeparator", appBarSeparatorPage);

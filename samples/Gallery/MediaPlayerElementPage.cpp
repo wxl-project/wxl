@@ -55,6 +55,8 @@ FrameworkElement autoplay() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::mediaPlayerElementPage() {
+static wxl::FrameworkElement mediaPlayerElementPage() {
     return StackPanel {transportControls(), autoplay()};
 }
+
+REGISTER_GALLERY_PAGE(L"MediaPlayerElement", mediaPlayerElementPage);

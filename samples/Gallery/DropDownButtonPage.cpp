@@ -43,6 +43,8 @@ FrameworkElement withIcon() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::dropDownButtonPage() {
+static wxl::FrameworkElement dropDownButtonPage() {
     return StackPanel {simple(), withIcon()};
 }
+
+REGISTER_GALLERY_PAGE(L"DropDownButton", dropDownButtonPage);

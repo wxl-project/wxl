@@ -28,6 +28,8 @@ FrameworkElement simple() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::repeatButtonPage() {
+static wxl::FrameworkElement repeatButtonPage() {
     return StackPanel {simple()};
 }
+
+REGISTER_GALLERY_PAGE(L"RepeatButton", repeatButtonPage);

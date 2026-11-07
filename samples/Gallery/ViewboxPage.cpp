@@ -28,6 +28,8 @@ FrameworkElement insideViewbox() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::viewboxPage() {
+static wxl::FrameworkElement viewboxPage() {
     return StackPanel {insideViewbox()};
 }
+
+REGISTER_GALLERY_PAGE(L"Viewbox", viewboxPage);

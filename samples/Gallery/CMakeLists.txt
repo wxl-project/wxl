@@ -47,7 +47,7 @@ wxl_add_executable(sample.gallery
     RepeaterData.cpp
     Shell.cpp
     Tiles.cpp
-    ItemPages.cpp
+    PageRegistry.cpp
     ItemPage.cpp
     ListPages.cpp
     HomePage.cpp

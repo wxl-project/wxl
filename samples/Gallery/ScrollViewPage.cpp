@@ -65,6 +65,8 @@ FrameworkElement customAnimation() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::scrollViewPage() {
+static wxl::FrameworkElement scrollViewPage() {
     return StackPanel {withContent(), constantVelocity(), customAnimation()};
 }
+
+REGISTER_GALLERY_PAGE(L"ScrollView", scrollViewPage);

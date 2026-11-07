@@ -77,6 +77,8 @@ FrameworkElement multiLine() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::textBoxPage() {
+static wxl::FrameworkElement textBoxPage() {
     return StackPanel {simple(), headerPlaceholder(), readOnlyVarious(), multiLine()};
 }
+
+REGISTER_GALLERY_PAGE(L"TextBox", textBoxPage);

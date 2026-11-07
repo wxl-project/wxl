@@ -48,6 +48,8 @@ FrameworkElement scrollView() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::parallaxViewPage() {
+static wxl::FrameworkElement parallaxViewPage() {
     return StackPanel {listView(), scrollView()};
 }
+
+REGISTER_GALLERY_PAGE(L"ParallaxView", parallaxViewPage);

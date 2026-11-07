@@ -194,6 +194,8 @@ FrameworkElement grouped() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::listViewPage() {
+static wxl::FrameworkElement listViewPage() {
     return StackPanel {basicList(), selection(), images(), filtering(), menus(), messaging(), restoring(), scrolling(), dragging(), grouped()};
 }
+
+REGISTER_GALLERY_PAGE(L"ListView", listViewPage);

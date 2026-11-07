@@ -99,6 +99,8 @@ FrameworkElement progress() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::appNotificationPage() {
+static wxl::FrameworkElement appNotificationPage() {
     return StackPanel {basic(), customLogo(), hero(), controls(), progress()};
 }
+
+REGISTER_GALLERY_PAGE(L"AppNotification", appNotificationPage);

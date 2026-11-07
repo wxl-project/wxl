@@ -61,6 +61,8 @@ FrameworkElement revealMode() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::passwordBoxPage() {
+static wxl::FrameworkElement passwordBoxPage() {
     return StackPanel {simple(), headerPlaceholder(), revealMode()};
 }
+
+REGISTER_GALLERY_PAGE(L"PasswordBox", passwordBoxPage);

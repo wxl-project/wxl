@@ -57,7 +57,7 @@ FrameworkElement filterExample() {
 
 }  // namespace
 
-FrameworkElement gallery::boundCollectionPage() {
+static FrameworkElement boundCollectionPage() {
     return StackPanel {
         spacing = 12.0,
         RichTextBlock {
@@ -77,3 +77,5 @@ FrameworkElement gallery::boundCollectionPage() {
         filterExample(),
     };
 }
+
+REGISTER_GALLERY_PAGE(L"BoundCollection", boundCollectionPage);

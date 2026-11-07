@@ -108,6 +108,8 @@ FrameworkElement popupExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::themeTransitionPage() {
+static wxl::FrameworkElement themeTransitionPage() {
     return StackPanel {entranceExample(), repositionExample(), contentExample(), addDeleteExample(), popupExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"ThemeTransition", themeTransitionPage);

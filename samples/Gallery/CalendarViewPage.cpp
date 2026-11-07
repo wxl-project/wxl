@@ -29,6 +29,8 @@ FrameworkElement basic() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::calendarViewPage() {
+static wxl::FrameworkElement calendarViewPage() {
     return StackPanel {basic()};
 }
+
+REGISTER_GALLERY_PAGE(L"CalendarView", calendarViewPage);

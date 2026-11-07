@@ -123,21 +123,21 @@ FrameworkElement spacingExample(char16_t const* title, char16_t const* stem, dou
 
 }  // namespace
 
-FrameworkElement gallery::typographyPage() {
+static FrameworkElement typographyPage() {
     return StackPanel {
         gallery::prose(gallery::snippet(typographyIntroText), Thickness {0, 4, 0, 0}),
         typographyExample(),
     };
 }
 
-FrameworkElement gallery::geometryPage() {
+static FrameworkElement geometryPage() {
     return StackPanel {
         gallery::prose(gallery::snippet(geometryIntroText), Thickness {}),
         geometryExample(),
     };
 }
 
-FrameworkElement gallery::spacingPage() {
+static FrameworkElement spacingPage() {
     return StackPanel {
         gallery::prose(gallery::snippet(spacingIntroText), Thickness {}),
         ScrollViewer {
@@ -183,3 +183,7 @@ FrameworkElement gallery::spacingPage() {
         },
     };
 }
+
+REGISTER_GALLERY_PAGE(L"Typography", typographyPage);
+REGISTER_GALLERY_PAGE(L"Geometry", geometryPage);
+REGISTER_GALLERY_PAGE(L"Spacing", spacingPage);

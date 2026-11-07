@@ -76,6 +76,8 @@ FrameworkElement strokes() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::inkCanvasPage() {
+static wxl::FrameworkElement inkCanvasPage() {
     return StackPanel {drawing(), toolbar(), strokes()};
 }
+
+REGISTER_GALLERY_PAGE(L"InkCanvas", inkCanvasPage);

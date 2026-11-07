@@ -45,6 +45,8 @@ FrameworkElement contentAlignmentExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::expanderPage() {
+static wxl::FrameworkElement expanderPage() {
     return StackPanel {textHeaderContent(), contentAlignmentExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"Expander", expanderPage);

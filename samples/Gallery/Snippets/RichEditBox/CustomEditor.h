@@ -40,7 +40,7 @@ auto toolbar = Grid {
     ColumnDefinitions<u"auto,auto,*,auto">,
     Button {
         tool,
-        gallery::appPop(),
+        gallery::appButtonHoverEffect(),
         automationName = u"Bold",
         toolTip = u"Bold",
         content = FontIcon {glyph = u"\uE8DD"},
@@ -50,7 +50,7 @@ auto toolbar = Grid {
     },
     Button {
         tool,
-        gallery::appPop(),
+        gallery::appButtonHoverEffect(),
         column = 1,
         automationName = u"Italic",
         toolTip = u"Italic",
@@ -60,7 +60,7 @@ auto toolbar = Grid {
         },
     },
     DropDownButton {
-        gallery::appPop(),
+        gallery::appButtonHoverEffect(),
         column = 3,
         background = colors.transparent,
         BorderThickness {0},

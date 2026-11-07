@@ -27,6 +27,8 @@ FrameworkElement exposing() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::standardUICommandPage() {
+static wxl::FrameworkElement standardUICommandPage() {
     return StackPanel {exposing()};
 }
+
+REGISTER_GALLERY_PAGE(L"StandardUICommand", standardUICommandPage);

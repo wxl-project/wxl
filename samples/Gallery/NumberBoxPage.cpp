@@ -66,6 +66,8 @@ FrameworkElement formatted() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::numberBoxPage() {
+static wxl::FrameworkElement numberBoxPage() {
     return StackPanel {expressions(), spinButton(), formatted()};
 }
+
+REGISTER_GALLERY_PAGE(L"NumberBox", numberBoxPage);

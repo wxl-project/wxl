@@ -24,6 +24,8 @@ FrameworkElement sample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::radialGradientBrushPage() {
+static wxl::FrameworkElement radialGradientBrushPage() {
     return StackPanel {sample()};
 }
+
+REGISTER_GALLERY_PAGE(L"RadialGradientBrush", radialGradientBrushPage);

@@ -28,6 +28,8 @@ FrameworkElement linked() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::annotatedScrollBarPage() {
+static wxl::FrameworkElement annotatedScrollBarPage() {
     return StackPanel {linked()};
 }
+
+REGISTER_GALLERY_PAGE(L"AnnotatedScrollBar", annotatedScrollBarPage);

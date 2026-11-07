@@ -27,6 +27,8 @@ FrameworkElement control() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::canvasPage() {
+static wxl::FrameworkElement canvasPage() {
     return StackPanel {control()};
 }
+
+REGISTER_GALLERY_PAGE(L"Canvas", canvasPage);

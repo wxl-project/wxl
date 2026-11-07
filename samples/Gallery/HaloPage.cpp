@@ -63,6 +63,8 @@ FrameworkElement glowExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::haloPage() {
+static wxl::FrameworkElement haloPage() {
     return StackPanel {lcdExample(), ledExample(), glowExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"Halo", haloPage);

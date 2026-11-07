@@ -106,7 +106,7 @@ wxl::FrameworkElement prose(Snippet html, wxl::Thickness margin);
 // Рост под указателем для кнопок самого приложения (заголовок страницы,
 // настройки, копирование кода), а не примеров: как у кнопок панели в примере
 // Effects.
-inline wxl::MagnifyEffect appPop() {
+inline wxl::MagnifyEffect appButtonHoverEffect() {
     return wxl::MagnifyEffect {1.2, wxl::dsl::maximum = 1.35, wxl::dsl::minimum = 0.95};
 }
 
@@ -119,148 +119,52 @@ wxl::FrameworkElement sampleSettingsPage();
 
 // Выбор цвета: образец на кнопке и ColorPicker в её выпадающей части
 // (ColorSelector оригинала). Цвет — поле модели.
-wxl::FrameworkElement colorSelector(wxl::core::observable<wxl::Color>& color, char16_t const* name);
+wxl::FrameworkElement colorSelector(wxl::core::observable<wxl::Color>& color, std::u16string_view name);
 
 // Функция, строящая страницу примеров одного контрола.
 using ControlPage = wxl::FrameworkElement (*)();
 
 // Страница контрола по идентификатору из каталога или nullptr, если контрол
-// ещё не перенесён (в оригинале это IncludedInBuild).
+// ещё не зарегистрирован (в оригинале это IncludedInBuild). Реализация — в
+// PageRegistry.cpp.
 ControlPage pageFor(std::wstring_view uniqueId);
 
-// Страница контрола: примеры друг под другом.
-wxl::FrameworkElement buttonPage();
-wxl::FrameworkElement dropDownButtonPage();
-wxl::FrameworkElement hyperlinkButtonPage();
-wxl::FrameworkElement repeatButtonPage();
-wxl::FrameworkElement toggleButtonPage();
-wxl::FrameworkElement splitButtonPage();
-wxl::FrameworkElement toggleSplitButtonPage();
-wxl::FrameworkElement checkBoxPage();
-wxl::FrameworkElement colorPickerPage();
-wxl::FrameworkElement comboBoxPage();
-wxl::FrameworkElement radioButtonPage();
-wxl::FrameworkElement ratingControlPage();
-wxl::FrameworkElement sliderPage();
-wxl::FrameworkElement toggleSwitchPage();
-wxl::FrameworkElement textBlockPage();
-wxl::FrameworkElement textBoxPage();
-wxl::FrameworkElement passwordBoxPage();
-wxl::FrameworkElement numberBoxPage();
-wxl::FrameworkElement autoSuggestBoxPage();
-wxl::FrameworkElement borderPage();
-wxl::FrameworkElement canvasPage();
-wxl::FrameworkElement expanderPage();
-wxl::FrameworkElement gridPage();
-wxl::FrameworkElement relativePanelPage();
-wxl::FrameworkElement splitViewPage();
-wxl::FrameworkElement stackPanelPage();
-wxl::FrameworkElement variableSizedWrapGridPage();
-wxl::FrameworkElement viewboxPage();
-wxl::FrameworkElement typographyPage();
-wxl::FrameworkElement geometryPage();
-wxl::FrameworkElement spacingPage();
-wxl::FrameworkElement colorPage();
-wxl::FrameworkElement iconographyPage();
-wxl::FrameworkElement accessibilityColorContrastPage();
-wxl::FrameworkElement accessibilityKeyboardPage();
-wxl::FrameworkElement accessibilityScreenReaderPage();
-wxl::FrameworkElement scratchPadPage();
-wxl::FrameworkElement xamlStylesPage();
-wxl::FrameworkElement glassPage();
-wxl::FrameworkElement magnifyPage();
-wxl::FrameworkElement bevelPage();
-wxl::FrameworkElement button3DPage();
-wxl::FrameworkElement gaussianBlurPage();
-wxl::FrameworkElement haloPage();
-wxl::FrameworkElement xamlResourcesPage();
-wxl::FrameworkElement bindingPage();
-wxl::FrameworkElement boundCollectionPage();
-wxl::FrameworkElement settingsCardPage();
-wxl::FrameworkElement headeredContentControlPage();
-wxl::FrameworkElement settingsExpanderPage();
-wxl::FrameworkElement templatesPage();
-wxl::FrameworkElement customXamlConditionalsPage();
-wxl::FrameworkElement animatedVisualPlayerPage();
-wxl::FrameworkElement captureElementPreviewPage();
-wxl::FrameworkElement inkCanvasPage();
+// Реестр страниц контролов: каждая страница регистрирует себя макросом
+// REGISTER_GALLERY_PAGE в своём файле; конструктор ставит запись в общий
+// односвязный список, голова которого живёт в PageRegistry.cpp. noncopyable:
+// запись держится в списке по адресу, копия или перемещение разорвали бы его.
+class PageRegistry : wxl::core::noncopyable {
+public:
+    PageRegistry(std::wstring_view pageId, ControlPage factory);
+
+private:
+    friend ControlPage pageFor(std::wstring_view uniqueId);
+
+    std::wstring_view pageId_;
+    ControlPage factory_;
+    PageRegistry* next_;
+};
+
+// Соединяет два токена в одно имя: две ступени, потому что у операнда `##`
+// макрос не разворачивается, и __LINE__ должен стать числом до склейки.
+#define GALLERY_CONCAT_(a, b) a##b
+#define GALLERY_CONCAT(a, b) GALLERY_CONCAT_(a, b)
+
+// Регистрирует страницу контрола в её файле. Имя переменной — по __LINE__,
+// чтобы несколько страниц в одном файле не спорили за имя.
+#define REGISTER_GALLERY_PAGE(pageId, factory) \
+    static inline const ::gallery::PageRegistry GALLERY_CONCAT(gallery_reg_, __LINE__)(pageId, factory)
+
+// Страница контрола, для которой регистрации пока нет: pageFor её не находит,
+// но объявление оставлено, чтобы функция была на виду, когда регистрация
+// появится.
 wxl::FrameworkElement mapControlPage();
-wxl::FrameworkElement mediaPlayerElementPage();
-wxl::FrameworkElement soundPage();
-wxl::FrameworkElement personPicturePage();
-wxl::FrameworkElement imagePage();
-wxl::FrameworkElement tabViewPage();
-wxl::FrameworkElement navigationViewPage();
-wxl::FrameworkElement pivotPage();
-wxl::FrameworkElement selectorBarPage();
-wxl::FrameworkElement breadcrumbBarPage();
-wxl::FrameworkElement connectedAnimationPage();
-wxl::FrameworkElement xamlCompInteropPage();
-wxl::FrameworkElement parallaxViewPage();
-wxl::FrameworkElement pageTransitionPage();
-wxl::FrameworkElement themeTransitionPage();
-wxl::FrameworkElement implicitTransitionPage();
-wxl::FrameworkElement easingFunctionPage();
-wxl::FrameworkElement teachingTipPage();
-wxl::FrameworkElement popupPage();
-wxl::FrameworkElement flyoutPage();
-wxl::FrameworkElement contentDialogPage();
-wxl::FrameworkElement itemsRepeaterPage();
-wxl::FrameworkElement itemsViewPage();
-wxl::FrameworkElement listViewPage();
-wxl::FrameworkElement gridViewPage();
-wxl::FrameworkElement flipViewPage();
-wxl::FrameworkElement treeViewPage();
-wxl::FrameworkElement pullToRefreshPage();
-wxl::FrameworkElement contentIslandPage();
-wxl::FrameworkElement jumpListPage();
-wxl::FrameworkElement storagePickersPage();
-wxl::FrameworkElement clipboardPage();
-wxl::FrameworkElement appNotificationPage();
-wxl::FrameworkElement badgeNotificationManagerPage();
-wxl::FrameworkElement compositionWindowPage();
-wxl::FrameworkElement systemBackdropsPage();
-wxl::FrameworkElement appWindowPage();
-wxl::FrameworkElement appWindowTitleBarPage();
-wxl::FrameworkElement titleBarPage();
-wxl::FrameworkElement windowingPage();
-wxl::FrameworkElement compactSizingPage();
-wxl::FrameworkElement systemBackdropElementPage();
-wxl::FrameworkElement acrylicPage();
-wxl::FrameworkElement animatedIconPage();
-wxl::FrameworkElement radialGradientBrushPage();
-wxl::FrameworkElement linePage();
-wxl::FrameworkElement shapePage();
-wxl::FrameworkElement iconElementPage();
-wxl::FrameworkElement themeShadowPage();
-wxl::FrameworkElement scrollViewPage();
-wxl::FrameworkElement annotatedScrollBarPage();
-wxl::FrameworkElement pipsPagerPage();
+
+// PagerControl не регистрируется: уже пустой `PagerControl {}` роняет XAML
+// (0xC000027B) на установленном рантайме 2.5.1. Причина не установлена;
+// контрол числится экспериментальным. Страница написана (PagerControlPage.cpp)
+// и собирается; регистрация включается, когда экземпляр заработает.
 wxl::FrameworkElement pagerControlPage();
-wxl::FrameworkElement scrollViewerPage();
-wxl::FrameworkElement calendarViewPage();
-wxl::FrameworkElement timePickerPage();
-wxl::FrameworkElement datePickerPage();
-wxl::FrameworkElement calendarDatePickerPage();
-wxl::FrameworkElement standardUICommandPage();
-wxl::FrameworkElement xamlUICommandPage();
-wxl::FrameworkElement swipeControlPage();
-wxl::FrameworkElement commandBarFlyoutPage();
-wxl::FrameworkElement menuFlyoutPage();
-wxl::FrameworkElement menuBarPage();
-wxl::FrameworkElement commandBarPage();
-wxl::FrameworkElement layoutPanelPage();
-wxl::FrameworkElement wrapPanelPage();
-wxl::FrameworkElement appBarSeparatorPage();
-wxl::FrameworkElement appBarToggleButtonPage();
-wxl::FrameworkElement appBarButtonPage();
-wxl::FrameworkElement toolTipPage();
-wxl::FrameworkElement progressRingPage();
-wxl::FrameworkElement progressBarPage();
-wxl::FrameworkElement infoBarPage();
-wxl::FrameworkElement infoBadgePage();
-wxl::FrameworkElement richTextBlockPage();
-wxl::FrameworkElement richEditBoxPage();
 
 // Плитка контрола (ControlItemTemplate оригинала) и сетка плиток: GridView,
 // клик по плитке — переход на страницу контрола.
@@ -276,8 +180,8 @@ inline std::wstring wide(std::u16string_view text) {
 }
 
 // Каталог для примеров с поиском: все слова запроса есть в тексте (без учёта
-// регистра); названия перенесённых контролов, подходящие под запрос; контрол
-// по названию; путь к картинке из каталога (`ms-appx:///Assets/…`).
+// регистра); названия зарегистрированных контролов, подходящие под запрос;
+// контрол по названию; путь к картинке из каталога (`ms-appx:///Assets/…`).
 bool containsWords(std::u16string_view text, std::u16string_view query);
 std::vector<std::u16string> controlTitles(std::u16string_view query);
 ControlInfo const* controlByTitle(std::u16string_view title);

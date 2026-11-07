@@ -31,6 +31,8 @@ FrameworkElement basic() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::splitViewPage() {
+static wxl::FrameworkElement splitViewPage() {
     return StackPanel {basic()};
 }
+
+REGISTER_GALLERY_PAGE(L"SplitView", splitViewPage);

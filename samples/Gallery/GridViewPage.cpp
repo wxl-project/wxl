@@ -69,6 +69,8 @@ FrameworkElement contentGrid() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::gridViewPage() {
+static wxl::FrameworkElement gridViewPage() {
     return StackPanel {basic(), customizedLayout(), contentGrid()};
 }
+
+REGISTER_GALLERY_PAGE(L"GridView", gridViewPage);

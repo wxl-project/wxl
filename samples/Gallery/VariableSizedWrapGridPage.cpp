@@ -28,6 +28,8 @@ FrameworkElement control() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::variableSizedWrapGridPage() {
+static wxl::FrameworkElement variableSizedWrapGridPage() {
     return StackPanel {control()};
 }
+
+REGISTER_GALLERY_PAGE(L"VariableSizedWrapGrid", variableSizedWrapGridPage);

@@ -51,7 +51,7 @@ FrameworkElement manageSamples() {
         spacing = 8.0,
         Button {
             u"Clear recents",
-            gallery::appPop(),
+            gallery::appButtonHoverEffect(),
             minWidth = 120,
             isEnabled = !gallery::recentlyVisited().empty(),
             onClick += [](Object const& sender, RoutedEventArgs&) {
@@ -61,7 +61,7 @@ FrameworkElement manageSamples() {
         },
         Button {
             u"Remove favorites",
-            gallery::appPop(),
+            gallery::appButtonHoverEffect(),
             minWidth = 120,
             isEnabled = !gallery::favorites().empty(),
             onClick += [](Object const& sender, RoutedEventArgs&) {

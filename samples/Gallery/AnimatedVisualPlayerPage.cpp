@@ -31,6 +31,8 @@ FrameworkElement lottie() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::animatedVisualPlayerPage() {
+static wxl::FrameworkElement animatedVisualPlayerPage() {
     return StackPanel {lottie()};
 }
+
+REGISTER_GALLERY_PAGE(L"AnimatedVisualPlayer", animatedVisualPlayerPage);

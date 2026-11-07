@@ -117,6 +117,8 @@ FrameworkElement animatedGif() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::imagePage() {
+static wxl::FrameworkElement imagePage() {
     return StackPanel {basic(), decoded(), stretching(), nineGridImages(), svg(), animatedGif()};
 }
+
+REGISTER_GALLERY_PAGE(L"Image", imagePage);

@@ -28,6 +28,8 @@ FrameworkElement button() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::flyoutPage() {
+static wxl::FrameworkElement flyoutPage() {
     return StackPanel {button()};
 }
+
+REGISTER_GALLERY_PAGE(L"Flyout", flyoutPage);

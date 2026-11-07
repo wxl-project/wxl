@@ -97,6 +97,8 @@ FrameworkElement neonSignExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::gaussianBlurPage() {
+static wxl::FrameworkElement gaussianBlurPage() {
     return StackPanel {keycapExample(), compareExample(), gammaExample(), onTopExample(), neonSignExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"GaussianBlur", gaussianBlurPage);

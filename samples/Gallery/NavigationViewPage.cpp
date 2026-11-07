@@ -158,6 +158,8 @@ FrameworkElement apiAction() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::navigationViewPage() {
+static wxl::FrameworkElement navigationViewPage() {
     return StackPanel {defaultMode(), topMode(), switchingMode(), tabsPattern(), dataBinding(), footerItems(), hierarchical(), apiAction()};
 }
+
+REGISTER_GALLERY_PAGE(L"NavigationView", navigationViewPage);

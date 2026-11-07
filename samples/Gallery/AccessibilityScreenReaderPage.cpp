@@ -154,7 +154,7 @@ FrameworkElement controlGroups() {
 
 }  // namespace
 
-FrameworkElement gallery::accessibilityScreenReaderPage() {
+static FrameworkElement accessibilityScreenReaderPage() {
     return StackPanel {
         spacing = 12.0,
         gallery::prose(gallery::snippet(introText), Thickness {}),
@@ -201,3 +201,5 @@ FrameworkElement gallery::accessibilityScreenReaderPage() {
         controlGroups(),
     };
 }
+
+REGISTER_GALLERY_PAGE(L"AccessibilityScreenReader", accessibilityScreenReaderPage);

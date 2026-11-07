@@ -29,6 +29,8 @@ FrameworkElement customLayout() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::layoutPanelPage() {
+static wxl::FrameworkElement layoutPanelPage() {
     return StackPanel {customLayout()};
 }
+
+REGISTER_GALLERY_PAGE(L"LayoutPanel", layoutPanelPage);

@@ -43,6 +43,8 @@ FrameworkElement custom() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::toggleSwitchPage() {
+static wxl::FrameworkElement toggleSwitchPage() {
     return StackPanel {simple(), custom()};
 }
+
+REGISTER_GALLERY_PAGE(L"ToggleSwitch", toggleSwitchPage);

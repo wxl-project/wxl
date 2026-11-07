@@ -28,6 +28,8 @@ FrameworkElement appliedBorder() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::themeShadowPage() {
+static wxl::FrameworkElement themeShadowPage() {
     return StackPanel {appliedBorder()};
 }
+
+REGISTER_GALLERY_PAGE(L"ThemeShadow", themeShadowPage);

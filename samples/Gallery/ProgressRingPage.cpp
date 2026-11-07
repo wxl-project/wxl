@@ -46,6 +46,8 @@ FrameworkElement determinate() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::progressRingPage() {
+static wxl::FrameworkElement progressRingPage() {
     return StackPanel {indeterminate(), determinate()};
 }
+
+REGISTER_GALLERY_PAGE(L"ProgressRing", progressRingPage);

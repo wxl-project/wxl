@@ -27,6 +27,8 @@ FrameworkElement onAppObject() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::commandBarFlyoutPage() {
+static wxl::FrameworkElement commandBarFlyoutPage() {
     return StackPanel {onAppObject()};
 }
+
+REGISTER_GALLERY_PAGE(L"CommandBarFlyout", commandBarFlyoutPage);

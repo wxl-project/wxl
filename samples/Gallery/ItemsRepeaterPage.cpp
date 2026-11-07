@@ -150,6 +150,8 @@ FrameworkElement contentHeavy() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::itemsRepeaterPage() {
+static wxl::FrameworkElement itemsRepeaterPage() {
     return StackPanel {bars(), virtualizing(), flow(), mixed(), nested(), animated(), contentHeavy()};
 }
+
+REGISTER_GALLERY_PAGE(L"ItemsRepeater", itemsRepeaterPage);

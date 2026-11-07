@@ -77,7 +77,7 @@ struct Model {
 
 }  // namespace
 
-FrameworkElement gallery::scratchPadPage() {
+static FrameworkElement scratchPadPage() {
     auto const model = gallery::hold<Model>();
     model->reset();
     std::weak_ptr<Model> const weak = model;
@@ -118,3 +118,5 @@ FrameworkElement gallery::scratchPadPage() {
         },
     };
 }
+
+REGISTER_GALLERY_PAGE(L"ScratchPad", scratchPadPage);

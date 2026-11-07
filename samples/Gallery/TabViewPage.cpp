@@ -196,6 +196,8 @@ FrameworkElement windowing() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::tabViewPage() {
+static wxl::FrameworkElement tabViewPage() {
     return StackPanel {addingClosing(), itemsInMarkup(), boundCollection(), keyboarding(), customContent(), tabWidths(), closeButton(), colorIcons(), accentStrip(), windowing()};
 }
+
+REGISTER_GALLERY_PAGE(L"TabView", tabViewPage);

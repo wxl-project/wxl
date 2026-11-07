@@ -61,6 +61,8 @@ FrameworkElement acrylicBackdropExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::systemBackdropsPage() {
+static wxl::FrameworkElement systemBackdropsPage() {
     return StackPanel {backdropTypes(), micaBackdropExample(), acrylicBackdropExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"SystemBackdrops", systemBackdropsPage);

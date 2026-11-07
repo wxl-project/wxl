@@ -31,6 +31,8 @@ FrameworkElement listExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::toggleSplitButtonPage() {
+static wxl::FrameworkElement toggleSplitButtonPage() {
     return StackPanel {listExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"ToggleSplitButton", toggleSplitButtonPage);

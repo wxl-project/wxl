@@ -79,6 +79,8 @@ FrameworkElement selector() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::treeViewPage() {
+static wxl::FrameworkElement treeViewPage() {
     return StackPanel {dragDrop(), multiple(), bound(), selector()};
 }
+
+REGISTER_GALLERY_PAGE(L"TreeView", treeViewPage);

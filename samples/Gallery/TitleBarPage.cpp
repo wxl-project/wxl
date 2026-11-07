@@ -66,8 +66,10 @@ FrameworkElement endToEnd() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::titleBarPage() {
+static wxl::FrameworkElement titleBarPage() {
     return StackPanel {
         Margin {0, 12, 0, 0},
         gallery::prose(gallery::snippet(introText), Thickness {}), configurationExample(), dragRegions(), endToEnd()};
 }
+
+REGISTER_GALLERY_PAGE(L"TitleBar", titleBarPage);

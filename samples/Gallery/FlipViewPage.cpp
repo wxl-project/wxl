@@ -63,6 +63,8 @@ FrameworkElement vertical() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::flipViewPage() {
+static wxl::FrameworkElement flipViewPage() {
     return StackPanel {declared(), bound(), vertical()};
 }
+
+REGISTER_GALLERY_PAGE(L"FlipView", flipViewPage);

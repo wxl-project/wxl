@@ -127,6 +127,8 @@ FrameworkElement themeExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::implicitTransitionPage() {
+static wxl::FrameworkElement implicitTransitionPage() {
     return StackPanel {opacityExample(), rotationExample(), scaleExample(), translationExample(), backgroundExample(), themeExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"ImplicitTransition", implicitTransitionPage);
