@@ -23,10 +23,10 @@ Snippet LazyLoadedText::bytes() const {
 
         if (!bytes) {
             // Одна фраза на всё чтение, той же формы, что у xml/json в wxl.core:
-            // путь, слова системы о коде и сам код.
+            // полный путь, по которому читали, слова системы о коде и сам код.
             throw std::runtime_error(std::format(
                 "cannot read {}: {} (system error code = {})",
-                relative_,
+                core::unicode::to_utf8(path).chars(),
                 core::environment::error_explanation(
                     static_cast<std::uint32_t>(bytes.error().value())).chars(),
                 bytes.error().value()));
