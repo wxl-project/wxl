@@ -940,17 +940,17 @@ std::string list_of(std::vector<std::string> names) {
 // The list the build read from the chain, compared with the chain's own as sets: the build
 // compiles the components it read, and the projection is made for those the chain names.
 void check_named_components(profile_set const& result, component_search const& search) {
-    if (!search.expected) {
+    if (search.directories.empty()) {
         return;
     }
-    std::set<std::string> const expected(search.expected->begin(), search.expected->end());
+    std::set<std::string> const expected(search.expected.begin(), search.expected.end());
     std::set<std::string> const named(result.named_components.begin(),
                                       result.named_components.end());
     if (expected != named) {
         throw std::runtime_error(std::format(
             "the components the build names (--component) are not those the profiles name in "
             "\"components\":\n  build:    {}\n  profiles: {}",
-            list_of(*search.expected), list_of(result.named_components)));
+            list_of(search.expected), list_of(result.named_components)));
     }
 }
 

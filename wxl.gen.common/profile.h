@@ -451,9 +451,10 @@ struct component_search {
     // The directories that hold components: component N is <directory>/N/component.json.
     std::vector<std::filesystem::path> directories;
 
-    // The components the build read from the profile chain on its own, compared with what the
-    // chain names in "components" before "needs" adds to them. Empty: no comparison.
-    std::optional<std::vector<std::string>> expected;
+    // The components the build read from the profile chain on its own, compared as a set with
+    // what the chain names in "components" before "needs" adds to them, whenever `directories`
+    // is given: a chain naming none matches an empty list. Without directories, no comparison.
+    std::vector<std::string> expected;
 
     // The directory of what no component owns (the library's include directory, wxl.ui/src
     // today). When set, every include a profile or a selected component gives must be a file of a

@@ -64,10 +64,11 @@ constexpr std::string_view usage = R"(winui-srcgen -- generates wxl wrappers fro
   --component-dir  Directory holding components, repeatable: a component N is
                  <dir>/N/component.json. The chain's "needs" are resolved
                  from the directories given.
-  --component    A component the build read from the chain; repeatable. When
-                 given, the list is compared as a set with the chain's own
-                 "components", before "needs" adds to them, and a mismatch
-                 stops the run with both lists named.
+  --component    A component the build read from the chain; repeatable. With
+                 --component-dir, the list -- empty when none is given -- is
+                 compared as a set with the chain's own "components", before
+                 "needs" adds to them, and a mismatch stops the run with both
+                 lists named.
   --common-dir   The library's include directory (wxl.ui/src), which holds
                  what no component owns. When set, every include a profile
                  or a selected component gives is checked: "../X.h" must be
@@ -174,10 +175,7 @@ options parse_options(int argc, wchar_t** argv) {
         } else if (argument == L"--component-dir") {
             opts.search.directories.emplace_back(value(i, argument));
         } else if (argument == L"--component") {
-            if (!opts.search.expected) {
-                opts.search.expected.emplace();
-            }
-            opts.search.expected->push_back(text_value(i, argument));
+            opts.search.expected.push_back(text_value(i, argument));
         } else if (argument == L"--common-dir") {
             opts.search.common_directory = value(i, argument);
         } else {
