@@ -85,9 +85,18 @@
 # (wxl_restored_packages_file(), cmake/wxl_packages.cmake) or a file of the
 # profiles changes: of the profile's own directory and of the tree's
 # wxl.gen/profiles -- the profiles, types.json, fluent-symbols.json. Every one
-# of them, and not only the profile and what it extends: profiles are JSON with
-# comments, which CMake cannot read, so the chain of `extends` is not known
-# here; and a profile outside the tree may extend one of the tree's.
+# of them, and not only the profile and what it extends: a profile outside the
+# tree may extend one of the tree's. With a library of a profile it also runs
+# again when a manifest of a selected component changes.
+#
+# The components: wxl_add_ui_library runs cmake/Read-ProfileComponents.ps1
+# under Windows PowerShell 5.1 at configure -- profiles and manifests are JSON
+# with comments, which CMake cannot read. The script prints the components the
+# chain names and, closed over "needs", the directory, sources and libraries of
+# each. The library compiles those sources, links those libraries PRIVATE and
+# takes each component directory as a PUBLIC include root; the generator is
+# handed the same chain (--component-dir, --component, --common-dir). Every
+# manifest and every profile of the chain is a configure dependency.
 #
 # DOCS writes the metadata's documentation into the headers, in that language
 # (winui-srcgen --docs --doc-language), and leaves doc_language.txt beside them.
@@ -298,18 +307,16 @@ function(wxl_add_ui_library profile)
     set(_wxl_component_sources "")
     set(_wxl_component_libraries "")
     set(_wxl_manifests "")
-    set(_wxl_current_component "")
     set(_wxl_current_dir "")
 
-    string(REPLACE "\n" ";" _wxl_lines "${_wxl_script_output}")
+    string(REPLACE "\r" "" _wxl_lines "${_wxl_script_output}")
+    string(REPLACE "\n" ";" _wxl_lines "${_wxl_lines}")
     foreach(_wxl_line IN LISTS _wxl_lines)
         if(_wxl_line MATCHES "^(chain|component|dir|source|library):(.*)$")
             set(_wxl_type "${CMAKE_MATCH_1}")
             set(_wxl_value "${CMAKE_MATCH_2}")
             if(_wxl_type STREQUAL "chain")
                 list(APPEND _wxl_chain_components "${_wxl_value}")
-            elseif(_wxl_type STREQUAL "component")
-                set(_wxl_current_component "${_wxl_value}")
             elseif(_wxl_type STREQUAL "dir")
                 set(_wxl_current_dir "${_wxl_value}")
                 list(APPEND _wxl_component_dirs "${_wxl_current_dir}")

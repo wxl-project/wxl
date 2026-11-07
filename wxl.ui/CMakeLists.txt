@@ -441,8 +441,9 @@ if(WXL_TESTS)
     # The sources it builds reach generated headers too (impl/member.h names
     # <wxl/EventKey.h>, impl/background_load.h <wxl/Microsoft.UI.Composition.h>):
     # the include root of the full profile's wrappers, and their generation ahead
-    # of every compile and scan of them. Tests also include headers from component
-    # directories (composition/impl/background_load.h, dsl/impl/member.h, etc.).
+    # of every compile and scan of them. The headers under test that components
+    # own come from their directories: impl/background_load.h of composition,
+    # impl/member.h and event_awaitable.h of dsl, impl/show_dialog.h of dialogs.
     get_target_property(_wxl_ui_wrappers wxl.ui.full WXL_WRAPPERS_DIR)
     cmake_path(GET _wxl_ui_wrappers PARENT_PATH _wxl_ui_wrappers_root)
     target_include_directories(wxl.ui.tests PRIVATE
@@ -450,8 +451,6 @@ if(WXL_TESTS)
         ${CMAKE_CURRENT_SOURCE_DIR}/components/composition
         ${CMAKE_CURRENT_SOURCE_DIR}/components/dsl
         ${CMAKE_CURRENT_SOURCE_DIR}/components/dialogs
-        ${CMAKE_CURRENT_SOURCE_DIR}/components/elements
-        ${CMAKE_CURRENT_SOURCE_DIR}/components/window
         ${_wxl_ui_wrappers_root}
     )
     add_dependencies(wxl.ui.tests wxl.ui.full.wrappers)

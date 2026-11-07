@@ -252,13 +252,15 @@ INF-02: на него не опирается ни одна строка кат�
 
 ## Источники
 
-**Код wxl:** `wxl.ui/src` — `HaloEffect.h`, `GaussianBlurEffect.h`,
-`GlassEffect.h`, `BevelEffect.h`, `Button3DEffect.h`, `Relief.h`,
-`RevealEffect.h`, `MagnifyEffect.h`, `FocusEffect.h`, `ZoomEffect.h`, `Color.h`,
-`Card.h`, `ThemeBrush.h`, `resource_lookup.h`, `CompositionWindow.h`,
-`DrawingSurface.h`, `TextureCache.h`, `WindowShade.h`, `Navigation.h`,
-`ShowDialog.h`, `FormattedBlock.h`, `HtmlBlock.h`, `event_awaitable.h`,
-`effect_helpers.h`, `element_helpers.h`; профили `base`, `extended`, `rich`,
+**Код wxl:** `wxl.ui/components` — `effects/` (`HaloEffect.h`,
+`GaussianBlurEffect.h`, `GlassEffect.h`, `BevelEffect.h`, `Button3DEffect.h`,
+`RevealEffect.h`, `MagnifyEffect.h`, `FocusEffect.h`, `ZoomEffect.h`),
+`controls/Card.h`, `composition/` (`ThemeBrush.h`, `CompositionWindow.h`,
+`DrawingSurface.h`, `TextureCache.h`), `window/WindowShade.h`,
+`navigation/Navigation.h`, `dialogs/ShowDialog.h`, `markup/` (`FormattedBlock.h`,
+`HtmlBlock.h`), `dsl/` (`resource_lookup.h`, `event_awaitable.h`),
+`elements/impl/element_helpers.h`; `wxl.ui/src` — `Relief.h`, `Color.h`,
+`impl/effect_helpers.h`; профили `base`, `extended`, `rich`,
 `full`; примеры `samples/Gallery`, `samples/Calculator`, `samples/HtmlView`,
 `samples/Quadratic`; пробы `sandbox/LightingLab`, `sandbox/GlassProbe`,
 `sandbox/WindowlessIslandProbe`.
