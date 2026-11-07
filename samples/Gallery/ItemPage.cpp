@@ -80,7 +80,7 @@ FrameworkElement apiDetails(gallery::ControlInfo const& item) {
         });
     }
     return Button {
-        gallery::appPop(),
+        gallery::appButtonHoverEffect(),
         Padding {4},
         vAlign.bottom,
         Margin {0, 0, 0, 3},
@@ -104,7 +104,7 @@ FrameworkElement documentation(gallery::ControlInfo const& item) {
         links.children().append(linkRow(doc.title, doc.uri));
     }
     return DropDownButton {
-        gallery::appPop(),
+        gallery::appButtonHoverEffect(),
         automationName = u"Documentation",
         toolTip = u"Documentation",
         content = StackPanel {
@@ -129,7 +129,7 @@ FrameworkElement sourceLinks(gallery::ControlInfo const& item) {
     }
     auto const uri = std::wstring{winUIBaseUrl} + item.sourcePath;
     return DropDownButton {
-        gallery::appPop(),
+        gallery::appButtonHoverEffect(),
         automationName = u"Source code",
         toolTip = u"Source code of this control",
         content = StackPanel {
@@ -152,7 +152,7 @@ FrameworkElement sourceLinks(gallery::ControlInfo const& item) {
 // Переключатель темы окна: тема ставится корню, как в HelloHere.
 FrameworkElement themeButton() {
     return Button {
-        gallery::appPop(),
+        gallery::appButtonHoverEffect(),
         height = 32,
         Margin {0, 0, 4, 0},
         toolTip = u"Toggle theme",
@@ -171,7 +171,7 @@ FrameworkElement themeButton() {
 FrameworkElement favoriteButton(std::wstring id) {
     bool const on = gallery::isFavorite(id);
     return ToggleButton {
-        gallery::appPop(),
+        gallery::appButtonHoverEffect(),
         height = 32,
         Margin {4, 0, 0, 0},
         isChecked = on,

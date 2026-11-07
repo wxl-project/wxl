@@ -73,7 +73,7 @@ wxl::FrameworkElement prose(Snippet html, wxl::Thickness margin);
 // Рост под указателем для кнопок самого приложения (заголовок страницы,
 // настройки, копирование кода), а не примеров: как у кнопок панели в примере
 // Effects.
-inline wxl::MagnifyEffect appPop() {
+inline wxl::MagnifyEffect appButtonHoverEffect() {
     return wxl::MagnifyEffect {1.2, wxl::dsl::maximum = 1.35, wxl::dsl::minimum = 0.95};
 }
 

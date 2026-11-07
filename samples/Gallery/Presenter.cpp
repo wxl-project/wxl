@@ -37,7 +37,7 @@ FrameworkElement copyButton(std::wstring text) {
         vAlign.top,
         Padding {11, 5, 11, 6},
         styles.Button.Subtle,
-        gallery::appPop(),
+        gallery::appButtonHoverEffect(),
         toolTip = u"Copy code",
         content = FontIcon {glyph = u"", fontSize = 16},
         onClick += [text = std::move(text)](Button const& self) {
