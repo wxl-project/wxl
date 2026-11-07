@@ -33,6 +33,17 @@ void report(profile_set const& profiles, closure const& cl) {
         std::print("  metadata: {}\n", wxl::core::unicode::to_utf8(file).chars());
     }
     std::print("  roots: {}\n", profiles.types.size());
+    // Per component, the roots it brought that no profile and no earlier component lists.
+    for (auto&& comp : profiles.components) {
+        std::vector<std::string> brought;
+        for (auto&& [name, by] : profiles.listed_by) {
+            if (by.component == comp.name) {
+                brought.push_back(name);
+            }
+        }
+        std::print("  component {}: {} roots{}{}\n", comp.name, brought.size(),
+                   brought.empty() ? "" : ", ", wxl::core::join(brought, ", "));
+    }
 
     for (auto&& name : cl.unknown_members) {
         std::print(stderr, "warning: profile names a member the type doesn't declare: {}\n", name);
