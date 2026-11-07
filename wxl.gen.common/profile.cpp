@@ -593,8 +593,10 @@ namespace {
 
 // What the walk is asked to start from -- the packages, the listed types with everything
 // written under them, and the Windows metadata: the keys a profile and the `requires` of a
-// component share.
-void read_requirements(value const& document, std::filesystem::path const& path, profile& prof) {
+// component share. A type listed without "styles" asks for all of its styles when
+// `all_styles_by_default`, and for none otherwise.
+void read_requirements(value const& document, std::filesystem::path const& path, profile& prof,
+                       bool all_styles_by_default) {
     if (value const* const packages = document.find("packages")) {
         if (!packages->is_array()) {
             fail(path, "'packages' must be an array");
@@ -611,10 +613,12 @@ void read_requirements(value const& document, std::filesystem::path const& path,
         for (value const& entry : types->members()) {
             std::string const name{entry.name().chars()};
             prof.types.emplace(name, read_member_filter(entry, path, name));
-            value const* const styles = entry.find("styles");
-            prof.styles.emplace(
-                name, styles ? member_filter::allow(read_string_set(*styles, path, "styles"))
-                             : member_filter::all());
+            if (value const* const styles = entry.find("styles")) {
+                prof.styles.emplace(name,
+                                    member_filter::allow(read_string_set(*styles, path, "styles")));
+            } else if (all_styles_by_default) {
+                prof.styles.emplace(name, member_filter::all());
+            }
             if (auto added = read_synthetic_members(entry, path, name); !added.empty()) {
                 prof.synthetic.emplace(name, std::move(added));
             }
@@ -688,8 +692,9 @@ component load_component(std::filesystem::path const& manifest) {
 
     // Read as a profile of the chain is, so the merge and the checks of packages and
     // versions treat it as one and name the manifest.
-    // A manifest has no "brushes" and no "discoveredTypes", and asks for none of them: a
-    // profile's default of all brushes would widen whatever the profiles narrowed.
+    // A component asks for no brushes, and a type it lists without "styles" for none of its
+    // styles: a profile's default of all of them would widen whatever the profiles narrowed. A
+    // type only a component lists has no styles entry, and so keeps all of its styles.
     comp.requirements.name = comp.name;
     comp.requirements.source = manifest;
     comp.requirements.brushes = member_filter::none();
@@ -699,7 +704,7 @@ component load_component(std::filesystem::path const& manifest) {
         }
         refuse_other_keys(*required, manifest, "'requires'",
                           {"types", "packages", "windowsMetadata"});
-        read_requirements(*required, manifest, comp.requirements);
+        read_requirements(*required, manifest, comp.requirements, false);
     }
     return comp;
 }
@@ -732,7 +737,7 @@ profile load_profile(std::filesystem::path const& path) {
                        "packages", "types", "windowsMetadata", "discoveredTypes", "brushes"});
     prof.minimum_windows_app_sdk = minimum_or_empty(document, path, "minimumWindowsAppSdk", {});
 
-    read_requirements(document, path, prof);
+    read_requirements(document, path, prof, true);
 
     // Types the walk discovers on its own (through base classes and member
     // signatures) rather than finding listed: "none" generates the type
@@ -828,6 +833,24 @@ struct profile_loader {
     bool& windows_metadata;
     std::map<std::string, std::filesystem::path> named_by;  // component -> the profile naming it first
 
+    // The file each definition kept comes from, by what it defines. Between profiles the extends
+    // chain decides which one is kept; a component giving a definition differently from the one
+    // kept stops the run instead, since nothing orders a component against a profile.
+    std::map<std::string, std::filesystem::path> defined_by;
+
+    // Records that `by` defines `what` when its definition `takes` the place, and refuses a
+    // component's definition that `differs` from the one kept. Returns `takes`.
+    bool define(listing const& by, std::string const& what, bool differs, bool takes) {
+        if (differs && !by.component.empty()) {
+            fail(by.source, std::format("{} differs from its definition in {}", what,
+                                        wxl::core::unicode::to_utf8(defined_by.at(what)).chars()));
+        }
+        if (takes) {
+            defined_by.insert_or_assign(what, by.source);
+        }
+        return takes;
+    }
+
     // Depth-first so that a referenced profile ("base") is merged before
     // the profile that extends it -- merging is a union, so the order
     // doesn't change the outcome, but it keeps `loaded` readable.
@@ -891,29 +914,36 @@ struct profile_loader {
         for (auto&& [name, added] : prof.synthetic) {
             auto& known = result.synthetic[name];
             for (auto&& member : added) {
-                if (std::none_of(known.begin(), known.end(), [&](synthetic_member const& existing) {
-                        return existing.name == member.name;
-                    })) {
+                auto const existing = std::ranges::find(known, member.name, &synthetic_member::name);
+                if (define(by, std::format("synthetic member {}.{}", name, member.name),
+                           existing != known.end() && *existing != member, existing == known.end())) {
                     known.push_back(member);
                 }
             }
         }
         for (auto&& [name, converted] : prof.from_text) {
+            auto const existing = result.from_text.find(name);
+            define(by, std::format("fromText of {}", name),
+                   existing != result.from_text.end() && existing->second != converted, true);
             result.from_text[name] = converted;
         }
         // Replaced calls compose by the method's name, the extending profile winning.
         for (auto&& [name, calls] : prof.replaced_calls) {
             for (auto&& [method, call] : calls) {
-                result.replaced_calls[name][method] = call;
+                auto& known = result.replaced_calls[name];
+                auto const existing = known.find(method);
+                define(by, std::format("replaced call {}.{}", name, method),
+                       existing != known.end() && existing->second != call, true);
+                known[method] = call;
             }
         }
         // Setter methods compose the same way, by the method's name.
         for (auto&& [name, setters] : prof.setter_methods) {
             auto& known = result.setter_methods[name];
             for (auto&& setter : setters) {
-                if (std::none_of(known.begin(), known.end(), [&](setter_method const& existing) {
-                        return existing.method == setter.method;
-                    })) {
+                auto const existing = std::ranges::find(known, setter.method, &setter_method::method);
+                if (define(by, std::format("setter method {}.{}", name, setter.method),
+                           existing != known.end() && *existing != setter, existing == known.end())) {
                     known.push_back(setter);
                 }
             }

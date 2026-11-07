@@ -100,8 +100,10 @@ TEST(component, its_required_types_are_roots_of_the_walk) {
     write_component(components, "window",
                     R"("requires": {"types": {"Microsoft.UI.Xaml.Window": {"members": ["Title"]},
                                               "Microsoft.UI.Xaml.Controls.Button": {}}})");
-    auto const profile = write_profile(directory, R"("window")",
-                                       R"("types": {"Microsoft.UI.Xaml.Controls.Button": {}})");
+    auto const profile = write_profile(
+        directory, R"("window")",
+        R"("types": {"Microsoft.UI.Xaml.Controls.Button": {"styles": ["AccentButtonStyle"]}},
+           "brushes": ["X"])");
 
     auto const set = resolve_profiles({profile}, no_packages(directory),
                                       {.directories = {components}, .expected = {"window"}});
@@ -109,8 +111,12 @@ TEST(component, its_required_types_are_roots_of_the_walk) {
     EXPECT_EQ(set.types.at("Microsoft.UI.Xaml.Window"), member_filter::allow({"Title"}));
     EXPECT_EQ(set.listed_by.at("Microsoft.UI.Xaml.Window").component, "window");
     EXPECT_EQ(set.listed_by.at("Microsoft.UI.Xaml.Controls.Button").component, "");
-    // A component asks for no brushes; the profile's default of all of them stays.
-    EXPECT_EQ(set.brushes, member_filter::all());
+    // A component asks for no brushes and no styles: what the profile narrowed stays narrow, and
+    // a type only the component lists keeps all of its styles by having no entry.
+    EXPECT_EQ(set.brushes, member_filter::allow({"X"}));
+    EXPECT_EQ(set.styles.at("Microsoft.UI.Xaml.Controls.Button"),
+              member_filter::allow({"AccentButtonStyle"}));
+    EXPECT_FALSE(set.styles.contains("Microsoft.UI.Xaml.Window"));
 
     std::filesystem::remove_all(directory);
 }
@@ -339,6 +345,50 @@ TEST(component, an_include_of_an_unselected_component_is_refused_in_the_common_d
         write_including_profile(directory, R"("window")", "../grid/grid_helpers.h");
     EXPECT_TRUE(says(stops_with([&] { resolve_profiles({profile}, restored, search); }),
                      {utf8(profile), "../grid/grid_helpers.h"}));
+
+    std::filesystem::remove_all(directory);
+}
+
+// A component may repeat what a profile defines for a type, and may not define it otherwise.
+TEST(component, a_definition_other_than_the_profiles_is_refused) {
+    auto const directory = scratch(L"conflict");
+    auto const components = directory / L"components";
+    auto const restored = no_packages(directory);
+    struct definition {
+        std::string_view what;
+        std::string_view profiles;
+        std::string_view other;
+    };
+    for (auto&& [what, profiles, other] : std::initializer_list<definition>{
+             {"synthetic member Microsoft.UI.Xaml.Window.MinSize",
+              R"("syntheticMembers": {"MinSize": {"type": "Windows.Graphics.SizeInt32", "function": "f", "include": "../a.h"}})",
+              R"("syntheticMembers": {"MinSize": {"type": "Windows.Graphics.SizeInt32", "function": "g", "include": "../a.h"}})"},
+             {"fromText of Microsoft.UI.Xaml.Window",
+              R"("fromText": {"function": "f", "include": "../a.h"})",
+              R"("fromText": {"function": "g", "include": "../a.h"})"},
+             {"replaced call Microsoft.UI.Xaml.Window.Close",
+              R"("replacedCalls": {"Close": {"function": "f", "include": "../a.h"}})",
+              R"("replacedCalls": {"Close": {"function": "f", "include": "../b.h"}})"},
+             {"setter method Microsoft.UI.Xaml.Window.SetTitleBar",
+              R"("setterMethods": {"SetTitleBar": {}})",
+              R"("setterMethods": {"SetTitleBar": {"type": "Microsoft.UI.Xaml.Controls.TitleBar"}})"},
+         }) {
+        auto const type = [](std::string_view entry) {
+            return std::string{R"("types": {"Microsoft.UI.Xaml.Window": {)"} + std::string{entry} +
+                   "}}";
+        };
+        auto const profile = write_profile(directory, R"("window")", type(profiles));
+        component_search const search{.directories = {components}, .expected = {"window"}};
+
+        write_component(components, "window", "\"requires\": {" + type(profiles) + "}");
+        EXPECT_NO_THROW(resolve_profiles({profile}, restored, search)) << what;
+
+        auto const manifest =
+            write_component(components, "window", "\"requires\": {" + type(other) + "}");
+        EXPECT_TRUE(says(stops_with([&] { resolve_profiles({profile}, restored, search); }),
+                         {utf8(std::filesystem::canonical(manifest)), utf8(profile),
+                          std::string{what}}));
+    }
 
     std::filesystem::remove_all(directory);
 }

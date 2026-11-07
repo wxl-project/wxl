@@ -344,7 +344,8 @@ struct profile_set {
 
     // Merged the way members are, as a union: a profile that lists a type
     // without "styles", or has no "brushes", asks for all of them, and so
-    // the merge does. A type no profile lists keeps all of its styles.
+    // the merge does; a component asks for none (load_component). A type no
+    // profile lists keeps all of its styles.
     std::map<std::string, member_filter> styles;
     member_filter brushes = member_filter::none();  // None until the first profile merges in
 
