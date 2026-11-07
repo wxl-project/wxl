@@ -112,9 +112,6 @@
 
 include_guard(GLOBAL)
 
-# The script beside this file, for the functions below, whose own list dir is the caller's.
-set(_WXL_UI_PROFILE_DIR "${CMAKE_CURRENT_LIST_DIR}")
-
 # Windows PowerShell 5.1, which every Windows has: the script is written for it, and
 # looking for it alone makes every configure run the script the way a consumer's does.
 find_program(POWERSHELL_EXE NAMES powershell)
@@ -257,9 +254,13 @@ endfunction()
 # edit of either configures again. A script that fails stops the configure with
 # its message.
 function(wxl_read_profile_components prefix profile component_dir)
+    # One spelling per file: the configure dependencies of two callers that name the same
+    # manifest through different paths would be one ninja output declared twice.
+    cmake_path(ABSOLUTE_PATH profile NORMALIZE)
+    cmake_path(ABSOLUTE_PATH component_dir NORMALIZE)
     execute_process(
         COMMAND "${POWERSHELL_EXE}" -NoProfile -ExecutionPolicy Bypass -File
-                "${_WXL_UI_PROFILE_DIR}/Read-ProfileComponents.ps1"
+                "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/Read-ProfileComponents.ps1"
                 -Profile "${profile}" -ComponentDir "${component_dir}"
         OUTPUT_VARIABLE _wxl_output
         RESULT_VARIABLE _wxl_result

@@ -24,6 +24,19 @@ target_compile_definitions(wxl.gen.tests
         WXL_RESTORED_PACKAGES="${_wxl_gen_restored_packages}"
 )
 
+# The runs below read the tree's base profile, which names components: they
+# are given the component directory, the chain's components and the common
+# directory the way the build gives them (cmake/wxl_ui_profile.cmake).
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/wxl_ui_profile.cmake")
+set(_wxl_gen_components_dir "${CMAKE_CURRENT_SOURCE_DIR}/../../wxl.ui/components")
+wxl_read_profile_components(_wxl_gen_components
+    "${CMAKE_CURRENT_SOURCE_DIR}/../profiles/base.winxl-profile" "${_wxl_gen_components_dir}")
+set(_wxl_gen_component_args --component-dir "${_wxl_gen_components_dir}")
+foreach(_wxl_gen_component IN LISTS _wxl_gen_components_CHAIN)
+    list(APPEND _wxl_gen_component_args --component "${_wxl_gen_component}")
+endforeach()
+list(APPEND _wxl_gen_component_args --common-dir "${CMAKE_CURRENT_SOURCE_DIR}/../../wxl.ui/src")
+
 # The arguments are parsed in winui-srcgen itself, not in the library, so the
 # refusal of a language the reference has no folder for is tested on the
 # executable: one test for the message, one for the failing exit code --
@@ -31,7 +44,9 @@ target_compile_definitions(wxl.gen.tests
 # the match. The refusal comes before the profile is read.
 set(_wxl_gen_doc_language
     winui-srcgen --profile "${CMAKE_CURRENT_SOURCE_DIR}/../profiles/base.winxl-profile"
-    --packages "${_wxl_gen_restored_packages}" --docs --doc-language)
+    --packages "${_wxl_gen_restored_packages}"
+    ${_wxl_gen_component_args}
+    --docs --doc-language)
 add_test(NAME winui-srcgen.unknown-doc-language.message COMMAND ${_wxl_gen_doc_language} pt)
 set_tests_properties(winui-srcgen.unknown-doc-language.message PROPERTIES
     PASS_REGULAR_EXPRESSION "--doc-language pt is not a language of the reference")
@@ -50,7 +65,8 @@ set_tests_properties(winui-srcgen.empty-doc-language.fails PROPERTIES WILL_FAIL 
 # A run without the list of the restored packages stops before it reads a
 # profile, and says where the list comes from.
 set(_wxl_gen_no_packages
-    winui-srcgen --profile "${CMAKE_CURRENT_SOURCE_DIR}/../profiles/base.winxl-profile")
+    winui-srcgen --profile "${CMAKE_CURRENT_SOURCE_DIR}/../profiles/base.winxl-profile"
+    ${_wxl_gen_component_args})
 add_test(NAME winui-srcgen.no-packages.message COMMAND ${_wxl_gen_no_packages})
 set_tests_properties(winui-srcgen.no-packages.message PROPERTIES
     PASS_REGULAR_EXPRESSION "--packages <build>/wxl.packages/restored-packages.json")
@@ -75,6 +91,7 @@ set_tests_properties(winui-srcgen.component-without-dir.fails PROPERTIES WILL_FA
 set(_wxl_gen_parts
     winui-srcgen --profile "${CMAKE_CURRENT_SOURCE_DIR}/../profiles/base.winxl-profile"
     --packages "${_wxl_gen_restored_packages}" --out "${CMAKE_CURRENT_BINARY_DIR}/parts-refused"
+    ${_wxl_gen_component_args}
     --parts)
 foreach(_wxl_gen_count IN ITEMS 0 101 eight)
     add_test(NAME winui-srcgen.parts-${_wxl_gen_count}.message
@@ -93,6 +110,7 @@ endforeach()
 set(_wxl_gen_type_map
     winui-srcgen --profile "${CMAKE_CURRENT_SOURCE_DIR}/../profiles/base.winxl-profile"
     --packages "${_wxl_gen_restored_packages}" --out "${CMAKE_CURRENT_BINARY_DIR}/pair-refused"
+    ${_wxl_gen_component_args}
     --types)
 set(_wxl_gen_pair_with_an_unknown_key
     "binding pair Microsoft.UI.Xaml.Controls.ToggleSwitch.IsOn: 'event' is not a key of this entry")
