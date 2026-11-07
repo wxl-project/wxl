@@ -26,32 +26,22 @@ FrameworkElement controls() {
 
 static wxl::FrameworkElement compactSizingPage() {
     return StackPanel {
-        RichTextBlock {
-            Margin {0, 24, 0, 0},
-            Paragraph {
-                Run {u"Controls that support compact styling:", FontWeight {600}},
-                LineBreak {},
-                Run {u"\u2022 ListView"},
-                LineBreak {},
-                Run {u"\u2022 TextBox"},
-                LineBreak {},
-                Run {u"\u2022 PasswordBox"},
-                LineBreak {},
-                Run {u"\u2022 AutoSuggestBox"},
-                LineBreak {},
-                Run {u"\u2022 ComboBox"},
-                LineBreak {},
-                Run {u"\u2022 DatePicker"},
-                LineBreak {},
-                Run {u"\u2022 TimePicker"},
-                LineBreak {},
-                Run {u"\u2022 TreeView"},
-                LineBreak {},
-                Run {u"\u2022 NavigationView"},
-                LineBreak {},
-                Run {u"\u2022 MenuBar"},
-            },
-        },controls()};
+        gallery::prose(
+            u8"<p><span style=\"semibold\">Controls that support compact styling:</span></p>"
+            u8"<ul>"
+            u8"<li>ListView</li>"
+            u8"<li>TextBox</li>"
+            u8"<li>PasswordBox</li>"
+            u8"<li>AutoSuggestBox</li>"
+            u8"<li>ComboBox</li>"
+            u8"<li>DatePicker</li>"
+            u8"<li>TimePicker</li>"
+            u8"<li>TreeView</li>"
+            u8"<li>NavigationView</li>"
+            u8"<li>MenuBar</li>"
+            u8"</ul>",
+            Thickness {0, 24, 0, 0}),
+        controls()};
 }
 
 REGISTER_GALLERY_PAGE(L"CompactSizing", compactSizingPage);

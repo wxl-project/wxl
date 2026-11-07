@@ -50,25 +50,28 @@ static FrameworkElement xamlResourcesPage() {
                 Paragraph {Run {u"• Page-level: values of the function that builds the page."}},
                 Paragraph {Run {u"• Control-level: a dictionary of the control itself (dsl::resources)."}},
             },
-            RichTextBlock {
-                Paragraph {fontWeight = FontWeight {600}, Run {u"Tips"}},
-                Paragraph {Run {u"• Naming: descriptive keys should always be used for resources to make them easier to identify."}},
-                Paragraph {Run {u"• Scope: values should be defined at the narrowest scope possible to improve maintainability."}},
-            },
+            gallery::prose(
+                u8"<p><span style=\"semibold\">Tips</span></p>"
+                u8"<ul>"
+                u8"<li>Naming: descriptive keys should always be used for resources to make them easier to identify.</li>"
+                u8"<li>Scope: values should be defined at the narrowest scope possible to improve maintainability.</li>"
+                u8"</ul>",
+                Thickness {}),
         },
         levels(),
         TextBlock {Margin {0, 24, 0, 4}, styles.TextBlock.Subtitle, u"Theme resources"},
         StackPanel {
             spacing = 12.0,
-            RichTextBlock {Paragraph {Run {u"WinUI includes built-in theme resources for commonly used colors. See all brushes on the "},
-                                      Hyperlink {onClick += [](auto&&...) { gallery::navigate({gallery::Place::Item, L"Color"}); }, Run {u"Color page"}},
-                                      Run {u"."}}},
-            RichTextBlock {
-                Paragraph {Run {u"• A path of "}, Run {fontWeight = FontWeight {600}, u"brushes"},
-                           Run {u" is looked up again when the theme of the element changes, as {ThemeResource} is."}},
-                Paragraph {Run {u"• "}, Run {fontWeight = FontWeight {600}, u"ThemeDictionaries"},
-                           Run {u" give different values for light and dark themes; they are markup."}},
-            },
+            gallery::prose(
+                u8"<p>WinUI includes built-in theme resources for commonly used colors. See all brushes on the "
+                u8"<a href=\"item:Color\">Color page</a>.</p>",
+                Thickness {}),
+            gallery::prose(
+                u8"<ul>"
+                u8"<li>A path of <span style=\"semibold\">brushes</span> is looked up again when the theme of the element changes, as {ThemeResource} is.</li>"
+                u8"<li><span style=\"semibold\">ThemeDictionaries</span> give different values for light and dark themes; they are markup.</li>"
+                u8"</ul>",
+                Thickness {}),
         },
         versus(),
         newTheme(),

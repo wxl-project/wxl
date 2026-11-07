@@ -48,18 +48,20 @@ FrameworkElement filterExample() {
 static FrameworkElement boundCollectionPage() {
     return StackPanel {
         spacing = 12.0,
-        RichTextBlock {
-            Paragraph {fontWeight = FontWeight {600}, Run {u"Key concepts"}},
-            Paragraph {Run {u"• Source: a list of a model, core::observable_list. Every change says what happened and where: "
-                            u"items inserted, erased, replaced, or the whole list anew."}},
-            Paragraph {Run {u"• Target: the items of a ListView, a GridView, an ItemsView or an ItemsRepeater, with the function that "
-                            u"builds the element of an item: itemsSource = BindOutput {list, build}. The type of the items is checked "
-                            u"against the function where the binding is written."}},
-            Paragraph {Run {u"• The control builds the elements in view only, and each change of the list reaches it as that change."}},
-            Paragraph {Run {u"• An element may bind to the fields of its item; those bindings go when the control gives the element back."}},
-            Paragraph {Run {u"• boundItem(list, item) is the item of the model behind what the control hands out (clickedItem, "
-                            u"selectedItem)."}},
-        },
+        gallery::prose(
+            u8"<p><span style=\"semibold\">Key concepts</span></p>"
+            u8"<ul>"
+            u8"<li>Source: a list of a model, core::observable_list. Every change says what happened and where: "
+            u8"items inserted, erased, replaced, or the whole list anew.</li>"
+            u8"<li>Target: the items of a ListView, a GridView, an ItemsView or an ItemsRepeater, with the function that "
+            u8"builds the element of an item: itemsSource = BindOutput {list, build}. The type of the items is checked "
+            u8"against the function where the binding is written.</li>"
+            u8"<li>The control builds the elements in view only, and each change of the list reaches it as that change.</li>"
+            u8"<li>An element may bind to the fields of its item; those bindings go when the control gives the element back.</li>"
+            u8"<li>boundItem(list, item) is the item of the model behind what the control hands out (clickedItem, "
+            u8"selectedItem).</li>"
+            u8"</ul>",
+            Thickness {}),
         growingExample(),
         itemFieldExample(),
         filterExample(),

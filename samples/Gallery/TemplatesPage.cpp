@@ -57,14 +57,16 @@ static FrameworkElement templatesPage() {
     return StackPanel {
         spacing = 12.0,
         Margin {0, 12, 0, 0},
-        RichTextBlock {
-            Paragraph {fontWeight = FontWeight {600}, Run {u"Templates of XAML"}},
-            Paragraph {Run {u"There are 3 types of templates in XAML:"}},
-            Paragraph {Run {u"• ControlTemplate: customizes the structure of a control. It names the parts of the control, so it is markup."}},
-            Paragraph {Run {u"• DataTemplate: changes how individual items are displayed in a control like a ComboBox or ListView. "
-                            u"Here it is a function from the item to an element."}},
-            Paragraph {Run {u"• ItemsPanelTemplate: defines how a collection of items is laid out. Markup as well."}},
-        },
+        gallery::prose(
+            u8"<p><span style=\"semibold\">Templates of XAML</span></p>"
+            u8"<p>There are 3 types of templates in XAML:</p>"
+            u8"<ul>"
+            u8"<li>ControlTemplate: customizes the structure of a control. It names the parts of the control, so it is markup.</li>"
+            u8"<li>DataTemplate: changes how individual items are displayed in a control like a ComboBox or ListView. "
+            u8"Here it is a function from the item to an element.</li>"
+            u8"<li>ItemsPanelTemplate: defines how a collection of items is laid out. Markup as well.</li>"
+            u8"</ul>",
+            Thickness {}),
         controlTemplate(),
         dataTemplate(),
         itemsPanelTemplate(),
