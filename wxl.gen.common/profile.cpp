@@ -110,19 +110,26 @@ void refuse_other_keys(value const& entry, std::filesystem::path const& source,
     }
 }
 
-std::set<std::string> read_string_set(value const& array, std::filesystem::path const& source,
+// The strings of an array, in the order the file has them.
+std::vector<std::string> read_strings(value const& array, std::filesystem::path const& source,
                                       std::string_view what) {
     if (!array.is_array()) {
         fail(source, std::format("'{}' must be an array of strings", what));
     }
-    std::set<std::string> names;
+    std::vector<std::string> strings;
     for (auto&& entry : array.elements()) {
         if (!entry.is_string()) {
             fail(source, std::format("'{}' must contain strings only", what));
         }
-        names.insert(text(entry));
+        strings.push_back(text(entry));
     }
-    return names;
+    return strings;
+}
+
+std::set<std::string> read_string_set(value const& array, std::filesystem::path const& source,
+                                      std::string_view what) {
+    auto const strings = read_strings(array, source, what);
+    return {strings.begin(), strings.end()};
 }
 
 member_filter read_member_filter(value const& entry, std::filesystem::path const& source,
@@ -643,23 +650,21 @@ void read_requirements(value const& document, std::filesystem::path const& path,
     prof.windows_metadata = bool_or(document, path, "windowsMetadata", false);
 }
 
-std::vector<std::string> read_string_array(value const& entry, std::filesystem::path const& source,
-                                           std::string_view key) {
+// The names a key lists, in the order the file lists them, or none when the key is not there.
+// A name listed twice is a mistake rather than a repetition to fold.
+std::vector<std::string> read_names(value const& entry, std::filesystem::path const& source,
+                                    std::string_view key) {
     value const* const field = entry.find(key);
     if (!field) {
         return {};
     }
-    if (!field->is_array()) {
-        fail(source, std::format("'{}' must be an array of strings", key));
-    }
-    std::vector<std::string> result;
-    for (auto&& element : field->elements()) {
-        if (!element.is_string()) {
-            fail(source, std::format("'{}' must contain strings only", key));
+    auto names = read_strings(*field, source, key);
+    for (auto at = names.begin(); at != names.end(); ++at) {
+        if (std::ranges::find(names.begin(), at, *at) != at) {
+            fail(source, std::format("'{}' names \"{}\" twice", key, *at));
         }
-        result.push_back(text(element));
     }
-    return result;
+    return names;
 }
 
 }  // namespace
@@ -683,9 +688,9 @@ component load_component(std::filesystem::path const& manifest) {
                                    comp.name, directory_name.chars()));
     }
 
-    comp.needs = read_string_array(document, manifest, "needs");
-    comp.sources = read_string_array(document, manifest, "sources");
-    comp.libraries = read_string_array(document, manifest, "libraries");
+    comp.needs = read_names(document, manifest, "needs");
+    comp.sources = read_names(document, manifest, "sources");
+    comp.libraries = read_names(document, manifest, "libraries");
     comp.schema = string_or(document, manifest, "schema", {});
     comp.surface = string_or(document, manifest, "surface", {});
     comp.comment = string_or(document, manifest, "comment", {});
@@ -723,7 +728,7 @@ profile load_profile(std::filesystem::path const& path) {
         prof.extends.assign(names.begin(), names.end());
     }
 
-    prof.components = read_string_array(document, path, "components");
+    prof.components = read_names(document, path, "components");
 
     // The release read is the one the build's restore resolved, so a key that
     // names one is a mistake to report.
@@ -784,6 +789,12 @@ struct component_resolver {
                                         wxl::core::join(cycle, " -> ")));
         }
         auto comp = load_component(find(name, wanted_by));
+        // The file system finds a directory whatever the case of its name, and a name spelled
+        // otherwise would select the component a second time.
+        if (comp.name != name) {
+            fail(wanted_by, std::format("component '{}' is named '{}' ({})", name, comp.name,
+                                        wxl::core::unicode::to_utf8(comp.source).chars()));
+        }
         following.push_back(name);
         for (auto&& need : comp.needs) {
             select(need, comp.source);
@@ -831,8 +842,6 @@ struct profile_loader {
     std::set<std::filesystem::path>& loading;  // cycle detection
     std::vector<profile>& in_load_order;
     bool& windows_metadata;
-    std::map<std::string, std::filesystem::path> named_by;  // component -> the profile naming it first
-
     // The file each definition kept comes from, by what it defines. Between profiles the extends
     // chain decides which one is kept; a component giving a definition differently from the one
     // kept stops the run instead, since nothing orders a component against a profile.
@@ -869,9 +878,10 @@ struct profile_loader {
             load(resolve_reference(reference, prof.source));
         }
         for (auto&& name : prof.components) {
-            if (std::ranges::find(result.named_components, name) == result.named_components.end()) {
-                result.named_components.push_back(name);
-                named_by.try_emplace(name, prof.source);
+            if (std::ranges::find(result.named_components, name,
+                                  &profile_set::component_request::name) ==
+                result.named_components.end()) {
+                result.named_components.push_back({name, prof.source});
             }
         }
 
@@ -886,8 +896,8 @@ struct profile_loader {
     // profiles: a type both list is reported against the profile.
     void load_components(component_search const& search) {
         component_resolver resolver{search, result.components};
-        for (auto&& name : result.named_components) {
-            resolver.select(name, named_by.at(name));
+        for (auto&& [name, by] : result.named_components) {
+            resolver.select(name, by);
         }
         for (auto&& comp : result.components) {
             merge(comp.requirements, {comp.source, comp.name});
@@ -973,14 +983,19 @@ void check_named_components(profile_set const& result, component_search const& s
     if (search.directories.empty()) {
         return;
     }
+    std::vector<std::string> names;
+    std::string sources;
+    for (auto&& [name, by] : result.named_components) {
+        names.push_back(name);
+        sources += std::format("\n  {}: {}", name, wxl::core::unicode::to_utf8(by).chars());
+    }
     std::set<std::string> const expected(search.expected.begin(), search.expected.end());
-    std::set<std::string> const named(result.named_components.begin(),
-                                      result.named_components.end());
+    std::set<std::string> const named(names.begin(), names.end());
     if (expected != named) {
         throw std::runtime_error(std::format(
             "the components the build names (--component) are not those the profiles name in "
-            "\"components\":\n  build:    {}\n  profiles: {}",
-            list_of(search.expected), list_of(result.named_components)));
+            "\"components\":\n  build:    {}\n  profiles: {}{}",
+            list_of(search.expected), list_of(names), sources));
     }
 }
 
@@ -1085,7 +1100,7 @@ profile_set resolve_profiles(std::vector<std::filesystem::path> const& paths,
     std::vector<profile> in_load_order;
     bool windows_metadata = false;
 
-    profile_loader loader{result, loaded, loading, in_load_order, windows_metadata, {}};
+    profile_loader loader{result, loaded, loading, in_load_order, windows_metadata};
     for (auto&& path : paths) {
         loader.load(path);
     }

@@ -355,9 +355,15 @@ struct profile_set {
     // not declare is reported against it, and the report says which component brought it.
     std::map<std::string, listing> listed_by;
 
-    // The components the chain names in "components", in the order it names them, before
-    // "needs" adds to them; and the components selected, each after those it needs.
-    std::vector<std::string> named_components;
+    // A component the chain names in "components", and the profile that names it first.
+    struct component_request {
+        std::string name;
+        std::filesystem::path by;
+    };
+
+    // The components the chain names, in the order it names them, before "needs" adds to them;
+    // and the components selected, each after those it needs.
+    std::vector<component_request> named_components;
     std::vector<component> components;
 
     // What the set was resolved from, for the steps after the walk: the list of

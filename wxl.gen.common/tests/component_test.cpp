@@ -137,7 +137,11 @@ TEST(component, needs_are_followed_transitively) {
         {profile}, no_packages(directory),
         {.directories = {components}, .expected = {"elements", "window"}});
     EXPECT_EQ(names_of(set.components), (std::vector<std::string>{"core", "elements", "window"}));
-    EXPECT_EQ(set.named_components, (std::vector<std::string>{"elements", "window"}));
+    ASSERT_EQ(set.named_components.size(), 2u);
+    EXPECT_EQ(set.named_components[0].name, "elements");
+    EXPECT_EQ(set.named_components[0].by, base);
+    EXPECT_EQ(set.named_components[1].name, "window");
+    EXPECT_EQ(set.named_components[1].by, profile);
 
     std::filesystem::remove_all(directory);
 }
@@ -190,6 +194,23 @@ TEST(component, a_name_found_in_two_directories_is_refused) {
     std::filesystem::remove_all(directory);
 }
 
+// The file system finds window/ by the name "Window" too; the request is refused rather than
+// selecting the component twice.
+TEST(component, a_name_requested_in_another_case_is_refused) {
+    auto const directory = scratch(L"case");
+    auto const components = directory / L"components";
+    write_component(components, "window");
+    auto const profile = write_profile(directory, R"("Window")");
+
+    EXPECT_TRUE(says(stops_with([&] {
+                         resolve_profiles({profile}, no_packages(directory),
+                                          {.directories = {components}, .expected = {"Window"}});
+                     }),
+                     {utf8(profile), "'Window'", "'window'"}));
+
+    std::filesystem::remove_all(directory);
+}
+
 TEST(component, a_name_other_than_its_directory_is_refused) {
     auto const directory = scratch(L"misnamed");
     auto const manifest = directory / L"window" / L"component.json";
@@ -233,7 +254,22 @@ TEST(component, the_list_of_the_build_must_match_the_profiles) {
                                           {.directories = {components},
                                            .expected = {"core", "grid", "window"}});
                      }),
-                     {"build:    core, grid, window", "profiles: grid, window"}));
+                     {"build:    core, grid, window", "profiles: grid, window",
+                      "window: " + utf8(base), "grid: " + utf8(profile)}));
+
+    std::filesystem::remove_all(directory);
+}
+
+// A name listed twice in "components" or "needs" is a mistake, not a repetition to fold.
+TEST(component, a_name_listed_twice_is_refused) {
+    auto const directory = scratch(L"listed_twice");
+    auto const profile = write_profile(directory, R"("window", "window")");
+    EXPECT_TRUE(says(stops_with([&] { load_profile(profile); }),
+                     {utf8(profile), "'components'", "\"window\" twice"}));
+
+    auto const manifest = write_component(directory, "grid", R"("needs": ["core", "core"])");
+    EXPECT_TRUE(says(stops_with([&] { load_component(manifest); }),
+                     {utf8(manifest), "'needs'", "\"core\" twice"}));
 
     std::filesystem::remove_all(directory);
 }
