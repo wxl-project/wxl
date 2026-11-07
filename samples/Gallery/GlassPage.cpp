@@ -10,12 +10,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t FrostHeader[] = {
-#include "Snippets/Glass/Frost.html.embed"
-};
-constexpr char8_t FrostCode[] = {
-#include "Snippets/Glass/Frost.h.embed"
-};
+gallery::LazyLoadedText FrostHeader{"Snippets/Glass/Frost.html"};
+gallery::LazyLoadedText FrostCode{"Snippets/Glass/Frost.h"};
 
 FrameworkElement frostExample() {
 #include "Snippets/Glass/Frost.h"
@@ -27,12 +23,8 @@ FrameworkElement frostExample() {
     });
 }
 
-constexpr char8_t TintedHeader[] = {
-#include "Snippets/Glass/Tinted.html.embed"
-};
-constexpr char8_t TintedCode[] = {
-#include "Snippets/Glass/Tinted.h.embed"
-};
+gallery::LazyLoadedText TintedHeader{"Snippets/Glass/Tinted.html"};
+gallery::LazyLoadedText TintedCode{"Snippets/Glass/Tinted.h"};
 
 FrameworkElement tintedExample() {
 #include "Snippets/Glass/Tinted.h"

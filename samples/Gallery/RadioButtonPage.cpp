@@ -11,12 +11,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t groupHeader[] = {
-#include "Snippets/RadioButton/Group.html.embed"
-};
-constexpr char8_t groupCode[] = {
-#include "Snippets/RadioButton/Group.h.embed"
-};
+gallery::LazyLoadedText groupHeader{"Snippets/RadioButton/Group.html"};
+gallery::LazyLoadedText groupCode{"Snippets/RadioButton/Group.h"};
 
 FrameworkElement groupExample() {
 #include "Snippets/RadioButton/Group.h"
@@ -29,12 +25,8 @@ FrameworkElement groupExample() {
     });
 }
 
-constexpr char8_t stringsHeader[] = {
-#include "Snippets/RadioButton/Strings.html.embed"
-};
-constexpr char8_t stringsCode[] = {
-#include "Snippets/RadioButton/Strings.h.embed"
-};
+gallery::LazyLoadedText stringsHeader{"Snippets/RadioButton/Strings.html"};
+gallery::LazyLoadedText stringsCode{"Snippets/RadioButton/Strings.h"};
 
 FrameworkElement stringsExample() {
 #include "Snippets/RadioButton/Strings.h"

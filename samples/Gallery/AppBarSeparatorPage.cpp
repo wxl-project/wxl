@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t separatedHeader[] = {
-#include "Snippets/AppBarSeparator/Separated.html.embed"
-};
-constexpr char8_t separatedCode[] = {
-#include "Snippets/AppBarSeparator/Separated.h.embed"
-};
+gallery::LazyLoadedText separatedHeader{"Snippets/AppBarSeparator/Separated.html"};
+gallery::LazyLoadedText separatedCode{"Snippets/AppBarSeparator/Separated.h"};
 
 FrameworkElement separated() {
     return gallery::controlExample({

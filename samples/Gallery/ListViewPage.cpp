@@ -19,12 +19,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t basicListHeader[] = {
-#include "Snippets/ListView/BasicListviewSimpleDatatemplate.html.embed"
-};
-constexpr char8_t basicListCode[] = {
-#include "Snippets/ListView/BasicListviewSimpleDatatemplate.h.embed"
-};
+gallery::LazyLoadedText basicListHeader{"Snippets/ListView/BasicListviewSimpleDatatemplate.html"};
+gallery::LazyLoadedText basicListCode{"Snippets/ListView/BasicListviewSimpleDatatemplate.h"};
 
 FrameworkElement basicList() {
 #include "Snippets/ListView/BasicListviewSimpleDatatemplate.h"
@@ -36,12 +32,8 @@ FrameworkElement basicList() {
     });
 }
 
-constexpr char8_t selectionHeader[] = {
-#include "Snippets/ListView/ListviewSelectionSupport.html.embed"
-};
-constexpr char8_t selectionCode[] = {
-#include "Snippets/ListView/ListviewSelectionSupport.h.embed"
-};
+gallery::LazyLoadedText selectionHeader{"Snippets/ListView/ListviewSelectionSupport.html"};
+gallery::LazyLoadedText selectionCode{"Snippets/ListView/ListviewSelectionSupport.h"};
 
 FrameworkElement selection() {
 #include "Snippets/ListView/ListviewSelectionSupport.h"
@@ -54,12 +46,8 @@ FrameworkElement selection() {
     });
 }
 
-constexpr char8_t imagesHeader[] = {
-#include "Snippets/ListView/ListviewImages.html.embed"
-};
-constexpr char8_t imagesCode[] = {
-#include "Snippets/ListView/ListviewImages.h.embed"
-};
+gallery::LazyLoadedText imagesHeader{"Snippets/ListView/ListviewImages.html"};
+gallery::LazyLoadedText imagesCode{"Snippets/ListView/ListviewImages.h"};
 
 FrameworkElement images() {
 #include "Snippets/ListView/ListviewImages.h"
@@ -71,12 +59,8 @@ FrameworkElement images() {
     });
 }
 
-constexpr char8_t filteringHeader[] = {
-#include "Snippets/ListView/ListviewFiltering.html.embed"
-};
-constexpr char8_t filteringCode[] = {
-#include "Snippets/ListView/ListviewFiltering.h.embed"
-};
+gallery::LazyLoadedText filteringHeader{"Snippets/ListView/ListviewFiltering.html"};
+gallery::LazyLoadedText filteringCode{"Snippets/ListView/ListviewFiltering.h"};
 
 FrameworkElement filtering() {
 #include "Snippets/ListView/ListviewFiltering.h"
@@ -89,12 +73,8 @@ FrameworkElement filtering() {
     });
 }
 
-constexpr char8_t menusHeader[] = {
-#include "Snippets/ListView/ListviewContextMenus.html.embed"
-};
-constexpr char8_t menusCode[] = {
-#include "Snippets/ListView/ListviewContextMenus.h.embed"
-};
+gallery::LazyLoadedText menusHeader{"Snippets/ListView/ListviewContextMenus.html"};
+gallery::LazyLoadedText menusCode{"Snippets/ListView/ListviewContextMenus.h"};
 
 FrameworkElement menus() {
 #include "Snippets/ListView/ListviewContextMenus.h"
@@ -106,12 +86,8 @@ FrameworkElement menus() {
     });
 }
 
-constexpr char8_t messagingHeader[] = {
-#include "Snippets/ListView/ListviewMessagingDataLogging.html.embed"
-};
-constexpr char8_t messagingCode[] = {
-#include "Snippets/ListView/ListviewMessagingDataLogging.h.embed"
-};
+gallery::LazyLoadedText messagingHeader{"Snippets/ListView/ListviewMessagingDataLogging.html"};
+gallery::LazyLoadedText messagingCode{"Snippets/ListView/ListviewMessagingDataLogging.h"};
 
 FrameworkElement messaging() {
 #include "Snippets/ListView/ListviewMessagingDataLogging.h"
@@ -123,12 +99,8 @@ FrameworkElement messaging() {
     });
 }
 
-constexpr char8_t restoringHeader[] = {
-#include "Snippets/ListView/ListviewRestoreScrollPosition.html.embed"
-};
-constexpr char8_t restoringCode[] = {
-#include "Snippets/ListView/ListviewRestoreScrollPosition.h.embed"
-};
+gallery::LazyLoadedText restoringHeader{"Snippets/ListView/ListviewRestoreScrollPosition.html"};
+gallery::LazyLoadedText restoringCode{"Snippets/ListView/ListviewRestoreScrollPosition.h"};
 
 FrameworkElement restoring() {
 #include "Snippets/ListView/ListviewRestoreScrollPosition.h"
@@ -140,12 +112,8 @@ FrameworkElement restoring() {
     });
 }
 
-constexpr char8_t scrollingHeader[] = {
-#include "Snippets/ListView/ListviewScrollIntoView.html.embed"
-};
-constexpr char8_t scrollingCode[] = {
-#include "Snippets/ListView/ListviewScrollIntoView.h.embed"
-};
+gallery::LazyLoadedText scrollingHeader{"Snippets/ListView/ListviewScrollIntoView.html"};
+gallery::LazyLoadedText scrollingCode{"Snippets/ListView/ListviewScrollIntoView.h"};
 
 FrameworkElement scrolling() {
 #include "Snippets/ListView/ListviewScrollIntoView.h"
@@ -158,12 +126,8 @@ FrameworkElement scrolling() {
     });
 }
 
-constexpr char8_t draggingHeader[] = {
-#include "Snippets/ListView/ListviewsDragDropReordering.html.embed"
-};
-constexpr char8_t draggingCode[] = {
-#include "Snippets/ListView/ListviewsDragDropReordering.h.embed"
-};
+gallery::LazyLoadedText draggingHeader{"Snippets/ListView/ListviewsDragDropReordering.html"};
+gallery::LazyLoadedText draggingCode{"Snippets/ListView/ListviewsDragDropReordering.h"};
 
 FrameworkElement dragging() {
 #include "Snippets/ListView/ListviewsDragDropReordering.h"
@@ -175,12 +139,8 @@ FrameworkElement dragging() {
     });
 }
 
-constexpr char8_t groupedHeader[] = {
-#include "Snippets/ListView/ListviewGroupedHeaders.html.embed"
-};
-constexpr char8_t groupedCode[] = {
-#include "Snippets/ListView/ListviewGroupedHeaders.h.embed"
-};
+gallery::LazyLoadedText groupedHeader{"Snippets/ListView/ListviewGroupedHeaders.html"};
+gallery::LazyLoadedText groupedCode{"Snippets/ListView/ListviewGroupedHeaders.h"};
 
 FrameworkElement grouped() {
 #include "Snippets/ListView/ListviewGroupedHeaders.h"

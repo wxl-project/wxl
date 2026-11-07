@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t embeddedHeader[] = {
-#include "Snippets/InfoBadge/EmbeddedNavigationView.html.embed"
-};
-constexpr char8_t embeddedCode[] = {
-#include "Snippets/InfoBadge/EmbeddedNavigationView.h.embed"
-};
+gallery::LazyLoadedText embeddedHeader{"Snippets/InfoBadge/EmbeddedNavigationView.html"};
+gallery::LazyLoadedText embeddedCode{"Snippets/InfoBadge/EmbeddedNavigationView.h"};
 
 FrameworkElement embedded() {
 #include "Snippets/InfoBadge/EmbeddedNavigationView.h"
@@ -26,12 +22,8 @@ FrameworkElement embedded() {
     });
 }
 
-constexpr char8_t differentHeader[] = {
-#include "Snippets/InfoBadge/DifferentInfoBadgeStyles.html.embed"
-};
-constexpr char8_t differentCode[] = {
-#include "Snippets/InfoBadge/DifferentInfoBadgeStyles.h.embed"
-};
+gallery::LazyLoadedText differentHeader{"Snippets/InfoBadge/DifferentInfoBadgeStyles.html"};
+gallery::LazyLoadedText differentCode{"Snippets/InfoBadge/DifferentInfoBadgeStyles.h"};
 
 FrameworkElement different() {
 #include "Snippets/InfoBadge/DifferentInfoBadgeStyles.h"
@@ -44,12 +36,8 @@ FrameworkElement different() {
     });
 }
 
-constexpr char8_t insideHeader[] = {
-#include "Snippets/InfoBadge/PlacingInfoBadgeInsideAnother.html.embed"
-};
-constexpr char8_t insideCode[] = {
-#include "Snippets/InfoBadge/PlacingInfoBadgeInsideAnother.h.embed"
-};
+gallery::LazyLoadedText insideHeader{"Snippets/InfoBadge/PlacingInfoBadgeInsideAnother.html"};
+gallery::LazyLoadedText insideCode{"Snippets/InfoBadge/PlacingInfoBadgeInsideAnother.h"};
 
 FrameworkElement inside() {
     return gallery::controlExample({
@@ -61,12 +49,8 @@ FrameworkElement inside() {
     });
 }
 
-constexpr char8_t dynamicHeader[] = {
-#include "Snippets/InfoBadge/InfoBadgeDynamicValue.html.embed"
-};
-constexpr char8_t dynamicCode[] = {
-#include "Snippets/InfoBadge/InfoBadgeDynamicValue.h.embed"
-};
+gallery::LazyLoadedText dynamicHeader{"Snippets/InfoBadge/InfoBadgeDynamicValue.html"};
+gallery::LazyLoadedText dynamicCode{"Snippets/InfoBadge/InfoBadgeDynamicValue.h"};
 
 FrameworkElement dynamic() {
 #include "Snippets/InfoBadge/InfoBadgeDynamicValue.h"

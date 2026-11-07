@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t propertiesHeader[] = {
-#include "Snippets/ColorPicker/Properties.html.embed"
-};
-constexpr char8_t propertiesCode[] = {
-#include "Snippets/ColorPicker/Properties.h.embed"
-};
+gallery::LazyLoadedText propertiesHeader{"Snippets/ColorPicker/Properties.html"};
+gallery::LazyLoadedText propertiesCode{"Snippets/ColorPicker/Properties.h"};
 
 FrameworkElement properties() {
 #include "Snippets/ColorPicker/Properties.h"

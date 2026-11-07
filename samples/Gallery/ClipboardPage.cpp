@@ -18,12 +18,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t copyTextHeader[] = {
-#include "Snippets/Clipboard/CopyTextClipboard.html.embed"
-};
-constexpr char8_t copyTextCode[] = {
-#include "Snippets/Clipboard/CopyTextClipboard.h.embed"
-};
+gallery::LazyLoadedText copyTextHeader{"Snippets/Clipboard/CopyTextClipboard.html"};
+gallery::LazyLoadedText copyTextCode{"Snippets/Clipboard/CopyTextClipboard.h"};
 
 FrameworkElement copyText() {
 #include "Snippets/Clipboard/CopyTextClipboard.h"
@@ -35,12 +31,8 @@ FrameworkElement copyText() {
     });
 }
 
-constexpr char8_t pasteTextHeader[] = {
-#include "Snippets/Clipboard/PasteTextClipboard.html.embed"
-};
-constexpr char8_t pasteTextCode[] = {
-#include "Snippets/Clipboard/PasteTextClipboard.h.embed"
-};
+gallery::LazyLoadedText pasteTextHeader{"Snippets/Clipboard/PasteTextClipboard.html"};
+gallery::LazyLoadedText pasteTextCode{"Snippets/Clipboard/PasteTextClipboard.h"};
 
 FrameworkElement pasteText() {
 #include "Snippets/Clipboard/PasteTextClipboard.h"
@@ -52,12 +44,8 @@ FrameworkElement pasteText() {
     });
 }
 
-constexpr char8_t imageHeader[] = {
-#include "Snippets/Clipboard/ClipboardCopyPasteImage.html.embed"
-};
-constexpr char8_t imageCode[] = {
-#include "Snippets/Clipboard/ClipboardCopyPasteImage.h.embed"
-};
+gallery::LazyLoadedText imageHeader{"Snippets/Clipboard/ClipboardCopyPasteImage.html"};
+gallery::LazyLoadedText imageCode{"Snippets/Clipboard/ClipboardCopyPasteImage.h"};
 
 FrameworkElement image() {
 #include "Snippets/Clipboard/ClipboardCopyPasteImage.h"
@@ -69,12 +57,8 @@ FrameworkElement image() {
     });
 }
 
-constexpr char8_t filesHeader[] = {
-#include "Snippets/Clipboard/ClipboardCopyPasteFiles.html.embed"
-};
-constexpr char8_t filesCode[] = {
-#include "Snippets/Clipboard/ClipboardCopyPasteFiles.h.embed"
-};
+gallery::LazyLoadedText filesHeader{"Snippets/Clipboard/ClipboardCopyPasteFiles.html"};
+gallery::LazyLoadedText filesCode{"Snippets/Clipboard/ClipboardCopyPasteFiles.h"};
 
 FrameworkElement files() {
 #include "Snippets/Clipboard/ClipboardCopyPasteFiles.h"
@@ -86,12 +70,8 @@ FrameworkElement files() {
     });
 }
 
-constexpr char8_t optionsHeader[] = {
-#include "Snippets/Clipboard/ClipboardHistoryRoamingOptions.html.embed"
-};
-constexpr char8_t optionsCode[] = {
-#include "Snippets/Clipboard/ClipboardHistoryRoamingOptions.h.embed"
-};
+gallery::LazyLoadedText optionsHeader{"Snippets/Clipboard/ClipboardHistoryRoamingOptions.html"};
+gallery::LazyLoadedText optionsCode{"Snippets/Clipboard/ClipboardHistoryRoamingOptions.h"};
 
 FrameworkElement options() {
 #include "Snippets/Clipboard/ClipboardHistoryRoamingOptions.h"
@@ -103,12 +83,8 @@ FrameworkElement options() {
     });
 }
 
-constexpr char8_t otherHeader[] = {
-#include "Snippets/Clipboard/OtherClipboardOperations.html.embed"
-};
-constexpr char8_t otherCode[] = {
-#include "Snippets/Clipboard/OtherClipboardOperations.h.embed"
-};
+gallery::LazyLoadedText otherHeader{"Snippets/Clipboard/OtherClipboardOperations.html"};
+gallery::LazyLoadedText otherCode{"Snippets/Clipboard/OtherClipboardOperations.h"};
 
 FrameworkElement other() {
 #include "Snippets/Clipboard/OtherClipboardOperations.h"

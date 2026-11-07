@@ -954,7 +954,7 @@ std::string undeclared_root(std::string_view name, profile_set const& profiles) 
                            "the profiles read declares it",
                            name);
     }
-    auto const listing = wxl::core::unicode::to_utf8(listed->second);
+    auto const listing = wxl::core::unicode::to_utf8(listed->second.source);
     if (name.starts_with("Windows.")) {
         return profiles.windows_metadata
                    ? std::format("\n  {}, listed by {}: the Windows SDK {} of the build does not "

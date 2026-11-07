@@ -15,12 +15,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t basicHeader[] = {
-#include "Snippets/SelectorBar/BasicSelectorbar.html.embed"
-};
-constexpr char8_t basicCode[] = {
-#include "Snippets/SelectorBar/BasicSelectorbar.h.embed"
-};
+gallery::LazyLoadedText basicHeader{"Snippets/SelectorBar/BasicSelectorbar.html"};
+gallery::LazyLoadedText basicCode{"Snippets/SelectorBar/BasicSelectorbar.h"};
 
 FrameworkElement basic() {
 #include "Snippets/SelectorBar/BasicSelectorbar.h"
@@ -32,12 +28,8 @@ FrameworkElement basic() {
     });
 }
 
-constexpr char8_t frameTransitionsHeader[] = {
-#include "Snippets/SelectorBar/SelectorbarFrameSlideTransitions.html.embed"
-};
-constexpr char8_t frameTransitionsCode[] = {
-#include "Snippets/SelectorBar/SelectorbarFrameSlideTransitions.h.embed"
-};
+gallery::LazyLoadedText frameTransitionsHeader{"Snippets/SelectorBar/SelectorbarFrameSlideTransitions.html"};
+gallery::LazyLoadedText frameTransitionsCode{"Snippets/SelectorBar/SelectorbarFrameSlideTransitions.h"};
 
 FrameworkElement frameTransitions() {
 #include "Snippets/SelectorBar/SelectorbarFrameSlideTransitions.h"
@@ -49,12 +41,8 @@ FrameworkElement frameTransitions() {
     });
 }
 
-constexpr char8_t collectionsHeader[] = {
-#include "Snippets/SelectorBar/SelectorbarDisplayingDifferentCollections.html.embed"
-};
-constexpr char8_t collectionsCode[] = {
-#include "Snippets/SelectorBar/SelectorbarDisplayingDifferentCollections.h.embed"
-};
+gallery::LazyLoadedText collectionsHeader{"Snippets/SelectorBar/SelectorbarDisplayingDifferentCollections.html"};
+gallery::LazyLoadedText collectionsCode{"Snippets/SelectorBar/SelectorbarDisplayingDifferentCollections.h"};
 
 FrameworkElement collections() {
 #include "Snippets/SelectorBar/SelectorbarDisplayingDifferentCollections.h"

@@ -9,12 +9,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t basicHeader[] = {
-#include "Snippets/CalendarView/Basic.html.embed"
-};
-constexpr char8_t basicCode[] = {
-#include "Snippets/CalendarView/Basic.h.embed"
-};
+gallery::LazyLoadedText basicHeader{"Snippets/CalendarView/Basic.html"};
+gallery::LazyLoadedText basicCode{"Snippets/CalendarView/Basic.h"};
 
 FrameworkElement basic() {
 #include "Snippets/CalendarView/Basic.h"

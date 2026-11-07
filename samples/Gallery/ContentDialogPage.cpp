@@ -10,12 +10,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t basicHeader[] = {
-#include "Snippets/ContentDialog/BasicContentDialogContent.html.embed"
-};
-constexpr char8_t basicCode[] = {
-#include "Snippets/ContentDialog/BasicContentDialogContent.h.embed"
-};
+gallery::LazyLoadedText basicHeader{"Snippets/ContentDialog/BasicContentDialogContent.html"};
+gallery::LazyLoadedText basicCode{"Snippets/ContentDialog/BasicContentDialogContent.h"};
 
 FrameworkElement basic() {
 #include "Snippets/ContentDialog/BasicContentDialogContent.h"
@@ -27,12 +23,8 @@ FrameworkElement basic() {
     });
 }
 
-constexpr char8_t withoutDefaultHeader[] = {
-#include "Snippets/ContentDialog/ContentDialogWithoutDefault.html.embed"
-};
-constexpr char8_t withoutDefaultCode[] = {
-#include "Snippets/ContentDialog/ContentDialogWithoutDefault.h.embed"
-};
+gallery::LazyLoadedText withoutDefaultHeader{"Snippets/ContentDialog/ContentDialogWithoutDefault.html"};
+gallery::LazyLoadedText withoutDefaultCode{"Snippets/ContentDialog/ContentDialogWithoutDefault.h"};
 
 FrameworkElement withoutDefault() {
 #include "Snippets/ContentDialog/ContentDialogWithoutDefault.h"

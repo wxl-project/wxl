@@ -22,12 +22,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t addingClosingHeader[] = {
-#include "Snippets/TabView/TabviewSupportAddingClosing.html.embed"
-};
-constexpr char8_t addingClosingCode[] = {
-#include "Snippets/TabView/TabviewSupportAddingClosing.h.embed"
-};
+gallery::LazyLoadedText addingClosingHeader{"Snippets/TabView/TabviewSupportAddingClosing.html"};
+gallery::LazyLoadedText addingClosingCode{"Snippets/TabView/TabviewSupportAddingClosing.h"};
 
 FrameworkElement addingClosing() {
 #include "Snippets/TabView/TabviewSupportAddingClosing.h"
@@ -39,12 +35,8 @@ FrameworkElement addingClosing() {
     });
 }
 
-constexpr char8_t itemsInMarkupHeader[] = {
-#include "Snippets/TabView/TabviewTabviewitemsDefinedMarkup.html.embed"
-};
-constexpr char8_t itemsInMarkupCode[] = {
-#include "Snippets/TabView/TabviewTabviewitemsDefinedMarkup.h.embed"
-};
+gallery::LazyLoadedText itemsInMarkupHeader{"Snippets/TabView/TabviewTabviewitemsDefinedMarkup.html"};
+gallery::LazyLoadedText itemsInMarkupCode{"Snippets/TabView/TabviewTabviewitemsDefinedMarkup.h"};
 
 FrameworkElement itemsInMarkup() {
 #include "Snippets/TabView/TabviewTabviewitemsDefinedMarkup.h"
@@ -56,12 +48,8 @@ FrameworkElement itemsInMarkup() {
     });
 }
 
-constexpr char8_t boundCollectionHeader[] = {
-#include "Snippets/TabView/TabviewBoundCollectionMydata.html.embed"
-};
-constexpr char8_t boundCollectionCode[] = {
-#include "Snippets/TabView/TabviewBoundCollectionMydata.h.embed"
-};
+gallery::LazyLoadedText boundCollectionHeader{"Snippets/TabView/TabviewBoundCollectionMydata.html"};
+gallery::LazyLoadedText boundCollectionCode{"Snippets/TabView/TabviewBoundCollectionMydata.h"};
 
 FrameworkElement boundCollection() {
 #include "Snippets/TabView/TabviewBoundCollectionMydata.h"
@@ -73,12 +61,8 @@ FrameworkElement boundCollection() {
     });
 }
 
-constexpr char8_t keyboardingHeader[] = {
-#include "Snippets/TabView/TabviewKeyboardingSupport.html.embed"
-};
-constexpr char8_t keyboardingCode[] = {
-#include "Snippets/TabView/TabviewKeyboardingSupport.h.embed"
-};
+gallery::LazyLoadedText keyboardingHeader{"Snippets/TabView/TabviewKeyboardingSupport.html"};
+gallery::LazyLoadedText keyboardingCode{"Snippets/TabView/TabviewKeyboardingSupport.h"};
 
 FrameworkElement keyboarding() {
 #include "Snippets/TabView/TabviewKeyboardingSupport.h"
@@ -90,12 +74,8 @@ FrameworkElement keyboarding() {
     });
 }
 
-constexpr char8_t customContentHeader[] = {
-#include "Snippets/TabView/TabViewYouPutCustomContent.html.embed"
-};
-constexpr char8_t customContentCode[] = {
-#include "Snippets/TabView/TabViewYouPutCustomContent.h.embed"
-};
+gallery::LazyLoadedText customContentHeader{"Snippets/TabView/TabViewYouPutCustomContent.html"};
+gallery::LazyLoadedText customContentCode{"Snippets/TabView/TabViewYouPutCustomContent.h"};
 
 FrameworkElement customContent() {
 #include "Snippets/TabView/TabViewYouPutCustomContent.h"
@@ -107,12 +87,8 @@ FrameworkElement customContent() {
     });
 }
 
-constexpr char8_t tabWidthsHeader[] = {
-#include "Snippets/TabView/TabViewTabWidthsEitherBe.html.embed"
-};
-constexpr char8_t tabWidthsCode[] = {
-#include "Snippets/TabView/TabViewTabWidthsEitherBe.h.embed"
-};
+gallery::LazyLoadedText tabWidthsHeader{"Snippets/TabView/TabViewTabWidthsEitherBe.html"};
+gallery::LazyLoadedText tabWidthsCode{"Snippets/TabView/TabViewTabWidthsEitherBe.h"};
 
 FrameworkElement tabWidths() {
 #include "Snippets/TabView/TabViewTabWidthsEitherBe.h"
@@ -125,12 +101,8 @@ FrameworkElement tabWidths() {
     });
 }
 
-constexpr char8_t closeButtonHeader[] = {
-#include "Snippets/TabView/TabViewCloseButtonBePersistent.html.embed"
-};
-constexpr char8_t closeButtonCode[] = {
-#include "Snippets/TabView/TabViewCloseButtonBePersistent.h.embed"
-};
+gallery::LazyLoadedText closeButtonHeader{"Snippets/TabView/TabViewCloseButtonBePersistent.html"};
+gallery::LazyLoadedText closeButtonCode{"Snippets/TabView/TabViewCloseButtonBePersistent.h"};
 
 FrameworkElement closeButton() {
 #include "Snippets/TabView/TabViewCloseButtonBePersistent.h"
@@ -143,12 +115,8 @@ FrameworkElement closeButton() {
     });
 }
 
-constexpr char8_t colorIconsHeader[] = {
-#include "Snippets/TabView/TabviewColorTabIcons.html.embed"
-};
-constexpr char8_t colorIconsCode[] = {
-#include "Snippets/TabView/TabviewColorTabIcons.h.embed"
-};
+gallery::LazyLoadedText colorIconsHeader{"Snippets/TabView/TabviewColorTabIcons.html"};
+gallery::LazyLoadedText colorIconsCode{"Snippets/TabView/TabviewColorTabIcons.h"};
 
 FrameworkElement colorIcons() {
 #include "Snippets/TabView/TabviewColorTabIcons.h"
@@ -160,12 +128,8 @@ FrameworkElement colorIcons() {
     });
 }
 
-constexpr char8_t accentStripHeader[] = {
-#include "Snippets/TabView/TabviewAccentColoredTabstrip.html.embed"
-};
-constexpr char8_t accentStripCode[] = {
-#include "Snippets/TabView/TabviewAccentColoredTabstrip.h.embed"
-};
+gallery::LazyLoadedText accentStripHeader{"Snippets/TabView/TabviewAccentColoredTabstrip.html"};
+gallery::LazyLoadedText accentStripCode{"Snippets/TabView/TabviewAccentColoredTabstrip.h"};
 
 FrameworkElement accentStrip() {
 #include "Snippets/TabView/TabviewAccentColoredTabstrip.h"
@@ -177,12 +141,8 @@ FrameworkElement accentStrip() {
     });
 }
 
-constexpr char8_t windowingHeader[] = {
-#include "Snippets/TabView/CompleteTabviewWindowingSample.html.embed"
-};
-constexpr char8_t windowingCode[] = {
-#include "Snippets/TabView/CompleteTabviewWindowingSample.h.embed"
-};
+gallery::LazyLoadedText windowingHeader{"Snippets/TabView/CompleteTabviewWindowingSample.html"};
+gallery::LazyLoadedText windowingCode{"Snippets/TabView/CompleteTabviewWindowingSample.h"};
 
 FrameworkElement windowing() {
 #include "Snippets/TabView/CompleteTabviewWindowingSample.h"

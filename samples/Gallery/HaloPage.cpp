@@ -10,12 +10,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t LcdHeader[] = {
-#include "Snippets/Halo/Lcd.html.embed"
-};
-constexpr char8_t LcdCode[] = {
-#include "Snippets/Halo/Lcd.h.embed"
-};
+gallery::LazyLoadedText LcdHeader{"Snippets/Halo/Lcd.html"};
+gallery::LazyLoadedText LcdCode{"Snippets/Halo/Lcd.h"};
 
 FrameworkElement lcdExample() {
 #include "Snippets/Halo/Lcd.h"
@@ -27,12 +23,8 @@ FrameworkElement lcdExample() {
     });
 }
 
-constexpr char8_t LedHeader[] = {
-#include "Snippets/Halo/Led.html.embed"
-};
-constexpr char8_t LedCode[] = {
-#include "Snippets/Halo/Led.h.embed"
-};
+gallery::LazyLoadedText LedHeader{"Snippets/Halo/Led.html"};
+gallery::LazyLoadedText LedCode{"Snippets/Halo/Led.h"};
 
 FrameworkElement ledExample() {
 #include "Snippets/Halo/Led.h"
@@ -44,12 +36,8 @@ FrameworkElement ledExample() {
     });
 }
 
-constexpr char8_t GlowHeader[] = {
-#include "Snippets/Halo/Glow.html.embed"
-};
-constexpr char8_t GlowCode[] = {
-#include "Snippets/Halo/Glow.h.embed"
-};
+gallery::LazyLoadedText GlowHeader{"Snippets/Halo/Glow.html"};
+gallery::LazyLoadedText GlowCode{"Snippets/Halo/Glow.h"};
 
 FrameworkElement glowExample() {
 #include "Snippets/Halo/Glow.h"

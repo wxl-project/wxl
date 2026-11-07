@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t basicHeader[] = {
-#include "Snippets/WrapPanel/Basic.html.embed"
-};
-constexpr char8_t basicCode[] = {
-#include "Snippets/WrapPanel/Basic.h.embed"
-};
+gallery::LazyLoadedText basicHeader{"Snippets/WrapPanel/Basic.html"};
+gallery::LazyLoadedText basicCode{"Snippets/WrapPanel/Basic.h"};
 
 FrameworkElement basic() {
 #include "Snippets/WrapPanel/Basic.h"
@@ -26,12 +22,8 @@ FrameworkElement basic() {
     });
 }
 
-constexpr char8_t stretchHeader[] = {
-#include "Snippets/WrapPanel/Stretch.html.embed"
-};
-constexpr char8_t stretchCode[] = {
-#include "Snippets/WrapPanel/Stretch.h.embed"
-};
+gallery::LazyLoadedText stretchHeader{"Snippets/WrapPanel/Stretch.html"};
+gallery::LazyLoadedText stretchCode{"Snippets/WrapPanel/Stretch.h"};
 
 FrameworkElement lastItem() {
 #include "Snippets/WrapPanel/Stretch.h"

@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t simpleHeader[] = {
-#include "Snippets/TextBlock/Simple.html.embed"
-};
-constexpr char8_t simpleCode[] = {
-#include "Snippets/TextBlock/Simple.h.embed"
-};
+gallery::LazyLoadedText simpleHeader{"Snippets/TextBlock/Simple.html"};
+gallery::LazyLoadedText simpleCode{"Snippets/TextBlock/Simple.h"};
 
 FrameworkElement simple() {
     return gallery::controlExample({
@@ -25,12 +21,8 @@ FrameworkElement simple() {
     });
 }
 
-constexpr char8_t styleHeader[] = {
-#include "Snippets/TextBlock/StyleApplied.html.embed"
-};
-constexpr char8_t styleCode[] = {
-#include "Snippets/TextBlock/StyleApplied.h.embed"
-};
+gallery::LazyLoadedText styleHeader{"Snippets/TextBlock/StyleApplied.html"};
+gallery::LazyLoadedText styleCode{"Snippets/TextBlock/StyleApplied.h"};
 
 FrameworkElement styleApplied() {
 #include "Snippets/TextBlock/StyleApplied.h"
@@ -42,12 +34,8 @@ FrameworkElement styleApplied() {
     });
 }
 
-constexpr char8_t variousHeader[] = {
-#include "Snippets/TextBlock/VariousProperties.html.embed"
-};
-constexpr char8_t variousCode[] = {
-#include "Snippets/TextBlock/VariousProperties.h.embed"
-};
+gallery::LazyLoadedText variousHeader{"Snippets/TextBlock/VariousProperties.html"};
+gallery::LazyLoadedText variousCode{"Snippets/TextBlock/VariousProperties.h"};
 
 FrameworkElement various() {
     return gallery::controlExample({
@@ -59,12 +47,8 @@ FrameworkElement various() {
     });
 }
 
-constexpr char8_t inlineHeader[] = {
-#include "Snippets/TextBlock/InlineTextElements.html.embed"
-};
-constexpr char8_t inlineCode[] = {
-#include "Snippets/TextBlock/InlineTextElements.h.embed"
-};
+gallery::LazyLoadedText inlineHeader{"Snippets/TextBlock/InlineTextElements.html"};
+gallery::LazyLoadedText inlineCode{"Snippets/TextBlock/InlineTextElements.h"};
 
 FrameworkElement inlineElements() {
     return gallery::controlExample({
@@ -76,12 +60,8 @@ FrameworkElement inlineElements() {
     });
 }
 
-constexpr char8_t selectableHeader[] = {
-#include "Snippets/TextBlock/Selectable.html.embed"
-};
-constexpr char8_t selectableCode[] = {
-#include "Snippets/TextBlock/Selectable.h.embed"
-};
+gallery::LazyLoadedText selectableHeader{"Snippets/TextBlock/Selectable.html"};
+gallery::LazyLoadedText selectableCode{"Snippets/TextBlock/Selectable.h"};
 
 FrameworkElement selectable() {
 #include "Snippets/TextBlock/Selectable.h"

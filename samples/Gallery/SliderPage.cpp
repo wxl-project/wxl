@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t simpleHeader[] = {
-#include "Snippets/Slider/Simple.html.embed"
-};
-constexpr char8_t simpleCode[] = {
-#include "Snippets/Slider/Simple.h.embed"
-};
+gallery::LazyLoadedText simpleHeader{"Snippets/Slider/Simple.html"};
+gallery::LazyLoadedText simpleCode{"Snippets/Slider/Simple.h"};
 
 FrameworkElement simple() {
 #include "Snippets/Slider/Simple.h"
@@ -26,12 +22,8 @@ FrameworkElement simple() {
     });
 }
 
-constexpr char8_t rangeHeader[] = {
-#include "Snippets/Slider/Range.html.embed"
-};
-constexpr char8_t rangeCode[] = {
-#include "Snippets/Slider/Range.h.embed"
-};
+gallery::LazyLoadedText rangeHeader{"Snippets/Slider/Range.html"};
+gallery::LazyLoadedText rangeCode{"Snippets/Slider/Range.h"};
 
 FrameworkElement range() {
 #include "Snippets/Slider/Range.h"
@@ -45,12 +37,8 @@ FrameworkElement range() {
     });
 }
 
-constexpr char8_t ticksHeader[] = {
-#include "Snippets/Slider/Ticks.html.embed"
-};
-constexpr char8_t ticksCode[] = {
-#include "Snippets/Slider/Ticks.h.embed"
-};
+gallery::LazyLoadedText ticksHeader{"Snippets/Slider/Ticks.html"};
+gallery::LazyLoadedText ticksCode{"Snippets/Slider/Ticks.h"};
 
 FrameworkElement ticks() {
 #include "Snippets/Slider/Ticks.h"
@@ -64,12 +52,8 @@ FrameworkElement ticks() {
     });
 }
 
-constexpr char8_t verticalHeader[] = {
-#include "Snippets/Slider/Vertical.html.embed"
-};
-constexpr char8_t verticalCode[] = {
-#include "Snippets/Slider/Vertical.h.embed"
-};
+gallery::LazyLoadedText verticalHeader{"Snippets/Slider/Vertical.html"};
+gallery::LazyLoadedText verticalCode{"Snippets/Slider/Vertical.h"};
 
 FrameworkElement vertical() {
 #include "Snippets/Slider/Vertical.h"

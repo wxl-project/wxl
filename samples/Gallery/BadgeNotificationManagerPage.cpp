@@ -10,12 +10,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t countHeader[] = {
-#include "Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsCount.html.embed"
-};
-constexpr char8_t countCode[] = {
-#include "Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsCount.h.embed"
-};
+gallery::LazyLoadedText countHeader{"Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsCount.html"};
+gallery::LazyLoadedText countCode{"Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsCount.h"};
 
 FrameworkElement count() {
 #include "Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsCount.h"
@@ -28,12 +24,8 @@ FrameworkElement count() {
     });
 }
 
-constexpr char8_t glyphExampleHeader[] = {
-#include "Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsGlyph.html.embed"
-};
-constexpr char8_t glyphExampleCode[] = {
-#include "Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsGlyph.h.embed"
-};
+gallery::LazyLoadedText glyphExampleHeader{"Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsGlyph.html"};
+gallery::LazyLoadedText glyphExampleCode{"Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsGlyph.h"};
 
 FrameworkElement glyphExample() {
 #include "Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsGlyph.h"

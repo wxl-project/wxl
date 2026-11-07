@@ -13,12 +13,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t togglingHeader[] = {
-#include "Snippets/Sound/TogglingSound.html.embed"
-};
-constexpr char8_t togglingCode[] = {
-#include "Snippets/Sound/TogglingSound.h.embed"
-};
+gallery::LazyLoadedText togglingHeader{"Snippets/Sound/TogglingSound.html"};
+gallery::LazyLoadedText togglingCode{"Snippets/Sound/TogglingSound.h"};
 
 FrameworkElement toggling() {
 #include "Snippets/Sound/TogglingSound.h"
@@ -30,12 +26,8 @@ FrameworkElement toggling() {
     });
 }
 
-constexpr char8_t spatialHeader[] = {
-#include "Snippets/Sound/SoundTogglingSpatialAudio.html.embed"
-};
-constexpr char8_t spatialCode[] = {
-#include "Snippets/Sound/SoundTogglingSpatialAudio.h.embed"
-};
+gallery::LazyLoadedText spatialHeader{"Snippets/Sound/SoundTogglingSpatialAudio.html"};
+gallery::LazyLoadedText spatialCode{"Snippets/Sound/SoundTogglingSpatialAudio.h"};
 
 FrameworkElement spatial() {
 #include "Snippets/Sound/SoundTogglingSpatialAudio.h"
@@ -47,12 +39,8 @@ FrameworkElement spatial() {
     });
 }
 
-constexpr char8_t systemSoundHeader[] = {
-#include "Snippets/Sound/PlaySpecificSystemSound.html.embed"
-};
-constexpr char8_t systemSoundCode[] = {
-#include "Snippets/Sound/PlaySpecificSystemSound.h.embed"
-};
+gallery::LazyLoadedText systemSoundHeader{"Snippets/Sound/PlaySpecificSystemSound.html"};
+gallery::LazyLoadedText systemSoundCode{"Snippets/Sound/PlaySpecificSystemSound.h"};
 
 FrameworkElement systemSound() {
 #include "Snippets/Sound/PlaySpecificSystemSound.h"

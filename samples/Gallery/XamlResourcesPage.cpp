@@ -13,24 +13,12 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t levelsHeader[] = {
-#include "Snippets/XamlResources/Xamlresources.html.embed"
-};
-constexpr char8_t levelsCode[] = {
-#include "Snippets/XamlResources/Xamlresources.h.embed"
-};
-constexpr char8_t versusHeader[] = {
-#include "Snippets/XamlResources/XamlResourcesStaticresourceVersusThemeresource.html.embed"
-};
-constexpr char8_t versusCode[] = {
-#include "Snippets/XamlResources/XamlResourcesStaticresourceVersusThemeresource.h.embed"
-};
-constexpr char8_t themeHeader[] = {
-#include "Snippets/XamlResources/XamlResourcesDefineNewThemeResource.html.embed"
-};
-constexpr char8_t themeCode[] = {
-#include "Snippets/XamlResources/XamlResourcesDefineNewThemeResource.h.embed"
-};
+gallery::LazyLoadedText levelsHeader{"Snippets/XamlResources/Xamlresources.html"};
+gallery::LazyLoadedText levelsCode{"Snippets/XamlResources/Xamlresources.h"};
+gallery::LazyLoadedText versusHeader{"Snippets/XamlResources/XamlResourcesStaticresourceVersusThemeresource.html"};
+gallery::LazyLoadedText versusCode{"Snippets/XamlResources/XamlResourcesStaticresourceVersusThemeresource.h"};
+gallery::LazyLoadedText themeHeader{"Snippets/XamlResources/XamlResourcesDefineNewThemeResource.html"};
+gallery::LazyLoadedText themeCode{"Snippets/XamlResources/XamlResourcesDefineNewThemeResource.h"};
 
 FrameworkElement levels() {
 #include "Snippets/XamlResources/Xamlresources.h"

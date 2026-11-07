@@ -9,12 +9,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t withContentHeader[] = {
-#include "Snippets/ScrollView/Content.html.embed"
-};
-constexpr char8_t withContentCode[] = {
-#include "Snippets/ScrollView/Content.h.embed"
-};
+gallery::LazyLoadedText withContentHeader{"Snippets/ScrollView/Content.html"};
+gallery::LazyLoadedText withContentCode{"Snippets/ScrollView/Content.h"};
 
 FrameworkElement withContent() {
 #include "Snippets/ScrollView/Content.h"
@@ -27,12 +23,8 @@ FrameworkElement withContent() {
     });
 }
 
-constexpr char8_t constantVelocityHeader[] = {
-#include "Snippets/ScrollView/ConstantVelocity.html.embed"
-};
-constexpr char8_t constantVelocityCode[] = {
-#include "Snippets/ScrollView/ConstantVelocity.h.embed"
-};
+gallery::LazyLoadedText constantVelocityHeader{"Snippets/ScrollView/ConstantVelocity.html"};
+gallery::LazyLoadedText constantVelocityCode{"Snippets/ScrollView/ConstantVelocity.h"};
 
 FrameworkElement constantVelocity() {
 #include "Snippets/ScrollView/ConstantVelocity.h"
@@ -45,12 +37,8 @@ FrameworkElement constantVelocity() {
     });
 }
 
-constexpr char8_t customAnimationHeader[] = {
-#include "Snippets/ScrollView/CustomAnimation.html.embed"
-};
-constexpr char8_t customAnimationCode[] = {
-#include "Snippets/ScrollView/CustomAnimation.h.embed"
-};
+gallery::LazyLoadedText customAnimationHeader{"Snippets/ScrollView/CustomAnimation.html"};
+gallery::LazyLoadedText customAnimationCode{"Snippets/ScrollView/CustomAnimation.h"};
 
 FrameworkElement customAnimation() {
 #include "Snippets/ScrollView/CustomAnimation.h"

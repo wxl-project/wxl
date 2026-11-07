@@ -110,19 +110,26 @@ void refuse_other_keys(value const& entry, std::filesystem::path const& source,
     }
 }
 
-std::set<std::string> read_string_set(value const& array, std::filesystem::path const& source,
+// The strings of an array, in the order the file has them.
+std::vector<std::string> read_strings(value const& array, std::filesystem::path const& source,
                                       std::string_view what) {
     if (!array.is_array()) {
         fail(source, std::format("'{}' must be an array of strings", what));
     }
-    std::set<std::string> names;
+    std::vector<std::string> strings;
     for (auto&& entry : array.elements()) {
         if (!entry.is_string()) {
             fail(source, std::format("'{}' must contain strings only", what));
         }
-        names.insert(text(entry));
+        strings.push_back(text(entry));
     }
-    return names;
+    return strings;
+}
+
+std::set<std::string> read_string_set(value const& array, std::filesystem::path const& source,
+                                      std::string_view what) {
+    auto const strings = read_strings(array, source, what);
+    return {strings.begin(), strings.end()};
 }
 
 member_filter read_member_filter(value const& entry, std::filesystem::path const& source,
@@ -589,29 +596,14 @@ void member_filter::merge(member_filter const& other) {
     names = std::move(rest);
 }
 
-profile load_profile(std::filesystem::path const& path) {
-    wxl::json::document file;
-    auto const& document = read_json(file, path, "a profile must be a JSON object");
+namespace {
 
-    profile prof;
-    prof.source = path;
-    prof.name = string_or(document, path, "name", wxl::core::unicode::to_utf8(path.stem()).chars());
-    prof.description = string_or(document, path, "description", {});
-
-    if (value const* const extends = document.find("extends")) {
-        auto const names = read_string_set(*extends, path, "extends");
-        prof.extends.assign(names.begin(), names.end());
-    }
-
-    // The release read is the one the build's restore resolved, so a key that
-    // names one is a mistake to report.
-    if (document.find("windowsAppSdk")) {
-        fail(path, "'windowsAppSdk' is not a key of a profile: the Windows App SDK release read "
-                   "is the one the build's NuGet restore resolves, and a profile whose types need "
-                   "a certain release names the lowest one they need as 'minimumWindowsAppSdk'");
-    }
-    prof.minimum_windows_app_sdk = minimum_or_empty(document, path, "minimumWindowsAppSdk", {});
-
+// What the walk is asked to start from -- the packages, the listed types with everything
+// written under them, and the Windows metadata: the keys a profile and the `requires` of a
+// component share. A type listed without "styles" asks for all of its styles when
+// `all_styles_by_default`, and for none otherwise.
+void read_requirements(value const& document, std::filesystem::path const& path, profile& prof,
+                       bool all_styles_by_default) {
     if (value const* const packages = document.find("packages")) {
         if (!packages->is_array()) {
             fail(path, "'packages' must be an array");
@@ -628,10 +620,12 @@ profile load_profile(std::filesystem::path const& path) {
         for (value const& entry : types->members()) {
             std::string const name{entry.name().chars()};
             prof.types.emplace(name, read_member_filter(entry, path, name));
-            value const* const styles = entry.find("styles");
-            prof.styles.emplace(
-                name, styles ? member_filter::allow(read_string_set(*styles, path, "styles"))
-                             : member_filter::all());
+            if (value const* const styles = entry.find("styles")) {
+                prof.styles.emplace(name,
+                                    member_filter::allow(read_string_set(*styles, path, "styles")));
+            } else if (all_styles_by_default) {
+                prof.styles.emplace(name, member_filter::all());
+            }
             if (auto added = read_synthetic_members(entry, path, name); !added.empty()) {
                 prof.synthetic.emplace(name, std::move(added));
             }
@@ -653,6 +647,103 @@ profile load_profile(std::filesystem::path const& path) {
         }
     }
 
+    prof.windows_metadata = bool_or(document, path, "windowsMetadata", false);
+}
+
+// The names a key lists, in the order the file lists them, or none when the key is not there.
+// A name listed twice is a mistake rather than a repetition to fold.
+std::vector<std::string> read_names(value const& entry, std::filesystem::path const& source,
+                                    std::string_view key) {
+    value const* const field = entry.find(key);
+    if (!field) {
+        return {};
+    }
+    auto names = read_strings(*field, source, key);
+    for (auto at = names.begin(); at != names.end(); ++at) {
+        if (std::ranges::find(names.begin(), at, *at) != at) {
+            fail(source, std::format("'{}' names \"{}\" twice", key, *at));
+        }
+    }
+    return names;
+}
+
+}  // namespace
+
+component load_component(std::filesystem::path const& manifest) {
+    wxl::json::document file;
+    auto const& document = read_json(file, manifest, "a component manifest must be a JSON object");
+
+    component comp;
+    comp.source = manifest;
+    comp.directory = manifest.parent_path();
+    refuse_other_keys(document, manifest, "component",
+                      {"name", "requires", "needs", "sources", "schema", "surface", "libraries",
+                       "comment"});
+    comp.name = required_string(document, manifest, "name", "component");
+
+    auto const directory_name = wxl::core::unicode::to_utf8(comp.directory.filename());
+    if (comp.name != directory_name.chars()) {
+        fail(manifest, std::format("the component is named \"{}\" and its directory \"{}\": a "
+                                   "component is named as its directory is",
+                                   comp.name, directory_name.chars()));
+    }
+
+    comp.needs = read_names(document, manifest, "needs");
+    comp.sources = read_names(document, manifest, "sources");
+    comp.libraries = read_names(document, manifest, "libraries");
+    comp.schema = string_or(document, manifest, "schema", {});
+    comp.surface = string_or(document, manifest, "surface", {});
+    comp.comment = string_or(document, manifest, "comment", {});
+
+    // Read as a profile of the chain is, so the merge and the checks of packages and
+    // versions treat it as one and name the manifest.
+    // A component asks for no brushes, and a type it lists without "styles" for none of its
+    // styles: a profile's default of all of them would widen whatever the profiles narrowed. A
+    // type only a component lists has no styles entry, and so keeps all of its styles.
+    comp.requirements.name = comp.name;
+    comp.requirements.source = manifest;
+    comp.requirements.brushes = member_filter::none();
+    if (value const* const required = document.find("requires")) {
+        if (!required->is_object()) {
+            fail(manifest, "'requires' must be an object");
+        }
+        refuse_other_keys(*required, manifest, "'requires'",
+                          {"types", "packages", "windowsMetadata"});
+        read_requirements(*required, manifest, comp.requirements, false);
+    }
+    return comp;
+}
+
+profile load_profile(std::filesystem::path const& path) {
+    wxl::json::document file;
+    auto const& document = read_json(file, path, "a profile must be a JSON object");
+
+    profile prof;
+    prof.source = path;
+    prof.name = string_or(document, path, "name", wxl::core::unicode::to_utf8(path.stem()).chars());
+    prof.description = string_or(document, path, "description", {});
+
+    if (value const* const extends = document.find("extends")) {
+        auto const names = read_string_set(*extends, path, "extends");
+        prof.extends.assign(names.begin(), names.end());
+    }
+
+    prof.components = read_names(document, path, "components");
+
+    // The release read is the one the build's restore resolved, so a key that
+    // names one is a mistake to report.
+    if (document.find("windowsAppSdk")) {
+        fail(path, "'windowsAppSdk' is not a key of a profile: the Windows App SDK release read "
+                   "is the one the build's NuGet restore resolves, and a profile whose types need "
+                   "a certain release names the lowest one they need as 'minimumWindowsAppSdk'");
+    }
+    refuse_other_keys(document, path, "profile",
+                      {"name", "description", "extends", "components", "minimumWindowsAppSdk",
+                       "packages", "types", "windowsMetadata", "discoveredTypes", "brushes"});
+    prof.minimum_windows_app_sdk = minimum_or_empty(document, path, "minimumWindowsAppSdk", {});
+
+    read_requirements(document, path, prof, true);
+
     // Types the walk discovers on its own (through base classes and member
     // signatures) rather than finding listed: "none" generates the type
     // but none of its members, "all" generates everything it declares.
@@ -670,7 +761,6 @@ profile load_profile(std::filesystem::path const& path) {
         prof.brushes = member_filter::allow(read_string_set(*brushes, path, "brushes"));
     }
 
-    prof.windows_metadata = bool_or(document, path, "windowsMetadata", false);
     return prof;
 }
 
@@ -679,6 +769,66 @@ std::filesystem::path canonical_path(std::filesystem::path const& path) {
     auto resolved = std::filesystem::weakly_canonical(path, ec);
     return ec ? path : resolved;
 }
+
+namespace {
+
+// The components selected: those named, closed over `needs`, each after those it needs.
+struct component_resolver {
+    component_search const& search;
+    std::vector<component>& selected;
+    std::vector<std::string> following;  // the chain of `needs` being followed, for a cycle
+
+    void select(std::string const& name, std::filesystem::path const& wanted_by) {
+        if (std::ranges::any_of(selected, [&](component const& comp) { return comp.name == name; })) {
+            return;
+        }
+        if (auto const at = std::ranges::find(following, name); at != following.end()) {
+            std::vector<std::string> cycle(at, following.end());
+            cycle.push_back(name);
+            fail(wanted_by, std::format("the components need each other in a cycle: {}",
+                                        wxl::core::join(cycle, " -> ")));
+        }
+        auto comp = load_component(find(name, wanted_by));
+        // The file system finds a directory whatever the case of its name, and a name spelled
+        // otherwise would select the component a second time.
+        if (comp.name != name) {
+            fail(wanted_by, std::format("component '{}' is named '{}' ({})", name, comp.name,
+                                        wxl::core::unicode::to_utf8(comp.source).chars()));
+        }
+        following.push_back(name);
+        for (auto&& need : comp.needs) {
+            select(need, comp.source);
+        }
+        following.pop_back();
+        selected.push_back(std::move(comp));
+    }
+
+    std::filesystem::path find(std::string const& name, std::filesystem::path const& wanted_by) const {
+        std::vector<std::filesystem::path> found;
+        std::string searched;
+        for (auto&& directory : search.directories) {
+            auto const manifest = canonical_path(directory / path_of(name) / "component.json");
+            if (std::filesystem::is_regular_file(manifest) &&
+                std::ranges::find(found, manifest) == found.end()) {
+                found.push_back(manifest);
+            }
+            searched += std::format("\n  {}", wxl::core::unicode::to_utf8(directory).chars());
+        }
+        if (found.empty()) {
+            fail(wanted_by, std::format("component '{}' is not found: no {}/component.json in the "
+                                        "component directories (--component-dir):{}",
+                                        name, name, searched.empty() ? " none given" : searched));
+        }
+        if (found.size() > 1) {
+            fail(wanted_by, std::format("component '{}' is found twice: {} and {}", name,
+                                        wxl::core::unicode::to_utf8(found[0]).chars(),
+                                        wxl::core::unicode::to_utf8(found[1]).chars()));
+        }
+        return found.front();
+    }
+};
+
+}  // namespace
 
 // The depth-first load, as a type rather than as a lambda that takes itself.
 // Recursion is what it needs and what a lambda cannot say without becoming a
@@ -692,6 +842,23 @@ struct profile_loader {
     std::set<std::filesystem::path>& loading;  // cycle detection
     std::vector<profile>& in_load_order;
     bool& windows_metadata;
+    // The file each definition kept comes from, by what it defines. Between profiles the extends
+    // chain decides which one is kept; a component giving a definition differently from the one
+    // kept stops the run instead, since nothing orders a component against a profile.
+    std::map<std::string, std::filesystem::path> defined_by;
+
+    // Records that `by` defines `what` when its definition `takes` the place, and refuses a
+    // component's definition that `differs` from the one kept. Returns `takes`.
+    bool define(listing const& by, std::string const& what, bool differs, bool takes) {
+        if (differs && !by.component.empty()) {
+            fail(by.source, std::format("{} differs from its definition in {}", what,
+                                        wxl::core::unicode::to_utf8(defined_by.at(what)).chars()));
+        }
+        if (takes) {
+            defined_by.insert_or_assign(what, by.source);
+        }
+        return takes;
+    }
 
     // Depth-first so that a referenced profile ("base") is merged before
     // the profile that extends it -- merging is a union, so the order
@@ -710,7 +877,35 @@ struct profile_loader {
         for (auto&& reference : prof.extends) {
             load(resolve_reference(reference, prof.source));
         }
+        for (auto&& name : prof.components) {
+            if (std::ranges::find(result.named_components, name,
+                                  &profile_set::component_request::name) ==
+                result.named_components.end()) {
+                result.named_components.push_back({name, prof.source});
+            }
+        }
 
+        merge(prof, {prof.source, {}});
+
+        loading.erase(key);
+        loaded.insert(key);
+        result.loaded.push_back(prof.name);
+    }
+
+    // The components named in the chain, each after those it needs, merged after the
+    // profiles: a type both list is reported against the profile.
+    void load_components(component_search const& search) {
+        component_resolver resolver{search, result.components};
+        for (auto&& [name, by] : result.named_components) {
+            resolver.select(name, by);
+        }
+        for (auto&& comp : result.components) {
+            merge(comp.requirements, {comp.source, comp.name});
+        }
+    }
+
+    // A profile, or the `requires` of a component, joined to the set.
+    void merge(profile const& prof, listing const& by) {
         // Versions and packages wait for the second pass: the release the set
         // needs is the highest minimum of all its profiles, and the check of
         // the release comes before the packages of the release are read.
@@ -721,7 +916,7 @@ struct profile_loader {
             if (!inserted) {
                 it->second.merge(filter);
             }
-            result.listed_by.try_emplace(name, prof.source);
+            result.listed_by.try_emplace(name, by);
         }
         // Synthetic members compose the way the rest of a profile does: an
         // extending profile adds to what it extends, and a name declared
@@ -729,29 +924,36 @@ struct profile_loader {
         for (auto&& [name, added] : prof.synthetic) {
             auto& known = result.synthetic[name];
             for (auto&& member : added) {
-                if (std::none_of(known.begin(), known.end(), [&](synthetic_member const& existing) {
-                        return existing.name == member.name;
-                    })) {
+                auto const existing = std::ranges::find(known, member.name, &synthetic_member::name);
+                if (define(by, std::format("synthetic member {}.{}", name, member.name),
+                           existing != known.end() && *existing != member, existing == known.end())) {
                     known.push_back(member);
                 }
             }
         }
         for (auto&& [name, converted] : prof.from_text) {
+            auto const existing = result.from_text.find(name);
+            define(by, std::format("fromText of {}", name),
+                   existing != result.from_text.end() && existing->second != converted, true);
             result.from_text[name] = converted;
         }
         // Replaced calls compose by the method's name, the extending profile winning.
         for (auto&& [name, calls] : prof.replaced_calls) {
             for (auto&& [method, call] : calls) {
-                result.replaced_calls[name][method] = call;
+                auto& known = result.replaced_calls[name];
+                auto const existing = known.find(method);
+                define(by, std::format("replaced call {}.{}", name, method),
+                       existing != known.end() && existing->second != call, true);
+                known[method] = call;
             }
         }
         // Setter methods compose the same way, by the method's name.
         for (auto&& [name, setters] : prof.setter_methods) {
             auto& known = result.setter_methods[name];
             for (auto&& setter : setters) {
-                if (std::none_of(known.begin(), known.end(), [&](setter_method const& existing) {
-                        return existing.method == setter.method;
-                    })) {
+                auto const existing = std::ranges::find(known, setter.method, &setter_method::method);
+                if (define(by, std::format("setter method {}.{}", name, setter.method),
+                           existing != known.end() && *existing != setter, existing == known.end())) {
                     known.push_back(setter);
                 }
             }
@@ -765,15 +967,137 @@ struct profile_loader {
         result.brushes.merge(prof.brushes);
         result.discovered.merge(prof.discovered);
         windows_metadata = windows_metadata || prof.windows_metadata;
-
-        loading.erase(key);
-        loaded.insert(key);
-        result.loaded.push_back(prof.name);
     }
 };
 
+namespace {
+
+std::string list_of(std::vector<std::string> names) {
+    std::ranges::sort(names);
+    return names.empty() ? std::string{"(none)"} : wxl::core::join(names, ", ");
+}
+
+// The list the build read from the chain, compared with the chain's own as sets: the build
+// compiles the components it read, and the projection is made for those the chain names.
+void check_named_components(profile_set const& result, component_search const& search) {
+    if (search.directories.empty()) {
+        // A list with nowhere to look is a build that lost its directories, not one to ignore.
+        if (!search.expected.empty()) {
+            throw std::runtime_error(std::format(
+                "the build names components (--component: {}) and no directory to find them in "
+                "(--component-dir)",
+                list_of(search.expected)));
+        }
+        return;
+    }
+    std::vector<std::string> names;
+    std::string sources;
+    for (auto&& [name, by] : result.named_components) {
+        names.push_back(name);
+        sources += std::format("\n  {}: {}", name, wxl::core::unicode::to_utf8(by).chars());
+    }
+    std::set<std::string> const expected(search.expected.begin(), search.expected.end());
+    std::set<std::string> const named(names.begin(), names.end());
+    if (expected != named) {
+        throw std::runtime_error(std::format(
+            "the components the build names (--component) are not those the profiles name in "
+            "\"components\":\n  build:    {}\n  profiles: {}{}",
+            list_of(search.expected), list_of(names), sources));
+    }
+}
+
+// Whether `file`, once normalised, lies inside `directory`: a path that climbs out of it with
+// ".." does not.
+bool inside(std::filesystem::path const& directory, std::filesystem::path const& file) {
+    auto const relative = file.lexically_normal().lexically_relative(directory.lexically_normal());
+    return !relative.empty() && *relative.begin() != std::filesystem::path{".."};
+}
+
+// Every header the generated code includes for a profile or a component, held to where it can
+// be, in the spelling the emitter reads (gen/emit.h, write_include): "../X.h" names a
+// hand-written header relative to the library's include directory, so it is a file of the common
+// directory or of a selected component, and never of a component the profiles do not select --
+// the common directory may hold the components themselves; a plain name is a file of the run, so
+// it must be a header the generator writes. A name in angle brackets is a projection or standard
+// header written as it is; no profile has one, and it is not checked.
+void check_includes(std::vector<profile> const& in_load_order,
+                    std::vector<component> const& components, component_search const& search) {
+    if (!search.common_directory) {
+        return;
+    }
+    auto const common = canonical_path(*search.common_directory);
+    std::vector<std::filesystem::path> roots;
+    for (auto&& directory : search.directories) {
+        roots.push_back(canonical_path(directory));
+    }
+    // The directory of a component the profiles do not select that `file` lies in, if any.
+    auto const of_unselected = [&](std::filesystem::path const& file) {
+        return std::ranges::any_of(roots, [&](std::filesystem::path const& root) {
+            if (!inside(root, file)) {
+                return false;
+            }
+            auto const owner = root / *file.lexically_relative(root).begin();
+            return std::filesystem::is_regular_file(owner / "component.json") &&
+                   std::ranges::none_of(components, [&](component const& comp) {
+                       return comp.directory.lexically_normal() == owner.lexically_normal();
+                   });
+        });
+    };
+    auto const found = [&](std::string const& include) {
+        if (include.starts_with('<')) {
+            return true;
+        }
+        if (!include.starts_with("../")) {
+            return std::ranges::find(search.generated_includes, include) !=
+                   search.generated_includes.end();
+        }
+        auto const file = path_of(std::string_view{include}.substr(3));
+        auto const in = [&](std::filesystem::path const& directory) {
+            auto const resolved = (directory / file).lexically_normal();
+            return inside(directory, resolved) && std::filesystem::is_regular_file(resolved) &&
+                   !of_unselected(resolved);
+        };
+        return in(common) ||
+               std::ranges::any_of(components, [&](component const& comp) { return in(comp.directory); });
+    };
+    auto const check = [&](profile const& prof, std::string const& member,
+                           std::string const& include) {
+        if (include.empty() || found(include)) {
+            return;
+        }
+        auto const where = wxl::core::unicode::to_utf8(*search.common_directory);
+        fail(prof.source,
+             include.starts_with("../")
+                 ? std::format("{} includes \"{}\", which is no file of {} nor of a selected "
+                               "component",
+                               member, include, where.chars())
+                 : std::format("{} includes \"{}\": a name without \"../\" must be a header the "
+                               "generator writes",
+                               member, include));
+    };
+    for (auto&& prof : in_load_order) {
+        for (auto&& [type, members] : prof.synthetic) {
+            for (auto&& member : members) {
+                auto const name = std::format("{}.{}", type, member.name);
+                check(prof, name, member.include);
+                check(prof, name, member.cpp_include);
+            }
+        }
+        for (auto&& [type, converted] : prof.from_text) {
+            check(prof, std::format("{} (fromText)", type), converted.include);
+        }
+        for (auto&& [type, calls] : prof.replaced_calls) {
+            for (auto&& [method, call] : calls) {
+                check(prof, std::format("{}.{}", type, method), call.include);
+            }
+        }
+    }
+}
+
+}  // namespace
+
 profile_set resolve_profiles(std::vector<std::filesystem::path> const& paths,
-                             restored_packages const& restored) {
+                             restored_packages const& restored, component_search const& search) {
     profile_set result;
 
     std::set<std::filesystem::path> loaded;   // canonical paths, load-once
@@ -787,6 +1111,9 @@ profile_set resolve_profiles(std::vector<std::filesystem::path> const& paths,
     for (auto&& path : paths) {
         loader.load(path);
     }
+    check_named_components(result, search);
+    loader.load_components(search);
+    check_includes(in_load_order, result.components, search);
     result.restored_from = restored.source;
     result.sdk = restored.sdk;
     result.windows_metadata = windows_metadata;

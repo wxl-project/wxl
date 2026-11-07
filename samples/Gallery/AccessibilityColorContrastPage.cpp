@@ -15,9 +15,7 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t introText[] = {
-#include "Snippets/AccessibilityColorContrast/Intro.html.embed"
-};
+gallery::LazyLoadedText introText{"Snippets/AccessibilityColorContrast/Intro.html"};
 
 // Относительная яркость по WCAG: https://www.w3.org/WAI/GL/wiki/Relative_luminance
 double relativeLuminance(Color c) {

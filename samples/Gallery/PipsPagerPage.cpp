@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t integratedHeader[] = {
-#include "Snippets/PipsPager/IntegratedFlipView.html.embed"
-};
-constexpr char8_t integratedCode[] = {
-#include "Snippets/PipsPager/IntegratedFlipView.h.embed"
-};
+gallery::LazyLoadedText integratedHeader{"Snippets/PipsPager/IntegratedFlipView.html"};
+gallery::LazyLoadedText integratedCode{"Snippets/PipsPager/IntegratedFlipView.h"};
 
 FrameworkElement integrated() {
 #include "Snippets/PipsPager/IntegratedFlipView.h"
@@ -25,12 +21,8 @@ FrameworkElement integrated() {
     });
 }
 
-constexpr char8_t optionsHeader[] = {
-#include "Snippets/PipsPager/Options.html.embed"
-};
-constexpr char8_t optionsCode[] = {
-#include "Snippets/PipsPager/Options.h.embed"
-};
+gallery::LazyLoadedText optionsHeader{"Snippets/PipsPager/Options.html"};
+gallery::LazyLoadedText optionsCode{"Snippets/PipsPager/Options.h"};
 
 FrameworkElement options() {
 #include "Snippets/PipsPager/Options.h"

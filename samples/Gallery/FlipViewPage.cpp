@@ -10,12 +10,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t declaredHeader[] = {
-#include "Snippets/FlipView/SimpleFlipviewItemsDeclared.html.embed"
-};
-constexpr char8_t declaredCode[] = {
-#include "Snippets/FlipView/SimpleFlipviewItemsDeclared.h.embed"
-};
+gallery::LazyLoadedText declaredHeader{"Snippets/FlipView/SimpleFlipviewItemsDeclared.html"};
+gallery::LazyLoadedText declaredCode{"Snippets/FlipView/SimpleFlipviewItemsDeclared.h"};
 
 FrameworkElement declared() {
 #include "Snippets/FlipView/SimpleFlipviewItemsDeclared.h"
@@ -27,12 +23,8 @@ FrameworkElement declared() {
     });
 }
 
-constexpr char8_t boundHeader[] = {
-#include "Snippets/FlipView/FlipviewShowingBoundData.html.embed"
-};
-constexpr char8_t boundCode[] = {
-#include "Snippets/FlipView/FlipviewShowingBoundData.h.embed"
-};
+gallery::LazyLoadedText boundHeader{"Snippets/FlipView/FlipviewShowingBoundData.html"};
+gallery::LazyLoadedText boundCode{"Snippets/FlipView/FlipviewShowingBoundData.h"};
 
 FrameworkElement bound() {
 #include "Snippets/FlipView/FlipviewShowingBoundData.h"
@@ -44,12 +36,8 @@ FrameworkElement bound() {
     });
 }
 
-constexpr char8_t verticalHeader[] = {
-#include "Snippets/FlipView/VerticalFlipview.html.embed"
-};
-constexpr char8_t verticalCode[] = {
-#include "Snippets/FlipView/VerticalFlipview.h.embed"
-};
+gallery::LazyLoadedText verticalHeader{"Snippets/FlipView/VerticalFlipview.html"};
+gallery::LazyLoadedText verticalCode{"Snippets/FlipView/VerticalFlipview.h"};
 
 FrameworkElement vertical() {
 #include "Snippets/FlipView/VerticalFlipview.h"

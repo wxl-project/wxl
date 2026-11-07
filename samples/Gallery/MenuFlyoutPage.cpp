@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t appBarButtonMenuHeader[] = {
-#include "Snippets/MenuFlyout/AppBarButtonMenu.html.embed"
-};
-constexpr char8_t appBarButtonMenuCode[] = {
-#include "Snippets/MenuFlyout/AppBarButtonMenu.h.embed"
-};
+gallery::LazyLoadedText appBarButtonMenuHeader{"Snippets/MenuFlyout/AppBarButtonMenu.html"};
+gallery::LazyLoadedText appBarButtonMenuCode{"Snippets/MenuFlyout/AppBarButtonMenu.h"};
 
 FrameworkElement appBarButtonMenu() {
 #include "Snippets/MenuFlyout/AppBarButtonMenu.h"
@@ -25,12 +21,8 @@ FrameworkElement appBarButtonMenu() {
     });
 }
 
-constexpr char8_t togglesHeader[] = {
-#include "Snippets/MenuFlyout/Toggles.html.embed"
-};
-constexpr char8_t togglesCode[] = {
-#include "Snippets/MenuFlyout/Toggles.h.embed"
-};
+gallery::LazyLoadedText togglesHeader{"Snippets/MenuFlyout/Toggles.html"};
+gallery::LazyLoadedText togglesCode{"Snippets/MenuFlyout/Toggles.h"};
 
 FrameworkElement toggles() {
 #include "Snippets/MenuFlyout/Toggles.h"
@@ -42,12 +34,8 @@ FrameworkElement toggles() {
     });
 }
 
-constexpr char8_t cascadingHeader[] = {
-#include "Snippets/MenuFlyout/Cascading.html.embed"
-};
-constexpr char8_t cascadingCode[] = {
-#include "Snippets/MenuFlyout/Cascading.h.embed"
-};
+gallery::LazyLoadedText cascadingHeader{"Snippets/MenuFlyout/Cascading.html"};
+gallery::LazyLoadedText cascadingCode{"Snippets/MenuFlyout/Cascading.h"};
 
 FrameworkElement cascading() {
 #include "Snippets/MenuFlyout/Cascading.h"
@@ -59,12 +47,8 @@ FrameworkElement cascading() {
     });
 }
 
-constexpr char8_t splitHeader[] = {
-#include "Snippets/MenuFlyout/Split.html.embed"
-};
-constexpr char8_t splitCode[] = {
-#include "Snippets/MenuFlyout/Split.h.embed"
-};
+gallery::LazyLoadedText splitHeader{"Snippets/MenuFlyout/Split.html"};
+gallery::LazyLoadedText splitCode{"Snippets/MenuFlyout/Split.h"};
 
 FrameworkElement split() {
 #include "Snippets/MenuFlyout/Split.h"
@@ -76,12 +60,8 @@ FrameworkElement split() {
     });
 }
 
-constexpr char8_t iconsHeader[] = {
-#include "Snippets/MenuFlyout/Icons.html.embed"
-};
-constexpr char8_t iconsCode[] = {
-#include "Snippets/MenuFlyout/Icons.h.embed"
-};
+gallery::LazyLoadedText iconsHeader{"Snippets/MenuFlyout/Icons.html"};
+gallery::LazyLoadedText iconsCode{"Snippets/MenuFlyout/Icons.h"};
 
 FrameworkElement icons() {
 #include "Snippets/MenuFlyout/Icons.h"
@@ -93,12 +73,8 @@ FrameworkElement icons() {
     });
 }
 
-constexpr char8_t iconsAcceleratorsHeader[] = {
-#include "Snippets/MenuFlyout/IconsAccelerators.html.embed"
-};
-constexpr char8_t iconsAcceleratorsCode[] = {
-#include "Snippets/MenuFlyout/IconsAccelerators.h.embed"
-};
+gallery::LazyLoadedText iconsAcceleratorsHeader{"Snippets/MenuFlyout/IconsAccelerators.html"};
+gallery::LazyLoadedText iconsAcceleratorsCode{"Snippets/MenuFlyout/IconsAccelerators.h"};
 
 FrameworkElement iconsAccelerators() {
 #include "Snippets/MenuFlyout/IconsAccelerators.h"
@@ -110,12 +86,8 @@ FrameworkElement iconsAccelerators() {
     });
 }
 
-constexpr char8_t radioHeader[] = {
-#include "Snippets/MenuFlyout/Radio.html.embed"
-};
-constexpr char8_t radioCode[] = {
-#include "Snippets/MenuFlyout/Radio.h.embed"
-};
+gallery::LazyLoadedText radioHeader{"Snippets/MenuFlyout/Radio.html"};
+gallery::LazyLoadedText radioCode{"Snippets/MenuFlyout/Radio.h"};
 
 FrameworkElement radio() {
 #include "Snippets/MenuFlyout/Radio.h"

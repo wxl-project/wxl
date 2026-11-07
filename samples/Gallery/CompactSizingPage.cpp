@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t controlsHeader[] = {
-#include "Snippets/CompactSizing/CompactSizingControls.html.embed"
-};
-constexpr char8_t controlsCode[] = {
-#include "Snippets/CompactSizing/CompactSizingControls.h.embed"
-};
+gallery::LazyLoadedText controlsHeader{"Snippets/CompactSizing/CompactSizingControls.html"};
+gallery::LazyLoadedText controlsCode{"Snippets/CompactSizing/CompactSizingControls.h"};
 
 FrameworkElement controls() {
 #include "Snippets/CompactSizing/CompactSizingControls.h"

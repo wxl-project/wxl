@@ -17,16 +17,10 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t introText[] = {
-#include "Snippets/EasingFunction/Intro.html.embed"
-};
+gallery::LazyLoadedText introText{"Snippets/EasingFunction/Intro.html"};
 
-constexpr char8_t standardHeader[] = {
-#include "Snippets/EasingFunction/StandardEasingFunction.html.embed"
-};
-constexpr char8_t standardCode[] = {
-#include "Snippets/EasingFunction/StandardEasingFunction.h.embed"
-};
+gallery::LazyLoadedText standardHeader{"Snippets/EasingFunction/StandardEasingFunction.html"};
+gallery::LazyLoadedText standardCode{"Snippets/EasingFunction/StandardEasingFunction.h"};
 
 FrameworkElement standard() {
 #include "Snippets/EasingFunction/StandardEasingFunction.h"
@@ -38,12 +32,8 @@ FrameworkElement standard() {
     });
 }
 
-constexpr char8_t accelerateHeader[] = {
-#include "Snippets/EasingFunction/AccelerateEasingFunction.html.embed"
-};
-constexpr char8_t accelerateCode[] = {
-#include "Snippets/EasingFunction/AccelerateEasingFunction.h.embed"
-};
+gallery::LazyLoadedText accelerateHeader{"Snippets/EasingFunction/AccelerateEasingFunction.html"};
+gallery::LazyLoadedText accelerateCode{"Snippets/EasingFunction/AccelerateEasingFunction.h"};
 
 FrameworkElement accelerate() {
 #include "Snippets/EasingFunction/AccelerateEasingFunction.h"
@@ -56,12 +46,8 @@ FrameworkElement accelerate() {
     });
 }
 
-constexpr char8_t decelerateHeader[] = {
-#include "Snippets/EasingFunction/DecelerateEasingFunction.html.embed"
-};
-constexpr char8_t decelerateCode[] = {
-#include "Snippets/EasingFunction/DecelerateEasingFunction.h.embed"
-};
+gallery::LazyLoadedText decelerateHeader{"Snippets/EasingFunction/DecelerateEasingFunction.html"};
+gallery::LazyLoadedText decelerateCode{"Snippets/EasingFunction/DecelerateEasingFunction.h"};
 
 FrameworkElement decelerate() {
 #include "Snippets/EasingFunction/DecelerateEasingFunction.h"
@@ -74,12 +60,8 @@ FrameworkElement decelerate() {
     });
 }
 
-constexpr char8_t otherHeader[] = {
-#include "Snippets/EasingFunction/OtherXamlEasingFunctions.html.embed"
-};
-constexpr char8_t otherCode[] = {
-#include "Snippets/EasingFunction/OtherXamlEasingFunctions.h.embed"
-};
+gallery::LazyLoadedText otherHeader{"Snippets/EasingFunction/OtherXamlEasingFunctions.html"};
+gallery::LazyLoadedText otherCode{"Snippets/EasingFunction/OtherXamlEasingFunctions.h"};
 
 FrameworkElement other() {
 #include "Snippets/EasingFunction/OtherXamlEasingFunctions.h"

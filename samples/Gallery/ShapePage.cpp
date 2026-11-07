@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t ellipseHeader[] = {
-#include "Snippets/Shape/Ellipse.html.embed"
-};
-constexpr char8_t ellipseCode[] = {
-#include "Snippets/Shape/Ellipse.h.embed"
-};
+gallery::LazyLoadedText ellipseHeader{"Snippets/Shape/Ellipse.html"};
+gallery::LazyLoadedText ellipseCode{"Snippets/Shape/Ellipse.h"};
 
 FrameworkElement ellipse() {
 #include "Snippets/Shape/Ellipse.h"
@@ -26,12 +22,8 @@ FrameworkElement ellipse() {
     });
 }
 
-constexpr char8_t rectangleHeader[] = {
-#include "Snippets/Shape/Rectangle.html.embed"
-};
-constexpr char8_t rectangleCode[] = {
-#include "Snippets/Shape/Rectangle.h.embed"
-};
+gallery::LazyLoadedText rectangleHeader{"Snippets/Shape/Rectangle.html"};
+gallery::LazyLoadedText rectangleCode{"Snippets/Shape/Rectangle.h"};
 
 FrameworkElement rectangle() {
 #include "Snippets/Shape/Rectangle.h"
@@ -44,12 +36,8 @@ FrameworkElement rectangle() {
     });
 }
 
-constexpr char8_t polygonHeader[] = {
-#include "Snippets/Shape/Polygon.html.embed"
-};
-constexpr char8_t polygonCode[] = {
-#include "Snippets/Shape/Polygon.h.embed"
-};
+gallery::LazyLoadedText polygonHeader{"Snippets/Shape/Polygon.html"};
+gallery::LazyLoadedText polygonCode{"Snippets/Shape/Polygon.h"};
 
 FrameworkElement polygon() {
 #include "Snippets/Shape/Polygon.h"

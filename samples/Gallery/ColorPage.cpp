@@ -15,12 +15,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t referenceHeader[] = {
-#include "Snippets/Color/ColorBrushReference.html.embed"
-};
-constexpr char8_t referenceCode[] = {
-#include "Snippets/Color/ColorBrushReference.h.embed"
-};
+gallery::LazyLoadedText referenceHeader{"Snippets/Color/ColorBrushReference.html"};
+gallery::LazyLoadedText referenceCode{"Snippets/Color/ColorBrushReference.h"};
 
 FrameworkElement section(int index) {
     switch (index) {

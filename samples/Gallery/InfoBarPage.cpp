@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t changeHeader[] = {
-#include "Snippets/InfoBar/ClosableInfoBarOptionsChange.html.embed"
-};
-constexpr char8_t changeCode[] = {
-#include "Snippets/InfoBar/ClosableInfoBarOptionsChange.h.embed"
-};
+gallery::LazyLoadedText changeHeader{"Snippets/InfoBar/ClosableInfoBarOptionsChange.html"};
+gallery::LazyLoadedText changeCode{"Snippets/InfoBar/ClosableInfoBarOptionsChange.h"};
 
 FrameworkElement change() {
 #include "Snippets/InfoBar/ClosableInfoBarOptionsChange.h"
@@ -26,12 +22,8 @@ FrameworkElement change() {
     });
 }
 
-constexpr char8_t longShortHeader[] = {
-#include "Snippets/InfoBar/ClosableInfoBarLongShort.html.embed"
-};
-constexpr char8_t longShortCode[] = {
-#include "Snippets/InfoBar/ClosableInfoBarLongShort.h.embed"
-};
+gallery::LazyLoadedText longShortHeader{"Snippets/InfoBar/ClosableInfoBarLongShort.html"};
+gallery::LazyLoadedText longShortCode{"Snippets/InfoBar/ClosableInfoBarLongShort.h"};
 
 FrameworkElement longShort() {
 #include "Snippets/InfoBar/ClosableInfoBarLongShort.h"
@@ -44,12 +36,8 @@ FrameworkElement longShort() {
     });
 }
 
-constexpr char8_t displayHeader[] = {
-#include "Snippets/InfoBar/ClosableInfoBarOptionsDisplay.html.embed"
-};
-constexpr char8_t displayCode[] = {
-#include "Snippets/InfoBar/ClosableInfoBarOptionsDisplay.h.embed"
-};
+gallery::LazyLoadedText displayHeader{"Snippets/InfoBar/ClosableInfoBarOptionsDisplay.html"};
+gallery::LazyLoadedText displayCode{"Snippets/InfoBar/ClosableInfoBarOptionsDisplay.h"};
 
 FrameworkElement display() {
 #include "Snippets/InfoBar/ClosableInfoBarOptionsDisplay.h"

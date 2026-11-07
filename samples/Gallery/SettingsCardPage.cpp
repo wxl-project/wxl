@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t basicHeader[] = {
-#include "Snippets/SettingsCard/SettingsCardBasic.html.embed"
-};
-constexpr char8_t basicCode[] = {
-#include "Snippets/SettingsCard/SettingsCardBasic.h.embed"
-};
+gallery::LazyLoadedText basicHeader{"Snippets/SettingsCard/SettingsCardBasic.html"};
+gallery::LazyLoadedText basicCode{"Snippets/SettingsCard/SettingsCardBasic.h"};
 
 FrameworkElement basicExample() {
 #include "Snippets/SettingsCard/SettingsCardBasic.h"
@@ -21,12 +17,8 @@ FrameworkElement basicExample() {
     return gallery::controlExample({.header = gallery::snippet(basicHeader), .example = example, .code = gallery::snippet(basicCode)});
 }
 
-constexpr char8_t clickableHeader[] = {
-#include "Snippets/SettingsCard/SettingsCardClickable.html.embed"
-};
-constexpr char8_t clickableCode[] = {
-#include "Snippets/SettingsCard/SettingsCardClickable.h.embed"
-};
+gallery::LazyLoadedText clickableHeader{"Snippets/SettingsCard/SettingsCardClickable.html"};
+gallery::LazyLoadedText clickableCode{"Snippets/SettingsCard/SettingsCardClickable.h"};
 
 FrameworkElement clickableExample() {
 #include "Snippets/SettingsCard/SettingsCardClickable.h"
@@ -34,12 +26,8 @@ FrameworkElement clickableExample() {
     return gallery::controlExample({.header = gallery::snippet(clickableHeader), .example = example, .code = gallery::snippet(clickableCode)});
 }
 
-constexpr char8_t alignmentHeader[] = {
-#include "Snippets/SettingsCard/SettingsCardAlignment.html.embed"
-};
-constexpr char8_t alignmentCode[] = {
-#include "Snippets/SettingsCard/SettingsCardAlignment.h.embed"
-};
+gallery::LazyLoadedText alignmentHeader{"Snippets/SettingsCard/SettingsCardAlignment.html"};
+gallery::LazyLoadedText alignmentCode{"Snippets/SettingsCard/SettingsCardAlignment.h"};
 
 FrameworkElement alignmentExample() {
 #include "Snippets/SettingsCard/SettingsCardAlignment.h"

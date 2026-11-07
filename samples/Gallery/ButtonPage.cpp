@@ -9,12 +9,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t simpleHeader[] = {
-#include "Snippets/Button/Simple.html.embed"
-};
-constexpr char8_t simpleCode[] = {
-#include "Snippets/Button/Simple.h.embed"
-};
+gallery::LazyLoadedText simpleHeader{"Snippets/Button/Simple.html"};
+gallery::LazyLoadedText simpleCode{"Snippets/Button/Simple.h"};
 
 FrameworkElement simple() {
 #include "Snippets/Button/Simple.h"
@@ -28,12 +24,8 @@ FrameworkElement simple() {
     });
 }
 
-constexpr char8_t withImageHeader[] = {
-#include "Snippets/Button/WithImage.html.embed"
-};
-constexpr char8_t withImageCode[] = {
-#include "Snippets/Button/WithImage.h.embed"
-};
+gallery::LazyLoadedText withImageHeader{"Snippets/Button/WithImage.html"};
+gallery::LazyLoadedText withImageCode{"Snippets/Button/WithImage.h"};
 
 FrameworkElement withImage() {
 #include "Snippets/Button/WithImage.h"
@@ -46,12 +38,8 @@ FrameworkElement withImage() {
     });
 }
 
-constexpr char8_t stylesHeader[] = {
-#include "Snippets/Button/BuiltInStyles.html.embed"
-};
-constexpr char8_t stylesCode[] = {
-#include "Snippets/Button/BuiltInStyles.h.embed"
-};
+gallery::LazyLoadedText stylesHeader{"Snippets/Button/BuiltInStyles.html"};
+gallery::LazyLoadedText stylesCode{"Snippets/Button/BuiltInStyles.h"};
 
 FrameworkElement builtInStyles() {
     return gallery::controlExample({
@@ -63,12 +51,8 @@ FrameworkElement builtInStyles() {
     });
 }
 
-constexpr char8_t wrappingHeader[] = {
-#include "Snippets/Button/Wrapping.html.embed"
-};
-constexpr char8_t wrappingCode[] = {
-#include "Snippets/Button/Wrapping.h.embed"
-};
+gallery::LazyLoadedText wrappingHeader{"Snippets/Button/Wrapping.html"};
+gallery::LazyLoadedText wrappingCode{"Snippets/Button/Wrapping.h"};
 
 FrameworkElement wrapping() {
     return gallery::controlExample({

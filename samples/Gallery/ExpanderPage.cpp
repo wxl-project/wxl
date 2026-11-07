@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t textHeader[] = {
-#include "Snippets/Expander/ExpanderTextHeaderContent.html.embed"
-};
-constexpr char8_t textCode[] = {
-#include "Snippets/Expander/ExpanderTextHeaderContent.h.embed"
-};
+gallery::LazyLoadedText textHeader{"Snippets/Expander/ExpanderTextHeaderContent.html"};
+gallery::LazyLoadedText textCode{"Snippets/Expander/ExpanderTextHeaderContent.h"};
 
 FrameworkElement textHeaderContent() {
 #include "Snippets/Expander/ExpanderTextHeaderContent.h"
@@ -26,12 +22,8 @@ FrameworkElement textHeaderContent() {
     });
 }
 
-constexpr char8_t alignmentHeader[] = {
-#include "Snippets/Expander/ModifyingExpandersContentAlignment.html.embed"
-};
-constexpr char8_t alignmentCode[] = {
-#include "Snippets/Expander/ModifyingExpandersContentAlignment.h.embed"
-};
+gallery::LazyLoadedText alignmentHeader{"Snippets/Expander/ModifyingExpandersContentAlignment.html"};
+gallery::LazyLoadedText alignmentCode{"Snippets/Expander/ModifyingExpandersContentAlignment.h"};
 
 FrameworkElement contentAlignmentExample() {
     return gallery::controlExample({

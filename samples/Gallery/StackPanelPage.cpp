@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t controlHeader[] = {
-#include "Snippets/StackPanel/StackPanelControl.html.embed"
-};
-constexpr char8_t controlCode[] = {
-#include "Snippets/StackPanel/StackPanelControl.h.embed"
-};
+gallery::LazyLoadedText controlHeader{"Snippets/StackPanel/StackPanelControl.html"};
+gallery::LazyLoadedText controlCode{"Snippets/StackPanel/StackPanelControl.h"};
 
 FrameworkElement control() {
 #include "Snippets/StackPanel/StackPanelControl.h"

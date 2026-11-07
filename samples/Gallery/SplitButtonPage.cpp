@@ -14,12 +14,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t colorHeader[] = {
-#include "Snippets/SplitButton/ColorPicker.html.embed"
-};
-constexpr char8_t colorCode[] = {
-#include "Snippets/SplitButton/ColorPicker.h.embed"
-};
+gallery::LazyLoadedText colorHeader{"Snippets/SplitButton/ColorPicker.html"};
+gallery::LazyLoadedText colorCode{"Snippets/SplitButton/ColorPicker.h"};
 
 FrameworkElement colorExample() {
 #include "Snippets/SplitButton/ColorPicker.h"
@@ -32,12 +28,8 @@ FrameworkElement colorExample() {
     });
 }
 
-constexpr char8_t textHeader[] = {
-#include "Snippets/SplitButton/Text.html.embed"
-};
-constexpr char8_t textCode[] = {
-#include "Snippets/SplitButton/Text.h.embed"
-};
+gallery::LazyLoadedText textHeader{"Snippets/SplitButton/Text.html"};
+gallery::LazyLoadedText textCode{"Snippets/SplitButton/Text.h"};
 
 FrameworkElement textExample() {
 #include "Snippets/SplitButton/Text.h"

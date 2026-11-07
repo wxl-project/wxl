@@ -9,12 +9,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t buttonHeader[] = {
-#include "Snippets/AnimatedIcon/AddingAnimatediconButton.html.embed"
-};
-constexpr char8_t buttonCode[] = {
-#include "Snippets/AnimatedIcon/AddingAnimatediconButton.h.embed"
-};
+gallery::LazyLoadedText buttonHeader{"Snippets/AnimatedIcon/AddingAnimatediconButton.html"};
+gallery::LazyLoadedText buttonCode{"Snippets/AnimatedIcon/AddingAnimatediconButton.h"};
 
 FrameworkElement button() {
 #include "Snippets/AnimatedIcon/AddingAnimatediconButton.h"
@@ -27,12 +23,8 @@ FrameworkElement button() {
     });
 }
 
-constexpr char8_t navigationViewHeader[] = {
-#include "Snippets/AnimatedIcon/AddingAnimatediconNavigationview.html.embed"
-};
-constexpr char8_t navigationViewCode[] = {
-#include "Snippets/AnimatedIcon/AddingAnimatediconNavigationview.h.embed"
-};
+gallery::LazyLoadedText navigationViewHeader{"Snippets/AnimatedIcon/AddingAnimatediconNavigationview.html"};
+gallery::LazyLoadedText navigationViewCode{"Snippets/AnimatedIcon/AddingAnimatediconNavigationview.h"};
 
 FrameworkElement navigationView() {
 #include "Snippets/AnimatedIcon/AddingAnimatediconNavigationview.h"

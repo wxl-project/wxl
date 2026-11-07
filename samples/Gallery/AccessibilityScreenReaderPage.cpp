@@ -12,73 +12,29 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t nameFromContentCode[] = {
-#include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderNameFromContent.h.embed"
-};
-constexpr char8_t nameFromHeaderCode[] = {
-#include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderNameFromHeader.h.embed"
-};
-constexpr char8_t nameOnListViewCode[] = {
-#include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderNameOnListView.h.embed"
-};
-constexpr char8_t nameOnImageCode[] = {
-#include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderNameOnImage.h.embed"
-};
-constexpr char8_t labeledByCode[] = {
-#include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderLabeledBy.h.embed"
-};
-constexpr char8_t descriptionCode[] = {
-#include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderDescriptionHelpTextAdd.h.embed"
-};
-constexpr char8_t positionCode[] = {
-#include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderPositionIndicatePositionElement.h.embed"
-};
-constexpr char8_t rawCode[] = {
-#include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderRemoveControlContentVisual.h.embed"
-};
-constexpr char8_t landmarksCode[] = {
-#include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderLandmarks.h.embed"
-};
-constexpr char8_t headingsCode[] = {
-#include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderHeadings.h.embed"
-};
-constexpr char8_t groupsCode[] = {
-#include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderControlGroups.h.embed"
-};
+gallery::LazyLoadedText nameFromContentCode{"Snippets/AccessibilityScreenReader/AccessibilityScreenReaderNameFromContent.h"};
+gallery::LazyLoadedText nameFromHeaderCode{"Snippets/AccessibilityScreenReader/AccessibilityScreenReaderNameFromHeader.h"};
+gallery::LazyLoadedText nameOnListViewCode{"Snippets/AccessibilityScreenReader/AccessibilityScreenReaderNameOnListView.h"};
+gallery::LazyLoadedText nameOnImageCode{"Snippets/AccessibilityScreenReader/AccessibilityScreenReaderNameOnImage.h"};
+gallery::LazyLoadedText labeledByCode{"Snippets/AccessibilityScreenReader/AccessibilityScreenReaderLabeledBy.h"};
+gallery::LazyLoadedText descriptionCode{"Snippets/AccessibilityScreenReader/AccessibilityScreenReaderDescriptionHelpTextAdd.h"};
+gallery::LazyLoadedText positionCode{"Snippets/AccessibilityScreenReader/AccessibilityScreenReaderPositionIndicatePositionElement.h"};
+gallery::LazyLoadedText rawCode{"Snippets/AccessibilityScreenReader/AccessibilityScreenReaderRemoveControlContentVisual.h"};
+gallery::LazyLoadedText landmarksCode{"Snippets/AccessibilityScreenReader/AccessibilityScreenReaderLandmarks.h"};
+gallery::LazyLoadedText headingsCode{"Snippets/AccessibilityScreenReader/AccessibilityScreenReaderHeadings.h"};
+gallery::LazyLoadedText groupsCode{"Snippets/AccessibilityScreenReader/AccessibilityScreenReaderControlGroups.h"};
 
-constexpr char8_t introText[] = {
-#include "Snippets/AccessibilityScreenReader/Intro.html.embed"
-};
-constexpr char8_t accessibleNamesText[] = {
-#include "Snippets/AccessibilityScreenReader/AccessibleNames.html.embed"
-};
-constexpr char8_t automaticNameText[] = {
-#include "Snippets/AccessibilityScreenReader/AutomaticName.html.embed"
-};
-constexpr char8_t manualNameText[] = {
-#include "Snippets/AccessibilityScreenReader/ManualName.html.embed"
-};
-constexpr char8_t labeledByText[] = {
-#include "Snippets/AccessibilityScreenReader/LabeledBy.html.embed"
-};
-constexpr char8_t commonPropertiesText[] = {
-#include "Snippets/AccessibilityScreenReader/CommonProperties.html.embed"
-};
-constexpr char8_t visualTreeText[] = {
-#include "Snippets/AccessibilityScreenReader/VisualTree.html.embed"
-};
-constexpr char8_t landmarksHeadingsText[] = {
-#include "Snippets/AccessibilityScreenReader/LandmarksHeadings.html.embed"
-};
-constexpr char8_t landmarksText[] = {
-#include "Snippets/AccessibilityScreenReader/Landmarks.html.embed"
-};
-constexpr char8_t headingsText[] = {
-#include "Snippets/AccessibilityScreenReader/Headings.html.embed"
-};
-constexpr char8_t controlGroupsText[] = {
-#include "Snippets/AccessibilityScreenReader/ControlGroups.html.embed"
-};
+gallery::LazyLoadedText introText{"Snippets/AccessibilityScreenReader/Intro.html"};
+gallery::LazyLoadedText accessibleNamesText{"Snippets/AccessibilityScreenReader/AccessibleNames.html"};
+gallery::LazyLoadedText automaticNameText{"Snippets/AccessibilityScreenReader/AutomaticName.html"};
+gallery::LazyLoadedText manualNameText{"Snippets/AccessibilityScreenReader/ManualName.html"};
+gallery::LazyLoadedText labeledByText{"Snippets/AccessibilityScreenReader/LabeledBy.html"};
+gallery::LazyLoadedText commonPropertiesText{"Snippets/AccessibilityScreenReader/CommonProperties.html"};
+gallery::LazyLoadedText visualTreeText{"Snippets/AccessibilityScreenReader/VisualTree.html"};
+gallery::LazyLoadedText landmarksHeadingsText{"Snippets/AccessibilityScreenReader/LandmarksHeadings.html"};
+gallery::LazyLoadedText landmarksText{"Snippets/AccessibilityScreenReader/Landmarks.html"};
+gallery::LazyLoadedText headingsText{"Snippets/AccessibilityScreenReader/Headings.html"};
+gallery::LazyLoadedText controlGroupsText{"Snippets/AccessibilityScreenReader/ControlGroups.html"};
 
 // Подзаголовки раздела; уровень сообщается экранному диктору.
 TextBlock heading2(char16_t const* text, bool spaced = true) {
