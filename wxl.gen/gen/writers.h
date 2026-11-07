@@ -3,6 +3,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -67,6 +68,7 @@ void write_brushes(output const& out, model const& m, emitted& em);
 // from profiles/fluent-symbols.json. Not from metadata and not from the
 // dictionaries: the font carries no glyph names, so the list is data typed
 // in once and shared by every profile, the way types.json is.
+inline constexpr std::string_view symbols_header = "FluentSymbol.h";
 void write_symbols(output const& out, model const& m, emitted& em);
 
 // aliases.txt -- a reference sheet, not code: every StaticResource alias of

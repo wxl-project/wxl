@@ -18,6 +18,8 @@ constexpr std::string_view usage = R"(winui-srcgen -- generates wxl wrappers fro
                --packages <restored-packages.json> --out <dir> [--parts <n>]
                [--winmd <file.winmd>]... [--types <file.json>]
                [--docs [--doc-language <code>]]
+               [--component-dir <dir>]... [--component <name>]...
+               [--common-dir <dir>]
 
   --profile      Input profile; may be repeated. Profiles say which NuGet
                  packages to read, which types are the roots of the
@@ -59,6 +61,21 @@ constexpr std::string_view usage = R"(winui-srcgen -- generates wxl wrappers fro
                  (default: en); any other code is refused before the run.
                  Where a contract has no file in it, English is used and
                  said. Needs --docs.
+  --component-dir  Directory holding components, repeatable: a component N is
+                 <dir>/N/component.json. The chain's "needs" are resolved
+                 from the directories given.
+  --component    A component the build read from the chain; repeatable. With
+                 --component-dir, the list -- empty when none is given -- is
+                 compared as a set with the chain's own "components", before
+                 "needs" adds to them, and a mismatch stops the run with both
+                 lists named. Without --component-dir it is refused.
+  --common-dir   The library's include directory (wxl.ui/src), which holds
+                 what no component owns. When set, every include a profile
+                 or a selected component gives is checked: "../X.h" must be
+                 X in this directory or in a selected component's directory,
+                 and not a file of a component the profiles do not select; a
+                 name without "../" must be a header the generator writes.
+                 Any other include stops the run.
 )";
 
 // "de, en, ...": the codes of documentation_languages, for the help and for
@@ -100,6 +117,7 @@ struct options {
     // --docs names none; null without --docs.
     documentation_language const* doc_language = nullptr;
     bool help = false;
+    component_search search;
 };
 
 // An argument as text, for a message or for an option that takes text: UTF-8, as
@@ -154,6 +172,12 @@ options parse_options(int argc, wchar_t** argv) {
             language = text_value(i, argument);
         } else if (argument == L"--help" || argument == L"-h") {
             opts.help = true;
+        } else if (argument == L"--component-dir") {
+            opts.search.directories.emplace_back(value(i, argument));
+        } else if (argument == L"--component") {
+            opts.search.expected.push_back(text_value(i, argument));
+        } else if (argument == L"--common-dir") {
+            opts.search.common_directory = value(i, argument);
         } else {
             throw std::runtime_error(std::format("unknown argument: {}", text_of(argument)));
         }
@@ -182,6 +206,7 @@ options parse_options(int argc, wchar_t** argv) {
     if (opts.symbols.empty() && !opts.profiles.empty()) {
         opts.symbols = opts.profiles.front().parent_path() / "fluent-symbols.json";
     }
+    opts.search.generated_includes.emplace_back(gen::symbols_header);
     return opts;
 }
 
@@ -219,7 +244,8 @@ int wmain(int argc, wchar_t** argv) {
             symbols = load_symbol_names(opts.symbols);
         }
 
-        auto profiles = resolve_profiles(opts.profiles, load_restored_packages(opts.packages));
+        auto profiles = resolve_profiles(opts.profiles, load_restored_packages(opts.packages),
+                                         opts.search);
         for (auto&& file : opts.extra_metadata) {
             if (!std::filesystem::is_regular_file(file)) {
                 throw std::runtime_error(std::format("no such metadata file: {}",
