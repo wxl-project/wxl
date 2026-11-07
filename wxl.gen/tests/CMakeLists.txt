@@ -20,6 +20,7 @@ wxl_restored_packages_file(_wxl_gen_restored_packages)
 target_compile_definitions(wxl.gen.tests
     PRIVATE
         WXL_GEN_PROFILES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../profiles"
+        WXL_UI_COMPONENTS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../../wxl.ui/components"
         WXL_RESTORED_PACKAGES="${_wxl_gen_restored_packages}"
 )
 

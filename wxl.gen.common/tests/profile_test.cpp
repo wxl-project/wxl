@@ -16,6 +16,8 @@ namespace {
 
 // u8, so that the path reads the directory as UTF-8 and not in the ANSI code page.
 std::filesystem::path const profiles_dir{u8"" WXL_GEN_PROFILES_DIR};
+// The components the profiles name, as the build finds them.
+std::filesystem::path const components_dir{u8"" WXL_UI_COMPONENTS_DIR};
 
 // The list the configure of this build wrote: the packages its restore resolved
 // and the Windows SDK of its projection.
@@ -118,7 +120,8 @@ std::string stops_with(F&& call) {
 TEST(profile, the_windows_metadata_is_the_one_the_build_projects) {
     auto const restored = load_restored_packages(restored_packages_file);
     ASSERT_FALSE(restored.sdk.metadata.empty());
-    auto const profiles = resolve_profiles({profiles_dir / "base.winxl-profile"}, restored);
+    auto const profiles = resolve_profiles({profiles_dir / "base.winxl-profile"}, restored,
+                                           {.directories = {components_dir}});
 
     for (auto&& file : restored.sdk.metadata) {
         EXPECT_NE(std::ranges::find(profiles.metadata, file), profiles.metadata.end())
