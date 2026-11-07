@@ -17,12 +17,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t opacityExampleHeader[] = {
-#include "Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesOpacity.html.embed"
-};
-constexpr char8_t opacityExampleCode[] = {
-#include "Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesOpacity.h.embed"
-};
+gallery::LazyLoadedText opacityExampleHeader{"Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesOpacity.html"};
+gallery::LazyLoadedText opacityExampleCode{"Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesOpacity.h"};
 
 FrameworkElement opacityExample() {
 #include "Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesOpacity.h"
@@ -35,12 +31,8 @@ FrameworkElement opacityExample() {
     });
 }
 
-constexpr char8_t rotationExampleHeader[] = {
-#include "Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesRotation.html.embed"
-};
-constexpr char8_t rotationExampleCode[] = {
-#include "Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesRotation.h.embed"
-};
+gallery::LazyLoadedText rotationExampleHeader{"Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesRotation.html"};
+gallery::LazyLoadedText rotationExampleCode{"Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesRotation.h"};
 
 FrameworkElement rotationExample() {
 #include "Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesRotation.h"
@@ -53,12 +45,8 @@ FrameworkElement rotationExample() {
     });
 }
 
-constexpr char8_t scaleExampleHeader[] = {
-#include "Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesScale.html.embed"
-};
-constexpr char8_t scaleExampleCode[] = {
-#include "Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesScale.h.embed"
-};
+gallery::LazyLoadedText scaleExampleHeader{"Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesScale.html"};
+gallery::LazyLoadedText scaleExampleCode{"Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesScale.h"};
 
 FrameworkElement scaleExample() {
 #include "Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesScale.h"
@@ -71,12 +59,8 @@ FrameworkElement scaleExample() {
     });
 }
 
-constexpr char8_t translationExampleHeader[] = {
-#include "Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesTranslation.html.embed"
-};
-constexpr char8_t translationExampleCode[] = {
-#include "Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesTranslation.h.embed"
-};
+gallery::LazyLoadedText translationExampleHeader{"Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesTranslation.html"};
+gallery::LazyLoadedText translationExampleCode{"Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesTranslation.h"};
 
 FrameworkElement translationExample() {
 #include "Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesTranslation.h"
@@ -89,12 +73,8 @@ FrameworkElement translationExample() {
     });
 }
 
-constexpr char8_t backgroundExampleHeader[] = {
-#include "Snippets/ImplicitTransition/ImplicitTransitionImplicitlyAnimateBackgroundChanges.html.embed"
-};
-constexpr char8_t backgroundExampleCode[] = {
-#include "Snippets/ImplicitTransition/ImplicitTransitionImplicitlyAnimateBackgroundChanges.h.embed"
-};
+gallery::LazyLoadedText backgroundExampleHeader{"Snippets/ImplicitTransition/ImplicitTransitionImplicitlyAnimateBackgroundChanges.html"};
+gallery::LazyLoadedText backgroundExampleCode{"Snippets/ImplicitTransition/ImplicitTransitionImplicitlyAnimateBackgroundChanges.h"};
 
 FrameworkElement backgroundExample() {
 #include "Snippets/ImplicitTransition/ImplicitTransitionImplicitlyAnimateBackgroundChanges.h"
@@ -107,12 +87,8 @@ FrameworkElement backgroundExample() {
     });
 }
 
-constexpr char8_t themeExampleHeader[] = {
-#include "Snippets/ImplicitTransition/ImplicitTransitionImplicitlyAnimateGridTheme.html.embed"
-};
-constexpr char8_t themeExampleCode[] = {
-#include "Snippets/ImplicitTransition/ImplicitTransitionImplicitlyAnimateGridTheme.h.embed"
-};
+gallery::LazyLoadedText themeExampleHeader{"Snippets/ImplicitTransition/ImplicitTransitionImplicitlyAnimateGridTheme.html"};
+gallery::LazyLoadedText themeExampleCode{"Snippets/ImplicitTransition/ImplicitTransitionImplicitlyAnimateGridTheme.h"};
 
 FrameworkElement themeExample() {
 #include "Snippets/ImplicitTransition/ImplicitTransitionImplicitlyAnimateGridTheme.h"

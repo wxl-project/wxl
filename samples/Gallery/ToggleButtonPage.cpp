@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t simpleHeader[] = {
-#include "Snippets/ToggleButton/Simple.html.embed"
-};
-constexpr char8_t simpleCode[] = {
-#include "Snippets/ToggleButton/Simple.h.embed"
-};
+gallery::LazyLoadedText simpleHeader{"Snippets/ToggleButton/Simple.html"};
+gallery::LazyLoadedText simpleCode{"Snippets/ToggleButton/Simple.h"};
 
 FrameworkElement simple() {
 #include "Snippets/ToggleButton/Simple.h"

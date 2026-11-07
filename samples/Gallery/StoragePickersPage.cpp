@@ -18,12 +18,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t singleHeader[] = {
-#include "Snippets/StoragePickers/StoragePickersPickSingleFile.html.embed"
-};
-constexpr char8_t singleCode[] = {
-#include "Snippets/StoragePickers/StoragePickersPickSingleFile.h.embed"
-};
+gallery::LazyLoadedText singleHeader{"Snippets/StoragePickers/StoragePickersPickSingleFile.html"};
+gallery::LazyLoadedText singleCode{"Snippets/StoragePickers/StoragePickersPickSingleFile.h"};
 
 FrameworkElement single() {
 #include "Snippets/StoragePickers/StoragePickersPickSingleFile.h"
@@ -36,12 +32,8 @@ FrameworkElement single() {
     });
 }
 
-constexpr char8_t multipleHeader[] = {
-#include "Snippets/StoragePickers/StoragePickersPickMultipleFiles.html.embed"
-};
-constexpr char8_t multipleCode[] = {
-#include "Snippets/StoragePickers/StoragePickersPickMultipleFiles.h.embed"
-};
+gallery::LazyLoadedText multipleHeader{"Snippets/StoragePickers/StoragePickersPickMultipleFiles.html"};
+gallery::LazyLoadedText multipleCode{"Snippets/StoragePickers/StoragePickersPickMultipleFiles.h"};
 
 FrameworkElement multiple() {
 #include "Snippets/StoragePickers/StoragePickersPickMultipleFiles.h"
@@ -54,12 +46,8 @@ FrameworkElement multiple() {
     });
 }
 
-constexpr char8_t saveHeader[] = {
-#include "Snippets/StoragePickers/StoragePickersSaveFile.html.embed"
-};
-constexpr char8_t saveCode[] = {
-#include "Snippets/StoragePickers/StoragePickersSaveFile.h.embed"
-};
+gallery::LazyLoadedText saveHeader{"Snippets/StoragePickers/StoragePickersSaveFile.html"};
+gallery::LazyLoadedText saveCode{"Snippets/StoragePickers/StoragePickersSaveFile.h"};
 
 FrameworkElement save() {
 #include "Snippets/StoragePickers/StoragePickersSaveFile.h"
@@ -72,12 +60,8 @@ FrameworkElement save() {
     });
 }
 
-constexpr char8_t folderHeader[] = {
-#include "Snippets/StoragePickers/StoragePickersPickFolder.html.embed"
-};
-constexpr char8_t folderCode[] = {
-#include "Snippets/StoragePickers/StoragePickersPickFolder.h.embed"
-};
+gallery::LazyLoadedText folderHeader{"Snippets/StoragePickers/StoragePickersPickFolder.html"};
+gallery::LazyLoadedText folderCode{"Snippets/StoragePickers/StoragePickersPickFolder.h"};
 
 FrameworkElement folder() {
 #include "Snippets/StoragePickers/StoragePickersPickFolder.h"
@@ -90,12 +74,8 @@ FrameworkElement folder() {
     });
 }
 
-constexpr char8_t thumbnailHeader[] = {
-#include "Snippets/StoragePickers/StoragePickersFileThumbnail.html.embed"
-};
-constexpr char8_t thumbnailCode[] = {
-#include "Snippets/StoragePickers/StoragePickersFileThumbnail.h.embed"
-};
+gallery::LazyLoadedText thumbnailHeader{"Snippets/StoragePickers/StoragePickersFileThumbnail.html"};
+gallery::LazyLoadedText thumbnailCode{"Snippets/StoragePickers/StoragePickersFileThumbnail.h"};
 
 FrameworkElement thumbnail() {
 #include "Snippets/StoragePickers/StoragePickersFileThumbnail.h"

@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t basicHeader[] = {
-#include "Snippets/SettingsExpander/SettingsExpanderBasic.html.embed"
-};
-constexpr char8_t basicCode[] = {
-#include "Snippets/SettingsExpander/SettingsExpanderBasic.h.embed"
-};
+gallery::LazyLoadedText basicHeader{"Snippets/SettingsExpander/SettingsExpanderBasic.html"};
+gallery::LazyLoadedText basicCode{"Snippets/SettingsExpander/SettingsExpanderBasic.h"};
 
 FrameworkElement basicExample() {
 #include "Snippets/SettingsExpander/SettingsExpanderBasic.h"

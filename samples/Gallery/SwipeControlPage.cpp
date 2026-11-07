@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t revealActionsHeader[] = {
-#include "Snippets/SwipeControl/RevealActions.html.embed"
-};
-constexpr char8_t revealActionsCode[] = {
-#include "Snippets/SwipeControl/RevealActions.h.embed"
-};
+gallery::LazyLoadedText revealActionsHeader{"Snippets/SwipeControl/RevealActions.html"};
+gallery::LazyLoadedText revealActionsCode{"Snippets/SwipeControl/RevealActions.h"};
 
 FrameworkElement revealActions() {
 #include "Snippets/SwipeControl/RevealActions.h"
@@ -25,12 +21,8 @@ FrameworkElement revealActions() {
     });
 }
 
-constexpr char8_t invokeExecuteHeader[] = {
-#include "Snippets/SwipeControl/InvokeExecute.html.embed"
-};
-constexpr char8_t invokeExecuteCode[] = {
-#include "Snippets/SwipeControl/InvokeExecute.h.embed"
-};
+gallery::LazyLoadedText invokeExecuteHeader{"Snippets/SwipeControl/InvokeExecute.html"};
+gallery::LazyLoadedText invokeExecuteCode{"Snippets/SwipeControl/InvokeExecute.h"};
 
 FrameworkElement invokeExecute() {
 #include "Snippets/SwipeControl/InvokeExecute.h"
@@ -42,12 +34,8 @@ FrameworkElement invokeExecute() {
     });
 }
 
-constexpr char8_t listViewHeader[] = {
-#include "Snippets/SwipeControl/ListView.html.embed"
-};
-constexpr char8_t listViewCode[] = {
-#include "Snippets/SwipeControl/ListView.h.embed"
-};
+gallery::LazyLoadedText listViewHeader{"Snippets/SwipeControl/ListView.html"};
+gallery::LazyLoadedText listViewCode{"Snippets/SwipeControl/ListView.h"};
 
 FrameworkElement listView() {
 #include "Snippets/SwipeControl/ListView.h"
@@ -59,12 +47,8 @@ FrameworkElement listView() {
     });
 }
 
-constexpr char8_t gradientHeader[] = {
-#include "Snippets/SwipeControl/GradientBackground.html.embed"
-};
-constexpr char8_t gradientCode[] = {
-#include "Snippets/SwipeControl/GradientBackground.h.embed"
-};
+gallery::LazyLoadedText gradientHeader{"Snippets/SwipeControl/GradientBackground.html"};
+gallery::LazyLoadedText gradientCode{"Snippets/SwipeControl/GradientBackground.h"};
 
 FrameworkElement gradient() {
 #include "Snippets/SwipeControl/GradientBackground.h"
@@ -76,12 +60,8 @@ FrameworkElement gradient() {
     });
 }
 
-constexpr char8_t customIconsHeader[] = {
-#include "Snippets/SwipeControl/CustomIcons.html.embed"
-};
-constexpr char8_t customIconsCode[] = {
-#include "Snippets/SwipeControl/CustomIcons.h.embed"
-};
+gallery::LazyLoadedText customIconsHeader{"Snippets/SwipeControl/CustomIcons.html"};
+gallery::LazyLoadedText customIconsCode{"Snippets/SwipeControl/CustomIcons.h"};
 
 FrameworkElement customIcons() {
 #include "Snippets/SwipeControl/CustomIcons.h"

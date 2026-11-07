@@ -10,12 +10,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t ButtonHeader[] = {
-#include "Snippets/Magnify/Button.html.embed"
-};
-constexpr char8_t ButtonCode[] = {
-#include "Snippets/Magnify/Button.h.embed"
-};
+gallery::LazyLoadedText ButtonHeader{"Snippets/Magnify/Button.html"};
+gallery::LazyLoadedText ButtonCode{"Snippets/Magnify/Button.h"};
 
 FrameworkElement buttonExample() {
 #include "Snippets/Magnify/Button.h"
@@ -27,12 +23,8 @@ FrameworkElement buttonExample() {
     });
 }
 
-constexpr char8_t ToolbarHeader[] = {
-#include "Snippets/Magnify/Toolbar.html.embed"
-};
-constexpr char8_t ToolbarCode[] = {
-#include "Snippets/Magnify/Toolbar.h.embed"
-};
+gallery::LazyLoadedText ToolbarHeader{"Snippets/Magnify/Toolbar.html"};
+gallery::LazyLoadedText ToolbarCode{"Snippets/Magnify/Toolbar.h"};
 
 FrameworkElement toolbarExample() {
 #include "Snippets/Magnify/Toolbar.h"
@@ -44,12 +36,8 @@ FrameworkElement toolbarExample() {
     });
 }
 
-constexpr char8_t CocktailHeader[] = {
-#include "Snippets/Magnify/Cocktail.html.embed"
-};
-constexpr char8_t CocktailCode[] = {
-#include "Snippets/Magnify/Cocktail.h.embed"
-};
+gallery::LazyLoadedText CocktailHeader{"Snippets/Magnify/Cocktail.html"};
+gallery::LazyLoadedText CocktailCode{"Snippets/Magnify/Cocktail.h"};
 
 FrameworkElement cocktailExample() {
 #include "Snippets/Magnify/Cocktail.h"

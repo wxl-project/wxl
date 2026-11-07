@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t bitmapIconHeader[] = {
-#include "Snippets/IconElement/MulticolorBitmap.html.embed"
-};
-constexpr char8_t bitmapIconCode[] = {
-#include "Snippets/IconElement/MulticolorBitmap.h.embed"
-};
+gallery::LazyLoadedText bitmapIconHeader{"Snippets/IconElement/MulticolorBitmap.html"};
+gallery::LazyLoadedText bitmapIconCode{"Snippets/IconElement/MulticolorBitmap.h"};
 
 FrameworkElement bitmapIcon() {
 #include "Snippets/IconElement/MulticolorBitmap.h"
@@ -26,12 +22,8 @@ FrameworkElement bitmapIcon() {
     });
 }
 
-constexpr char8_t fontIconHeader[] = {
-#include "Snippets/IconElement/FontGlyph.html.embed"
-};
-constexpr char8_t fontIconCode[] = {
-#include "Snippets/IconElement/FontGlyph.h.embed"
-};
+gallery::LazyLoadedText fontIconHeader{"Snippets/IconElement/FontGlyph.html"};
+gallery::LazyLoadedText fontIconCode{"Snippets/IconElement/FontGlyph.h"};
 
 FrameworkElement fontIcon() {
 #include "Snippets/IconElement/FontGlyph.h"
@@ -43,12 +35,8 @@ FrameworkElement fontIcon() {
     });
 }
 
-constexpr char8_t imageIconHeader[] = {
-#include "Snippets/IconElement/ImageBitmap.html.embed"
-};
-constexpr char8_t imageIconCode[] = {
-#include "Snippets/IconElement/ImageBitmap.h.embed"
-};
+gallery::LazyLoadedText imageIconHeader{"Snippets/IconElement/ImageBitmap.html"};
+gallery::LazyLoadedText imageIconCode{"Snippets/IconElement/ImageBitmap.h"};
 
 FrameworkElement imageIcon() {
 #include "Snippets/IconElement/ImageBitmap.h"
@@ -60,12 +48,8 @@ FrameworkElement imageIcon() {
     });
 }
 
-constexpr char8_t svgIconHeader[] = {
-#include "Snippets/IconElement/ImageSvg.html.embed"
-};
-constexpr char8_t svgIconCode[] = {
-#include "Snippets/IconElement/ImageSvg.h.embed"
-};
+gallery::LazyLoadedText svgIconHeader{"Snippets/IconElement/ImageSvg.html"};
+gallery::LazyLoadedText svgIconCode{"Snippets/IconElement/ImageSvg.h"};
 
 FrameworkElement svgIcon() {
     return gallery::controlExample({
@@ -77,12 +61,8 @@ FrameworkElement svgIcon() {
     });
 }
 
-constexpr char8_t pathIconHeader[] = {
-#include "Snippets/IconElement/Path.html.embed"
-};
-constexpr char8_t pathIconCode[] = {
-#include "Snippets/IconElement/Path.h.embed"
-};
+gallery::LazyLoadedText pathIconHeader{"Snippets/IconElement/Path.html"};
+gallery::LazyLoadedText pathIconCode{"Snippets/IconElement/Path.h"};
 
 FrameworkElement pathIcon() {
 #include "Snippets/IconElement/Path.h"
@@ -94,12 +74,8 @@ FrameworkElement pathIcon() {
     });
 }
 
-constexpr char8_t symbolIconHeader[] = {
-#include "Snippets/IconElement/Symbol.html.embed"
-};
-constexpr char8_t symbolIconCode[] = {
-#include "Snippets/IconElement/Symbol.h.embed"
-};
+gallery::LazyLoadedText symbolIconHeader{"Snippets/IconElement/Symbol.html"};
+gallery::LazyLoadedText symbolIconCode{"Snippets/IconElement/Symbol.h"};
 
 FrameworkElement symbolIcon() {
 #include "Snippets/IconElement/Symbol.h"

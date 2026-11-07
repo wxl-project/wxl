@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t basicHeader[] = {
-#include "Snippets/HeaderedContentControl/HeaderedContentControlBasic.html.embed"
-};
-constexpr char8_t basicCode[] = {
-#include "Snippets/HeaderedContentControl/HeaderedContentControlBasic.h.embed"
-};
+gallery::LazyLoadedText basicHeader{"Snippets/HeaderedContentControl/HeaderedContentControlBasic.html"};
+gallery::LazyLoadedText basicCode{"Snippets/HeaderedContentControl/HeaderedContentControlBasic.h"};
 
 FrameworkElement basicExample() {
 #include "Snippets/HeaderedContentControl/HeaderedContentControlBasic.h"

@@ -7,12 +7,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t simpleHeader[] = {
-#include "Snippets/RatingControl/Simple.html.embed"
-};
-constexpr char8_t simpleCode[] = {
-#include "Snippets/RatingControl/Simple.h.embed"
-};
+gallery::LazyLoadedText simpleHeader{"Snippets/RatingControl/Simple.html"};
+gallery::LazyLoadedText simpleCode{"Snippets/RatingControl/Simple.h"};
 
 FrameworkElement simple() {
 #include "Snippets/RatingControl/Simple.h"
@@ -26,12 +22,8 @@ FrameworkElement simple() {
     });
 }
 
-constexpr char8_t placeholderHeader[] = {
-#include "Snippets/RatingControl/Placeholder.html.embed"
-};
-constexpr char8_t placeholderCode[] = {
-#include "Snippets/RatingControl/Placeholder.h.embed"
-};
+gallery::LazyLoadedText placeholderHeader{"Snippets/RatingControl/Placeholder.html"};
+gallery::LazyLoadedText placeholderCode{"Snippets/RatingControl/Placeholder.h"};
 
 FrameworkElement placeholder() {
 #include "Snippets/RatingControl/Placeholder.h"

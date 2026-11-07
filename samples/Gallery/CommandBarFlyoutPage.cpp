@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t onAppObjectHeader[] = {
-#include "Snippets/CommandBarFlyout/OnAppObject.html.embed"
-};
-constexpr char8_t onAppObjectCode[] = {
-#include "Snippets/CommandBarFlyout/OnAppObject.h.embed"
-};
+gallery::LazyLoadedText onAppObjectHeader{"Snippets/CommandBarFlyout/OnAppObject.html"};
+gallery::LazyLoadedText onAppObjectCode{"Snippets/CommandBarFlyout/OnAppObject.h"};
 
 FrameworkElement onAppObject() {
 #include "Snippets/CommandBarFlyout/OnAppObject.h"

@@ -11,12 +11,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t creatingHeader[] = {
-#include "Snippets/CompositionWindow/CreatingWindow.html.embed"
-};
-constexpr char8_t creatingCode[] = {
-#include "Snippets/CompositionWindow/CreatingWindow.h.embed"
-};
+gallery::LazyLoadedText creatingHeader{"Snippets/CompositionWindow/CreatingWindow.html"};
+gallery::LazyLoadedText creatingCode{"Snippets/CompositionWindow/CreatingWindow.h"};
 
 FrameworkElement creating() {
 #include "Snippets/CompositionWindow/CreatingWindow.h"
@@ -29,12 +25,8 @@ FrameworkElement creating() {
     });
 }
 
-constexpr char8_t sceneBackgroundHeader[] = {
-#include "Snippets/CompositionWindow/SceneBackground.html.embed"
-};
-constexpr char8_t sceneBackgroundCode[] = {
-#include "Snippets/CompositionWindow/SceneBackground.h.embed"
-};
+gallery::LazyLoadedText sceneBackgroundHeader{"Snippets/CompositionWindow/SceneBackground.html"};
+gallery::LazyLoadedText sceneBackgroundCode{"Snippets/CompositionWindow/SceneBackground.h"};
 
 FrameworkElement sceneBackground() {
 #include "Snippets/CompositionWindow/SceneBackground.h"
@@ -47,12 +39,8 @@ FrameworkElement sceneBackground() {
     });
 }
 
-constexpr char8_t visualsHeader[] = {
-#include "Snippets/CompositionWindow/SceneVisuals.html.embed"
-};
-constexpr char8_t visualsCode[] = {
-#include "Snippets/CompositionWindow/SceneVisuals.h.embed"
-};
+gallery::LazyLoadedText visualsHeader{"Snippets/CompositionWindow/SceneVisuals.html"};
+gallery::LazyLoadedText visualsCode{"Snippets/CompositionWindow/SceneVisuals.h"};
 
 FrameworkElement visuals() {
 #include "Snippets/CompositionWindow/SceneVisuals.h"
@@ -64,12 +52,8 @@ FrameworkElement visuals() {
     });
 }
 
-constexpr char8_t sizeAndModeHeader[] = {
-#include "Snippets/CompositionWindow/SizeZoomAndMode.html.embed"
-};
-constexpr char8_t sizeAndModeCode[] = {
-#include "Snippets/CompositionWindow/SizeZoomAndMode.h.embed"
-};
+gallery::LazyLoadedText sizeAndModeHeader{"Snippets/CompositionWindow/SizeZoomAndMode.html"};
+gallery::LazyLoadedText sizeAndModeCode{"Snippets/CompositionWindow/SizeZoomAndMode.h"};
 
 FrameworkElement sizeAndMode() {
 #include "Snippets/CompositionWindow/SizeZoomAndMode.h"
@@ -82,12 +66,8 @@ FrameworkElement sizeAndMode() {
     });
 }
 
-constexpr char8_t inputHeader[] = {
-#include "Snippets/CompositionWindow/InputDropsAndPlace.html.embed"
-};
-constexpr char8_t inputCode[] = {
-#include "Snippets/CompositionWindow/InputDropsAndPlace.h.embed"
-};
+gallery::LazyLoadedText inputHeader{"Snippets/CompositionWindow/InputDropsAndPlace.html"};
+gallery::LazyLoadedText inputCode{"Snippets/CompositionWindow/InputDropsAndPlace.h"};
 
 FrameworkElement input() {
 #include "Snippets/CompositionWindow/InputDropsAndPlace.h"

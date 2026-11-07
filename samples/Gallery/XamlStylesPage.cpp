@@ -11,25 +11,13 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t definitionText[] = {
-#include "Snippets/XamlStyles/Definition.html.embed"
-};
-constexpr char8_t styleKindsText[] = {
-#include "Snippets/XamlStyles/StyleKinds.html.embed"
-};
+gallery::LazyLoadedText definitionText{"Snippets/XamlStyles/Definition.html"};
+gallery::LazyLoadedText styleKindsText{"Snippets/XamlStyles/StyleKinds.html"};
 
-constexpr char8_t applyingHeader[] = {
-#include "Snippets/XamlStyles/XamlStylesCreatingApplyingStyle.html.embed"
-};
-constexpr char8_t applyingCode[] = {
-#include "Snippets/XamlStyles/XamlStylesCreatingApplyingStyle.h.embed"
-};
-constexpr char8_t implicitHeader[] = {
-#include "Snippets/XamlStyles/XamlStylesStyleWithoutKeyImplicit.html.embed"
-};
-constexpr char8_t implicitCode[] = {
-#include "Snippets/XamlStyles/XamlStylesStyleWithoutKeyImplicit.h.embed"
-};
+gallery::LazyLoadedText applyingHeader{"Snippets/XamlStyles/XamlStylesCreatingApplyingStyle.html"};
+gallery::LazyLoadedText applyingCode{"Snippets/XamlStyles/XamlStylesCreatingApplyingStyle.h"};
+gallery::LazyLoadedText implicitHeader{"Snippets/XamlStyles/XamlStylesStyleWithoutKeyImplicit.html"};
+gallery::LazyLoadedText implicitCode{"Snippets/XamlStyles/XamlStylesStyleWithoutKeyImplicit.h"};
 
 FrameworkElement applying() {
 #include "Snippets/XamlStyles/XamlStylesCreatingApplyingStyle.h"

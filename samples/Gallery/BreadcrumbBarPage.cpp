@@ -16,12 +16,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t basicHeader[] = {
-#include "Snippets/BreadcrumbBar/BreadcrumbbarControl.html.embed"
-};
-constexpr char8_t basicCode[] = {
-#include "Snippets/BreadcrumbBar/BreadcrumbbarControl.h.embed"
-};
+gallery::LazyLoadedText basicHeader{"Snippets/BreadcrumbBar/BreadcrumbbarControl.html"};
+gallery::LazyLoadedText basicCode{"Snippets/BreadcrumbBar/BreadcrumbbarControl.h"};
 
 FrameworkElement basic() {
 #include "Snippets/BreadcrumbBar/BreadcrumbbarControl.h"
@@ -33,12 +29,8 @@ FrameworkElement basic() {
     });
 }
 
-constexpr char8_t customTemplateHeader[] = {
-#include "Snippets/BreadcrumbBar/BreadcrumbbarControlCustomDatatemplate.html.embed"
-};
-constexpr char8_t customTemplateCode[] = {
-#include "Snippets/BreadcrumbBar/BreadcrumbbarControlCustomDatatemplate.h.embed"
-};
+gallery::LazyLoadedText customTemplateHeader{"Snippets/BreadcrumbBar/BreadcrumbbarControlCustomDatatemplate.html"};
+gallery::LazyLoadedText customTemplateCode{"Snippets/BreadcrumbBar/BreadcrumbbarControlCustomDatatemplate.h"};
 
 FrameworkElement customTemplate() {
 #include "Snippets/BreadcrumbBar/BreadcrumbbarControlCustomDatatemplate.h"

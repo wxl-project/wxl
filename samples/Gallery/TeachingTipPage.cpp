@@ -9,12 +9,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t targetedHeader[] = {
-#include "Snippets/TeachingTip/ShowTargetedTeachingtipButton.html.embed"
-};
-constexpr char8_t targetedCode[] = {
-#include "Snippets/TeachingTip/ShowTargetedTeachingtipButton.h.embed"
-};
+gallery::LazyLoadedText targetedHeader{"Snippets/TeachingTip/ShowTargetedTeachingtipButton.html"};
+gallery::LazyLoadedText targetedCode{"Snippets/TeachingTip/ShowTargetedTeachingtipButton.h"};
 
 FrameworkElement targeted() {
 #include "Snippets/TeachingTip/ShowTargetedTeachingtipButton.h"
@@ -26,12 +22,8 @@ FrameworkElement targeted() {
     });
 }
 
-constexpr char8_t nonTargetedHeader[] = {
-#include "Snippets/TeachingTip/ShowNonTargetedTeachingtip.html.embed"
-};
-constexpr char8_t nonTargetedCode[] = {
-#include "Snippets/TeachingTip/ShowNonTargetedTeachingtip.h.embed"
-};
+gallery::LazyLoadedText nonTargetedHeader{"Snippets/TeachingTip/ShowNonTargetedTeachingtip.html"};
+gallery::LazyLoadedText nonTargetedCode{"Snippets/TeachingTip/ShowNonTargetedTeachingtip.h"};
 
 FrameworkElement nonTargeted() {
 #include "Snippets/TeachingTip/ShowNonTargetedTeachingtip.h"
@@ -43,12 +35,8 @@ FrameworkElement nonTargeted() {
     });
 }
 
-constexpr char8_t heroHeader[] = {
-#include "Snippets/TeachingTip/ShowTargetedTeachingtipHero.html.embed"
-};
-constexpr char8_t heroCode[] = {
-#include "Snippets/TeachingTip/ShowTargetedTeachingtipHero.h.embed"
-};
+gallery::LazyLoadedText heroHeader{"Snippets/TeachingTip/ShowTargetedTeachingtipHero.html"};
+gallery::LazyLoadedText heroCode{"Snippets/TeachingTip/ShowTargetedTeachingtipHero.h"};
 
 FrameworkElement hero() {
 #include "Snippets/TeachingTip/ShowTargetedTeachingtipHero.h"

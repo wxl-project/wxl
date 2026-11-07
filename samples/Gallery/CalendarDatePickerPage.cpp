@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t headerPlaceholderHeader[] = {
-#include "Snippets/CalendarDatePicker/HeaderPlaceholder.html.embed"
-};
-constexpr char8_t headerPlaceholderCode[] = {
-#include "Snippets/CalendarDatePicker/HeaderPlaceholder.h.embed"
-};
+gallery::LazyLoadedText headerPlaceholderHeader{"Snippets/CalendarDatePicker/HeaderPlaceholder.html"};
+gallery::LazyLoadedText headerPlaceholderCode{"Snippets/CalendarDatePicker/HeaderPlaceholder.h"};
 
 FrameworkElement headerPlaceholder() {
     return gallery::controlExample({

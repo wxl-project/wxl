@@ -7,12 +7,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t threeHeader[] = {
-#include "Snippets/Grid/ThreeByThreeGrid.html.embed"
-};
-constexpr char8_t threeCode[] = {
-#include "Snippets/Grid/ThreeByThreeGrid.h.embed"
-};
+gallery::LazyLoadedText threeHeader{"Snippets/Grid/ThreeByThreeGrid.html"};
+gallery::LazyLoadedText threeCode{"Snippets/Grid/ThreeByThreeGrid.h"};
 
 FrameworkElement three() {
 #include "Snippets/Grid/ThreeByThreeGrid.h"

@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t indeterminateHeader[] = {
-#include "Snippets/ProgressRing/IndeterminateProgressRing.html.embed"
-};
-constexpr char8_t indeterminateCode[] = {
-#include "Snippets/ProgressRing/IndeterminateProgressRing.h.embed"
-};
+gallery::LazyLoadedText indeterminateHeader{"Snippets/ProgressRing/IndeterminateProgressRing.html"};
+gallery::LazyLoadedText indeterminateCode{"Snippets/ProgressRing/IndeterminateProgressRing.h"};
 
 FrameworkElement indeterminate() {
 #include "Snippets/ProgressRing/IndeterminateProgressRing.h"
@@ -26,12 +22,8 @@ FrameworkElement indeterminate() {
     });
 }
 
-constexpr char8_t determinateHeader[] = {
-#include "Snippets/ProgressRing/DeterminateProgressRing.html.embed"
-};
-constexpr char8_t determinateCode[] = {
-#include "Snippets/ProgressRing/DeterminateProgressRing.h.embed"
-};
+gallery::LazyLoadedText determinateHeader{"Snippets/ProgressRing/DeterminateProgressRing.html"};
+gallery::LazyLoadedText determinateCode{"Snippets/ProgressRing/DeterminateProgressRing.h"};
 
 FrameworkElement determinate() {
 #include "Snippets/ProgressRing/DeterminateProgressRing.h"

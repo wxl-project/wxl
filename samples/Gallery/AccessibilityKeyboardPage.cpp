@@ -12,55 +12,23 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t automaticTabOrderCode[] = {
-#include "Snippets/AccessibilityKeyboard/AccessibilityKeyboardAutomaticTabOrder.h.embed"
-};
-constexpr char8_t manualTabOrderCode[] = {
-#include "Snippets/AccessibilityKeyboard/AccessibilityKeyboardManualTabOrder.h.embed"
-};
-constexpr char8_t automaticArrowKeysCode[] = {
-#include "Snippets/AccessibilityKeyboard/AccessibilityKeyboardAutomaticArrowKeys.h.embed"
-};
-constexpr char8_t manualArrowKeysCode[] = {
-#include "Snippets/AccessibilityKeyboard/AccessibilityKeyboardManualArrowKeys.h.embed"
-};
-constexpr char8_t acceleratorsCode[] = {
-#include "Snippets/AccessibilityKeyboard/AccessibilityKeyboardAccelerators.h.embed"
-};
-constexpr char8_t accessKeysCode[] = {
-#include "Snippets/AccessibilityKeyboard/AccessibilityKeyboardAccessKeys.h.embed"
-};
+gallery::LazyLoadedText automaticTabOrderCode{"Snippets/AccessibilityKeyboard/AccessibilityKeyboardAutomaticTabOrder.h"};
+gallery::LazyLoadedText manualTabOrderCode{"Snippets/AccessibilityKeyboard/AccessibilityKeyboardManualTabOrder.h"};
+gallery::LazyLoadedText automaticArrowKeysCode{"Snippets/AccessibilityKeyboard/AccessibilityKeyboardAutomaticArrowKeys.h"};
+gallery::LazyLoadedText manualArrowKeysCode{"Snippets/AccessibilityKeyboard/AccessibilityKeyboardManualArrowKeys.h"};
+gallery::LazyLoadedText acceleratorsCode{"Snippets/AccessibilityKeyboard/AccessibilityKeyboardAccelerators.h"};
+gallery::LazyLoadedText accessKeysCode{"Snippets/AccessibilityKeyboard/AccessibilityKeyboardAccessKeys.h"};
 
-constexpr char8_t introText[] = {
-#include "Snippets/AccessibilityKeyboard/Intro.html.embed"
-};
-constexpr char8_t tabOrderText[] = {
-#include "Snippets/AccessibilityKeyboard/TabOrder.html.embed"
-};
-constexpr char8_t automaticTabOrderText[] = {
-#include "Snippets/AccessibilityKeyboard/AutomaticTabOrder.html.embed"
-};
-constexpr char8_t manualTabOrderText[] = {
-#include "Snippets/AccessibilityKeyboard/ManualTabOrder.html.embed"
-};
-constexpr char8_t arrowKeysText[] = {
-#include "Snippets/AccessibilityKeyboard/ArrowKeys.html.embed"
-};
-constexpr char8_t automaticArrowKeysText[] = {
-#include "Snippets/AccessibilityKeyboard/AutomaticArrowKeys.html.embed"
-};
-constexpr char8_t manualArrowKeysText[] = {
-#include "Snippets/AccessibilityKeyboard/ManualArrowKeys.html.embed"
-};
-constexpr char8_t keyboardShortcutsText[] = {
-#include "Snippets/AccessibilityKeyboard/KeyboardShortcuts.html.embed"
-};
-constexpr char8_t acceleratorsText[] = {
-#include "Snippets/AccessibilityKeyboard/Accelerators.html.embed"
-};
-constexpr char8_t accessKeysText[] = {
-#include "Snippets/AccessibilityKeyboard/AccessKeys.html.embed"
-};
+gallery::LazyLoadedText introText{"Snippets/AccessibilityKeyboard/Intro.html"};
+gallery::LazyLoadedText tabOrderText{"Snippets/AccessibilityKeyboard/TabOrder.html"};
+gallery::LazyLoadedText automaticTabOrderText{"Snippets/AccessibilityKeyboard/AutomaticTabOrder.html"};
+gallery::LazyLoadedText manualTabOrderText{"Snippets/AccessibilityKeyboard/ManualTabOrder.html"};
+gallery::LazyLoadedText arrowKeysText{"Snippets/AccessibilityKeyboard/ArrowKeys.html"};
+gallery::LazyLoadedText automaticArrowKeysText{"Snippets/AccessibilityKeyboard/AutomaticArrowKeys.html"};
+gallery::LazyLoadedText manualArrowKeysText{"Snippets/AccessibilityKeyboard/ManualArrowKeys.html"};
+gallery::LazyLoadedText keyboardShortcutsText{"Snippets/AccessibilityKeyboard/KeyboardShortcuts.html"};
+gallery::LazyLoadedText acceleratorsText{"Snippets/AccessibilityKeyboard/Accelerators.html"};
+gallery::LazyLoadedText accessKeysText{"Snippets/AccessibilityKeyboard/AccessKeys.html"};
 
 // Заголовок раздела: уровень сообщается экранному диктору.
 TextBlock section(char16_t const* text, bool second) {

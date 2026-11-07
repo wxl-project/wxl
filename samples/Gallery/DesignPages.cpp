@@ -12,28 +12,14 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t typographyIntroText[] = {
-#include "Snippets/Typography/Intro.html.embed"
-};
-constexpr char8_t geometryIntroText[] = {
-#include "Snippets/Geometry/Intro.html.embed"
-};
-constexpr char8_t spacingIntroText[] = {
-#include "Snippets/Spacing/Intro.html.embed"
-};
+gallery::LazyLoadedText typographyIntroText{"Snippets/Typography/Intro.html"};
+gallery::LazyLoadedText geometryIntroText{"Snippets/Geometry/Intro.html"};
+gallery::LazyLoadedText spacingIntroText{"Snippets/Spacing/Intro.html"};
 
-constexpr char8_t typographyHeader[] = {
-#include "Snippets/Typography/TypographyTypeRamp.html.embed"
-};
-constexpr char8_t typographyCode[] = {
-#include "Snippets/Typography/TypographyTypeRamp.h.embed"
-};
-constexpr char8_t geometryHeader[] = {
-#include "Snippets/Geometry/Geometry.html.embed"
-};
-constexpr char8_t geometryCode[] = {
-#include "Snippets/Geometry/Geometry.h.embed"
-};
+gallery::LazyLoadedText typographyHeader{"Snippets/Typography/TypographyTypeRamp.html"};
+gallery::LazyLoadedText typographyCode{"Snippets/Typography/TypographyTypeRamp.h"};
+gallery::LazyLoadedText geometryHeader{"Snippets/Geometry/Geometry.html"};
+gallery::LazyLoadedText geometryCode{"Snippets/Geometry/Geometry.h"};
 
 FrameworkElement typographyExample() {
 #include "Snippets/Typography/TypographyTypeRamp.h"

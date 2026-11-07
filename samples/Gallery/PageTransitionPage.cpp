@@ -13,12 +13,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t pageTransitionsHeader[] = {
-#include "Snippets/PageTransition/PageTransitions.html.embed"
-};
-constexpr char8_t pageTransitionsCode[] = {
-#include "Snippets/PageTransition/PageTransitions.h.embed"
-};
+gallery::LazyLoadedText pageTransitionsHeader{"Snippets/PageTransition/PageTransitions.html"};
+gallery::LazyLoadedText pageTransitionsCode{"Snippets/PageTransition/PageTransitions.h"};
 
 FrameworkElement pageTransitions() {
 #include "Snippets/PageTransition/PageTransitions.h"

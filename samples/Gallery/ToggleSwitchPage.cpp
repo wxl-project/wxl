@@ -7,12 +7,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t simpleHeader[] = {
-#include "Snippets/ToggleSwitch/Simple.html.embed"
-};
-constexpr char8_t simpleCode[] = {
-#include "Snippets/ToggleSwitch/Simple.h.embed"
-};
+gallery::LazyLoadedText simpleHeader{"Snippets/ToggleSwitch/Simple.html"};
+gallery::LazyLoadedText simpleCode{"Snippets/ToggleSwitch/Simple.h"};
 
 FrameworkElement simple() {
     return gallery::controlExample({
@@ -24,12 +20,8 @@ FrameworkElement simple() {
     });
 }
 
-constexpr char8_t customHeader[] = {
-#include "Snippets/ToggleSwitch/Custom.html.embed"
-};
-constexpr char8_t customCode[] = {
-#include "Snippets/ToggleSwitch/Custom.h.embed"
-};
+gallery::LazyLoadedText customHeader{"Snippets/ToggleSwitch/Custom.html"};
+gallery::LazyLoadedText customCode{"Snippets/ToggleSwitch/Custom.h"};
 
 FrameworkElement custom() {
     return gallery::controlExample({

@@ -26,12 +26,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t barsHeader[] = {
-#include "Snippets/ItemsRepeater/ItemsRepeaterBasicNonInteractiveItems.html.embed"
-};
-constexpr char8_t barsCode[] = {
-#include "Snippets/ItemsRepeater/ItemsRepeaterBasicNonInteractiveItems.h.embed"
-};
+gallery::LazyLoadedText barsHeader{"Snippets/ItemsRepeater/ItemsRepeaterBasicNonInteractiveItems.html"};
+gallery::LazyLoadedText barsCode{"Snippets/ItemsRepeater/ItemsRepeaterBasicNonInteractiveItems.h"};
 
 FrameworkElement bars() {
 #include "Snippets/ItemsRepeater/ItemsRepeaterBasicNonInteractiveItems.h"
@@ -44,12 +40,8 @@ FrameworkElement bars() {
     });
 }
 
-constexpr char8_t virtualizingHeader[] = {
-#include "Snippets/ItemsRepeater/ItemsRepeaterVirtualizingScrollableListItems.html.embed"
-};
-constexpr char8_t virtualizingCode[] = {
-#include "Snippets/ItemsRepeater/ItemsRepeaterVirtualizingScrollableListItems.h.embed"
-};
+gallery::LazyLoadedText virtualizingHeader{"Snippets/ItemsRepeater/ItemsRepeaterVirtualizingScrollableListItems.html"};
+gallery::LazyLoadedText virtualizingCode{"Snippets/ItemsRepeater/ItemsRepeaterVirtualizingScrollableListItems.h"};
 
 FrameworkElement virtualizing() {
 #include "Snippets/ItemsRepeater/ItemsRepeaterVirtualizingScrollableListItems.h"
@@ -62,12 +54,8 @@ FrameworkElement virtualizing() {
     });
 }
 
-constexpr char8_t flowHeader[] = {
-#include "Snippets/ItemsRepeater/FlowLayoutVirtualization.html.embed"
-};
-constexpr char8_t flowCode[] = {
-#include "Snippets/ItemsRepeater/FlowLayoutVirtualization.h.embed"
-};
+gallery::LazyLoadedText flowHeader{"Snippets/ItemsRepeater/FlowLayoutVirtualization.html"};
+gallery::LazyLoadedText flowCode{"Snippets/ItemsRepeater/FlowLayoutVirtualization.h"};
 
 FrameworkElement flow() {
 #include "Snippets/ItemsRepeater/FlowLayoutVirtualization.h"
@@ -80,12 +68,8 @@ FrameworkElement flow() {
     });
 }
 
-constexpr char8_t mixedHeader[] = {
-#include "Snippets/ItemsRepeater/ItemsrepeaterMixedTypeCollection.html.embed"
-};
-constexpr char8_t mixedCode[] = {
-#include "Snippets/ItemsRepeater/ItemsrepeaterMixedTypeCollection.h.embed"
-};
+gallery::LazyLoadedText mixedHeader{"Snippets/ItemsRepeater/ItemsrepeaterMixedTypeCollection.html"};
+gallery::LazyLoadedText mixedCode{"Snippets/ItemsRepeater/ItemsrepeaterMixedTypeCollection.h"};
 
 FrameworkElement mixed() {
 #include "Snippets/ItemsRepeater/ItemsrepeaterMixedTypeCollection.h"
@@ -97,12 +81,8 @@ FrameworkElement mixed() {
     });
 }
 
-constexpr char8_t nestedHeader[] = {
-#include "Snippets/ItemsRepeater/LayingOutNestedItemsrepeaters.html.embed"
-};
-constexpr char8_t nestedCode[] = {
-#include "Snippets/ItemsRepeater/LayingOutNestedItemsrepeaters.h.embed"
-};
+gallery::LazyLoadedText nestedHeader{"Snippets/ItemsRepeater/LayingOutNestedItemsrepeaters.html"};
+gallery::LazyLoadedText nestedCode{"Snippets/ItemsRepeater/LayingOutNestedItemsrepeaters.h"};
 
 FrameworkElement nested() {
 #include "Snippets/ItemsRepeater/LayingOutNestedItemsrepeaters.h"
@@ -114,12 +94,8 @@ FrameworkElement nested() {
     });
 }
 
-constexpr char8_t animatedHeader[] = {
-#include "Snippets/ItemsRepeater/ItemsRepeaterAnimatedScrollingContentDisplay.html.embed"
-};
-constexpr char8_t animatedCode[] = {
-#include "Snippets/ItemsRepeater/ItemsRepeaterAnimatedScrollingContentDisplay.h.embed"
-};
+gallery::LazyLoadedText animatedHeader{"Snippets/ItemsRepeater/ItemsRepeaterAnimatedScrollingContentDisplay.html"};
+gallery::LazyLoadedText animatedCode{"Snippets/ItemsRepeater/ItemsRepeaterAnimatedScrollingContentDisplay.h"};
 
 FrameworkElement animated() {
 #include "Snippets/ItemsRepeater/ItemsRepeaterAnimatedScrollingContentDisplay.h"
@@ -131,12 +107,8 @@ FrameworkElement animated() {
     });
 }
 
-constexpr char8_t contentHeavyHeader[] = {
-#include "Snippets/ItemsRepeater/ItemsRepeaterVirtualizedContentHeavyLayout.html.embed"
-};
-constexpr char8_t contentHeavyCode[] = {
-#include "Snippets/ItemsRepeater/ItemsRepeaterVirtualizedContentHeavyLayout.h.embed"
-};
+gallery::LazyLoadedText contentHeavyHeader{"Snippets/ItemsRepeater/ItemsRepeaterVirtualizedContentHeavyLayout.html"};
+gallery::LazyLoadedText contentHeavyCode{"Snippets/ItemsRepeater/ItemsRepeaterVirtualizedContentHeavyLayout.h"};
 
 FrameworkElement contentHeavy() {
 #include "Snippets/ItemsRepeater/ItemsRepeaterVirtualizedContentHeavyLayout.h"

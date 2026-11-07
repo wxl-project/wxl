@@ -12,12 +12,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t simpleHeader[] = {
-#include "Snippets/RichTextBlock/Simple.html.embed"
-};
-constexpr char8_t simpleCode[] = {
-#include "Snippets/RichTextBlock/Simple.h.embed"
-};
+gallery::LazyLoadedText simpleHeader{"Snippets/RichTextBlock/Simple.html"};
+gallery::LazyLoadedText simpleCode{"Snippets/RichTextBlock/Simple.h"};
 
 FrameworkElement simple() {
     return gallery::controlExample({
@@ -29,12 +25,8 @@ FrameworkElement simple() {
     });
 }
 
-constexpr char8_t selectionHeader[] = {
-#include "Snippets/RichTextBlock/CustomSelectionHighlight.html.embed"
-};
-constexpr char8_t selectionCode[] = {
-#include "Snippets/RichTextBlock/CustomSelectionHighlight.h.embed"
-};
+gallery::LazyLoadedText selectionHeader{"Snippets/RichTextBlock/CustomSelectionHighlight.html"};
+gallery::LazyLoadedText selectionCode{"Snippets/RichTextBlock/CustomSelectionHighlight.h"};
 
 FrameworkElement customSelection() {
     return gallery::controlExample({
@@ -46,12 +38,8 @@ FrameworkElement customSelection() {
     });
 }
 
-constexpr char8_t overflowHeader[] = {
-#include "Snippets/RichTextBlock/Overflow.html.embed"
-};
-constexpr char8_t overflowCode[] = {
-#include "Snippets/RichTextBlock/Overflow.h.embed"
-};
+gallery::LazyLoadedText overflowHeader{"Snippets/RichTextBlock/Overflow.html"};
+gallery::LazyLoadedText overflowCode{"Snippets/RichTextBlock/Overflow.h"};
 
 FrameworkElement overflow() {
 #include "Snippets/RichTextBlock/Overflow.h"

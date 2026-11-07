@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t symbolIconHeader[] = {
-#include "Snippets/AppBarButton/SymbolIcon.html.embed"
-};
-constexpr char8_t symbolIconCode[] = {
-#include "Snippets/AppBarButton/SymbolIcon.h.embed"
-};
+gallery::LazyLoadedText symbolIconHeader{"Snippets/AppBarButton/SymbolIcon.html"};
+gallery::LazyLoadedText symbolIconCode{"Snippets/AppBarButton/SymbolIcon.h"};
 
 FrameworkElement symbolIcon() {
 #include "Snippets/AppBarButton/SymbolIcon.h"
@@ -25,12 +21,8 @@ FrameworkElement symbolIcon() {
     });
 }
 
-constexpr char8_t bitmapIconHeader[] = {
-#include "Snippets/AppBarButton/BitmapIcon.html.embed"
-};
-constexpr char8_t bitmapIconCode[] = {
-#include "Snippets/AppBarButton/BitmapIcon.h.embed"
-};
+gallery::LazyLoadedText bitmapIconHeader{"Snippets/AppBarButton/BitmapIcon.html"};
+gallery::LazyLoadedText bitmapIconCode{"Snippets/AppBarButton/BitmapIcon.h"};
 
 FrameworkElement bitmapIcon() {
 #include "Snippets/AppBarButton/BitmapIcon.h"
@@ -42,12 +34,8 @@ FrameworkElement bitmapIcon() {
     });
 }
 
-constexpr char8_t fontIconHeader[] = {
-#include "Snippets/AppBarButton/FontIcon.html.embed"
-};
-constexpr char8_t fontIconCode[] = {
-#include "Snippets/AppBarButton/FontIcon.h.embed"
-};
+gallery::LazyLoadedText fontIconHeader{"Snippets/AppBarButton/FontIcon.html"};
+gallery::LazyLoadedText fontIconCode{"Snippets/AppBarButton/FontIcon.h"};
 
 FrameworkElement fontIcon() {
 #include "Snippets/AppBarButton/FontIcon.h"
@@ -59,12 +47,8 @@ FrameworkElement fontIcon() {
     });
 }
 
-constexpr char8_t pathIconHeader[] = {
-#include "Snippets/AppBarButton/PathIcon.html.embed"
-};
-constexpr char8_t pathIconCode[] = {
-#include "Snippets/AppBarButton/PathIcon.h.embed"
-};
+gallery::LazyLoadedText pathIconHeader{"Snippets/AppBarButton/PathIcon.html"};
+gallery::LazyLoadedText pathIconCode{"Snippets/AppBarButton/PathIcon.h"};
 
 FrameworkElement pathIcon() {
 #include "Snippets/AppBarButton/PathIcon.h"
@@ -76,12 +60,8 @@ FrameworkElement pathIcon() {
     });
 }
 
-constexpr char8_t acceleratorHeader[] = {
-#include "Snippets/AppBarButton/KeyboardAccelerator.html.embed"
-};
-constexpr char8_t acceleratorCode[] = {
-#include "Snippets/AppBarButton/KeyboardAccelerator.h.embed"
-};
+gallery::LazyLoadedText acceleratorHeader{"Snippets/AppBarButton/KeyboardAccelerator.html"};
+gallery::LazyLoadedText acceleratorCode{"Snippets/AppBarButton/KeyboardAccelerator.h"};
 
 FrameworkElement accelerator() {
 #include "Snippets/AppBarButton/KeyboardAccelerator.h"
@@ -93,12 +73,8 @@ FrameworkElement accelerator() {
     });
 }
 
-constexpr char8_t flyoutButtonHeader[] = {
-#include "Snippets/AppBarButton/Flyout.html.embed"
-};
-constexpr char8_t flyoutButtonCode[] = {
-#include "Snippets/AppBarButton/Flyout.h.embed"
-};
+gallery::LazyLoadedText flyoutButtonHeader{"Snippets/AppBarButton/Flyout.html"};
+gallery::LazyLoadedText flyoutButtonCode{"Snippets/AppBarButton/Flyout.h"};
 
 FrameworkElement flyoutButton() {
 #include "Snippets/AppBarButton/Flyout.h"

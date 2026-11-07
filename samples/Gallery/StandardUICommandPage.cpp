@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t exposingHeader[] = {
-#include "Snippets/StandardUICommand/ExposingCommand.html.embed"
-};
-constexpr char8_t exposingCode[] = {
-#include "Snippets/StandardUICommand/ExposingCommand.h.embed"
-};
+gallery::LazyLoadedText exposingHeader{"Snippets/StandardUICommand/ExposingCommand.html"};
+gallery::LazyLoadedText exposingCode{"Snippets/StandardUICommand/ExposingCommand.h"};
 
 FrameworkElement exposing() {
 #include "Snippets/StandardUICommand/ExposingCommand.h"

@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t simpleHeader[] = {
-#include "Snippets/ToolTip/ToolTipButton.html.embed"
-};
-constexpr char8_t simpleCode[] = {
-#include "Snippets/ToolTip/ToolTipButton.h.embed"
-};
+gallery::LazyLoadedText simpleHeader{"Snippets/ToolTip/ToolTipButton.html"};
+gallery::LazyLoadedText simpleCode{"Snippets/ToolTip/ToolTipButton.h"};
 
 FrameworkElement simple() {
     return gallery::controlExample({
@@ -25,12 +21,8 @@ FrameworkElement simple() {
     });
 }
 
-constexpr char8_t placedHeader[] = {
-#include "Snippets/ToolTip/ToolTipPlacement.html.embed"
-};
-constexpr char8_t placedCode[] = {
-#include "Snippets/ToolTip/ToolTipPlacement.h.embed"
-};
+gallery::LazyLoadedText placedHeader{"Snippets/ToolTip/ToolTipPlacement.html"};
+gallery::LazyLoadedText placedCode{"Snippets/ToolTip/ToolTipPlacement.h"};
 
 FrameworkElement placed() {
     return gallery::controlExample({
@@ -42,12 +34,8 @@ FrameworkElement placed() {
     });
 }
 
-constexpr char8_t imageHeader[] = {
-#include "Snippets/ToolTip/ToolTipImage.html.embed"
-};
-constexpr char8_t imageCode[] = {
-#include "Snippets/ToolTip/ToolTipImage.h.embed"
-};
+gallery::LazyLoadedText imageHeader{"Snippets/ToolTip/ToolTipImage.html"};
+gallery::LazyLoadedText imageCode{"Snippets/ToolTip/ToolTipImage.h"};
 
 FrameworkElement image() {
     return gallery::controlExample({

@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t simpleHeader[] = {
-#include "Snippets/TimePicker/Simple.html.embed"
-};
-constexpr char8_t simpleCode[] = {
-#include "Snippets/TimePicker/Simple.h.embed"
-};
+gallery::LazyLoadedText simpleHeader{"Snippets/TimePicker/Simple.html"};
+gallery::LazyLoadedText simpleCode{"Snippets/TimePicker/Simple.h"};
 
 FrameworkElement simple() {
     return gallery::controlExample({
@@ -25,12 +21,8 @@ FrameworkElement simple() {
     });
 }
 
-constexpr char8_t minuteIncrementsHeader[] = {
-#include "Snippets/TimePicker/HeaderMinuteIncrements.html.embed"
-};
-constexpr char8_t minuteIncrementsCode[] = {
-#include "Snippets/TimePicker/HeaderMinuteIncrements.h.embed"
-};
+gallery::LazyLoadedText minuteIncrementsHeader{"Snippets/TimePicker/HeaderMinuteIncrements.html"};
+gallery::LazyLoadedText minuteIncrementsCode{"Snippets/TimePicker/HeaderMinuteIncrements.h"};
 
 FrameworkElement minuteIncrements() {
     return gallery::controlExample({
@@ -42,12 +34,8 @@ FrameworkElement minuteIncrements() {
     });
 }
 
-constexpr char8_t clockIdentifiersHeader[] = {
-#include "Snippets/TimePicker/ClockIdentifiers.html.embed"
-};
-constexpr char8_t clockIdentifiersCode[] = {
-#include "Snippets/TimePicker/ClockIdentifiers.h.embed"
-};
+gallery::LazyLoadedText clockIdentifiersHeader{"Snippets/TimePicker/ClockIdentifiers.html"};
+gallery::LazyLoadedText clockIdentifiersCode{"Snippets/TimePicker/ClockIdentifiers.h"};
 
 FrameworkElement clockIdentifiers() {
 #include "Snippets/TimePicker/ClockIdentifiers.h"

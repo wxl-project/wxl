@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t aroundHeader[] = {
-#include "Snippets/Border/BorderAroundTextblock.html.embed"
-};
-constexpr char8_t aroundCode[] = {
-#include "Snippets/Border/BorderAroundTextblock.h.embed"
-};
+gallery::LazyLoadedText aroundHeader{"Snippets/Border/BorderAroundTextblock.html"};
+gallery::LazyLoadedText aroundCode{"Snippets/Border/BorderAroundTextblock.h"};
 
 FrameworkElement around() {
 #include "Snippets/Border/BorderAroundTextblock.h"

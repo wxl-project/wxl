@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t simpleHeader[] = {
-#include "Snippets/PasswordBox/Simple.html.embed"
-};
-constexpr char8_t simpleCode[] = {
-#include "Snippets/PasswordBox/Simple.h.embed"
-};
+gallery::LazyLoadedText simpleHeader{"Snippets/PasswordBox/Simple.html"};
+gallery::LazyLoadedText simpleCode{"Snippets/PasswordBox/Simple.h"};
 
 FrameworkElement simple() {
 #include "Snippets/PasswordBox/Simple.h"
@@ -25,12 +21,8 @@ FrameworkElement simple() {
     });
 }
 
-constexpr char8_t headerHeader[] = {
-#include "Snippets/PasswordBox/HeaderPlaceholderText.html.embed"
-};
-constexpr char8_t headerCode[] = {
-#include "Snippets/PasswordBox/HeaderPlaceholderText.h.embed"
-};
+gallery::LazyLoadedText headerHeader{"Snippets/PasswordBox/HeaderPlaceholderText.html"};
+gallery::LazyLoadedText headerCode{"Snippets/PasswordBox/HeaderPlaceholderText.h"};
 
 FrameworkElement headerPlaceholder() {
     return gallery::controlExample({
@@ -42,12 +34,8 @@ FrameworkElement headerPlaceholder() {
     });
 }
 
-constexpr char8_t revealHeader[] = {
-#include "Snippets/PasswordBox/RevealMode.html.embed"
-};
-constexpr char8_t revealCode[] = {
-#include "Snippets/PasswordBox/RevealMode.h.embed"
-};
+gallery::LazyLoadedText revealHeader{"Snippets/PasswordBox/RevealMode.html"};
+gallery::LazyLoadedText revealCode{"Snippets/PasswordBox/RevealMode.h"};
 
 FrameworkElement revealMode() {
 #include "Snippets/PasswordBox/RevealMode.h"

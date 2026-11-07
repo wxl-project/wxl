@@ -11,12 +11,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t listHeader[] = {
-#include "Snippets/ToggleSplitButton/BulletList.html.embed"
-};
-constexpr char8_t listCode[] = {
-#include "Snippets/ToggleSplitButton/BulletList.h.embed"
-};
+gallery::LazyLoadedText listHeader{"Snippets/ToggleSplitButton/BulletList.html"};
+gallery::LazyLoadedText listCode{"Snippets/ToggleSplitButton/BulletList.h"};
 
 FrameworkElement listExample() {
 #include "Snippets/ToggleSplitButton/BulletList.h"

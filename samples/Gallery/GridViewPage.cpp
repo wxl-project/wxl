@@ -14,12 +14,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t basicHeader[] = {
-#include "Snippets/GridView/BasicGridviewSimpleDatatemplate.html.embed"
-};
-constexpr char8_t basicCode[] = {
-#include "Snippets/GridView/BasicGridviewSimpleDatatemplate.h.embed"
-};
+gallery::LazyLoadedText basicHeader{"Snippets/GridView/BasicGridviewSimpleDatatemplate.html"};
+gallery::LazyLoadedText basicCode{"Snippets/GridView/BasicGridviewSimpleDatatemplate.h"};
 
 FrameworkElement basic() {
 #include "Snippets/GridView/BasicGridviewSimpleDatatemplate.h"
@@ -31,12 +27,8 @@ FrameworkElement basic() {
     });
 }
 
-constexpr char8_t layoutHeader[] = {
-#include "Snippets/GridView/GridviewLayoutCustomization.html.embed"
-};
-constexpr char8_t layoutCode[] = {
-#include "Snippets/GridView/GridviewLayoutCustomization.h.embed"
-};
+gallery::LazyLoadedText layoutHeader{"Snippets/GridView/GridviewLayoutCustomization.html"};
+gallery::LazyLoadedText layoutCode{"Snippets/GridView/GridviewLayoutCustomization.h"};
 
 FrameworkElement customizedLayout() {
 #include "Snippets/GridView/GridviewLayoutCustomization.h"
@@ -49,12 +41,8 @@ FrameworkElement customizedLayout() {
     });
 }
 
-constexpr char8_t contentHeader[] = {
-#include "Snippets/GridView/ContentInsideGridview.html.embed"
-};
-constexpr char8_t contentCode[] = {
-#include "Snippets/GridView/ContentInsideGridview.h.embed"
-};
+gallery::LazyLoadedText contentHeader{"Snippets/GridView/ContentInsideGridview.html"};
+gallery::LazyLoadedText contentCode{"Snippets/GridView/ContentInsideGridview.h"};
 
 FrameworkElement contentGrid() {
 #include "Snippets/GridView/ContentInsideGridview.h"

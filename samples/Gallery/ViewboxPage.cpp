@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t contentHeader[] = {
-#include "Snippets/Viewbox/ContentInsideViewbox.html.embed"
-};
-constexpr char8_t contentCode[] = {
-#include "Snippets/Viewbox/ContentInsideViewbox.h.embed"
-};
+gallery::LazyLoadedText contentHeader{"Snippets/Viewbox/ContentInsideViewbox.html"};
+gallery::LazyLoadedText contentCode{"Snippets/Viewbox/ContentInsideViewbox.h"};
 
 FrameworkElement insideViewbox() {
 #include "Snippets/Viewbox/ContentInsideViewbox.h"

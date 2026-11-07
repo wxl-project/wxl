@@ -15,36 +15,16 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t controlHeader[] = {
-#include "Snippets/Templates/TemplatesCustomizeLookTextboxControltemplate.html.embed"
-};
-constexpr char8_t controlCode[] = {
-#include "Snippets/Templates/TemplatesCustomizeLookTextboxControltemplate.h.embed"
-};
-constexpr char8_t dataHeader[] = {
-#include "Snippets/Templates/TemplatesCustomizeComboboxItemtemplateDatatemplate.html.embed"
-};
-constexpr char8_t dataCode[] = {
-#include "Snippets/Templates/TemplatesCustomizeComboboxItemtemplateDatatemplate.h.embed"
-};
-constexpr char8_t panelHeader[] = {
-#include "Snippets/Templates/TemplatesCustomizeItemscontrolItemspaneltemplate.html.embed"
-};
-constexpr char8_t panelCode[] = {
-#include "Snippets/Templates/TemplatesCustomizeItemscontrolItemspaneltemplate.h.embed"
-};
-constexpr char8_t presetsHeader[] = {
-#include "Snippets/Templates/TemplatesPresetsNested.html.embed"
-};
-constexpr char8_t presetsCode[] = {
-#include "Snippets/Templates/TemplatesPresetsNested.h.embed"
-};
-constexpr char8_t templatesHeader[] = {
-#include "Snippets/Templates/TemplatesBuiltWhereApplied.html.embed"
-};
-constexpr char8_t templatesCode[] = {
-#include "Snippets/Templates/TemplatesBuiltWhereApplied.h.embed"
-};
+gallery::LazyLoadedText controlHeader{"Snippets/Templates/TemplatesCustomizeLookTextboxControltemplate.html"};
+gallery::LazyLoadedText controlCode{"Snippets/Templates/TemplatesCustomizeLookTextboxControltemplate.h"};
+gallery::LazyLoadedText dataHeader{"Snippets/Templates/TemplatesCustomizeComboboxItemtemplateDatatemplate.html"};
+gallery::LazyLoadedText dataCode{"Snippets/Templates/TemplatesCustomizeComboboxItemtemplateDatatemplate.h"};
+gallery::LazyLoadedText panelHeader{"Snippets/Templates/TemplatesCustomizeItemscontrolItemspaneltemplate.html"};
+gallery::LazyLoadedText panelCode{"Snippets/Templates/TemplatesCustomizeItemscontrolItemspaneltemplate.h"};
+gallery::LazyLoadedText presetsHeader{"Snippets/Templates/TemplatesPresetsNested.html"};
+gallery::LazyLoadedText presetsCode{"Snippets/Templates/TemplatesPresetsNested.h"};
+gallery::LazyLoadedText templatesHeader{"Snippets/Templates/TemplatesBuiltWhereApplied.html"};
+gallery::LazyLoadedText templatesCode{"Snippets/Templates/TemplatesBuiltWhereApplied.h"};
 
 FrameworkElement controlTemplate() {
 #include "Snippets/Templates/TemplatesCustomizeLookTextboxControltemplate.h"

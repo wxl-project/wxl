@@ -9,12 +9,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t creatingHeader[] = {
-#include "Snippets/AppWindow/CreatingCustomizingAppwindowWindow.html.embed"
-};
-constexpr char8_t creatingCode[] = {
-#include "Snippets/AppWindow/CreatingCustomizingAppwindowWindow.h.embed"
-};
+gallery::LazyLoadedText creatingHeader{"Snippets/AppWindow/CreatingCustomizingAppwindowWindow.html"};
+gallery::LazyLoadedText creatingCode{"Snippets/AppWindow/CreatingCustomizingAppwindowWindow.h"};
 
 FrameworkElement creating() {
 #include "Snippets/AppWindow/CreatingCustomizingAppwindowWindow.h"
@@ -27,12 +23,8 @@ FrameworkElement creating() {
     });
 }
 
-constexpr char8_t centeringHeader[] = {
-#include "Snippets/AppWindow/CenteringAppwindowScreenAvailable.html.embed"
-};
-constexpr char8_t centeringCode[] = {
-#include "Snippets/AppWindow/CenteringAppwindowScreenAvailable.h.embed"
-};
+gallery::LazyLoadedText centeringHeader{"Snippets/AppWindow/CenteringAppwindowScreenAvailable.html"};
+gallery::LazyLoadedText centeringCode{"Snippets/AppWindow/CenteringAppwindowScreenAvailable.h"};
 
 FrameworkElement centering() {
 #include "Snippets/AppWindow/CenteringAppwindowScreenAvailable.h"
@@ -44,12 +36,8 @@ FrameworkElement centering() {
     });
 }
 
-constexpr char8_t overlappedHeader[] = {
-#include "Snippets/AppWindow/AppwindowOverlapedpresenter.html.embed"
-};
-constexpr char8_t overlappedCode[] = {
-#include "Snippets/AppWindow/AppwindowOverlapedpresenter.h.embed"
-};
+gallery::LazyLoadedText overlappedHeader{"Snippets/AppWindow/AppwindowOverlapedpresenter.html"};
+gallery::LazyLoadedText overlappedCode{"Snippets/AppWindow/AppwindowOverlapedpresenter.h"};
 
 FrameworkElement overlapped() {
 #include "Snippets/AppWindow/AppwindowOverlapedpresenter.h"
@@ -62,12 +50,8 @@ FrameworkElement overlapped() {
     });
 }
 
-constexpr char8_t minMaxHeader[] = {
-#include "Snippets/AppWindow/AppWindowSettingMinimumMaximumWidth.html.embed"
-};
-constexpr char8_t minMaxCode[] = {
-#include "Snippets/AppWindow/AppWindowSettingMinimumMaximumWidth.h.embed"
-};
+gallery::LazyLoadedText minMaxHeader{"Snippets/AppWindow/AppWindowSettingMinimumMaximumWidth.html"};
+gallery::LazyLoadedText minMaxCode{"Snippets/AppWindow/AppWindowSettingMinimumMaximumWidth.h"};
 
 FrameworkElement minMax() {
 #include "Snippets/AppWindow/AppWindowSettingMinimumMaximumWidth.h"
@@ -80,12 +64,8 @@ FrameworkElement minMax() {
     });
 }
 
-constexpr char8_t modalHeader[] = {
-#include "Snippets/AppWindow/ModalWindowOverlappedpresenterAppwindow.html.embed"
-};
-constexpr char8_t modalCode[] = {
-#include "Snippets/AppWindow/ModalWindowOverlappedpresenterAppwindow.h.embed"
-};
+gallery::LazyLoadedText modalHeader{"Snippets/AppWindow/ModalWindowOverlappedpresenterAppwindow.html"};
+gallery::LazyLoadedText modalCode{"Snippets/AppWindow/ModalWindowOverlappedpresenterAppwindow.h"};
 
 FrameworkElement modal() {
 #include "Snippets/AppWindow/ModalWindowOverlappedpresenterAppwindow.h"
@@ -97,12 +77,8 @@ FrameworkElement modal() {
     });
 }
 
-constexpr char8_t fullscreenHeader[] = {
-#include "Snippets/AppWindow/AppwindowFullscreenpresenter.html.embed"
-};
-constexpr char8_t fullscreenCode[] = {
-#include "Snippets/AppWindow/AppwindowFullscreenpresenter.h.embed"
-};
+gallery::LazyLoadedText fullscreenHeader{"Snippets/AppWindow/AppwindowFullscreenpresenter.html"};
+gallery::LazyLoadedText fullscreenCode{"Snippets/AppWindow/AppwindowFullscreenpresenter.h"};
 
 FrameworkElement fullscreen() {
 #include "Snippets/AppWindow/AppwindowFullscreenpresenter.h"
@@ -114,12 +90,8 @@ FrameworkElement fullscreen() {
     });
 }
 
-constexpr char8_t compactOverlayHeader[] = {
-#include "Snippets/AppWindow/AppwindowCompactoverlaypresenter.html.embed"
-};
-constexpr char8_t compactOverlayCode[] = {
-#include "Snippets/AppWindow/AppwindowCompactoverlaypresenter.h.embed"
-};
+gallery::LazyLoadedText compactOverlayHeader{"Snippets/AppWindow/AppwindowCompactoverlaypresenter.html"};
+gallery::LazyLoadedText compactOverlayCode{"Snippets/AppWindow/AppwindowCompactoverlaypresenter.h"};
 
 FrameworkElement compactOverlay() {
 #include "Snippets/AppWindow/AppwindowCompactoverlaypresenter.h"
