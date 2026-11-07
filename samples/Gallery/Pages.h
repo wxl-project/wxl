@@ -41,7 +41,7 @@ constexpr Snippet snippet(const char8_t (&bytes)[N]) {
 // пилот на RadialGradientBrushPage. Держит относительный путь (узкий ASCII,
 // напр. "Snippets/RadialGradientBrush/RadialGradientBrushSample.html") как
 // string_view на строковый литерал — копии нет, литерал живёт всё время — и
-// прочитанные байты; bytes() читает один раз и отдаёт std::u8string_view над
+// прочитанные байты; load_or_get() читает один раз и отдаёт std::u8string_view над
 // ними. Пустое bytes_ значит «ещё не читано»: неудачное чтение бросает и
 // приложение останавливается, так что пустых байтов после чтения не бывает.
 // UTF-8 не проверяет — это делает snippetText. Чтение синхронное: страница
@@ -52,8 +52,9 @@ class LazyLoadedText : public wxl::core::noncopyable {
 public:
     explicit LazyLoadedText(std::string_view relative);
 
-    // Байты файла: читаются при первом вызове и держатся до конца жизни.
-    Snippet bytes();
+    // Байты файла: при первом вызове читает файл с диска и держит его до
+    // конца жизни; неудачное чтение бросает std::runtime_error.
+    Snippet load_or_get();
 
 private:
     std::string_view relative_; // путь относительно папки exe (на литерал)
@@ -62,7 +63,7 @@ private:
 
 // Тот же snippet(), что для вшитых байтов, но из LazyLoadedText: страница
 // зовёт snippet(sampleHeader) и не знает, откуда байты. Ссылка не const —
-// bytes() при первом вызове читает файл в байты.
+// load_or_get() при первом вызове читает файл в байты.
 Snippet snippet(LazyLoadedText& lazy);
 
 // Что кладёт в раскладку один пример.

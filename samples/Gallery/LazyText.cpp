@@ -13,7 +13,7 @@ namespace gallery {
 
 LazyLoadedText::LazyLoadedText(std::string_view relative) : relative_{relative} {}
 
-Snippet LazyLoadedText::bytes() {
+Snippet LazyLoadedText::load_or_get() {
     if (bytes_.empty()) {
         // Папка exe плюс относительный путь: туда wxl_target_assets копирует
         // Snippets. read_all читает байты, не текст; UTF-8 проверяет
@@ -41,7 +41,7 @@ Snippet LazyLoadedText::bytes() {
 }
 
 Snippet snippet(LazyLoadedText& lazy) {
-    return lazy.bytes();
+    return lazy.load_or_get();
 }
 
 }  // namespace gallery
