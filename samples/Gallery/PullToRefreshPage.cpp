@@ -47,6 +47,8 @@ FrameworkElement customIcon() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::pullToRefreshPage() {
+static wxl::FrameworkElement pullToRefreshPage() {
     return StackPanel {basic(), customIcon()};
 }
+
+REGISTER_GALLERY_PAGE(L"PullToRefresh", pullToRefreshPage);

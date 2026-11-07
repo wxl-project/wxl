@@ -49,6 +49,8 @@ FrameworkElement alignmentExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::settingsCardPage() {
+static wxl::FrameworkElement settingsCardPage() {
     return StackPanel {basicExample(), clickableExample(), alignmentExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"SettingsCard", settingsCardPage);

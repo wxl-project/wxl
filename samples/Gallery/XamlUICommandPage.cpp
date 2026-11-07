@@ -27,6 +27,8 @@ FrameworkElement reusable() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::xamlUICommandPage() {
+static wxl::FrameworkElement xamlUICommandPage() {
     return StackPanel {reusable()};
 }
+
+REGISTER_GALLERY_PAGE(L"XamlUICommand", xamlUICommandPage);

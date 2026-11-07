@@ -61,6 +61,8 @@ FrameworkElement clockIdentifiers() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::timePickerPage() {
+static wxl::FrameworkElement timePickerPage() {
     return StackPanel {simple(), minuteIncrements(), clockIdentifiers()};
 }
+
+REGISTER_GALLERY_PAGE(L"TimePicker", timePickerPage);

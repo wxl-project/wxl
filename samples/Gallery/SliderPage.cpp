@@ -84,6 +84,8 @@ FrameworkElement vertical() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::sliderPage() {
+static wxl::FrameworkElement sliderPage() {
     return StackPanel {simple(), range(), ticks(), vertical()};
 }
+
+REGISTER_GALLERY_PAGE(L"Slider", sliderPage);

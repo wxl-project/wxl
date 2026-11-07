@@ -46,6 +46,8 @@ FrameworkElement placeholder() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::ratingControlPage() {
+static wxl::FrameworkElement ratingControlPage() {
     return StackPanel {simple(), placeholder()};
 }
+
+REGISTER_GALLERY_PAGE(L"RatingControl", ratingControlPage);

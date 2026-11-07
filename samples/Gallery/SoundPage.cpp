@@ -66,6 +66,8 @@ FrameworkElement systemSound() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::soundPage() {
+static wxl::FrameworkElement soundPage() {
     return StackPanel {toggling(), spatial(), systemSound()};
 }
+
+REGISTER_GALLERY_PAGE(L"Sound", soundPage);

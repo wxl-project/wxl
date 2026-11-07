@@ -62,6 +62,8 @@ FrameworkElement hero() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::teachingTipPage() {
+static wxl::FrameworkElement teachingTipPage() {
     return StackPanel {targeted(), nonTargeted(), hero()};
 }
+
+REGISTER_GALLERY_PAGE(L"TeachingTip", teachingTipPage);

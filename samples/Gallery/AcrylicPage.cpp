@@ -67,7 +67,9 @@ FrameworkElement luminosity() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::acrylicPage() {
+static wxl::FrameworkElement acrylicPage() {
     return StackPanel {
         gallery::prose(gallery::snippet(introText), Thickness {}), defaultBrush(), customBrush(), luminosity()};
 }
+
+REGISTER_GALLERY_PAGE(L"Acrylic", acrylicPage);

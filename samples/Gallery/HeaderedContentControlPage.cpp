@@ -23,6 +23,8 @@ FrameworkElement basicExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::headeredContentControlPage() {
+static wxl::FrameworkElement headeredContentControlPage() {
     return StackPanel {basicExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"HeaderedContentControl", headeredContentControlPage);

@@ -62,6 +62,8 @@ FrameworkElement selectAll() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::checkBoxPage() {
+static wxl::FrameworkElement checkBoxPage() {
     return StackPanel {twoState(), threeState(), selectAll()};
 }
+
+REGISTER_GALLERY_PAGE(L"CheckBox", checkBoxPage);

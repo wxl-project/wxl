@@ -134,7 +134,7 @@ FrameworkElement compactOverlay() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::appWindowPage() {
+static wxl::FrameworkElement appWindowPage() {
     return StackPanel {
         TextBlock {Margin {0, 16, 0, -16}, styles.TextBlock.Subtitle, u"General usage of AppWindow"},
         creating(),
@@ -147,3 +147,5 @@ wxl::FrameworkElement gallery::appWindowPage() {
         compactOverlay(),
     };
 }
+
+REGISTER_GALLERY_PAGE(L"AppWindow", appWindowPage);

@@ -27,6 +27,8 @@ FrameworkElement three() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::gridPage() {
+static wxl::FrameworkElement gridPage() {
     return StackPanel {three()};
 }
+
+REGISTER_GALLERY_PAGE(L"Grid", gridPage);

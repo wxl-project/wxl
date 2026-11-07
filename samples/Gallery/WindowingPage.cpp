@@ -45,7 +45,7 @@ FrameworkElement sizing() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::windowingPage() {
+static wxl::FrameworkElement windowingPage() {
     return StackPanel {
         TextBlock {
             Margin {0, 0, 0, 8},
@@ -53,3 +53,5 @@ wxl::FrameworkElement gallery::windowingPage() {
             u"Create top-level XAML windows and configure their client-area size. Each example opens a separate window.",
         },createWindow(), sizing()};
 }
+
+REGISTER_GALLERY_PAGE(L"Windowing", windowingPage);

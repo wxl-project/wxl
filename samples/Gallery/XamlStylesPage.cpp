@@ -43,7 +43,7 @@ FrameworkElement implicit() {
 
 }  // namespace
 
-FrameworkElement gallery::xamlStylesPage() {
+static FrameworkElement xamlStylesPage() {
     return StackPanel {
         spacing = 12.0,
         TextBlock {Margin {0, 12, 0, 4}, styles.TextBlock.Subtitle, u"Creating and using styles"},
@@ -53,3 +53,5 @@ FrameworkElement gallery::xamlStylesPage() {
         implicit(),
     };
 }
+
+REGISTER_GALLERY_PAGE(L"XamlStyles", xamlStylesPage);

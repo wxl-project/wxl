@@ -162,7 +162,7 @@ FrameworkElement check(core::observable<bool>& passed, int rowNumber, char16_t c
 
 }  // namespace
 
-FrameworkElement gallery::accessibilityColorContrastPage() {
+static FrameworkElement accessibilityColorContrastPage() {
     auto const model = gallery::hold<Model>();
     model->follow(model->text, model->textHex);
     model->follow(model->backdrop, model->backdropHex);
@@ -241,3 +241,5 @@ FrameworkElement gallery::accessibilityColorContrastPage() {
         },
     };
 }
+
+REGISTER_GALLERY_PAGE(L"AccessibilityColorContrast", accessibilityColorContrastPage);

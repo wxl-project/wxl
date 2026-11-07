@@ -53,6 +53,8 @@ FrameworkElement customTemplate() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::breadcrumbBarPage() {
+static wxl::FrameworkElement breadcrumbBarPage() {
     return StackPanel {basic(), customTemplate()};
 }
+
+REGISTER_GALLERY_PAGE(L"BreadcrumbBar", breadcrumbBarPage);

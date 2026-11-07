@@ -44,6 +44,8 @@ FrameworkElement dayFormattedYear() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::datePickerPage() {
+static wxl::FrameworkElement datePickerPage() {
     return StackPanel {withHeader(), dayFormattedYear()};
 }
+
+REGISTER_GALLERY_PAGE(L"DatePicker", datePickerPage);

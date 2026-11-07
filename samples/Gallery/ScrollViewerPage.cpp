@@ -28,6 +28,8 @@ FrameworkElement withImage() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::scrollViewerPage() {
+static wxl::FrameworkElement scrollViewerPage() {
     return StackPanel {withImage()};
 }
+
+REGISTER_GALLERY_PAGE(L"ScrollViewer", scrollViewerPage);

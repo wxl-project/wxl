@@ -68,7 +68,9 @@ FrameworkElement themeHeight() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::appWindowTitleBarPage() {
+static wxl::FrameworkElement appWindowTitleBarPage() {
     return StackPanel {
         gallery::prose(gallery::snippet(introText), Thickness {0, 8, 0, 0}), colorCustomization(), extend(), themeHeight()};
 }
+
+REGISTER_GALLERY_PAGE(L"AppWindowTitleBar", appWindowTitleBarPage);

@@ -46,6 +46,8 @@ FrameworkElement lastItem() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::wrapPanelPage() {
+static wxl::FrameworkElement wrapPanelPage() {
     return StackPanel {basic(), lastItem()};
 }
+
+REGISTER_GALLERY_PAGE(L"WrapPanel", wrapPanelPage);

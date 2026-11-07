@@ -96,6 +96,8 @@ FrameworkElement selectable() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::textBlockPage() {
+static wxl::FrameworkElement textBlockPage() {
     return StackPanel {simple(), styleApplied(), various(), inlineElements(), selectable()};
 }
+
+REGISTER_GALLERY_PAGE(L"TextBlock", textBlockPage);

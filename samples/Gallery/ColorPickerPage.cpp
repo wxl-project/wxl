@@ -28,6 +28,8 @@ FrameworkElement properties() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::colorPickerPage() {
+static wxl::FrameworkElement colorPickerPage() {
     return StackPanel {properties()};
 }
+
+REGISTER_GALLERY_PAGE(L"ColorPicker", colorPickerPage);

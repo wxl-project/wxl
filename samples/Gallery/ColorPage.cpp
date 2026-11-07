@@ -40,7 +40,7 @@ struct Model {
 
 }  // namespace
 
-FrameworkElement gallery::colorPage() {
+static FrameworkElement colorPage() {
 #include "Snippets/Color/ColorBrushReference.h"
 
     auto const model = gallery::hold<Model>();
@@ -75,3 +75,5 @@ FrameworkElement gallery::colorPage() {
         model->frame,
     };
 }
+
+REGISTER_GALLERY_PAGE(L"Color", colorPage);

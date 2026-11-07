@@ -73,7 +73,7 @@ FrameworkElement builtTemplates() {
 
 }  // namespace
 
-FrameworkElement gallery::templatesPage() {
+static FrameworkElement templatesPage() {
     return StackPanel {
         spacing = 12.0,
         Margin {0, 12, 0, 0},
@@ -105,3 +105,5 @@ FrameworkElement gallery::templatesPage() {
         builtTemplates(),
     };
 }
+
+REGISTER_GALLERY_PAGE(L"Templates", templatesPage);

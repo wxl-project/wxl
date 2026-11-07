@@ -29,6 +29,8 @@ FrameworkElement simple() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::toggleButtonPage() {
+static wxl::FrameworkElement toggleButtonPage() {
     return StackPanel {simple()};
 }
+
+REGISTER_GALLERY_PAGE(L"ToggleButton", toggleButtonPage);

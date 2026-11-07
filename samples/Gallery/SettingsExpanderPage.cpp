@@ -23,6 +23,8 @@ FrameworkElement basicExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::settingsExpanderPage() {
+static wxl::FrameworkElement settingsExpanderPage() {
     return StackPanel {basicExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"SettingsExpander", settingsExpanderPage);

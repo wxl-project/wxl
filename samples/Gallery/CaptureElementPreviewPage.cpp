@@ -47,6 +47,8 @@ FrameworkElement preview() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::captureElementPreviewPage() {
+static wxl::FrameworkElement captureElementPreviewPage() {
     return StackPanel {preview()};
 }
+
+REGISTER_GALLERY_PAGE(L"CaptureElementPreview", captureElementPreviewPage);

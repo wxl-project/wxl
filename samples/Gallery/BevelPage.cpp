@@ -63,6 +63,8 @@ FrameworkElement keypadExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::bevelPage() {
+static wxl::FrameworkElement bevelPage() {
     return StackPanel {calcPanelExample(), stretchExample(), keypadExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"Bevel", bevelPage);

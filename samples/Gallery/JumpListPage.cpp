@@ -48,7 +48,7 @@ FrameworkElement group() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::jumpListPage() {
+static wxl::FrameworkElement jumpListPage() {
     // What the original says above its examples: the list belongs to a packaged application.
     return StackPanel {
         InfoBar {Margin {0, 10, 0, 0}, isOpen = true, isClosable = false, severity = InfoBarSeverity::Warning,
@@ -61,3 +61,5 @@ wxl::FrameworkElement gallery::jumpListPage() {
         group(),
     };
 }
+
+REGISTER_GALLERY_PAGE(L"JumpList", jumpListPage);

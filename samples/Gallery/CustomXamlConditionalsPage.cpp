@@ -53,7 +53,7 @@ FrameworkElement setters(std::shared_ptr<Flags> const& flags) {
 
 }  // namespace
 
-FrameworkElement gallery::customXamlConditionalsPage() {
+static FrameworkElement customXamlConditionalsPage() {
     auto const flags = gallery::hold<Flags>();
     return StackPanel {
         spacing = 12.0,
@@ -74,3 +74,5 @@ FrameworkElement gallery::customXamlConditionalsPage() {
         setters(flags),
     };
 }
+
+REGISTER_GALLERY_PAGE(L"CustomXamlConditionals", customXamlConditionalsPage);

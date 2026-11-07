@@ -28,7 +28,7 @@ FrameworkElement sample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::systemBackdropElementPage() {
+static wxl::FrameworkElement systemBackdropElementPage() {
     return StackPanel {
         sample(),
         TextBlock {
@@ -39,3 +39,5 @@ wxl::FrameworkElement gallery::systemBackdropElementPage() {
         },
     };
 }
+
+REGISTER_GALLERY_PAGE(L"SystemBackdropElement", systemBackdropElementPage);

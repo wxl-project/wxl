@@ -101,6 +101,8 @@ FrameworkElement input() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::compositionWindowPage() {
+static wxl::FrameworkElement compositionWindowPage() {
     return StackPanel {creating(), sceneBackground(), visuals(), sizeAndMode(), input()};
 }
+
+REGISTER_GALLERY_PAGE(L"CompositionWindow", compositionWindowPage);

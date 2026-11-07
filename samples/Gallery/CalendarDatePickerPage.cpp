@@ -27,6 +27,8 @@ FrameworkElement headerPlaceholder() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::calendarDatePickerPage() {
+static wxl::FrameworkElement calendarDatePickerPage() {
     return StackPanel {headerPlaceholder()};
 }
+
+REGISTER_GALLERY_PAGE(L"CalendarDatePicker", calendarDatePickerPage);

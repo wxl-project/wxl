@@ -48,6 +48,8 @@ FrameworkElement stringsExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::radioButtonPage() {
+static wxl::FrameworkElement radioButtonPage() {
     return StackPanel {groupExample(), stringsExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"RadioButton", radioButtonPage);

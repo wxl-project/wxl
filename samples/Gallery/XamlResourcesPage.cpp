@@ -49,7 +49,7 @@ FrameworkElement newTheme() {
 
 }  // namespace
 
-FrameworkElement gallery::xamlResourcesPage() {
+static FrameworkElement xamlResourcesPage() {
     return StackPanel {
         TextBlock {Margin {0, 12, 0, 4}, styles.TextBlock.Subtitle, u"Creating and using resources"},
         StackPanel {
@@ -86,3 +86,5 @@ FrameworkElement gallery::xamlResourcesPage() {
         newTheme(),
     };
 }
+
+REGISTER_GALLERY_PAGE(L"XamlResources", xamlResourcesPage);

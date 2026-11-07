@@ -26,6 +26,8 @@ FrameworkElement control() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::relativePanelPage() {
+static wxl::FrameworkElement relativePanelPage() {
     return StackPanel {control()};
 }
+
+REGISTER_GALLERY_PAGE(L"RelativePanel", relativePanelPage);

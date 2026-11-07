@@ -122,6 +122,8 @@ FrameworkElement other() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::clipboardPage() {
+static wxl::FrameworkElement clipboardPage() {
     return StackPanel {copyText(), pasteText(), image(), files(), options(), other()};
 }
+
+REGISTER_GALLERY_PAGE(L"Clipboard", clipboardPage);

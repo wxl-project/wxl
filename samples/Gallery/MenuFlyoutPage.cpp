@@ -129,6 +129,8 @@ FrameworkElement radio() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::menuFlyoutPage() {
+static wxl::FrameworkElement menuFlyoutPage() {
     return StackPanel {appBarButtonMenu(), toggles(), cascading(), split(), icons(), iconsAccelerators(), radio()};
 }
+
+REGISTER_GALLERY_PAGE(L"MenuFlyout", menuFlyoutPage);

@@ -46,6 +46,8 @@ FrameworkElement navigationView() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::animatedIconPage() {
+static wxl::FrameworkElement animatedIconPage() {
     return StackPanel {button(), navigationView()};
 }
+
+REGISTER_GALLERY_PAGE(L"AnimatedIcon", animatedIconPage);

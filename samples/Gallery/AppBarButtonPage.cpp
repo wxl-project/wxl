@@ -112,6 +112,8 @@ FrameworkElement flyoutButton() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::appBarButtonPage() {
+static wxl::FrameworkElement appBarButtonPage() {
     return StackPanel {symbolIcon(), bitmapIcon(), fontIcon(), pathIcon(), accelerator(), flyoutButton()};
 }
+
+REGISTER_GALLERY_PAGE(L"AppBarButton", appBarButtonPage);

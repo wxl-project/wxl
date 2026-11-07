@@ -81,6 +81,8 @@ FrameworkElement dynamic() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::infoBadgePage() {
+static wxl::FrameworkElement infoBadgePage() {
     return StackPanel {embedded(), different(), inside(), dynamic()};
 }
+
+REGISTER_GALLERY_PAGE(L"InfoBadge", infoBadgePage);

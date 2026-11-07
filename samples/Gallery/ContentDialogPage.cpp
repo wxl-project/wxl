@@ -46,6 +46,8 @@ FrameworkElement withoutDefault() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::contentDialogPage() {
+static wxl::FrameworkElement contentDialogPage() {
     return StackPanel {basic(), withoutDefault()};
 }
+
+REGISTER_GALLERY_PAGE(L"ContentDialog", contentDialogPage);

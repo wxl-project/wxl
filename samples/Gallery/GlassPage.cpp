@@ -46,6 +46,8 @@ FrameworkElement tintedExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::glassPage() {
+static wxl::FrameworkElement glassPage() {
     return StackPanel {frostExample(), tintedExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"Glass", glassPage);

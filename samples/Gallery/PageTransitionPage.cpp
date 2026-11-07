@@ -33,6 +33,8 @@ FrameworkElement pageTransitions() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::pageTransitionPage() {
+static wxl::FrameworkElement pageTransitionPage() {
     return StackPanel {pageTransitions()};
 }
+
+REGISTER_GALLERY_PAGE(L"PageTransition", pageTransitionPage);

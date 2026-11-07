@@ -53,6 +53,8 @@ FrameworkElement searchBox() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::autoSuggestBoxPage() {
+static wxl::FrameworkElement autoSuggestBoxPage() {
     return StackPanel {basic(), searchBox()};
 }
+
+REGISTER_GALLERY_PAGE(L"AutoSuggestBox", autoSuggestBoxPage);

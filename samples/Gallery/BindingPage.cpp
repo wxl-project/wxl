@@ -111,7 +111,7 @@ FrameworkElement masterDetailExample() {
 
 }  // namespace
 
-FrameworkElement gallery::bindingPage() {
+static FrameworkElement bindingPage() {
     return StackPanel {
         spacing = 12.0,
         RichTextBlock {
@@ -135,3 +135,5 @@ FrameworkElement gallery::bindingPage() {
         masterDetailExample(),
     };
 }
+
+REGISTER_GALLERY_PAGE(L"Binding", bindingPage);

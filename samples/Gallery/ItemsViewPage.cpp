@@ -70,6 +70,8 @@ FrameworkElement invocation() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::itemsViewPage() {
+static wxl::FrameworkElement itemsViewPage() {
     return StackPanel {basicView(), swappable(), invocation()};
 }
+
+REGISTER_GALLERY_PAGE(L"ItemsView", itemsViewPage);

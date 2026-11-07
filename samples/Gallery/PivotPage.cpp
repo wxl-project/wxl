@@ -29,6 +29,8 @@ FrameworkElement basic() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::pivotPage() {
+static wxl::FrameworkElement pivotPage() {
     return StackPanel {basic()};
 }
+
+REGISTER_GALLERY_PAGE(L"Pivot", pivotPage);

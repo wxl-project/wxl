@@ -48,7 +48,7 @@ FrameworkElement glyphExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::badgeNotificationManagerPage() {
+static wxl::FrameworkElement badgeNotificationManagerPage() {
     return StackPanel {
         InfoBar {
             Margin {0, 10, 0, 0},
@@ -59,3 +59,5 @@ wxl::FrameworkElement gallery::badgeNotificationManagerPage() {
             message = u"This API requires the app to be running in packaged mode (MSIX).",
         },count(), glyphExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"BadgeNotificationManager", badgeNotificationManagerPage);

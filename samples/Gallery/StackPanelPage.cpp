@@ -28,6 +28,8 @@ FrameworkElement control() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::stackPanelPage() {
+static wxl::FrameworkElement stackPanelPage() {
     return StackPanel {control()};
 }
+
+REGISTER_GALLERY_PAGE(L"StackPanel", stackPanelPage);

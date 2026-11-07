@@ -82,6 +82,8 @@ FrameworkElement wrapping() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::buttonPage() {
+static wxl::FrameworkElement buttonPage() {
     return StackPanel {simple(), withImage(), builtInStyles(), wrapping()};
 }
+
+REGISTER_GALLERY_PAGE(L"Button", buttonPage);

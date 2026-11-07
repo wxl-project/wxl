@@ -45,6 +45,8 @@ FrameworkElement clickExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::hyperlinkButtonPage() {
+static wxl::FrameworkElement hyperlinkButtonPage() {
     return StackPanel {navigateExample(), clickExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"HyperlinkButton", hyperlinkButtonPage);

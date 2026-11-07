@@ -82,6 +82,8 @@ FrameworkElement geometryGroup() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::linePage() {
+static wxl::FrameworkElement linePage() {
     return StackPanel {line(), polyline(), path(), geometryGroup()};
 }
+
+REGISTER_GALLERY_PAGE(L"Line", linePage);

@@ -95,6 +95,8 @@ FrameworkElement customIcons() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::swipeControlPage() {
+static wxl::FrameworkElement swipeControlPage() {
     return StackPanel {revealActions(), invokeExecute(), listView(), gradient(), customIcons()};
 }
+
+REGISTER_GALLERY_PAGE(L"SwipeControl", swipeControlPage);

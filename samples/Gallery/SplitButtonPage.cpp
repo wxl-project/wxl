@@ -51,6 +51,8 @@ FrameworkElement textExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::splitButtonPage() {
+static wxl::FrameworkElement splitButtonPage() {
     return StackPanel {colorExample(), textExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"SplitButton", splitButtonPage);

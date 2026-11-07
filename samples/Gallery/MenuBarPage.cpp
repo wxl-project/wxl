@@ -61,6 +61,8 @@ FrameworkElement submenus() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::menuBarPage() {
+static wxl::FrameworkElement menuBarPage() {
     return StackPanel {simple(), accelerators(), submenus()};
 }
+
+REGISTER_GALLERY_PAGE(L"MenuBar", menuBarPage);

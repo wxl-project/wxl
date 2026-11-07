@@ -107,7 +107,7 @@ FrameworkElement accessKeys() {
 
 }  // namespace
 
-FrameworkElement gallery::accessibilityKeyboardPage() {
+static FrameworkElement accessibilityKeyboardPage() {
     auto references = StackPanel {automationName = u"Arrow keys references"};
     for (auto const& [title, anchor] : std::initializer_list<std::pair<char16_t const*, char16_t const*>> {
              {u"Keyboard interactions: Navigation", u"#navigation"},
@@ -158,3 +158,5 @@ FrameworkElement gallery::accessibilityKeyboardPage() {
         accessKeys(),
     };
 }
+
+REGISTER_GALLERY_PAGE(L"AccessibilityKeyboard", accessibilityKeyboardPage);

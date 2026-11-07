@@ -61,6 +61,8 @@ FrameworkElement image() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::toolTipPage() {
+static wxl::FrameworkElement toolTipPage() {
     return StackPanel {simple(), placed(), image()};
 }
+
+REGISTER_GALLERY_PAGE(L"ToolTip", toolTipPage);

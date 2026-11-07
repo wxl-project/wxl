@@ -90,6 +90,8 @@ FrameworkElement itemsRepeater() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::connectedAnimationPage() {
+static wxl::FrameworkElement connectedAnimationPage() {
     return StackPanel {listPage(), sameElements(), simple(), itemsRepeater()};
 }
+
+REGISTER_GALLERY_PAGE(L"ConnectedAnimation", connectedAnimationPage);

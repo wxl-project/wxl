@@ -94,6 +94,8 @@ FrameworkElement other() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::easingFunctionPage() {
+static wxl::FrameworkElement easingFunctionPage() {
     return StackPanel {gallery::prose(gallery::snippet(introText), Thickness {}), standard(), accelerate(), decelerate(), other()};
 }
+
+REGISTER_GALLERY_PAGE(L"EasingFunction", easingFunctionPage);

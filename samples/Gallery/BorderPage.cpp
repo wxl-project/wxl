@@ -28,6 +28,8 @@ FrameworkElement around() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::borderPage() {
+static wxl::FrameworkElement borderPage() {
     return StackPanel {around()};
 }
+
+REGISTER_GALLERY_PAGE(L"Border", borderPage);

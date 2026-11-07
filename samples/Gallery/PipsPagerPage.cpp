@@ -45,6 +45,8 @@ FrameworkElement options() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::pipsPagerPage() {
+static wxl::FrameworkElement pipsPagerPage() {
     return StackPanel {integrated(), options()};
 }
+
+REGISTER_GALLERY_PAGE(L"PipsPager", pipsPagerPage);

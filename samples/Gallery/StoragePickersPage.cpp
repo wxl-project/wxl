@@ -110,6 +110,8 @@ FrameworkElement thumbnail() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::storagePickersPage() {
+static wxl::FrameworkElement storagePickersPage() {
     return StackPanel {single(), multiple(), save(), folder(), thumbnail()};
 }
+
+REGISTER_GALLERY_PAGE(L"StoragePickers", storagePickersPage);

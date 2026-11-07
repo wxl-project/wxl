@@ -69,6 +69,8 @@ FrameworkElement editableExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::comboBoxPage() {
+static wxl::FrameworkElement comboBoxPage() {
     return StackPanel {inlineExample(), sourceExample(), editableExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"ComboBox", comboBoxPage);

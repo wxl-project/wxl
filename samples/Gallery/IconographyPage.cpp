@@ -168,7 +168,7 @@ FrameworkElement tagTile(std::weak_ptr<Model> weak, Object const& item) {
 
 }  // namespace
 
-FrameworkElement gallery::iconographyPage() {
+static FrameworkElement iconographyPage() {
     auto const model = gallery::hold<Model>();
     std::weak_ptr<Model> const weak = model;
 
@@ -245,3 +245,5 @@ FrameworkElement gallery::iconographyPage() {
         },
     };
 }
+
+REGISTER_GALLERY_PAGE(L"Iconography", iconographyPage);

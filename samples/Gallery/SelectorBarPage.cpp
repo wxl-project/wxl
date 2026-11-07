@@ -68,6 +68,8 @@ FrameworkElement collections() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::selectorBarPage() {
+static wxl::FrameworkElement selectorBarPage() {
     return StackPanel {basic(), frameTransitions(), collections()};
 }
+
+REGISTER_GALLERY_PAGE(L"SelectorBar", selectorBarPage);

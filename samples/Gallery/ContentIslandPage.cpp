@@ -31,6 +31,8 @@ FrameworkElement basic() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::contentIslandPage() {
+static wxl::FrameworkElement contentIslandPage() {
     return StackPanel {basic()};
 }
+
+REGISTER_GALLERY_PAGE(L"ContentIsland", contentIslandPage);

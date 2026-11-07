@@ -108,6 +108,8 @@ FrameworkElement actualOffset() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::xamlCompInteropPage() {
+static wxl::FrameworkElement xamlCompInteropPage() {
     return StackPanel {naturalMotion(), ellipse(), several(), circle(), actualOffset()};
 }
+
+REGISTER_GALLERY_PAGE(L"XamlCompInterop", xamlCompInteropPage);

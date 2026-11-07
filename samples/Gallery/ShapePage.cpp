@@ -64,6 +64,8 @@ FrameworkElement polygon() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::shapePage() {
+static wxl::FrameworkElement shapePage() {
     return StackPanel {ellipse(), rectangle(), polygon()};
 }
+
+REGISTER_GALLERY_PAGE(L"Shape", shapePage);
