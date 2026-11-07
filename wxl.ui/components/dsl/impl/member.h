@@ -25,7 +25,7 @@
 #include "Object.h"
 #include "TaggedValue.h"
 #include "EventToken.h"
-#include "member_function_traits.h"
+#include "impl/member_function_traits.h"
 #include <wxl/EventKey.h>
 #include <wxl/PropertyKey.h>
 
