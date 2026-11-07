@@ -87,50 +87,22 @@ struct Model {
 };
 
 auto example = StackPanel {
-    TextBlock {
+    HtmlBlock {
         textWrapping = TextWrapping::WrapWholeWords,
-        Run {u"A window can use one of the following system backdrops:"},
-        LineBreak {},
-        Run {u"1. "},
-        Run {u"Mica", FontWeight {700}},
-        Run {u" — An opaque material that samples the desktop wallpaper once to tint the window background. Best for main app windows."},
-        LineBreak {},
-        Run {u"2. "},
-        Run {u"Mica Alt", FontWeight {700}},
-        Run {u" — A variant of Mica with stronger tinting. Recommended for apps with a tabbed title bar."},
-        LineBreak {},
-        Run {u"3. "},
-        Run {u"Desktop Acrylic (Base)", FontWeight {700}},
-        Run {u" — A semi-transparent material that shows a blurred view of the content behind the window."},
-        LineBreak {},
-        Run {u"4. "},
-        Run {u"Desktop Acrylic (Thin)", FontWeight {700}},
-        Run {u" — A lighter variant of Desktop Acrylic with more transparency."},
-        LineBreak {},
-        LineBreak {},
-        Run {u"Mica vs. Acrylic:", FontWeight {700}},
-        Run {u" Mica is opaque and renders the desktop wallpaper within the window background. Desktop Acrylic is "
-             u"semi-transparent and reveals a blurred view of what is behind the window in real-time. Mica is more "
-             u"performant because it captures the wallpaper only once, while Acrylic updates continuously."},
-        LineBreak {},
-        LineBreak {},
-        Run {u"There are three backdrop types in the API:"},
-        LineBreak {},
-        Run {u"• "},
-        Run {u"SystemBackdrop", FontWeight {700}},
-        Run {u" — The base class of every backdrop type."},
-        LineBreak {},
-        Run {u"• "},
-        Run {u"MicaBackdrop", FontWeight {700}},
-        Run {u" — Applies the Mica material. Set the Kind property to switch between Base and Alt."},
-        LineBreak {},
-        Run {u"• "},
-        Run {u"DesktopAcrylicBackdrop", FontWeight {700}},
-        Run {u" — Applies the Desktop Acrylic material (Base type only)."},
-        LineBreak {},
-        LineBreak {},
-        Run {u"All Mica variants require Windows 11 build 22000 or later. In-app acrylic (AcrylicBrush) is a separate "
-             u"XAML brush used within UI elements, not a window backdrop."},
+        u"<p>A window can use one of the following system backdrops:<br>"
+        u"1. <b>Mica</b> — An opaque material that samples the desktop wallpaper once to tint the window background. Best for main app windows.<br>"
+        u"2. <b>Mica Alt</b> — A variant of Mica with stronger tinting. Recommended for apps with a tabbed title bar.<br>"
+        u"3. <b>Desktop Acrylic (Base)</b> — A semi-transparent material that shows a blurred view of the content behind the window.<br>"
+        u"4. <b>Desktop Acrylic (Thin)</b> — A lighter variant of Desktop Acrylic with more transparency.</p>"
+        u"<p><b>Mica vs. Acrylic:</b> Mica is opaque and renders the desktop wallpaper within the window background. Desktop Acrylic is "
+        u"semi-transparent and reveals a blurred view of what is behind the window in real-time. Mica is more "
+        u"performant because it captures the wallpaper only once, while Acrylic updates continuously.</p>"
+        u"<p>There are three backdrop types in the API:</p>"
+        u"<ul><li><b>SystemBackdrop</b> — The base class of every backdrop type.</li>"
+        u"<li><b>MicaBackdrop</b> — Applies the Mica material. Set the Kind property to switch between Base and Alt.</li>"
+        u"<li><b>DesktopAcrylicBackdrop</b> — Applies the Desktop Acrylic material (Base type only).</li></ul>"
+        u"<p>All Mica variants require Windows 11 build 22000 or later. In-app acrylic (AcrylicBrush) is a separate "
+        u"XAML brush used within UI elements, not a window backdrop.</p>",
     },
     Button {
         Margin {0, 10, 0, 0},
