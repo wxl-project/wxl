@@ -87,6 +87,8 @@ struct synthetic_member {
     // RowLengths behind RowDefinitions, whose name is taken by the value written --
     // says so here.
     bool positional = false;
+
+    friend bool operator==(synthetic_member const&, synthetic_member const&) = default;
 };
 
 // A method WinRT declares that is a setter in all but name: one argument, no
@@ -103,6 +105,8 @@ struct synthetic_member {
 struct setter_method {
     std::string method;  // "SetTitleBar", spelled as metadata spells it
     std::string type;    // "Microsoft.UI.Xaml.Controls.TitleBar", or empty
+
+    friend bool operator==(setter_method const&, setter_method const&) = default;
 };
 
 // A wrapped class that a string builds: the abstract Geometry, which is made from
@@ -112,6 +116,8 @@ struct setter_method {
 struct from_text_t {
     std::string function;  // "impl::geometry_from_text"
     std::string include;   // header declaring it, as the generated source writes it
+
+    friend bool operator==(from_text_t const&, from_text_t const&) = default;
 };
 
 // A method of the platform whose call wxl replaces with its own: the class keeps the
@@ -124,6 +130,8 @@ struct from_text_t {
 struct replaced_call {
     std::string function;  // "impl::stream_reference_from_uri", under namespace wxl
     std::string include;   // header declaring it, as the generated source writes it
+
+    friend bool operator==(replaced_call const&, replaced_call const&) = default;
 };
 
 // One NuGet package a profile draws metadata from. `metadata` names the
@@ -206,6 +214,9 @@ struct component {
     std::string name;  // equals the name of its directory
     std::filesystem::path source;     // the component.json
     std::filesystem::path directory;  // the one that holds it
+    // What the walk is asked to start from -- the packages, the listed types with everything
+    // written under them, and the Windows metadata: the keys a profile and the `requires` of a
+    // component share.
     profile requirements;
     std::vector<std::string> needs;      // other components, by name
     std::vector<std::string> sources;    // files of the component, relative to its directory
@@ -444,9 +455,16 @@ struct component_search {
     // chain names in "components" before "needs" adds to them. Empty: no comparison.
     std::optional<std::vector<std::string>> expected;
 
-    // The directory of what no component owns. When set, every include a profile or a selected
-    // component gives must be a file of a selected component or of this directory, or one of
-    // `generated_includes`. Empty: includes are not checked.
+    // The directory of what no component owns (the library's include directory, wxl.ui/src
+    // today). When set, every include a profile or a selected component gives must be a file of a
+    // selected component or of this directory, or one of `generated_includes`. Includes are
+    // spelled the way the emitter spells them: "../X.h" is a hand-written header named relative to
+    // the library's include directory with "../" in front, a plain name is a generated file, and
+    // "<winrt/...>" / "<chrono>" are projection / standard headers. An include starting with "../"
+    // is resolved against this directory and against each selected component's directory; the
+    // resolved path must stay inside that directory and not lie in a component the profiles do
+    // not select. A plain name must be one of `generated_includes`; a name in angle brackets is not
+    // checked. Empty: includes are not checked.
     std::optional<std::filesystem::path> common_directory;
 
     // Headers the generator writes itself into its output (FluentSymbol.h), so no directory holds them.

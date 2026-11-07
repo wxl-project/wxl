@@ -954,38 +954,74 @@ void check_named_components(profile_set const& result, component_search const& s
     }
 }
 
+// Whether `file`, once normalised, lies inside `directory`: a path that climbs out of it with
+// ".." does not.
+bool inside(std::filesystem::path const& directory, std::filesystem::path const& file) {
+    auto const relative = file.lexically_normal().lexically_relative(directory.lexically_normal());
+    return !relative.empty() && *relative.begin() != std::filesystem::path{".."};
+}
+
 // Every header the generated code includes for a profile or a component, held to where it can
-// be: a file of a selected component, a file of the common directory, or one the generator
-// writes itself. An include of a component the profiles do not select would compile only while
-// another profile happens to select it.
+// be, in the spelling the emitter reads (gen/emit.h, write_include): "../X.h" names a
+// hand-written header relative to the library's include directory, so it is a file of the common
+// directory or of a selected component, and never of a component the profiles do not select --
+// the common directory may hold the components themselves; a plain name is a file of the run, so
+// it must be a header the generator writes. A name in angle brackets is a projection or standard
+// header written as it is; no profile has one, and it is not checked.
 void check_includes(std::vector<profile> const& in_load_order,
                     std::vector<component> const& components, component_search const& search) {
     if (!search.common_directory) {
         return;
     }
-    auto const found = [&](std::string const& include) {
-        if (std::ranges::find(search.generated_includes, include) !=
-            search.generated_includes.end()) {
-            return true;
-        }
-        auto const file = path_of(include);
-        if (std::filesystem::is_regular_file(*search.common_directory / file)) {
-            return true;
-        }
-        return std::ranges::any_of(components, [&](component const& comp) {
-            return std::filesystem::is_regular_file(comp.directory / file);
+    auto const common = canonical_path(*search.common_directory);
+    std::vector<std::filesystem::path> roots;
+    for (auto&& directory : search.directories) {
+        roots.push_back(canonical_path(directory));
+    }
+    // The directory of a component the profiles do not select that `file` lies in, if any.
+    auto const of_unselected = [&](std::filesystem::path const& file) {
+        return std::ranges::any_of(roots, [&](std::filesystem::path const& root) {
+            if (!inside(root, file)) {
+                return false;
+            }
+            auto const owner = root / *file.lexically_relative(root).begin();
+            return std::filesystem::is_regular_file(owner / "component.json") &&
+                   std::ranges::none_of(components, [&](component const& comp) {
+                       return comp.directory.lexically_normal() == owner.lexically_normal();
+                   });
         });
+    };
+    auto const found = [&](std::string const& include) {
+        if (include.starts_with('<')) {
+            return true;
+        }
+        if (!include.starts_with("../")) {
+            return std::ranges::find(search.generated_includes, include) !=
+                   search.generated_includes.end();
+        }
+        auto const file = path_of(std::string_view{include}.substr(3));
+        auto const in = [&](std::filesystem::path const& directory) {
+            auto const resolved = (directory / file).lexically_normal();
+            return inside(directory, resolved) && std::filesystem::is_regular_file(resolved) &&
+                   !of_unselected(resolved);
+        };
+        return in(common) ||
+               std::ranges::any_of(components, [&](component const& comp) { return in(comp.directory); });
     };
     auto const check = [&](profile const& prof, std::string const& member,
                            std::string const& include) {
         if (include.empty() || found(include)) {
             return;
         }
+        auto const where = wxl::core::unicode::to_utf8(*search.common_directory);
         fail(prof.source,
-             std::format("{} includes \"{}\", which is neither a file of a selected component nor "
-                         "of {}, nor a header the generator writes",
-                         member, include,
-                         wxl::core::unicode::to_utf8(*search.common_directory).chars()));
+             include.starts_with("../")
+                 ? std::format("{} includes \"{}\", which is no file of {} nor of a selected "
+                               "component",
+                               member, include, where.chars())
+                 : std::format("{} includes \"{}\": a name without \"../\" must be a header the "
+                               "generator writes",
+                               member, include));
     };
     for (auto&& prof : in_load_order) {
         for (auto&& [type, members] : prof.synthetic) {

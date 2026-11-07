@@ -68,10 +68,13 @@ constexpr std::string_view usage = R"(winui-srcgen -- generates wxl wrappers fro
                  given, the list is compared as a set with the chain's own
                  "components", before "needs" adds to them, and a mismatch
                  stops the run with both lists named.
-  --common-dir   The directory of what no component owns. When set, every
-                 include a profile or a selected component gives must be a
-                 file of a selected component or of this directory, or one the
-                 generator writes itself; any other include stops the run.
+  --common-dir   The library's include directory (wxl.ui/src), which holds
+                 what no component owns. When set, every include a profile
+                 or a selected component gives is checked: "../X.h" must be
+                 X in this directory or in a selected component's directory,
+                 and not a file of a component the profiles do not select; a
+                 name without "../" must be a header the generator writes.
+                 Any other include stops the run.
 )";
 
 // "de, en, ...": the codes of documentation_languages, for the help and for

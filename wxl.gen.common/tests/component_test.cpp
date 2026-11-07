@@ -239,25 +239,30 @@ std::filesystem::path write_including_profile(std::filesystem::path const& direc
 
 }  // namespace
 
-// An include is a file of a selected component, a file of the common directory, or one the
-// generator writes.
+// "../X.h" is X relative to the common directory or to a selected component's directory; a
+// plain name is a header the generator writes.
 TEST(component, an_include_is_found_where_it_may_be) {
     auto const directory = scratch(L"includes_found");
     auto const components = directory / L"components";
     auto const common = directory / L"common";
     write_component(components, "window");
     write(components / L"window" / L"window_helpers.h", "");
-    write(common / L"core.h", "");
+    write(common / L"impl" / L"core.h", "");
     auto const restored = no_packages(directory);
     component_search const search{.directories = {components},
                                   .common_directory = common,
                                   .generated_includes = {"FluentSymbol.h"}};
 
-    for (auto&& include : {"window_helpers.h", "core.h", "FluentSymbol.h"}) {
+    for (auto&& include : {"../window_helpers.h", "../impl/core.h", "FluentSymbol.h"}) {
         EXPECT_NO_THROW(resolve_profiles(
             {write_including_profile(directory, R"("window")", include)}, restored, search))
             << include;
     }
+
+    // Without a common directory nothing is checked.
+    EXPECT_NO_THROW(resolve_profiles(
+        {write_including_profile(directory, R"("window")", "../missing.h")}, restored,
+        {.directories = {components}}));
 
     std::filesystem::remove_all(directory);
 }
@@ -269,20 +274,67 @@ TEST(component, an_include_found_nowhere_names_the_member_and_the_profile) {
     write_component(components, "window");
     write_component(components, "grid");
     write(components / L"grid" / L"grid_helpers.h", "");
-    std::filesystem::create_directories(common);
+    write(common / L"core.h", "");
+    write(directory / L"outside.h", "");
     auto const restored = no_packages(directory);
-    component_search const search{.directories = {components}, .common_directory = common};
+    component_search const search{.directories = {components},
+                                  .common_directory = common,
+                                  .generated_includes = {"FluentSymbol.h"}};
 
-    // A file of a component the profiles do not select is not found.
-    for (auto&& include : {"grid_helpers.h", "missing.h"}) {
+    // A sibling of a selected component, a file climbing out of the directories, a missing
+    // file, and a plain name the generator does not write, though a file of that name exists.
+    for (auto&& include :
+         {"../grid/grid_helpers.h", "../../outside.h", "../missing.h", "core.h"}) {
         auto const profile = write_including_profile(directory, R"("window")", include);
         EXPECT_TRUE(says(stops_with([&] { resolve_profiles({profile}, restored, search); }),
                          {utf8(profile), "Microsoft.UI.Xaml.Window.MinSize", include}));
     }
 
-    // Without a common directory nothing is checked.
-    EXPECT_NO_THROW(resolve_profiles({write_including_profile(directory, R"("window")", "missing.h")},
-                                     restored, {.directories = {components}}));
+    std::filesystem::remove_all(directory);
+}
+
+// The library's include directory holding the components themselves: a file of a component the
+// profiles do not select is refused although it lies in the common directory.
+TEST(component, an_include_of_an_unselected_component_is_refused_in_the_common_directory) {
+    auto const directory = scratch(L"includes_nested");
+    auto const common = directory / L"src";
+    write_component(common, "window");
+    write_component(common, "grid");
+    write(common / L"window" / L"window_helpers.h", "");
+    write(common / L"grid" / L"grid_helpers.h", "");
+    auto const restored = no_packages(directory);
+    component_search const search{.directories = {common}, .common_directory = common};
+
+    EXPECT_NO_THROW(resolve_profiles(
+        {write_including_profile(directory, R"("window")", "../window/window_helpers.h")},
+        restored, search));
+    auto const profile =
+        write_including_profile(directory, R"("window")", "../grid/grid_helpers.h");
+    EXPECT_TRUE(says(stops_with([&] { resolve_profiles({profile}, restored, search); }),
+                     {utf8(profile), "../grid/grid_helpers.h"}));
+
+    std::filesystem::remove_all(directory);
+}
+
+// What a component's own `requires` includes is checked as well, and reported against its
+// manifest.
+TEST(component, an_include_of_a_component_names_the_manifest) {
+    auto const directory = scratch(L"includes_component");
+    auto const components = directory / L"components";
+    auto const common = directory / L"common";
+    auto const manifest = write_component(
+        components, "window",
+        R"("requires": {"types": {"Microsoft.UI.Xaml.Window": {"syntheticMembers": {"MinSize": )"
+        R"({"type": "Windows.Graphics.SizeInt32", "function": "f", "include": "../missing.h"}}}}})");
+    std::filesystem::create_directories(common);
+    auto const profile = write_profile(directory, R"("window")");
+
+    EXPECT_TRUE(says(stops_with([&] {
+                         resolve_profiles({profile}, no_packages(directory),
+                                          {.directories = {components}, .common_directory = common});
+                     }),
+                     {utf8(std::filesystem::canonical(manifest)),
+                      "Microsoft.UI.Xaml.Window.MinSize", "../missing.h"}));
 
     std::filesystem::remove_all(directory);
 }
