@@ -13,8 +13,8 @@ namespace gallery {
 
 LazyLoadedText::LazyLoadedText(std::string_view relative) : relative_{relative} {}
 
-Snippet LazyLoadedText::bytes() const {
-    if (!loaded_) {
+Snippet LazyLoadedText::bytes() {
+    if (bytes_.empty()) {
         // Папка exe плюс относительный путь: туда wxl_target_assets копирует
         // Snippets. read_all читает байты, не текст; UTF-8 проверяет
         // snippetText, а не это чтение.
@@ -33,7 +33,6 @@ Snippet LazyLoadedText::bytes() const {
         }
 
         bytes_ = std::move(*bytes);
-        loaded_ = true;
     }
 
     // Те же байты, что лежат в строке: char -> char8_t — переозначение тех же
@@ -41,7 +40,7 @@ Snippet LazyLoadedText::bytes() const {
     return Snippet{reinterpret_cast<char8_t const*>(bytes_.data()), bytes_.size()};
 }
 
-Snippet snippet(LazyLoadedText const& lazy) {
+Snippet snippet(LazyLoadedText& lazy) {
     return lazy.bytes();
 }
 

@@ -39,28 +39,31 @@ constexpr Snippet snippet(const char8_t (&bytes)[N]) {
 
 // Сниппет, который читается с диска при первом обращении, а не вшит в exe:
 // пилот на RadialGradientBrushPage. Держит относительный путь (узкий ASCII,
-// напр. "Snippets/RadialGradientBrush/RadialGradientBrushSample.html") и
+// напр. "Snippets/RadialGradientBrush/RadialGradientBrushSample.html") как
+// string_view на строковый литерал — копии нет, литерал живёт всё время — и
 // прочитанные байты; bytes() читает один раз и отдаёт std::u8string_view над
-// ними. UTF-8 не проверяет — это делает snippetText. Чтение синхронное:
-// страница строится на STA-потоке, и чтение маленькое. Неудачное чтение
-// бросает std::runtime_error с путём, словами системы о коде и самим кодом —
-// той же формы, что у xml/json в wxl.core.
-class LazyLoadedText {
+// ними. Пустое bytes_ значит «ещё не читано»: неудачное чтение бросает и
+// приложение останавливается, так что пустых байтов после чтения не бывает.
+// UTF-8 не проверяет — это делает snippetText. Чтение синхронное: страница
+// строится на STA-потоке, и чтение маленькое. Неудачное чтение бросает
+// std::runtime_error с путём, словами системы о коде и самим кодом — той же
+// формы, что у xml/json в wxl.core. Некопируемый: держит ссылку на литерал.
+class LazyLoadedText : public wxl::core::noncopyable {
 public:
     explicit LazyLoadedText(std::string_view relative);
 
     // Байты файла: читаются при первом вызове и держатся до конца жизни.
-    Snippet bytes() const;
+    Snippet bytes();
 
 private:
-    std::string relative_;        // путь относительно папки exe
-    mutable std::string bytes_;   // прочитанные байты (после bytes())
-    mutable bool loaded_ = false; // bytes() уже читал
+    std::string_view relative_; // путь относительно папки exe (на литерал)
+    std::string bytes_;         // прочитанные байты (пустая — ещё не читано)
 };
 
 // Тот же snippet(), что для вшитых байтов, но из LazyLoadedText: страница
-// зовёт snippet(sampleHeader) и не знает, откуда байты.
-Snippet snippet(LazyLoadedText const& lazy);
+// зовёт snippet(sampleHeader) и не знает, откуда байты. Ссылка не const —
+// bytes() при первом вызове читает файл в байты.
+Snippet snippet(LazyLoadedText& lazy);
 
 // Что кладёт в раскладку один пример.
 struct ExampleParts {
