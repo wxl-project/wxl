@@ -44,7 +44,9 @@ EventToken dispatcher_timer::add_tick(core::function<void()> handler) const {
         projected(timer_).Tick([handler = std::move(handler)](auto&&, auto&&) { handler(); }));
 }
 
+// Revoking releases the handler, a core::function, whose count is the UI thread's alone.
 void dispatcher_timer::remove(EventToken& token) const {
+    UiThread::ensureCurrent();
     projected(timer_).Tick(to_winrt(take_token(token)));
 }
 
