@@ -1,0 +1,10 @@
+{
+  "name": "scroll_view",
+  "needs": [],
+  "sources": [
+    "impl/scroll_controller_helpers.cpp",
+    "impl/scroll_controller_helpers.h"
+  ],
+  "libraries": [],
+  "comment": "The scroll controllers of ScrollView."
+}

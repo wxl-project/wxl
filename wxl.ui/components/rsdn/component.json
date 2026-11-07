@@ -1,0 +1,15 @@
+{
+  "name": "rsdn",
+  "needs": [
+    "markup"
+  ],
+  "sources": [
+    "RsdnBlock.cpp",
+    "RsdnBlock.h",
+    "RsdnBlock.impl.h"
+  ],
+  "libraries": [
+    "wxl::rsdn"
+  ],
+  "comment": "The RSDN markup block."
+}

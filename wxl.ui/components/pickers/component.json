@@ -1,0 +1,7 @@
+{
+  "name": "pickers",
+  "needs": [],
+  "sources": [],
+  "libraries": [],
+  "comment": "File type helpers for pickers (add_file_type, add_file_type_choice to split from items_helpers in S3b.3)"
+}

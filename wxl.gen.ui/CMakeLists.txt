@@ -22,4 +22,5 @@ target_link_libraries(wxl.gen.ui PRIVATE wxl.gen.common)
 
 # Откуда открывается профиль по умолчанию: из дерева исходников.
 target_compile_definitions(wxl.gen.ui PRIVATE
-    "WXL_GEN_PROFILES=\"${PROJECT_SOURCE_DIR}/wxl.gen/profiles\"")
+    "WXL_GEN_PROFILES=\"${PROJECT_SOURCE_DIR}/wxl.gen/profiles\""
+    "WXL_GEN_COMPONENTS=\"${PROJECT_SOURCE_DIR}/wxl.ui/components\"")

@@ -52,11 +52,19 @@ set(_wrappers_step "")
 if(TARGET winui-srcgen)
     include("${CMAKE_CURRENT_SOURCE_DIR}/../cmake/wxl_ui_profile.cmake")
     set(_wrappers "${CMAKE_BINARY_DIR}/docs/wrappers/wxl")
+    set(_profile "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/full.winxl-profile")
+    set(_components "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.ui/components")
+    # The same chain the library of the profile is built from, which the generator checks.
+    wxl_read_profile_components(_docs "${_profile}" "${_components}")
     wxl_generate_wrappers(docs.wrappers
         DIR     "${_wrappers}"
-        PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/full.winxl-profile"
+        PROFILE "${_profile}"
         PARTS   1
-        DOCS    "${WXL_DOC_LANGUAGE}")
+        DOCS    "${WXL_DOC_LANGUAGE}"
+        COMPONENT_DIR "${_components}"
+        COMPONENTS ${_docs_CHAIN}
+        COMMON_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.ui/src"
+        MANIFESTS ${_docs_MANIFESTS})
     set_property(TARGET docs.wrappers PROPERTY FOLDER docs)
     set(_wrappers_step docs.wrappers)
 else()

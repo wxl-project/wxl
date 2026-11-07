@@ -294,150 +294,14 @@ else()
         "when it is shown.")
 endif()
 
-# ---- The hand-written sources of the profile layer ----
-# The rest of src/: every source that reaches a generated header, with the
-# headers of the same units. Compiled into each library of a profile, against
-# that profile's wrappers, by wxl_add_ui_library. They are named here once and
-# handed over in properties of wxl.ui.common, with what they link, so that a
-# profile declared outside this directory builds the same sources the same way.
-set(_wxl_ui_profile_sources
-    # Pre-defined -- never generated.
-    src/event_awaitable.h
-    src/BevelEffect.h
-    src/BevelEffect.cpp
-    src/Button3DEffect.h
-    src/Button3DEffect.cpp
-    src/HaloEffect.h
-    src/HaloEffect.cpp
-    src/GaussianBlurEffect.h
-    src/GaussianBlurEffect.cpp
-    src/GlassEffect.h
-    src/GlassEffect.cpp
-    src/impl/key_relief.h
-    src/impl/key_relief.cpp
-    src/MagnifyEffect.h
-    src/MagnifyEffect.cpp
-    src/FocusEffect.h
-    src/FocusEffect.cpp
-    src/RevealEffect.h
-    src/RevealEffect.cpp
-    src/schema.h
-    src/aliases.h
-    src/ui.h
-
-    # Hand-written plumbing the generated code leans on.
-    src/impl/element_helpers.h
-    src/impl/element_helpers.cpp
-    src/impl/window_helpers.h
-    src/impl/window_helpers.cpp
-    src/impl/backdrop_helpers.h
-    src/impl/backdrop_helpers.cpp
-    src/impl/items_helpers.h
-    src/impl/items_helpers.cpp
-    src/impl/layout_helpers.h
-    src/impl/layout_helpers.cpp
-    src/impl/scroll_controller_helpers.h
-    src/impl/scroll_controller_helpers.cpp
-    src/impl/shape_helpers.h
-    src/impl/shape_helpers.cpp
-    src/impl/member.h
-    src/impl/member.cpp
-    src/WindowNative.h
-    src/WindowNative.cpp
-    src/impl/window_frame.cpp
-    src/TrayIcon.h
-    src/TrayIcon.cpp
-    src/resource_lookup.h
-    src/resource_lookup.cpp
-    src/Bind.h
-    src/Card.h
-    src/Card.cpp
-    src/Panels.h
-    src/Panels.cpp
-    src/SplitPanel.h
-    src/SplitPanel.cpp
-    src/AvailableSizeLayout.h
-    src/AvailableSizeLayout.cpp
-    src/CustomLayout.h
-    src/CustomLayout.cpp
-    src/CustomVirtualizingLayout.h
-    src/CustomVirtualizingLayout.cpp
-    src/Navigation.h
-    src/Navigation.cpp
-    src/Announce.h
-    src/Announce.cpp
-    src/FrameSource.h
-    src/FrameSource.cpp
-    src/SettingsCard.h
-    src/SettingsCard.cpp
-    src/SettingsCardContentAlignment.h
-    src/GridLengths.h
-    src/SizeToContent.h
-    src/HeaderedContentControl.h
-    src/HeaderedContentControl.cpp
-    src/SettingsExpander.h
-    src/SettingsExpander.cpp
-    src/impl/SettingsCardCore.h
-    src/impl/automation_properties.h
-    src/impl/automation_properties.cpp
-    src/ZoomEffect.h
-    src/ZoomEffect.cpp
-    src/impl/binding.h
-    src/impl/focus_pair.h
-    src/impl/focus_pair.cpp
-    src/impl/vertical_offset_pair.h
-    src/impl/vertical_offset_pair.cpp
-    src/impl/intermediate_value_pair.h
-    src/impl/intermediate_value_pair.cpp
-    src/WindowShade.h
-    src/WindowShade.cpp
-    src/ShowDialog.h
-    src/ShowDialog.cpp
-    src/impl/show_dialog.h
-    src/ThemeBrush.h
-    src/ThemeBrush.cpp
-    src/DrawingSurface.h
-    src/DrawingSurface.cpp
-    src/CompositionWindow.h
-    src/impl/background_load.h
-    src/CompositionWindow.cpp
-    src/TextureCache.h
-    src/TextureCache.cpp
-    src/FormattedBlock.h
-    src/FormattedBlock.impl.h
-    src/FormattedBlock.cpp
-    src/MarkupBlock.h
-    src/MarkupBlock.impl.h
-    src/impl/markup_build.h
-    src/MarkupBlock.cpp
-    src/HtmlBlock.h
-    src/HtmlBlock.impl.h
-    src/HtmlBlock.cpp
-    src/BbBlock.h
-    src/BbBlock.impl.h
-    src/BbBlock.cpp
-    src/RsdnBlock.h
-    src/RsdnBlock.impl.h
-    src/RsdnBlock.cpp
-    src/impl/item_factory.cpp
-    src/impl/item_template.cpp
-    src/ItemTemplate.h
-    src/ItemTemplate.cpp
-    src/ItemContainerPreset.h
-    src/Resource.h
-    src/Resource.cpp
-)
-list(TRANSFORM _wxl_ui_profile_sources PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
-
-# What those sources build against beyond wxl.ui.common. PRIVATE to a library of
-# a profile, like the projection: an application links none of it itself.
+# ---- What the profile layer builds against ----
+# The hand-written sources of the profile layer are the components under components/,
+# named by their manifests (component.json) and chosen by the profile chain:
+# wxl_add_ui_library reads them at configure (cmake/Read-ProfileComponents.ps1).
+# What is left here is what no component owns, handed over in properties of
+# wxl.ui.common, PRIVATE to a library of a profile like the projection: an
+# application links none of it itself.
 set(_wxl_ui_profile_libraries
-    # The markup parsers behind the family of blocks, beside the HTML one
-    # of wxl::core. Private like the projection: the DOM never crosses a
-    # control's public interface -- markup goes in as a string,
-    # primitives come out.
-    wxl::bb
-    wxl::rsdn
     Microsoft::CppWinRT
     runtimeobject.lib
     # The graphics stack under a composition drawing surface: a D3D11
@@ -467,7 +331,6 @@ set(_wxl_ui_profile_libraries
 )
 
 set_target_properties(wxl.ui.common PROPERTIES
-    WXL_UI_PROFILE_SOURCES "${_wxl_ui_profile_sources}"
     WXL_UI_PROFILE_LIBRARIES "${_wxl_ui_profile_libraries}"
     # The package headers the profile layer includes, PRIVATE to it as to
     # wxl.ui.common above.
@@ -578,11 +441,16 @@ if(WXL_TESTS)
     # The sources it builds reach generated headers too (impl/member.h names
     # <wxl/EventKey.h>, impl/background_load.h <wxl/Microsoft.UI.Composition.h>):
     # the include root of the full profile's wrappers, and their generation ahead
-    # of every compile and scan of them.
+    # of every compile and scan of them. The headers under test that components
+    # own come from their directories: impl/background_load.h of composition,
+    # impl/member.h and event_awaitable.h of dsl, impl/show_dialog.h of dialogs.
     get_target_property(_wxl_ui_wrappers wxl.ui.full WXL_WRAPPERS_DIR)
     cmake_path(GET _wxl_ui_wrappers PARENT_PATH _wxl_ui_wrappers_root)
     target_include_directories(wxl.ui.tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/components/composition
+        ${CMAKE_CURRENT_SOURCE_DIR}/components/dsl
+        ${CMAKE_CURRENT_SOURCE_DIR}/components/dialogs
         ${_wxl_ui_wrappers_root}
     )
     add_dependencies(wxl.ui.tests wxl.ui.full.wrappers)

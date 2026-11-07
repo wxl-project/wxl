@@ -1,0 +1,20 @@
+{
+  "name": "markup",
+  "needs": [
+    "elements"
+  ],
+  "sources": [
+    "FormattedBlock.cpp",
+    "FormattedBlock.h",
+    "FormattedBlock.impl.h",
+    "HtmlBlock.cpp",
+    "HtmlBlock.h",
+    "HtmlBlock.impl.h",
+    "impl/markup_build.h",
+    "MarkupBlock.cpp",
+    "MarkupBlock.h",
+    "MarkupBlock.impl.h"
+  ],
+  "libraries": [],
+  "comment": "Formatted text blocks and the HTML block."
+}

@@ -977,35 +977,6 @@ std::string list_of(std::vector<std::string> names) {
     return names.empty() ? std::string{"(none)"} : wxl::core::join(names, ", ");
 }
 
-// The list the build read from the chain, compared with the chain's own as sets: the build
-// compiles the components it read, and the projection is made for those the chain names.
-void check_named_components(profile_set const& result, component_search const& search) {
-    if (search.directories.empty()) {
-        // A list with nowhere to look is a build that lost its directories, not one to ignore.
-        if (!search.expected.empty()) {
-            throw std::runtime_error(std::format(
-                "the build names components (--component: {}) and no directory to find them in "
-                "(--component-dir)",
-                list_of(search.expected)));
-        }
-        return;
-    }
-    std::vector<std::string> names;
-    std::string sources;
-    for (auto&& [name, by] : result.named_components) {
-        names.push_back(name);
-        sources += std::format("\n  {}: {}", name, wxl::core::unicode::to_utf8(by).chars());
-    }
-    std::set<std::string> const expected(search.expected.begin(), search.expected.end());
-    std::set<std::string> const named(names.begin(), names.end());
-    if (expected != named) {
-        throw std::runtime_error(std::format(
-            "the components the build names (--component) are not those the profiles name in "
-            "\"components\":\n  build:    {}\n  profiles: {}{}",
-            list_of(search.expected), list_of(names), sources));
-    }
-}
-
 // Whether `file`, once normalised, lies inside `directory`: a path that climbs out of it with
 // ".." does not.
 bool inside(std::filesystem::path const& directory, std::filesystem::path const& file) {
@@ -1111,7 +1082,6 @@ profile_set resolve_profiles(std::vector<std::filesystem::path> const& paths,
     for (auto&& path : paths) {
         loader.load(path);
     }
-    check_named_components(result, search);
     loader.load_components(search);
     check_includes(in_load_order, result.components, search);
     result.restored_from = restored.source;
@@ -1205,6 +1175,24 @@ profile_set resolve_profiles(std::vector<std::filesystem::path> const& paths,
     result.metadata.assign(metadata.begin(), metadata.end());
     result.resources.assign(resources.begin(), resources.end());
     return result;
+}
+
+void check_build_components(profile_set const& profiles,
+                            std::vector<std::string> const& build_components) {
+    std::vector<std::string> names;
+    std::string sources;
+    for (auto&& [name, by] : profiles.named_components) {
+        names.push_back(name);
+        sources += std::format("\n  {}: {}", name, wxl::core::unicode::to_utf8(by).chars());
+    }
+    std::set<std::string> const build(build_components.begin(), build_components.end());
+    std::set<std::string> const named(names.begin(), names.end());
+    if (build != named) {
+        throw std::runtime_error(std::format(
+            "the components the build names (--component) are not those the profiles name in "
+            "\"components\":\n  build:    {}\n  profiles: {}{}",
+            list_of(build_components), list_of(names), sources));
+    }
 }
 
 restored_package const* restored_packages::find(std::string_view id) const {

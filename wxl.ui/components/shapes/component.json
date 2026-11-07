@@ -1,0 +1,10 @@
+{
+  "name": "shapes",
+  "needs": [],
+  "sources": [
+    "impl/shape_helpers.cpp",
+    "impl/shape_helpers.h"
+  ],
+  "libraries": [],
+  "comment": "Geometry from text and polygon points."
+}

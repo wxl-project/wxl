@@ -1,0 +1,16 @@
+{
+  "name": "elements",
+  "needs": [
+    "dsl"
+  ],
+  "sources": [
+    "impl/element_helpers.cpp",
+    "impl/element_helpers.h",
+    "impl/focus_pair.cpp",
+    "impl/focus_pair.h",
+    "Resource.cpp",
+    "Resource.h"
+  ],
+  "libraries": [],
+  "comment": "What every element asks of its helpers: tool tip, cursor, fluent symbol, automation name, resources, and the focus pair of UIElement."
+}

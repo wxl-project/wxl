@@ -5,6 +5,26 @@
         "rich"
     ],
 
+    "components": [
+        "accessibility",
+        "backdrops",
+        "bb",
+        "composition",
+        "controls",
+        "dialogs",
+        "effects",
+        "items",
+        "markup",
+        "media",
+        "navigation",
+        "number_box",
+        "pickers",
+        "rsdn",
+        "scroll_view",
+        "scroll_viewer",
+        "shapes"
+    ],
+
     // The Windows App SDK release this profile needs at least. It projects types
     // of Microsoft.UI.Xaml.Controls that the WinUI of the experimental release
     // 2.5.4-experimental (WinUI 2.3.10-experimental) declares and the WinUI of the

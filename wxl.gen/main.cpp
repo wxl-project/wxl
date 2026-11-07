@@ -118,6 +118,9 @@ struct options {
     documentation_language const* doc_language = nullptr;
     bool help = false;
     component_search search;
+    // --component: what the build read from the chain, checked against it when --component-dir
+    // is given.
+    std::vector<std::string> build_components;
 };
 
 // An argument as text, for a message or for an option that takes text: UTF-8, as
@@ -175,7 +178,7 @@ options parse_options(int argc, wchar_t** argv) {
         } else if (argument == L"--component-dir") {
             opts.search.directories.emplace_back(value(i, argument));
         } else if (argument == L"--component") {
-            opts.search.expected.push_back(text_value(i, argument));
+            opts.build_components.push_back(text_value(i, argument));
         } else if (argument == L"--common-dir") {
             opts.search.common_directory = value(i, argument);
         } else {
@@ -183,6 +186,16 @@ options parse_options(int argc, wchar_t** argv) {
         }
     }
 
+    // A list with nowhere to look is a build that lost its directories, not one to ignore.
+    if (!opts.build_components.empty() && opts.search.directories.empty()) {
+        auto names = opts.build_components;
+        std::ranges::sort(names);
+        throw std::runtime_error(std::format(
+            "the build names components (--component: {}) and no directory to find them in "
+            "(--component-dir): pass the directory that holds them, <dir>/<name>/component.json, "
+            "as the build does (wxl.ui/components of the wxl tree)",
+            wxl::core::join(names, ", ")));
+    }
     if (language && !opts.docs) {
         throw std::runtime_error("--doc-language needs --docs");
     }
@@ -246,6 +259,9 @@ int wmain(int argc, wchar_t** argv) {
 
         auto profiles = resolve_profiles(opts.profiles, load_restored_packages(opts.packages),
                                          opts.search);
+        if (!opts.search.directories.empty()) {
+            check_build_components(profiles, opts.build_components);
+        }
         for (auto&& file : opts.extra_metadata) {
             if (!std::filesystem::is_regular_file(file)) {
                 throw std::runtime_error(std::format("no such metadata file: {}",

@@ -41,25 +41,38 @@ std::filesystem::path defaultProfile() {
     return std::filesystem::path {u8"" WXL_GEN_PROFILES} / u8"base.winxl-profile";
 }
 
+// Каталог компонентов по умолчанию: wxl.ui/components дерева сборки.
+std::filesystem::path defaultComponentDir() {
+    return std::filesystem::path {u8"" WXL_GEN_COMPONENTS};
+}
+
 // Список пакетов восстановления той сборки, из которой редактор запускают, —
 // ключом --packages, как у генератора. Своих версий и папки пакетов NuGet
 // редактор не ищет: без ключа он показывает, как его запустить.
-std::filesystem::path restoredPackages() {
+struct LaunchArguments {
+    std::filesystem::path packages;
+    std::filesystem::path componentDir;
+};
+
+LaunchArguments launchArguments() {
     auto const arguments = core::environment::command_line();
     std::filesystem::path packages;
+    std::filesystem::path componentDir;
     for (std::size_t at = 1; at < arguments.size(); ++at) {
         std::wstring_view const argument {arguments[at]};
-        if (argument != L"--packages") {
+        bool const isComponentDir = argument == L"--component-dir";
+        if (argument != L"--packages" && !isComponentDir) {
             throw std::runtime_error(std::format(
-                "unknown argument: {}. wxl.gen.ui takes one, --packages "
-                "<build>/wxl.packages/restored-packages.json",
+                "unknown argument: {}. wxl.gen.ui takes --packages "
+                "<build>/wxl.packages/restored-packages.json and, to override the components "
+                "of the tree, --component-dir <dir>",
                 core::unicode::repaired(argument).to_utf8().chars()));
         }
         if (++at == arguments.size()) {
-            throw std::runtime_error(
-                "--packages needs a value: <build>/wxl.packages/restored-packages.json");
+            throw std::runtime_error(std::format(
+                "{} needs a value", isComponentDir ? "--component-dir" : "--packages"));
         }
-        packages = std::wstring_view {arguments[at]};
+        (isComponentDir ? componentDir : packages) = std::wstring_view {arguments[at]};
     }
     if (packages.empty()) {
         throw std::runtime_error(
@@ -68,7 +81,7 @@ std::filesystem::path restoredPackages() {
             "list the configure of that build writes from its NuGet restore: in the wxl tree, "
             "run-gen-ui.cmd builds the editor and starts it with the list of build\\x64-dynamic.");
     }
-    return packages;
+    return {packages, componentDir};
 }
 
 // Знаки кнопок панели — размер 20 шрифта Fluent UI System Icons (Assets):
@@ -152,7 +165,10 @@ struct DocumentationReading {
 wxl::Teardown wxl_launched() {
     core::intrusive_ptr<Editor> document;
     try {
-        document = Editor::open(defaultProfile(), restoredPackages());
+        auto const arguments = launchArguments();
+        document = Editor::open(defaultProfile(), arguments.packages,
+                                arguments.componentDir.empty() ? defaultComponentDir()
+                                                               : arguments.componentDir);
     } catch (std::exception const& error) {
         auto window = Window {
             title = u"wxl.gen.ui",

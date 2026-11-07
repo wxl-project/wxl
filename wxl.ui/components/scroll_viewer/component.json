@@ -1,0 +1,12 @@
+{
+  "name": "scroll_viewer",
+  "needs": [
+    "dsl"
+  ],
+  "sources": [
+    "impl/vertical_offset_pair.cpp",
+    "impl/vertical_offset_pair.h"
+  ],
+  "libraries": [],
+  "comment": "The binding pair of ScrollViewer.VerticalOffset."
+}

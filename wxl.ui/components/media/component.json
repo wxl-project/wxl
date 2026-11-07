@@ -1,0 +1,10 @@
+{
+  "name": "media",
+  "needs": [],
+  "sources": [
+    "FrameSource.cpp",
+    "FrameSource.h"
+  ],
+  "libraries": [],
+  "comment": "The frame source of a capture device; it needs Windows.Media.Capture."
+}

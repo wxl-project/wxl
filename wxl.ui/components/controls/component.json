@@ -1,0 +1,20 @@
+{
+  "name": "controls",
+  "needs": [
+    "elements"
+  ],
+  "sources": [
+    "Card.cpp",
+    "Card.h",
+    "HeaderedContentControl.cpp",
+    "HeaderedContentControl.h",
+    "impl/SettingsCardCore.h",
+    "SettingsCard.cpp",
+    "SettingsCard.h",
+    "SettingsCardContentAlignment.h",
+    "SettingsExpander.cpp",
+    "SettingsExpander.h"
+  ],
+  "libraries": [],
+  "comment": "Card, settings card, settings expander and the headered content control."
+}
