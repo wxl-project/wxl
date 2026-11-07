@@ -2820,31 +2820,6 @@ wxl::core::nullable<uint32_t> Editor::reveal(std::wstring_view type) {
 }
 Editor::~Editor() = default;
 
-namespace {
-
-// Компоненты, которые называет цепочка профилей, в порядке генератора: родители раньше,
-// имена без повторов. Это список ключа --component: генератор сверяет его с тем, что
-// сам прочёл из тех же профилей.
-void collectComponents(std::filesystem::path const& path, std::vector<std::filesystem::path>& seen,
-                       std::vector<std::string>& names) {
-    auto const key = std::filesystem::weakly_canonical(path);
-    if (std::ranges::find(seen, key) != seen.end()) {
-        return;
-    }
-    seen.push_back(key);
-    auto const prof = load_profile(path);
-    for (auto&& reference : prof.extends) {
-        collectComponents(resolve_reference(reference, prof.source), seen, names);
-    }
-    for (auto&& name : prof.components) {
-        if (std::ranges::find(names, name) == names.end()) {
-            names.push_back(name);
-        }
-    }
-}
-
-}  // namespace
-
 std::wstring errorText(std::exception const& error) {
     std::wstring wide;
     wxl::core::unicode::append_utf16(wide, wxl::core::environment::error_message(error));
@@ -2860,15 +2835,10 @@ intrusive_ptr<Editor> Editor::open(std::filesystem::path const& prof, std::files
     auto const restored = load_restored_packages(packages);
 
     // Каталог компонентов даёт вызывающий (main.cpp: по умолчанию wxl.ui/components дерева).
-    std::vector<std::filesystem::path> componentDirs;
-    if (!componentDir.empty()) {
-        componentDirs.push_back(componentDir);
-    }
-
     component_search search;
-    search.directories = componentDirs;
-    std::vector<std::filesystem::path> seen;
-    collectComponents(prof, seen, search.expected);
+    if (!componentDir.empty()) {
+        search.directories.push_back(componentDir);
+    }
 
     auto resolved = resolve_profiles({prof}, restored, search);
     std::vector<std::string> files;
@@ -2889,13 +2859,7 @@ intrusive_ptr<Editor> Editor::open(std::filesystem::path const& prof, std::files
     editor->data_ = std::make_unique<Data>(std::move(own), std::move(resolved), files,
                                          [raw = editor.get()] { raw->documentationPending.set(true); });
     if (!parents.empty()) {
-        component_search inheritedSearch;
-        inheritedSearch.directories = componentDirs;
-        std::vector<std::filesystem::path> inheritedSeen;
-        for (auto&& parent : parents) {
-            collectComponents(parent, inheritedSeen, inheritedSearch.expected);
-        }
-        auto inherited = resolve_profiles(parents, restored, inheritedSearch);
+        auto inherited = resolve_profiles(parents, restored, search);
         editor->data_->inheritedTypes = std::move(inherited.types);
         editor->data_->inheritedStyles = std::move(inherited.styles);
     }

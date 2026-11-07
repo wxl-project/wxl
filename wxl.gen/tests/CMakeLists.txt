@@ -56,6 +56,19 @@ set_tests_properties(winui-srcgen.no-packages.message PROPERTIES
 add_test(NAME winui-srcgen.no-packages.fails COMMAND ${_wxl_gen_no_packages})
 set_tests_properties(winui-srcgen.no-packages.fails PROPERTIES WILL_FAIL TRUE)
 
+# A list of the build's components with no directory to find them in is refused
+# before the profile is read, not dropped.
+set(_wxl_gen_no_component_dir
+    winui-srcgen --profile "${CMAKE_CURRENT_SOURCE_DIR}/../profiles/base.winxl-profile"
+    --packages "${_wxl_gen_restored_packages}" --out "${CMAKE_CURRENT_BINARY_DIR}/components-refused"
+    --component window --component dsl)
+add_test(NAME winui-srcgen.component-without-dir.message COMMAND ${_wxl_gen_no_component_dir})
+set_tests_properties(winui-srcgen.component-without-dir.message PROPERTIES
+    PASS_REGULAR_EXPRESSION
+    "the build names components \\(--component: dsl, window\\) and no directory to find them in \\(--component-dir\\)")
+add_test(NAME winui-srcgen.component-without-dir.fails COMMAND ${_wxl_gen_no_component_dir})
+set_tests_properties(winui-srcgen.component-without-dir.fails PROPERTIES WILL_FAIL TRUE)
+
 # A number of parts the names cannot carry -- they have two digits -- or no number
 # at all is refused before the profile is read, as the language is.
 set(_wxl_gen_parts
