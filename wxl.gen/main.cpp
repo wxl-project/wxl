@@ -206,7 +206,7 @@ options parse_options(int argc, wchar_t** argv) {
     if (opts.symbols.empty() && !opts.profiles.empty()) {
         opts.symbols = opts.profiles.front().parent_path() / "fluent-symbols.json";
     }
-    opts.search.generated_includes.push_back("FluentSymbol.h");
+    opts.search.generated_includes.emplace_back(gen::symbols_header);
     return opts;
 }
 

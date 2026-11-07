@@ -41,8 +41,8 @@ void report(profile_set const& profiles, closure const& cl) {
                 brought.push_back(name);
             }
         }
-        std::print("  component {}: {} roots{}{}\n", comp.name, brought.size(),
-                   brought.empty() ? "" : ", ", wxl::core::join(brought, ", "));
+        std::print("  component {}, roots: {}{}{}\n", comp.name, brought.size(),
+                   brought.empty() ? "" : " -- ", wxl::core::join(brought, ", "));
     }
 
     for (auto&& name : cl.unknown_members) {

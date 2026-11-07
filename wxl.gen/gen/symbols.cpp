@@ -27,7 +27,7 @@ void write_symbols(output const& out, model const& m, emitted& em) {
         return;
     }
 
-    auto header = open_output(out.dir / "FluentSymbol.h");
+    auto header = open_output(out.dir / symbols_header);
     std::print(header, "{}#pragma once\n\n#include <stdint.h>\n\nnamespace wxl {{\n\n", banner);
     // Hexadecimal, unlike the projected enumerations: every value here is a
     // code point, and 0xE700 is how the documentation, the font tools and the
@@ -38,9 +38,9 @@ void write_symbols(output const& out, model const& m, emitted& em) {
     }
     std::print(header, "}};\n\n}} // namespace wxl\n");
 
-    em.add(out.dir / "FluentSymbol.h");
-    std::print("generated {}\\FluentSymbol.h ({} symbols)\n",
-               wxl::core::unicode::to_utf8(out.dir).chars(), symbols.size());
+    em.add(out.dir / symbols_header);
+    std::print("generated {}\\{} ({} symbols)\n", wxl::core::unicode::to_utf8(out.dir).chars(),
+               symbols_header, symbols.size());
 }
 
 }  // namespace gen
