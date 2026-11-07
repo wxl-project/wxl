@@ -31,11 +31,12 @@ inline constexpr struct {
 } vAlign;
 
 // The wrapping of a text block, written without the argument name:
-// `TextBlock {textWrap.wholeWords, text}`. TextWrapping::NoWrap is `none`, so
-// that the one value which does not wrap does not read as "wrap".
+// `TextBlock {textWrap.wholeWords, text}`. The object's name already says
+// "wrap", so no value repeats it: TextWrapping::Wrap is `simple`, and NoWrap is
+// `none`.
 inline constexpr struct {
     static constexpr TextWrapping none = TextWrapping::NoWrap;
-    static constexpr TextWrapping wrap = TextWrapping::Wrap;
+    static constexpr TextWrapping simple = TextWrapping::Wrap;
     static constexpr TextWrapping wholeWords = TextWrapping::WrapWholeWords;
 } textWrap;
 

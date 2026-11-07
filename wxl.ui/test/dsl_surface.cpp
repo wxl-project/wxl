@@ -1452,9 +1452,9 @@ static_assert(!background_takes<Color>);
     static_assert(!impl::describes<std::remove_cvref_t<decltype(hAlign.center)>>);
 }
 
-// TextWrap shortcut: textWrap.wrap, textWrap.wholeWords, textWrap.none.
+// TextWrap shortcut: textWrap.simple, textWrap.wholeWords, textWrap.none.
 [[maybe_unused]] void text_wrap_shortcut() {
-    TextBlock{L"Wrapping", textWrap.wrap};
+    TextBlock{L"Wrapping", textWrap.simple};
     TextBlock{L"Whole words only", textWrap.wholeWords};
     TextBlock{L"No wrapping", textWrap.none};
 }

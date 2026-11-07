@@ -52,17 +52,15 @@ auto options = StackPanel {
 
 auto example = Grid {
     RowDefinitions<u"auto,auto">,
-    RichTextBlock {
+    HtmlBlock {
         Margin {0, 0, 0, 15},
         textWrapping = TextWrapping::Wrap,
-        Paragraph {Run {u"NavigationView supports hierarchy in Left, LeftCompact, and Top display modes."}, LineBreak {}},
-        Paragraph {Run {u"In the example below, the \"Account\" tab navigates to its own page while \"Document options\" only opens up its subtree of "
-                        u"items. This is done by setting the SelectsOnInvoked property to false on the Document options NavigationView Item."},
-                   LineBreak {}},
-        Paragraph {Run {u"In both Top and Left modes, clicking the arrows on NavigationViewItems will expand or collapse the subtree. Clicking or "
-                        u"tapping elsewhere on the NavigationViewItem will collapse or expand the subtree."},
-                   LineBreak {}},
-        Paragraph {Run {u"Switch between the three pane display modes on the right."}},
+        u"<p>NavigationView supports hierarchy in Left, LeftCompact, and Top display modes.</p>"
+        u"<p>In the example below, the \"Account\" tab navigates to its own page while \"Document options\" only opens up its subtree of "
+        u"items. This is done by setting the SelectsOnInvoked property to false on the Document options NavigationView Item.</p>"
+        u"<p>In both Top and Left modes, clicking the arrows on NavigationViewItems will expand or collapse the subtree. Clicking or "
+        u"tapping elsewhere on the NavigationViewItem will collapse or expand the subtree.</p>"
+        u"<p>Switch between the three pane display modes on the right.</p>",
     },
     view,
 };

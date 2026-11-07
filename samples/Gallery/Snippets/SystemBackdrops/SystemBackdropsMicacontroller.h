@@ -110,22 +110,13 @@ struct Model {
 };
 
 auto example = StackPanel {
-    TextBlock {
+    HtmlBlock {
         textWrapping = TextWrapping::WrapWholeWords,
-        Run {u"MicaController provides a customizable way to apply the Mica material. You can modify: "
-             u"FallbackColor, Kind, LuminosityOpacity, TintColor, and TintOpacity."},
-        LineBreak {},
-        LineBreak {},
-        Run {u"There are 2 kinds of Mica:"},
-        LineBreak {},
-        Run {u"1. "},
-        Run {u"Base", FontWeight {700}},
-        Run {u" — The default, lighter appearance."},
-        LineBreak {},
-        Run {u"2. "},
-        Run {u"Alt", FontWeight {700}},
-        Run {u" — A darker appearance with stronger tinting of the desktop wallpaper."},
-        LineBreak {},
+        u"<p>MicaController provides a customizable way to apply the Mica material. You can modify: "
+        u"FallbackColor, Kind, LuminosityOpacity, TintColor, and TintOpacity.</p>"
+        u"<p>There are 2 kinds of Mica:<br>"
+        u"1. <b>Base</b> — The default, lighter appearance.<br>"
+        u"2. <b>Alt</b> — A darker appearance with stronger tinting of the desktop wallpaper.</p>",
     },
     Button {
         Margin {0, 10, 0, 0},
