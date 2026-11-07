@@ -31,7 +31,7 @@
 
 #include "core.h"
 
-#include "../events.h"
+#include "events.h"
 #include "member.h"
 
 namespace wxl::impl {

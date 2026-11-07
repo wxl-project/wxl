@@ -4,9 +4,9 @@
 // map names it ("boundMembers"), and the generated pair calls it. Declared without winrt, as the
 // generated pairs are; defined in vertical_offset_pair.cpp, where the projection is allowed.
 
-#include "../core.h"
+#include "core.h"
 
-#include "member.h"
+#include "impl/member.h"
 
 namespace wxl {
 class ScrollViewer;

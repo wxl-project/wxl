@@ -21,11 +21,11 @@
 // then one event tag per event. This header therefore stays the same size
 // whatever the profile generates.
 
-#include "../Color.h"
-#include "../Object.h"
-#include "../TaggedValue.h"
-#include "../EventToken.h"
-#include "member_function_traits.h"
+#include "Color.h"
+#include "Object.h"
+#include "TaggedValue.h"
+#include "EventToken.h"
+#include "impl/member_function_traits.h"
 #include <wxl/EventKey.h>
 #include <wxl/PropertyKey.h>
 

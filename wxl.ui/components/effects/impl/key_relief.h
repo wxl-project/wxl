@@ -12,7 +12,7 @@
 // Included by Button3DEffect.cpp after the projection; the lighting lab in
 // sandbox/ draws its keys with the same functions.
 
-#include "../DrawingSurface.h"
+#include "DrawingSurface.h"
 
 namespace wxl::impl {
 

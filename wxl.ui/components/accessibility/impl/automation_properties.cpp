@@ -1,8 +1,8 @@
 #include "automation_properties.h"
 
-#include "conversions.h"
+#include "impl/conversions.h"
 
-#include "../Object.impl.h"
+#include "Object.impl.h"
 #include <wxl/Microsoft.UI.Xaml.h>
 #include <wxl/Microsoft.UI.Xaml.impl.h>
 

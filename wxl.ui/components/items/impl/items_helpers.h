@@ -10,12 +10,12 @@
 #include <winrt/Microsoft.UI.Xaml.Controls.h>
 #include <winrt/Microsoft.Windows.Storage.Pickers.h>
 
-#include "../core.h"
+#include "core.h"
 #include "../ItemTemplate.h"
 #include "../ItemContainerPreset.h"
-#include "../FileTypeChoice.h"
-#include "../Thickness.h"
-#include "../hstring_param.h"
+#include "FileTypeChoice.h"
+#include "Thickness.h"
+#include "hstring_param.h"
 #include <wxl/Microsoft.UI.Xaml.Controls.Enums.h>
 // AutoSuggestBox complete: core::nullable of an incomplete class picks the raw-pointer form and
 // keeps it for the rest of the translation unit.

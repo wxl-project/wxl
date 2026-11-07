@@ -8,10 +8,10 @@
 #include <winrt/Microsoft.UI.Xaml.h>
 #include <winrt/Windows.Foundation.h>
 
-#include "../Object.impl.h"
+#include "Object.impl.h"
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 #include <wxl/Microsoft.UI.Xaml.Controls.impl.h>
-#include "state_pair.h"
+#include "impl/state_pair.h"
 #include "vertical_offset_pair.h"
 
 namespace wxl::impl {

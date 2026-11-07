@@ -7,11 +7,11 @@
 #include <winrt/Microsoft.UI.Xaml.h>
 #include <winrt/Windows.Foundation.h>
 
-#include "../Object.impl.h"
+#include "Object.impl.h"
 #include <wxl/Microsoft.UI.Xaml.h>
 #include <wxl/Microsoft.UI.Xaml.impl.h>
 #include "focus_pair.h"
-#include "state_pair.h"
+#include "impl/state_pair.h"
 
 namespace wxl::impl {
 namespace {

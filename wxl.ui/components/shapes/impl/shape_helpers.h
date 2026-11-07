@@ -10,7 +10,7 @@
 #include <winrt/Microsoft.UI.Xaml.Media.h>
 #include <winrt/Microsoft.UI.Xaml.Shapes.h>
 
-#include "../hstring_param.h"
+#include "hstring_param.h"
 
 namespace wxl::impl {
 

@@ -8,7 +8,7 @@
 
 #include "backdrop_helpers.h"
 
-#include "../Object.impl.h"
+#include "Object.impl.h"
 #include <wxl/Microsoft.UI.Composition.SystemBackdrops.h>
 #include <wxl/Microsoft.UI.Composition.SystemBackdrops.impl.h>
 

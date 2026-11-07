@@ -11,7 +11,7 @@
 #include <winrt/Windows.Foundation.h>
 
 #include "../Resource.h"
-#include "../hstring_param.h"
+#include "hstring_param.h"
 #include <wxl/FluentSymbol.h>
 #include <wxl/Microsoft.UI.Input.Enums.h>
 

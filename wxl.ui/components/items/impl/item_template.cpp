@@ -6,12 +6,12 @@
 #include <winrt/Microsoft.UI.Xaml.Markup.h>
 #include <winrt/Windows.Foundation.Collections.h>
 
-#include "../Object.impl.h"
+#include "Object.impl.h"
 #include <wxl/Microsoft.UI.Xaml.impl.h>
 #include <wxl/Microsoft.UI.Xaml.Controls.impl.h>
-#include "bound_items_source.h"
-#include "conversions.h"
-#include "element_scope.h"
+#include "impl/bound_items_source.h"
+#include "impl/conversions.h"
+#include "impl/element_scope.h"
 
 namespace wxl::impl {
 

@@ -9,7 +9,7 @@
 
 #include "scroll_controller_helpers.h"
 
-#include "../Object.impl.h"
+#include "Object.impl.h"
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 #include <wxl/Microsoft.UI.Xaml.Controls.impl.h>
 

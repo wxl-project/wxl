@@ -9,7 +9,7 @@
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Globalization.NumberFormatting.h>
 
-#include "../Object.impl.h"
+#include "Object.impl.h"
 #include <wxl/Members.h>
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 #include <wxl/Microsoft.UI.Xaml.Controls.impl.h>

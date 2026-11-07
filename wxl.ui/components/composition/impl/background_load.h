@@ -20,7 +20,7 @@
 #include <utility>
 
 #include "../DrawingSurface.h"
-#include "../Operation.h"
+#include "Operation.h"
 
 namespace wxl::impl {
 
