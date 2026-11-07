@@ -162,6 +162,10 @@ struct profile {
     std::filesystem::path source;
     std::vector<std::string> extends;
 
+    // The components the profile selects ("components"), by name; a component's own
+    // `needs` are added when the set is resolved.
+    std::vector<std::string> components;
+
     // The lowest Windows App SDK release (the umbrella package
     // Microsoft.WindowsAppSDK) whose packages declare the types this profile
     // projects ("minimumWindowsAppSdk"), or empty when the profile does not
@@ -192,6 +196,29 @@ struct profile {
     member_filter discovered = member_filter::none();
     bool windows_metadata = false;
 };
+
+// A component: a directory holding component.json, the hand-written code of wxl.ui that
+// calls a part of the projection, and what that code asks the projection for. `requirements`
+// is read with the keys a profile has for it (types, packages, windowsMetadata) and joins the
+// roots of the walk like one more profile of the chain, so a type it lists is generated
+// whoever else lists it. The other keys describe the component to the build.
+struct component {
+    std::string name;  // equals the name of its directory
+    std::filesystem::path source;     // the component.json
+    std::filesystem::path directory;  // the one that holds it
+    profile requirements;
+    std::vector<std::string> needs;      // other components, by name
+    std::vector<std::string> sources;    // files of the component, relative to its directory
+    std::vector<std::string> libraries;  // targets the component links
+    std::string schema;                  // fragment of schema.h, relative to the directory
+    std::string surface;                 // its compile-only test, relative to the directory
+    std::string comment;
+};
+
+// Reads one component.json. Throws std::runtime_error naming the file on malformed JSON, on a
+// key the manifest or its `requirements` does not have, and on a name that is not the name of
+// the directory the file is in.
+component load_component(std::filesystem::path const& manifest);
 
 // What wxl implements on its own side of the boundary: the base types it
 // supplies by hand, the roots every run gets, the WinRT types it already has
@@ -286,6 +313,12 @@ struct windows_sdk {
     std::vector<std::filesystem::path> metadata;  // the platform's .winmd files
 };
 
+// What lists a root of the walk: a profile, or the manifest of a component.
+struct listing {
+    std::filesystem::path source;  // the profile or the component.json
+    std::string component;         // the component's name; empty for a profile
+};
+
 // Several profiles (plus everything they reference, transitively) merged
 // into the single input the crawler actually walks.
 struct profile_set {
@@ -306,9 +339,14 @@ struct profile_set {
 
     member_filter discovered = member_filter::none();
 
-    // The profile that lists each type of `types`, the first in load order: a
-    // type the metadata does not declare is reported against it.
-    std::map<std::string, std::filesystem::path> listed_by;
+    // What lists each type of `types`, the first in load order: a type the metadata does
+    // not declare is reported against it, and the report says which component brought it.
+    std::map<std::string, listing> listed_by;
+
+    // The components the chain names in "components", in the order it names them, before
+    // "needs" adds to them; and the components selected, each after those it needs.
+    std::vector<std::string> named_components;
+    std::vector<component> components;
 
     // What the set was resolved from, for the steps after the walk: the list of
     // the restore, the Windows App SDK release it resolved (the version of
@@ -397,6 +435,24 @@ struct restored_packages {
 // dots, and on a Windows SDK without metadata.
 restored_packages load_restored_packages(std::filesystem::path const& path);
 
+// Where a run looks for components, and what it checks them against.
+struct component_search {
+    // The directories that hold components: component N is <directory>/N/component.json.
+    std::vector<std::filesystem::path> directories;
+
+    // The components the build read from the profile chain on its own, compared with what the
+    // chain names in "components" before "needs" adds to them. Empty: no comparison.
+    std::optional<std::vector<std::string>> expected;
+
+    // The directory of what no component owns. When set, every include a profile or a selected
+    // component gives must be a file of a selected component or of this directory, or one of
+    // `generated_includes`. Empty: includes are not checked.
+    std::optional<std::filesystem::path> common_directory;
+
+    // Headers the generator writes itself into its output (FluentSymbol.h), so no directory holds them.
+    std::vector<std::string> generated_includes;
+};
+
 // Loads every named profile plus, transitively, the profiles they
 // `extends`, and merges them. A profile reference is either a path or a
 // bare name resolved as `<dir of the referencing profile>/<name>.winxl-profile`.
@@ -409,7 +465,8 @@ restored_packages load_restored_packages(std::filesystem::path const& path);
 // errors: std::runtime_error naming the profile, the package and both
 // versions, or what the restore has to add.
 profile_set resolve_profiles(std::vector<std::filesystem::path> const& paths,
-                             restored_packages const& restored);
+                             restored_packages const& restored,
+                             component_search const& search = {});
 
 // One named glyph of the icon font: the name a `FluentSymbol` is written
 // under, and the code point behind it.
