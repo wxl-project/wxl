@@ -22,10 +22,10 @@
 // on a background thread races the count, and a first call there races the
 // cache. The queue underneath is agile and has none of these problems.
 //
-// So this is that queue, and nothing else: constructed on the UI thread from
-// the wrapper, held by a background thread, called from it.
+// So this is that queue, and nothing else: taken on the UI thread, held by a
+// background thread, called from it.
 //
-//     UiThread const ui{window.dispatcherQueue()};   // on the UI thread
+//     UiThread const ui = UiThread::current();   // on the UI thread
 //     ...
 //     ui.post([found = std::move(files)] { fileList.add(found); });   // anywhere
 //
@@ -54,11 +54,6 @@ struct IInspectable;
 
 namespace wxl {
 
-// Declared, not included, for the same reason: the queue is taken by reference and the wrapper
-// is read only in UiThread.cpp, so what includes this -- the code under the wrappers among it --
-// does not have to reach a generated header.
-class DispatcherQueue;
-
 class UiThread
 {
 public:
@@ -66,7 +61,9 @@ public:
     /// object can hold one before the window is up.
     UiThread() noexcept = default;
 
-    explicit UiThread(DispatcherQueue const& queue);
+    /// The queue of the UI thread, called on it. Called on another thread, or
+    /// on one with no queue, it stops the process.
+    static UiThread current();
 
     UiThread(UiThread const& other) noexcept;
     UiThread(UiThread&& other) noexcept;
@@ -104,6 +101,9 @@ public:
     }
 
 private:
+    /// Adopts the reference it is given.
+    explicit UiThread(::IInspectable* queue) noexcept : queue_(queue) {}
+
     ::IInspectable* queue_ = nullptr;
 };
 

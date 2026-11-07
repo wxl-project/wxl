@@ -42,6 +42,7 @@
 #include "Panels.h"
 #include "Relief.h"
 #include "UiThread.h"
+#include "WaitableTimer.h"
 #include "ui.h"
 #include <wxl/Microsoft.UI.Dispatching.h>
 #include "schema.h"
@@ -1234,18 +1235,26 @@ void drawing_ahead_of_the_scroll() {
 // std::function of the delegate's own signature, so a lambda goes in
 // unwrapped. It may only be called on the UI thread, because the wrapper it
 // is called on may only be touched there -- which is what UiThread is for:
-// constructed here, copied into whatever runs elsewhere, called from there.
+// taken here, copied into whatever runs elsewhere, called from there.
 void handing_work_over(DispatcherQueue const& queue) {
     bool const taken = queue.tryEnqueue([] {});
     (void)taken;
     bool const soon = queue.tryEnqueue(DispatcherQueuePriority::Low, [] {});
     (void)soon;
 
-    UiThread const ui{queue};
+    UiThread const ui = UiThread::current();
     auto const background = [ui](std::wstring found) {
         ui.post([found = std::move(found)] { (void)found; });
     };
     background(L"a file");
+}
+
+// A wait for a quiet moment on the UI thread's queue, which nobody names.
+async::task<> after_a_quiet_moment(async::cancellation_token token) {
+    WaitableTimer timer{std::chrono::milliseconds{1500}, std::move(token)};
+    timer.restart();
+    co_await timer;
+    timer.signal();
 }
 
 // A class that is only its statics derives from Statics, not from Object.

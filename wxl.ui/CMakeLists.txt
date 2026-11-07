@@ -137,6 +137,9 @@ add_library(wxl.ui.common STATIC
     src/Failure.cpp
     src/FileTypeChoice.h
     src/UiThread.h
+    src/UiThread.cpp
+    src/WaitableTimer.h
+    src/WaitableTimer.cpp
     src/launch.h
     src/launch.cpp
 
@@ -400,9 +403,6 @@ set(_wxl_ui_profile_sources
     src/CompositionWindow.cpp
     src/TextureCache.h
     src/TextureCache.cpp
-    src/UiThread.cpp
-    src/WaitableTimer.h
-    src/WaitableTimer.cpp
     src/FormattedBlock.h
     src/FormattedBlock.impl.h
     src/FormattedBlock.cpp
