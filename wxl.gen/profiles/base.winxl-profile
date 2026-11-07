@@ -6,6 +6,7 @@
     "components": [
         "window",
         "dsl",
+        "schema",
         "elements",
         "layout"
     ],

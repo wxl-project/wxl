@@ -256,7 +256,7 @@ INF-02: на него не опирается ни одна строка кат�
 `GaussianBlurEffect.h`, `GlassEffect.h`, `BevelEffect.h`, `Button3DEffect.h`,
 `RevealEffect.h`, `MagnifyEffect.h`, `FocusEffect.h`, `ZoomEffect.h`),
 `controls/Card.h`, `composition/` (`ThemeBrush.h`, `CompositionWindow.h`,
-`DrawingSurface.h`, `TextureCache.h`), `window/WindowShade.h`,
+`DrawingSurface.h`, `TextureCache.h`), `composition/WindowShade.h`,
 `navigation/Navigation.h`, `dialogs/ShowDialog.h`, `markup/` (`FormattedBlock.h`,
 `HtmlBlock.h`), `dsl/` (`resource_lookup.h`, `event_awaitable.h`),
 `elements/impl/element_helpers.h`; `wxl.ui/src` — `Relief.h`, `Color.h`,

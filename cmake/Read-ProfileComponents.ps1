@@ -7,6 +7,7 @@
 #
 # Compatible with Windows PowerShell 5.1: no `?.`, `??`, ternary, `&&`.
 # Output format: <type>:<value>, one per line. CMake parses it with regex.
+#   profile:<path>     - a profile of the chain, the given one last
 #   chain:<name>       - a component from the profile's own list (before needs)
 #   component:<name>   - a selected component (after needs closure)
 #   dir:<path>         - the component directory for the preceding component
@@ -69,21 +70,37 @@ function Read-JsonWithComments([string]$Path) {
     return ConvertFrom-Json -InputObject $result.ToString()
 }
 
+# Where a profile named in "extends" lives, as the generator resolves it: a reference
+# with a directory part or an extension is a path relative to the referring profile's
+# directory; a bare name is <name>.winxl-profile beside it.
+function Resolve-Reference([string]$Reference, [string]$Referrer) {
+    $dir = Split-Path $Referrer -Parent
+    if ([IO.Path]::IsPathRooted($Reference)) { return $Reference }
+    if ($Reference.Contains('/') -or $Reference.Contains('\') -or [IO.Path]::HasExtension($Reference)) {
+        return Join-Path $dir $Reference
+    }
+    return Join-Path $dir ($Reference + '.winxl-profile')
+}
+
+# The chain, each profile after those it extends, loaded once; a profile that extends
+# itself through others stops the script.
+$script:profilesLoaded = @{}
+$script:profilesLoading = @{}
 function Resolve-ProfileChain([string]$Path) {
+    $key = [IO.Path]::GetFullPath($Path).ToLowerInvariant()
+    if ($script:profilesLoaded.ContainsKey($key)) { return @() }
+    if ($script:profilesLoading.ContainsKey($key)) { throw "Profile reference cycle at $Path" }
+    $script:profilesLoading[$key] = $true
     $prof = Read-JsonWithComments $Path
     $chain = @()
     if ($prof.extends) {
-        $dir = Split-Path $Path -Parent
         foreach ($parent in $prof.extends) {
-            $parentPath = if ($parent -like '*.winxl-profile') {
-                Join-Path $dir $parent
-            } else {
-                Join-Path $dir ($parent + '.winxl-profile')
-            }
-            $chain += Resolve-ProfileChain $parentPath
+            $chain += Resolve-ProfileChain (Resolve-Reference $parent $Path)
         }
     }
-    return $chain + @($prof)
+    $script:profilesLoading.Remove($key)
+    $script:profilesLoaded[$key] = $true
+    return $chain + @(@{ path = [IO.Path]::GetFullPath($Path); profile = $prof })
 }
 
 function Find-ComponentManifest([string]$Name, [string[]]$Dirs) {
@@ -105,7 +122,9 @@ function Find-ComponentManifest([string]$Name, [string[]]$Dirs) {
 
 $chain = Resolve-ProfileChain $Profile
 $chainComponents = @()
-foreach ($prof in $chain) {
+foreach ($entry in $chain) {
+    Write-Output ("profile:" + $entry.path.Replace('\','/'))
+    $prof = $entry.profile
     if ($prof.components) {
         foreach ($comp in $prof.components) {
             if ($chainComponents -notcontains $comp) {
@@ -124,19 +143,24 @@ if ($ComponentDir.Count -eq 0) {
     exit 0
 }
 
-# Load and close components by needs
+# Load and close components by needs, each after those it needs; components that need
+# each other in a cycle stop the script.
 $loaded = @{}
+$loading = @{}
 $selected = @()
 function Import-Component([string]$Name) {
     if ($loaded.ContainsKey($Name)) { return }
+    if ($loading.ContainsKey($Name)) { throw "Components need each other in a cycle at $Name" }
+    $loading[$Name] = $true
     $manifest = Find-ComponentManifest $Name $ComponentDir
     $comp = Read-JsonWithComments $manifest
-    $loaded[$Name] = $comp
     if ($comp.needs) {
         foreach ($dep in $comp.needs) {
             Import-Component $dep
         }
     }
+    $loading.Remove($Name)
+    $loaded[$Name] = $comp
     $script:selected += $Name
 }
 

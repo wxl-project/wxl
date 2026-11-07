@@ -1,0 +1,15 @@
+{
+  "name": "schema",
+  "needs": [
+    "dsl",
+    "effects",
+    "controls",
+    "layout"
+  ],
+  "sources": [
+    "schema.h",
+    "ui.h"
+  ],
+  "libraries": [],
+  "comment": "The aggregate headers: the schema over every component of the profile layer and ui.h, the one include of an application. Kept apart from dsl so that dsl stays below the components its schema names, until the schema is cut by component."
+}

@@ -112,7 +112,11 @@
 
 include_guard(GLOBAL)
 
-# Find PowerShell once, before any function uses it.
+# The script beside this file, for the functions below, whose own list dir is the caller's.
+set(_WXL_UI_PROFILE_DIR "${CMAKE_CURRENT_LIST_DIR}")
+
+# Windows PowerShell 5.1, which every Windows has: the script is written for it, and
+# looking for it alone makes every configure run the script the way a consumer's does.
 find_program(POWERSHELL_EXE NAMES powershell)
 if(NOT POWERSHELL_EXE)
     message(FATAL_ERROR
@@ -243,6 +247,68 @@ function(wxl_generate_wrappers name)
     endif()
 endfunction()
 
+# wxl_read_profile_components(<prefix> <profile> <component dir>)
+#
+# The components of a profile, as cmake/Read-ProfileComponents.ps1 reads them at
+# configure: <prefix>_CHAIN, the names the chain itself gives (what the generator
+# compares with --component); and, closed over "needs", <prefix>_DIRS,
+# <prefix>_SOURCES (absolute), <prefix>_LIBRARIES and <prefix>_MANIFESTS. Every
+# profile of the chain and every manifest becomes a configure dependency, so an
+# edit of either configures again. A script that fails stops the configure with
+# its message.
+function(wxl_read_profile_components prefix profile component_dir)
+    execute_process(
+        COMMAND "${POWERSHELL_EXE}" -NoProfile -ExecutionPolicy Bypass -File
+                "${_WXL_UI_PROFILE_DIR}/Read-ProfileComponents.ps1"
+                -Profile "${profile}" -ComponentDir "${component_dir}"
+        OUTPUT_VARIABLE _wxl_output
+        RESULT_VARIABLE _wxl_result
+        ERROR_VARIABLE _wxl_error
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_STRIP_TRAILING_WHITESPACE)
+    if(NOT _wxl_result EQUAL 0)
+        message(FATAL_ERROR
+            "Read-ProfileComponents.ps1 could not read the components of ${profile} "
+            "(exit code ${_wxl_result}):\n${_wxl_error}")
+    endif()
+
+    set(_wxl_chain "")
+    set(_wxl_dirs "")
+    set(_wxl_sources "")
+    set(_wxl_libraries "")
+    set(_wxl_manifests "")
+    set(_wxl_dir "")
+    string(REPLACE "\r" "" _wxl_lines "${_wxl_output}")
+    string(REPLACE "\n" ";" _wxl_lines "${_wxl_lines}")
+    foreach(_wxl_line IN LISTS _wxl_lines)
+        if(NOT _wxl_line MATCHES "^(profile|chain|component|dir|source|library):(.*)$")
+            continue()
+        endif()
+        set(_wxl_value "${CMAKE_MATCH_2}")
+        if(CMAKE_MATCH_1 STREQUAL "profile")
+            set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_wxl_value}")
+        elseif(CMAKE_MATCH_1 STREQUAL "chain")
+            list(APPEND _wxl_chain "${_wxl_value}")
+        elseif(CMAKE_MATCH_1 STREQUAL "dir")
+            set(_wxl_dir "${_wxl_value}")
+            list(APPEND _wxl_dirs "${_wxl_dir}")
+            list(APPEND _wxl_manifests "${_wxl_dir}/component.json")
+            set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+                "${_wxl_dir}/component.json")
+        elseif(CMAKE_MATCH_1 STREQUAL "source")
+            list(APPEND _wxl_sources "${_wxl_dir}/${_wxl_value}")
+        elseif(CMAKE_MATCH_1 STREQUAL "library")
+            list(APPEND _wxl_libraries "${_wxl_value}")
+        endif()
+    endforeach()
+
+    set(${prefix}_CHAIN "${_wxl_chain}" PARENT_SCOPE)
+    set(${prefix}_DIRS "${_wxl_dirs}" PARENT_SCOPE)
+    set(${prefix}_SOURCES "${_wxl_sources}" PARENT_SCOPE)
+    set(${prefix}_LIBRARIES "${_wxl_libraries}" PARENT_SCOPE)
+    set(${prefix}_MANIFESTS "${_wxl_manifests}" PARENT_SCOPE)
+endfunction()
+
 function(wxl_add_ui_library profile)
     cmake_parse_arguments(PARSE_ARGV 1 A "" "PROFILE;PARTS" "")
     if(A_UNPARSED_ARGUMENTS OR A_KEYWORDS_MISSING_VALUES)
@@ -283,82 +349,12 @@ function(wxl_add_ui_library profile)
     set(_wxl_root "${CMAKE_BINARY_DIR}/wxl.ui/${profile}")
     set(_wxl_out "${_wxl_root}/wxl")
 
-    # Call the PowerShell script to read components from the profile chain.
-    execute_process(
-        COMMAND "${POWERSHELL_EXE}" -NoProfile -ExecutionPolicy Bypass -File
-                "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/Read-ProfileComponents.ps1"
-                -Profile "${A_PROFILE}"
-                -ComponentDir "${_wxl_common_dir}/components"
-        OUTPUT_VARIABLE _wxl_script_output
-        RESULT_VARIABLE _wxl_script_result
-        ERROR_VARIABLE _wxl_script_error
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_STRIP_TRAILING_WHITESPACE
-    )
-    if(NOT _wxl_script_result EQUAL 0)
-        message(FATAL_ERROR
-            "wxl_add_ui_library(${profile}): PowerShell script Read-ProfileComponents.ps1 failed "
-            "with exit code ${_wxl_script_result}:\n${_wxl_script_error}")
-    endif()
-
-    # Parse the script output: chain:<name>, component:<name>, dir:<path>, source:<file>, library:<target>.
-    set(_wxl_chain_components "")
-    set(_wxl_component_dirs "")
-    set(_wxl_component_sources "")
-    set(_wxl_component_libraries "")
-    set(_wxl_manifests "")
-    set(_wxl_current_dir "")
-
-    string(REPLACE "\r" "" _wxl_lines "${_wxl_script_output}")
-    string(REPLACE "\n" ";" _wxl_lines "${_wxl_lines}")
-    foreach(_wxl_line IN LISTS _wxl_lines)
-        if(_wxl_line MATCHES "^(chain|component|dir|source|library):(.*)$")
-            set(_wxl_type "${CMAKE_MATCH_1}")
-            set(_wxl_value "${CMAKE_MATCH_2}")
-            if(_wxl_type STREQUAL "chain")
-                list(APPEND _wxl_chain_components "${_wxl_value}")
-            elseif(_wxl_type STREQUAL "dir")
-                set(_wxl_current_dir "${_wxl_value}")
-                list(APPEND _wxl_component_dirs "${_wxl_current_dir}")
-                list(APPEND _wxl_manifests "${_wxl_current_dir}/component.json")
-            elseif(_wxl_type STREQUAL "source")
-                list(APPEND _wxl_component_sources "${_wxl_current_dir}/${_wxl_value}")
-            elseif(_wxl_type STREQUAL "library")
-                list(APPEND _wxl_component_libraries "${_wxl_value}")
-            endif()
-        endif()
-    endforeach()
-
-    # Add every manifest to CMAKE_CONFIGURE_DEPENDS so CMake reconfigures when they change.
-    foreach(_wxl_manifest IN LISTS _wxl_manifests)
-        set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_wxl_manifest}")
-    endforeach()
-
-    # Chase the profile chain's extends and add each profile to CMAKE_CONFIGURE_DEPENDS.
-    set(_wxl_profile_chain "${A_PROFILE}")
-    set(_wxl_visited_profiles "")
-    while(_wxl_profile_chain)
-        list(POP_FRONT _wxl_profile_chain _wxl_current_profile)
-        if(_wxl_current_profile IN_LIST _wxl_visited_profiles)
-            continue()
-        endif()
-        list(APPEND _wxl_visited_profiles "${_wxl_current_profile}")
-        set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_wxl_current_profile}")
-
-        # Read the profile to find its extends.
-        file(READ "${_wxl_current_profile}" _wxl_profile_content)
-        if(_wxl_profile_content MATCHES "\"extends\"[[:space:]]*:[[:space:]]*\\[([^]]+)\\]")
-            string(REGEX MATCHALL "\"([^\"]+)\"" _wxl_extends_matches "${CMAKE_MATCH_1}")
-            cmake_path(GET _wxl_current_profile PARENT_PATH _wxl_profile_dir)
-            foreach(_wxl_extend_match IN LISTS _wxl_extends_matches)
-                if(_wxl_extend_match MATCHES "\"([^\"]+)\"")
-                    set(_wxl_parent_name "${CMAKE_MATCH_1}")
-                    set(_wxl_parent_profile "${_wxl_profile_dir}/${_wxl_parent_name}.winxl-profile")
-                    list(APPEND _wxl_profile_chain "${_wxl_parent_profile}")
-                endif()
-            endforeach()
-        endif()
-    endwhile()
+    wxl_read_profile_components(_wxl "${A_PROFILE}" "${_wxl_common_dir}/components")
+    set(_wxl_chain_components ${_wxl_CHAIN})
+    set(_wxl_component_dirs ${_wxl_DIRS})
+    set(_wxl_component_sources ${_wxl_SOURCES})
+    set(_wxl_component_libraries ${_wxl_LIBRARIES})
+    set(_wxl_manifests ${_wxl_MANIFESTS})
 
     wxl_generate_wrappers(${_wxl_target}.wrappers
         DIR "${_wxl_out}" PROFILE "${A_PROFILE}" PARTS "${A_PARTS}" DECLARE_HEADERS

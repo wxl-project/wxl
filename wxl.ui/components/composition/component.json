@@ -13,8 +13,10 @@
     "TextureCache.cpp",
     "TextureCache.h",
     "ThemeBrush.cpp",
-    "ThemeBrush.h"
+    "ThemeBrush.h",
+    "WindowShade.cpp",
+    "WindowShade.h"
   ],
   "libraries": [],
-  "comment": "Composition window, drawing surface, texture cache and theme brush."
+  "comment": "Composition window, drawing surface, texture cache, theme brush and the window shade drawn on a surface."
 }
