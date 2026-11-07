@@ -75,7 +75,11 @@ function Resolve-ProfileChain([string]$Path) {
     if ($prof.extends) {
         $dir = Split-Path $Path -Parent
         foreach ($parent in $prof.extends) {
-            $parentPath = Join-Path $dir ($parent + '.winxl-profile')
+            $parentPath = if ($parent -like '*.winxl-profile') {
+                Join-Path $dir $parent
+            } else {
+                Join-Path $dir ($parent + '.winxl-profile')
+            }
             $chain += Resolve-ProfileChain $parentPath
         }
     }

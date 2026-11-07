@@ -52,12 +52,41 @@ set(_wrappers_step "")
 if(TARGET winui-srcgen)
     include("${CMAKE_CURRENT_SOURCE_DIR}/../cmake/wxl_ui_profile.cmake")
     set(_wrappers "${CMAKE_BINARY_DIR}/docs/wrappers/wxl")
+
+    # Read the profile chain to get the component list, like wxl_add_ui_library does.
+    find_program(POWERSHELL_EXE NAMES powershell)
+    if(NOT POWERSHELL_EXE)
+        message(FATAL_ERROR "PowerShell not found; it is required to read component manifests.")
+    endif()
+    execute_process(
+        COMMAND "${POWERSHELL_EXE}" -NoProfile -ExecutionPolicy Bypass
+            -File "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Read-ProfileComponents.ps1"
+            -Profile "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/full.winxl-profile"
+            -ComponentDir "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.ui/components"
+        OUTPUT_VARIABLE _wxl_script_output
+        RESULT_VARIABLE _wxl_script_result
+        ERROR_VARIABLE _wxl_script_error)
+    if(NOT _wxl_script_result EQUAL 0)
+        message(FATAL_ERROR "Read-ProfileComponents.ps1 failed with exit code ${_wxl_script_result}:\n${_wxl_script_error}")
+    endif()
+
+    # Parse chain components from the output.
+    set(_wxl_chain_components "")
+    string(REPLACE "\r" "" _wxl_lines "${_wxl_script_output}")
+    string(REPLACE "\n" ";" _wxl_lines "${_wxl_lines}")
+    foreach(_wxl_line IN LISTS _wxl_lines)
+        if(_wxl_line MATCHES "^chain:(.*)$")
+            list(APPEND _wxl_chain_components "${CMAKE_MATCH_1}")
+        endif()
+    endforeach()
+
     wxl_generate_wrappers(docs.wrappers
         DIR     "${_wrappers}"
         PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/full.winxl-profile"
         PARTS   1
         DOCS    "${WXL_DOC_LANGUAGE}"
         COMPONENT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.ui/components"
+        COMPONENTS ${_wxl_chain_components}
         COMMON_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.ui/src")
     set_property(TARGET docs.wrappers PROPERTY FOLDER docs)
     set(_wrappers_step docs.wrappers)
