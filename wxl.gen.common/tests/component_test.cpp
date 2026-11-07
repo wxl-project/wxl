@@ -106,7 +106,7 @@ TEST(component, its_required_types_are_roots_of_the_walk) {
            "brushes": ["X"])");
 
     auto const set = resolve_profiles({profile}, no_packages(directory),
-                                      {.directories = {components}, .expected = {"window"}});
+                                      {.directories = {components}});
     ASSERT_TRUE(set.types.contains("Microsoft.UI.Xaml.Window"));
     EXPECT_EQ(set.types.at("Microsoft.UI.Xaml.Window"), member_filter::allow({"Title"}));
     EXPECT_EQ(set.listed_by.at("Microsoft.UI.Xaml.Window").component, "window");
@@ -135,7 +135,7 @@ TEST(component, needs_are_followed_transitively) {
 
     auto const set = resolve_profiles(
         {profile}, no_packages(directory),
-        {.directories = {components}, .expected = {"elements", "window"}});
+        {.directories = {components}});
     EXPECT_EQ(names_of(set.components), (std::vector<std::string>{"core", "elements", "window"}));
     ASSERT_EQ(set.named_components.size(), 2u);
     EXPECT_EQ(set.named_components[0].name, "elements");
@@ -154,7 +154,7 @@ TEST(component, a_missing_component_names_the_profile_and_the_directories) {
 
     EXPECT_TRUE(says(stops_with([&] {
                          resolve_profiles({profile}, no_packages(directory),
-                                          {.directories = {components}, .expected = {"window"}});
+                                          {.directories = {components}});
                      }),
                      {utf8(profile), "'window'", utf8(components)}));
 
@@ -170,7 +170,7 @@ TEST(component, a_cycle_of_needs_is_refused) {
 
     EXPECT_TRUE(says(stops_with([&] {
                          resolve_profiles({profile}, no_packages(directory),
-                                          {.directories = {components}, .expected = {"a"}});
+                                          {.directories = {components}});
                      }),
                      {"cycle", "a -> b -> a"}));
 
@@ -185,8 +185,7 @@ TEST(component, a_name_found_in_two_directories_is_refused) {
 
     EXPECT_TRUE(says(stops_with([&] {
                          resolve_profiles({profile}, no_packages(directory),
-                                          {.directories = {directory / L"one", directory / L"two"},
-                                           .expected = {"window"}});
+                                          {.directories = {directory / L"one", directory / L"two"}});
                      }),
                      {"found twice", utf8(std::filesystem::canonical(first)),
                       utf8(std::filesystem::canonical(second))}));
@@ -204,7 +203,7 @@ TEST(component, a_name_requested_in_another_case_is_refused) {
 
     EXPECT_TRUE(says(stops_with([&] {
                          resolve_profiles({profile}, no_packages(directory),
-                                          {.directories = {components}, .expected = {"Window"}});
+                                          {.directories = {components}});
                      }),
                      {utf8(profile), "'Window'", "'window'"}));
 
@@ -246,14 +245,11 @@ TEST(component, the_list_of_the_build_must_match_the_profiles) {
     auto const profile = write_profile(directory, R"("window", "grid")", R"("extends": ["base"])");
     auto const restored = no_packages(directory);
 
+    auto const set = resolve_profiles({profile}, restored, {.directories = {components}});
+
     // Order and repetition take no part.
-    EXPECT_NO_THROW(resolve_profiles(
-        {profile}, restored, {.directories = {components}, .expected = {"window", "grid", "window"}}));
-    EXPECT_TRUE(says(stops_with([&] {
-                         resolve_profiles({profile}, restored,
-                                          {.directories = {components},
-                                           .expected = {"core", "grid", "window"}});
-                     }),
+    EXPECT_NO_THROW(check_build_components(set, {"window", "grid", "window"}));
+    EXPECT_TRUE(says(stops_with([&] { check_build_components(set, {"core", "grid", "window"}); }),
                      {"build:    core, grid, window", "profiles: grid, window",
                       "window: " + utf8(base), "grid: " + utf8(profile)}));
 
@@ -284,33 +280,21 @@ TEST(component, a_name_listed_twice_is_refused) {
     std::filesystem::remove_all(directory);
 }
 
-// Given component directories, the build's list is compared even when it is empty.
+// An empty list of the build is compared like any other: it matches only a chain naming none.
 TEST(component, no_list_of_the_build_is_an_empty_one) {
     auto const directory = scratch(L"cross_check_empty");
     auto const components = directory / L"components";
     write_component(components, "window");
     auto const profile = write_profile(directory, R"("window")");
+    auto const restored = no_packages(directory);
 
-    EXPECT_TRUE(says(stops_with([&] {
-                         resolve_profiles({profile}, no_packages(directory),
-                                          {.directories = {components}});
-                     }),
+    auto const set = resolve_profiles({profile}, restored, {.directories = {components}});
+    EXPECT_TRUE(says(stops_with([&] { check_build_components(set, {}); }),
                      {"build:    (none)", "profiles: window"}));
 
-    std::filesystem::remove_all(directory);
-}
-
-// A list of the build with no directory to find its components in is refused, not dropped.
-TEST(component, a_list_of_the_build_without_directories_is_refused) {
-    auto const directory = scratch(L"cross_check_no_dirs");
-    auto const profile = directory / L"p.winxl-profile";
-    write(profile, "{}");
-
-    EXPECT_TRUE(says(stops_with([&] {
-                         resolve_profiles({profile}, no_packages(directory),
-                                          {.expected = {"window"}});
-                     }),
-                     {"--component: window", "--component-dir"}));
+    auto const none = directory / L"none.winxl-profile";
+    write(none, "{}");
+    EXPECT_NO_THROW(check_build_components(resolve_profiles({none}, restored), {}));
 
     std::filesystem::remove_all(directory);
 }
@@ -341,7 +325,6 @@ TEST(component, an_include_is_found_where_it_may_be) {
     write(common / L"impl" / L"core.h", "");
     auto const restored = no_packages(directory);
     component_search const search{.directories = {components},
-                                  .expected = {"window"},
                                   .common_directory = common,
                                   .generated_includes = {"FluentSymbol.h"}};
 
@@ -354,7 +337,7 @@ TEST(component, an_include_is_found_where_it_may_be) {
     // Without a common directory nothing is checked.
     EXPECT_NO_THROW(resolve_profiles(
         {write_including_profile(directory, R"("window")", "../missing.h")}, restored,
-        {.directories = {components}, .expected = {"window"}}));
+        {.directories = {components}}));
 
     std::filesystem::remove_all(directory);
 }
@@ -370,7 +353,6 @@ TEST(component, an_include_found_nowhere_names_the_member_and_the_profile) {
     write(directory / L"outside.h", "");
     auto const restored = no_packages(directory);
     component_search const search{.directories = {components},
-                                  .expected = {"window"},
                                   .common_directory = common,
                                   .generated_includes = {"FluentSymbol.h"}};
 
@@ -397,7 +379,7 @@ TEST(component, an_include_of_an_unselected_component_is_refused_in_the_common_d
     write(common / L"grid" / L"grid_helpers.h", "");
     auto const restored = no_packages(directory);
     component_search const search{
-        .directories = {common}, .expected = {"window"}, .common_directory = common};
+        .directories = {common}, .common_directory = common};
 
     EXPECT_NO_THROW(resolve_profiles(
         {write_including_profile(directory, R"("window")", "../window/window_helpers.h")},
@@ -439,7 +421,7 @@ TEST(component, a_definition_other_than_the_profiles_is_refused) {
                    "}}";
         };
         auto const profile = write_profile(directory, R"("window")", type(profiles));
-        component_search const search{.directories = {components}, .expected = {"window"}};
+        component_search const search{.directories = {components}};
 
         write_component(components, "window", "\"requires\": {" + type(profiles) + "}");
         EXPECT_NO_THROW(resolve_profiles({profile}, restored, search)) << what;
@@ -470,7 +452,6 @@ TEST(component, an_include_of_a_component_names_the_manifest) {
     EXPECT_TRUE(says(stops_with([&] {
                          resolve_profiles({profile}, no_packages(directory),
                                           {.directories = {components},
-                                           .expected = {"window"},
                                            .common_directory = common});
                      }),
                      {utf8(std::filesystem::canonical(manifest)),

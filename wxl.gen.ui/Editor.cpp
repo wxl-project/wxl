@@ -2826,13 +2826,21 @@ std::wstring errorText(std::exception const& error) {
     return wide;
 }
 
-intrusive_ptr<Editor> Editor::open(std::filesystem::path const& prof, std::filesystem::path const& packages) {
+intrusive_ptr<Editor> Editor::open(std::filesystem::path const& prof, std::filesystem::path const& packages,
+                                   std::filesystem::path const& componentDir) {
     intrusive_ptr<Editor> editor {new Editor {}, /*add_ref=*/false};
 
     // Пакеты и Windows SDK — той сборки, из которой редактор запущен: версии
     // решило её восстановление NuGet, редактор их не выводит.
     auto const restored = load_restored_packages(packages);
-    auto resolved = resolve_profiles({prof}, restored);
+
+    // Каталог компонентов даёт вызывающий (main.cpp: по умолчанию wxl.ui/components дерева).
+    component_search search;
+    if (!componentDir.empty()) {
+        search.directories.push_back(componentDir);
+    }
+
+    auto resolved = resolve_profiles({prof}, restored, search);
     std::vector<std::string> files;
     files.reserve(resolved.metadata.size());
     for (auto&& file : resolved.metadata) {
@@ -2851,7 +2859,7 @@ intrusive_ptr<Editor> Editor::open(std::filesystem::path const& prof, std::files
     editor->data_ = std::make_unique<Data>(std::move(own), std::move(resolved), files,
                                          [raw = editor.get()] { raw->documentationPending.set(true); });
     if (!parents.empty()) {
-        auto inherited = resolve_profiles(parents, restored);
+        auto inherited = resolve_profiles(parents, restored, search);
         editor->data_->inheritedTypes = std::move(inherited.types);
         editor->data_->inheritedStyles = std::move(inherited.styles);
     }

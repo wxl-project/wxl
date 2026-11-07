@@ -1,0 +1,31 @@
+{
+  "name": "effects",
+  "needs": [
+    "composition",
+    "dsl"
+  ],
+  "sources": [
+    "BevelEffect.cpp",
+    "BevelEffect.h",
+    "Button3DEffect.cpp",
+    "Button3DEffect.h",
+    "FocusEffect.cpp",
+    "FocusEffect.h",
+    "GaussianBlurEffect.cpp",
+    "GaussianBlurEffect.h",
+    "GlassEffect.cpp",
+    "GlassEffect.h",
+    "HaloEffect.cpp",
+    "HaloEffect.h",
+    "impl/key_relief.cpp",
+    "impl/key_relief.h",
+    "MagnifyEffect.cpp",
+    "MagnifyEffect.h",
+    "RevealEffect.cpp",
+    "RevealEffect.h",
+    "ZoomEffect.cpp",
+    "ZoomEffect.h"
+  ],
+  "libraries": [],
+  "comment": "All the effects and the relief of a key, in one component until the effects are cut apart."
+}

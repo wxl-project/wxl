@@ -16,6 +16,8 @@ namespace {
 
 // u8, so that the path reads the directory as UTF-8 and not in the ANSI code page.
 std::filesystem::path const profiles_dir{u8"" WXL_GEN_PROFILES_DIR};
+// The components the profiles name, as the build finds them.
+std::filesystem::path const components_dir{u8"" WXL_UI_COMPONENTS_DIR};
 
 // The list the configure of this build wrote: the packages its restore resolved
 // and the Windows SDK of its projection.
@@ -56,7 +58,8 @@ TEST_F(stale_files, one_named_in_cyrillic_is_removed) {
     std::ofstream{stale_part} << gen::banner;
 
     auto const profiles = resolve_profiles({profiles_dir / "base.winxl-profile"},
-                                           load_restored_packages(restored_packages_file));
+                                           load_restored_packages(restored_packages_file),
+                                           {.directories = {components_dir}});
     auto const types = load_type_map(profiles_dir / "types.json");
     run(profiles, types, {}, out(), nullptr);
 
@@ -85,7 +88,8 @@ std::string read_file(std::filesystem::path const& path) {
 // function in the header.
 TEST_F(stale_files, binding_pairs_are_those_of_the_classes_the_run_generates) {
     auto const profiles = resolve_profiles({profiles_dir / "base.winxl-profile"},
-                                           load_restored_packages(restored_packages_file));
+                                           load_restored_packages(restored_packages_file),
+                                           {.directories = {components_dir}});
     auto const types = load_type_map(profiles_dir / "types.json");
     run(profiles, types, {}, out(), nullptr);
 

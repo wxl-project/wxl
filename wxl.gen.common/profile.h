@@ -453,16 +453,10 @@ struct restored_packages {
 // dots, and on a Windows SDK without metadata.
 restored_packages load_restored_packages(std::filesystem::path const& path);
 
-// Where a run looks for components, and what it checks them against.
+// Where a run looks for components, and what it checks the includes against.
 struct component_search {
     // The directories that hold components: component N is <directory>/N/component.json.
     std::vector<std::filesystem::path> directories;
-
-    // The components the build read from the profile chain on its own, compared as a set with
-    // what the chain names in "components" before "needs" adds to them, whenever `directories`
-    // is given: a chain naming none matches an empty list. Without directories there is nothing
-    // to compare, and a list given anyway is refused.
-    std::vector<std::string> expected;
 
     // The directory of what no component owns (the library's include directory, wxl.ui/src
     // today). When set, every include a profile or a selected component gives must be a file of a
@@ -494,6 +488,14 @@ struct component_search {
 profile_set resolve_profiles(std::vector<std::filesystem::path> const& paths,
                              restored_packages const& restored,
                              component_search const& search = {});
+
+// Compares the components a build read from the profile chain on its own with those the chain
+// names in "components" before "needs" adds to them, as sets: the build compiles the components
+// it read, and the projection is made for those the chain names. An empty list matches a chain
+// naming none. Throws std::runtime_error naming both lists and the profile that names each
+// component of the chain.
+void check_build_components(profile_set const& profiles,
+                            std::vector<std::string> const& build_components);
 
 // One named glyph of the icon font: the name a `FluentSymbol` is written
 // under, and the code point behind it.

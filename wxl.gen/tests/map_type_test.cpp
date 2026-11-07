@@ -15,6 +15,8 @@ namespace {
 
 // u8, so that the path reads the directory as UTF-8 and not in the ANSI code page.
 std::filesystem::path const profiles_dir{u8"" WXL_GEN_PROFILES_DIR};
+// The components the profiles name, as the build finds them.
+std::filesystem::path const components_dir{u8"" WXL_UI_COMPONENTS_DIR};
 
 // The list the configure of this build wrote: the packages its restore resolved
 // and the Windows SDK of its projection.
@@ -30,7 +32,8 @@ type_map const& types() {
 md::cache const& metadata() {
     static std::vector<std::string> const files = [] {
         auto const profiles = resolve_profiles({profiles_dir / "rich.winxl-profile"},
-                                               load_restored_packages(restored_packages_file));
+                                               load_restored_packages(restored_packages_file),
+                                               {.directories = {components_dir}});
         std::vector<std::string> paths;
         for (auto&& file : profiles.metadata) {
             paths.push_back(std::string{wxl::core::unicode::to_utf8(file).chars()});

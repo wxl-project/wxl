@@ -26,6 +26,8 @@ namespace {
 
 // u8, so that the path reads the directory as UTF-8 and not in the ANSI code page.
 std::filesystem::path const profiles_dir{u8"" WXL_GEN_PROFILES_DIR};
+// The components the profiles name, as the build finds them.
+std::filesystem::path const components_dir{u8"" WXL_UI_COMPONENTS_DIR};
 
 // The list the configure of this build wrote: the packages its restore resolved
 // and the Windows SDK of its projection.
@@ -79,7 +81,8 @@ TEST_F(doc_language, names_the_code_and_doxygens_language_under_the_banner) {
 // takes the file away.
 TEST_F(doc_language, follows_the_run_that_writes_the_wrappers) {
     auto const profiles = resolve_profiles({profiles_dir / "base.winxl-profile"},
-                                           load_restored_packages(restored_packages_file));
+                                           load_restored_packages(restored_packages_file),
+                                           {.directories = {components_dir}});
     auto const types = load_type_map(profiles_dir / "types.json");
 
     documentation_language const* const russian = find_documentation_language("ru");

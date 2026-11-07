@@ -1,0 +1,10 @@
+{
+  "name": "navigation",
+  "needs": [],
+  "sources": [
+    "Navigation.cpp",
+    "Navigation.h"
+  ],
+  "libraries": [],
+  "comment": "Frame navigation helpers."
+}

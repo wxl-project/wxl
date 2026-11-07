@@ -17,6 +17,8 @@ namespace {
 
 // u8, so that the path reads the directory as UTF-8 and not in the ANSI code page.
 std::filesystem::path const profiles_dir{u8"" WXL_GEN_PROFILES_DIR};
+// The components the profiles name, as the build finds them.
+std::filesystem::path const components_dir{u8"" WXL_UI_COMPONENTS_DIR};
 
 // The list the configure of this build wrote: the packages its restore resolved
 // and the Windows SDK of its projection.
@@ -78,7 +80,8 @@ std::vector<std::string> names_of(Types const& types) {
 TEST(crawl, order_depends_on_the_metadata_alone) {
     auto const types = load_type_map(profiles_dir / "types.json");
     auto const profiles = resolve_profiles({profiles_dir / "rich.winxl-profile"},
-                                           load_restored_packages(restored_packages_file));
+                                           load_restored_packages(restored_packages_file),
+                                           {.directories = {components_dir}});
 
     std::vector<std::string> files;
     for (auto&& file : profiles.metadata) {
@@ -150,7 +153,8 @@ TEST(crawl, a_root_of_the_type_map_the_metadata_does_not_declare_stops_the_walk)
 // method it was written for, with the function and the header that declares it.
 TEST(profile, a_replaced_call_reaches_the_merged_profiles) {
     auto const profiles = resolve_profiles({profiles_dir / "full.winxl-profile"},
-                                           load_restored_packages(restored_packages_file));
+                                           load_restored_packages(restored_packages_file),
+                                           {.directories = {components_dir}});
 
     auto const type = profiles.replaced_calls.find("Windows.Storage.Streams.RandomAccessStreamReference");
     ASSERT_NE(type, profiles.replaced_calls.end());
