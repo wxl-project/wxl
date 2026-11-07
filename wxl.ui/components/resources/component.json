@@ -1,0 +1,32 @@
+{
+  "name": "resources",
+  "needs": [
+    "elements"
+  ],
+  "sources": [],
+  "libraries": [],
+  "comment": "Entries written in place in a ResourceDictionary.",
+  "requires": {
+    "types": {
+      "Microsoft.UI.Xaml.ResourceDictionary": {
+        "members": [],
+        "syntheticMembers": {
+          "Entry": {
+            "comment": "One key and its value. The same tag repeated adds one entry each.",
+            "cppType": "Resource",
+            "cppInclude": "../Resource.h",
+            "function": "impl::add_resource",
+            "include": "../impl/element_helpers.h"
+          },
+          "ThemeEntry": {
+            "comment": "The entries of one theme -- ThemeDictionaries[\"Light\"] of the XAML. The same tag repeated adds one theme each.",
+            "cppType": "ThemeDictionary",
+            "cppInclude": "../Resource.h",
+            "function": "impl::add_theme_dictionary",
+            "include": "../impl/element_helpers.h"
+          }
+        }
+      }
+    }
+  }
+}

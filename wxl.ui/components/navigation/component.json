@@ -1,10 +1,28 @@
 {
   "name": "navigation",
-  "needs": [],
+  "needs": [
+    "items"
+  ],
   "sources": [
     "Navigation.cpp",
     "Navigation.h"
   ],
   "libraries": [],
-  "comment": "Frame navigation helpers."
+  "comment": "Frame navigation helpers, and the search box of a navigation view.",
+  "requires": {
+    "types": {
+      "Microsoft.UI.Xaml.Controls.NavigationView": {
+        "members": [],
+        "syntheticMembers": {
+          "AutoSuggestBox": {
+            "comment": "The search box of the pane, or none: autoSuggestBox = nullptr takes it away, which the property of the framework allows and a wrapper cannot say.",
+            "cppType": "core::nullable<AutoSuggestBox>",
+            "cppInclude": "../core.h",
+            "function": "impl::set_auto_suggest_box",
+            "include": "../impl/items_helpers.h"
+          }
+        }
+      }
+    }
+  }
 }

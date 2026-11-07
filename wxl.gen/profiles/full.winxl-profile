@@ -19,10 +19,13 @@
         "navigation",
         "number_box",
         "pickers",
+        "resources",
         "rsdn",
         "scroll_view",
         "scroll_viewer",
-        "shapes"
+        "shapes",
+        "streams",
+        "tool_tip"
     ],
 
     // The Windows App SDK release this profile needs at least. It projects types
@@ -131,16 +134,7 @@
                 "PaneCustomContent",
                 "MenuItemTemplate",
                 "OpenPaneLength"
-            ],
-            "syntheticMembers": {
-                "AutoSuggestBox": {
-                    "comment": "The search box of the pane, or none: autoSuggestBox = nullptr takes it away, which the property of the framework allows and a wrapper cannot say.",
-                    "cppType": "core::nullable<AutoSuggestBox>",
-                    "cppInclude": "../core.h",
-                    "function": "impl::set_auto_suggest_box",
-                    "include": "../impl/items_helpers.h"
-                }
-            }
+            ]
         },
         "Microsoft.UI.Xaml.Controls.NavigationViewItem": {
             "comment": "The group rows: they expand and are not themselves a page.",
@@ -329,108 +323,7 @@
                 "BringIntoViewRequested",
                 "XYFocusKeyboardNavigation",
                 "AccessKey"
-            ],
-            "syntheticMembers": {
-                "AutomationId": {
-                    "comment": "What a test or a reader's script finds the element by -- AutomationProperties.AutomationId, the attached property.",
-                    "type": "String",
-                    "function": "impl::automation_properties::set_automation_id",
-                    "include": "../impl/automation_properties.h"
-                },
-                "AutomationAccessibilityView": {
-                    "comment": "Which view of the automation tree the element is in -- Raw for a picture that says nothing a screen reader should read: AutomationProperties.AccessibilityView, the attached property.",
-                    "type": "Microsoft.UI.Xaml.Automation.Peers.AccessibilityView",
-                    "function": "impl::automation_properties::set_accessibility_view",
-                    "include": "../impl/automation_properties.h"
-                },
-                "AutomationLiveSetting": {
-                    "comment": "That a change of the element's text is announced by a screen reader, politely or at once -- AutomationProperties.LiveSetting, the attached property.",
-                    "type": "Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting",
-                    "function": "impl::automation_properties::set_live_setting",
-                    "include": "../impl/automation_properties.h"
-                },
-                "AutomationHeadingLevel": {
-                    "comment": "Accessibility: that the element is a heading, and of which level -- AutomationProperties.HeadingLevel, the attached property.",
-                    "type": "Microsoft.UI.Xaml.Automation.Peers.AutomationHeadingLevel",
-                    "function": "impl::automation_properties::set_heading_level",
-                    "include": "../impl/automation_properties.h"
-                },
-                "AutomationLandmarkType": {
-                    "comment": "Accessibility: the landmark of the page the element is -- navigation, main, search -- AutomationProperties.LandmarkType, the attached property.",
-                    "type": "Microsoft.UI.Xaml.Automation.Peers.AutomationLandmarkType",
-                    "function": "impl::automation_properties::set_landmark_type",
-                    "include": "../impl/automation_properties.h"
-                },
-                "AutomationControlType": {
-                    "comment": "Accessibility: what kind of control a screen reader takes the element for -- AutomationProperties.AutomationControlType, the attached property.",
-                    "type": "Microsoft.UI.Xaml.Automation.Peers.AutomationControlType",
-                    "function": "impl::automation_properties::set_automation_control_type",
-                    "include": "../impl/automation_properties.h"
-                },
-                "AutomationLocalizedControlType": {
-                    "comment": "Accessibility: what a screen reader calls that kind of control in the user's language -- AutomationProperties.LocalizedControlType, the attached property.",
-                    "type": "String",
-                    "function": "impl::automation_properties::set_localized_control_type",
-                    "include": "../impl/automation_properties.h"
-                },
-                "AutomationLocalizedLandmarkType": {
-                    "comment": "Accessibility: what a screen reader calls the landmark in the user's language -- AutomationProperties.LocalizedLandmarkType, the attached property.",
-                    "type": "String",
-                    "function": "impl::automation_properties::set_localized_landmark_type",
-                    "include": "../impl/automation_properties.h"
-                },
-                "AutomationAcceleratorKey": {
-                    "comment": "Accessibility: the shortcut that does what the element does, as a screen reader says it -- AutomationProperties.AcceleratorKey, the attached property.",
-                    "type": "String",
-                    "function": "impl::automation_properties::set_accelerator_key",
-                    "include": "../impl/automation_properties.h"
-                },
-                "AutomationHelpText": {
-                    "comment": "Accessibility: a few words of help, spoken after the name -- AutomationProperties.HelpText, the attached property.",
-                    "type": "String",
-                    "function": "impl::automation_properties::set_help_text",
-                    "include": "../impl/automation_properties.h"
-                },
-                "AutomationFullDescription": {
-                    "comment": "Accessibility: the long description of the element -- AutomationProperties.FullDescription, the attached property.",
-                    "type": "String",
-                    "function": "impl::automation_properties::set_full_description",
-                    "include": "../impl/automation_properties.h"
-                },
-                "AutomationPositionInSet": {
-                    "comment": "Accessibility: the place of the element among its siblings, 1-based -- AutomationProperties.PositionInSet, the attached property.",
-                    "cppType": "int32_t",
-                    "cppInclude": "../core.h",
-                    "function": "impl::automation_properties::set_position_in_set",
-                    "include": "../impl/automation_properties.h"
-                },
-                "AutomationSizeOfSet": {
-                    "comment": "Accessibility: how many siblings the element has with itself -- AutomationProperties.SizeOfSet, the attached property.",
-                    "cppType": "int32_t",
-                    "cppInclude": "../core.h",
-                    "function": "impl::automation_properties::set_size_of_set",
-                    "include": "../impl/automation_properties.h"
-                },
-                "AutomationLabeledBy": {
-                    "comment": "Accessibility: the element whose text names this one -- AutomationProperties.LabeledBy, the attached property.",
-                    "type": "Microsoft.UI.Xaml.UIElement",
-                    "function": "impl::automation_properties::set_labeled_by",
-                    "include": "../impl/automation_properties.h"
-                },
-                "IsDragRegion": {
-                    "comment": "Windowing: whether an element in a TitleBar drags the window (true), takes clicks (false) or leaves the choice to the TitleBar (empty) -- TitleBar.IsDragRegion, the attached property.",
-                    "cppType": "core::nullable<bool>",
-                    "cppInclude": "../core.h",
-                    "function": "impl::set_drag_region",
-                    "include": "../impl/window_helpers.h"
-                },
-                "ToolTipElement": {
-                    "comment": "The tip as a ToolTip element: content that is not text, a placement, an offset. The hover half of toolTip only -- an element has no words to give a screen reader.",
-                    "type": "Microsoft.UI.Xaml.Controls.ToolTip",
-                    "function": "impl::set_tool_tip_element",
-                    "include": "../impl/element_helpers.h"
-                }
-            }
+            ]
         },
         "Microsoft.UI.Xaml.Input.KeyboardAccelerator": {
             "comment": "Menus & toolbars: the key chord that invokes a command, written beside the command.",
@@ -518,23 +411,7 @@
             "members": [
                 "Source",
                 "MergedDictionaries"
-            ],
-            "syntheticMembers": {
-                "Entry": {
-                    "comment": "One key and its value. The same tag repeated adds one entry each.",
-                    "cppType": "Resource",
-                    "cppInclude": "../Resource.h",
-                    "function": "impl::add_resource",
-                    "include": "../impl/element_helpers.h"
-                },
-                "ThemeEntry": {
-                    "comment": "The entries of one theme -- ThemeDictionaries[\"Light\"] of the XAML. The same tag repeated adds one theme each.",
-                    "cppType": "ThemeDictionary",
-                    "cppInclude": "../Resource.h",
-                    "function": "impl::add_theme_dictionary",
-                    "include": "../impl/element_helpers.h"
-                }
-            }
+            ]
         },
         "Microsoft.UI.Windowing.AppWindow": {
             "comment": "Windowing: the size of the client area in physical pixels, independent of the frame around it; the icon of the taskbar and the icon of the title bar, each by itself.",
@@ -636,11 +513,7 @@
             ]
         },
         "Microsoft.UI.Xaml.Media.Geometry": {
-            "comment": "Shapes: the abstract geometry. A string of the path language of XAML builds one, as `data = u\"M 10,100 H 200\"` does; the framework's own converter makes the object.",
-            "fromText": {
-                "function": "impl::geometry_from_text",
-                "include": "../impl/shape_helpers.h"
-            }
+            "comment": "Shapes: the abstract geometry. A string of the path language of XAML builds one, as `data = u\"M 10,100 H 200\"` does; the framework's own converter makes the object."
         },
         "Microsoft.UI.Xaml.Media.GeometryGroup": {
             "comment": "Shapes: geometries drawn as one.",
@@ -681,27 +554,11 @@
         },
         "Microsoft.UI.Xaml.Shapes.Polyline": {
             "comment": "Shapes: connected straight lines.",
-            "members": [],
-            "syntheticMembers": {
-                "Points": {
-                    "comment": "The vertices as text, in the form of XAML: points = u\"10,100 60,40 200,40\". Points is a collection of Point that wxl has no class for; the framework's own converter reads the text.",
-                    "type": "String",
-                    "function": "impl::set_points",
-                    "include": "../impl/shape_helpers.h"
-                }
-            }
+            "members": []
         },
         "Microsoft.UI.Xaml.Shapes.Polygon": {
             "comment": "Shapes: connected straight lines that close.",
-            "members": [],
-            "syntheticMembers": {
-                "Points": {
-                    "comment": "The vertices as text, in the form of XAML: points = u\"10,100 60,40 200,40\". Points is a collection of Point that wxl has no class for; the framework's own converter reads the text.",
-                    "type": "String",
-                    "function": "impl::set_points",
-                    "include": "../impl/shape_helpers.h"
-                }
-            }
+            "members": []
         },
         "Microsoft.UI.Xaml.Shapes.Path": {
             "comment": "Shapes: a shape drawn from a geometry.",
@@ -767,16 +624,7 @@
                 "TryGetElement",
                 "GetOrCreateElement",
                 "ItemsSourceView"
-            ],
-            "syntheticMembers": {
-                "ItemTemplate": {
-                    "comment": "The function that makes the element of an item.",
-                    "cppType": "ItemBuilder",
-                    "cppInclude": "../ItemTemplate.h",
-                    "function": "impl::set_repeater_template",
-                    "include": "../impl/items_helpers.h"
-                }
-            }
+            ]
         },
         "Microsoft.UI.Xaml.BringIntoViewOptions": {
             "comment": "Collections: how an element is brought into view -- animated or at once, and where in the viewport it comes to rest (0 the near edge, 1 the far one).",
@@ -856,16 +704,7 @@
                 "DeselectAll",
                 "Select",
                 "Deselect"
-            ],
-            "syntheticMembers": {
-                "ItemTemplate": {
-                    "comment": "The function that makes the element of an item.",
-                    "cppType": "ItemBuilder",
-                    "cppInclude": "../ItemTemplate.h",
-                    "function": "impl::set_items_view_template",
-                    "include": "../impl/items_helpers.h"
-                }
-            }
+            ]
         },
         "Microsoft.UI.Xaml.Controls.ScrollViewer": {
             "comment": "Gallery: the chaining of a viewer that cannot scroll, and a code block in a horizontal ScrollViewer must not keep the wheel from the page around it.",
@@ -875,16 +714,7 @@
                 "VerticalOffset",
                 "HorizontalOffset",
                 "ChangeView"
-            ],
-            "syntheticMembers": {
-                "WheelToParent": {
-                    "comment": "A wheel turn this viewer cannot use (nothing to scroll up or down, no modifier key) goes on up to the panel that scrolls the page. The viewer takes the wheel and marks it handled even when it scrolls nothing, so without this a horizontal strip of code stops the page.",
-                    "cppType": "bool",
-                    "cppInclude": "../core.h",
-                    "function": "impl::set_wheel_to_parent",
-                    "include": "../impl/element_helpers.h"
-                }
-            }
+            ]
         },
         "Microsoft.UI.Xaml.Controls.RadioMenuFlyoutItem": {
             "comment": "Menus & toolbars: a menu item that is one of a group, checked like a radio button."
@@ -896,21 +726,7 @@
             "comment": "Menus & toolbars: a command bar in a flyout."
         },
         "Microsoft.UI.Xaml.Controls.SwipeControl": {
-            "comment": "Menus & toolbars: items revealed or invoked by swiping. LeftItems and RightItems are the collections themselves (SwipeItems is a vector and wxl stands it for the collection), so the Mode the class carries has a property of its own here.",
-            "syntheticMembers": {
-                "LeftItemsMode": {
-                    "comment": "SwipeItems.Mode of the left items: Reveal shows the buttons, Execute runs the first on a full swipe.",
-                    "type": "Microsoft.UI.Xaml.Controls.SwipeMode",
-                    "function": "impl::set_left_items_mode",
-                    "include": "../impl/items_helpers.h"
-                },
-                "RightItemsMode": {
-                    "comment": "SwipeItems.Mode of the right items.",
-                    "type": "Microsoft.UI.Xaml.Controls.SwipeMode",
-                    "function": "impl::set_right_items_mode",
-                    "include": "../impl/items_helpers.h"
-                }
-            }
+            "comment": "Menus & toolbars: items revealed or invoked by swiping. LeftItems and RightItems are the collections themselves (SwipeItems is a vector and wxl stands it for the collection), so the Mode the class carries is a property of its own, which the items component gives."
         },
         "Microsoft.UI.Xaml.Controls.SwipeItemInvokedEventArgs": {
             "comment": "Menus & toolbars: which control the item was invoked on.",
@@ -1233,21 +1049,7 @@
             "comment": "Scrolling: dots for the pages of a flip view or a list."
         },
         "Microsoft.UI.Xaml.Controls.ScrollView": {
-            "comment": "Scrolling: the ScrollViewer of the compositor, with programmatic scrolling. The scroll controllers of its presenter are properties of the view here, given an AnnotatedScrollBar.",
-            "syntheticMembers": {
-                "VerticalScrollController": {
-                    "comment": "The bar that drives the view up and down, and is told where it is.",
-                    "type": "Microsoft.UI.Xaml.Controls.AnnotatedScrollBar",
-                    "function": "impl::set_vertical_scroll_controller",
-                    "include": "../impl/scroll_controller_helpers.h"
-                },
-                "HorizontalScrollController": {
-                    "comment": "The same, sideways.",
-                    "type": "Microsoft.UI.Xaml.Controls.AnnotatedScrollBar",
-                    "function": "impl::set_horizontal_scroll_controller",
-                    "include": "../impl/scroll_controller_helpers.h"
-                }
-            }
+            "comment": "Scrolling: the ScrollViewer of the compositor, with programmatic scrolling. The scroll controllers of its presenter are properties of the view, given an AnnotatedScrollBar; the scroll_view component gives them."
         },
         "Microsoft.UI.Xaml.Controls.AnnotatedScrollBarDetailLabelRequestedEventArgs": {
             "comment": "Scrolling: where the pointer is on the rail, and what to show there.",
@@ -1458,15 +1260,7 @@
                 "ItemContainerTransitions",
                 "ContainerFromItem",
                 "IndexFromContainer"
-            ],
-            "syntheticMembers": {
-                "ItemsPanelOrientation": {
-                    "comment": "A virtualizing stack in this direction: itemsPanelOrientation = Orientation::Vertical.",
-                    "type": "Microsoft.UI.Xaml.Controls.Orientation",
-                    "function": "impl::set_items_panel_orientation",
-                    "include": "../impl/items_helpers.h"
-                }
-            }
+            ]
         },
         "Microsoft.UI.Xaml.Controls.ListViewBase": {
             "comment": "Collections: ListView and GridView -- dragging and reordering of items, and the item template written as a function (itemTemplate = [](Object const& item) { return ...; }), which fills the containers as they come into view.",
@@ -1478,45 +1272,14 @@
                 "TryStartConnectedAnimationAsync",
                 "ScrollIntoView",
                 "Header"
-            ],
-            "syntheticMembers": {
-                "ItemContainerStyle": {
-                    "comment": "What an ItemContainerStyle says, as a preset every container wears once, as the control makes it: itemContainerStyle = Preset {margin = Thickness {5}, horizontalContentAlignment = HorizontalAlignment::Stretch}. The style of wxl is a preset, and a container the control makes is dressed the way a control written by hand is.",
-                    "cppType": "ItemContainerPreset",
-                    "cppInclude": "../ItemContainerPreset.h",
-                    "function": "impl::set_item_container_style",
-                    "include": "../impl/items_helpers.h"
-                },
-                "ItemMargin": {
-                    "comment": "The margin of every item container, as an ItemContainerStyle with a Setter for Margin would give it: itemMargin = Thickness {5}.",
-                    "type": "Microsoft.UI.Xaml.Thickness",
-                    "function": "impl::set_item_margin",
-                    "include": "../impl/items_helpers.h"
-                },
-                "ItemTemplate": {
-                    "comment": "What an ItemTemplate says, as a function from the item to the element that shows it. A DataTemplate of XAML is text bound to the properties of a data object; here the data are C++ objects and the element is made by code.",
-                    "cppType": "ItemBuilder",
-                    "cppInclude": "../ItemTemplate.h",
-                    "function": "impl::set_item_template",
-                    "include": "../impl/items_helpers.h"
-                }
-            }
+            ]
         },
         "Microsoft.UI.Xaml.Controls.TreeView": {
             "comment": "Collections: items that can be dragged out of and within the tree.",
             "members": [
                 "CanDragItems",
                 "CanReorderItems"
-            ],
-            "syntheticMembers": {
-                "ElementItems": {
-                    "comment": "The items (the content of the nodes, or the items of ItemsSource) are elements, and each is shown as itself: elementItems = true. The template of that is XAML text only.",
-                    "cppType": "bool",
-                    "cppInclude": "../core.h",
-                    "function": "impl::set_element_items",
-                    "include": "../impl/items_helpers.h"
-                }
-            }
+            ]
         },
         "Microsoft.UI.Xaml.Controls.TreeViewItem": {
             "comment": "Collections: an item of a tree that is its own container: its content, its children (ItemsSource), whether it is open. What the DataTemplate of the original puts in a TreeView.",
@@ -1595,14 +1358,7 @@
                 "CreateFromUri",
                 "CreateFromFile",
                 "OpenReadAsync"
-            ],
-            "replacedCalls": {
-                "CreateFromUri": {
-                    "comment": "The platform opens such a reference only for http, https, ms-appx and ms-appdata: an address with the file scheme fails at OpenReadAsync with E_NOTIMPL, and an unpackaged application has no ms-appx. A file address gets a reference that opens the file when asked; any other address is the platform's.",
-                    "function": "impl::stream_reference_from_uri",
-                    "include": "../impl/winrt_helpers.h"
-                }
-            }
+            ]
         },
         "Windows.Storage.Streams.IRandomAccessStreamWithContentType": {
             "comment": "The stream a bitmap is read from.",
@@ -1910,15 +1666,7 @@
                 "ViewMode",
                 "PickSingleFileAsync",
                 "PickMultipleFilesAsync"
-            ],
-            "syntheticMembers": {
-                "FileType": {
-                    "comment": "One extension of the filter: \".txt\", or \"*\" for all. Each use of the tag adds one.",
-                    "type": "String",
-                    "function": "impl::add_file_type",
-                    "include": "../impl/items_helpers.h"
-                }
-            }
+            ]
         },
         "Microsoft.Windows.Storage.Pickers.FileSavePicker": {
             "comment": "Storage pickers: name a file to save. The types the dialog offers are the tag fileTypeChoice, repeated.",
@@ -1929,16 +1677,7 @@
                 "SuggestedFolder",
                 "DefaultFileExtension",
                 "PickSaveFileAsync"
-            ],
-            "syntheticMembers": {
-                "FileTypeChoice": {
-                    "comment": "One line of the list of types: the words and the extensions behind them. Each use of the tag adds one.",
-                    "cppType": "FileTypeChoice",
-                    "cppInclude": "../FileTypeChoice.h",
-                    "function": "impl::add_file_type_choice",
-                    "include": "../impl/items_helpers.h"
-                }
-            }
+            ]
         },
         "Microsoft.Windows.Storage.Pickers.FolderPicker": {
             "comment": "Storage pickers: choose a folder.",
@@ -2152,28 +1891,7 @@
             "members": []
         },
         "Microsoft.UI.Xaml.Window": {
-            "comment": "Window is an implicit root with the whole surface; listed only so that SystemBackdrop stays in the profile if that ever changes. A controller of the system backdrop is given to the window it draws under: the window is the target of its material.",
-            "syntheticMembers": {
-                "NoSystemBackdrop": {
-                    "comment": "Takes the system backdrop off the window: `noSystemBackdrop = true`. A wrapper is never empty, so there is no empty backdrop to give systemBackdrop; false leaves the window as it is.",
-                    "cppType": "bool",
-                    "cppInclude": "../core.h",
-                    "function": "impl::clear_system_backdrop",
-                    "include": "../impl/backdrop_helpers.h"
-                },
-                "MicaController": {
-                    "comment": "The Mica controller of this window: the window becomes its target. The controller still needs its configuration, and Close when the window closes.",
-                    "type": "Microsoft.UI.Composition.SystemBackdrops.MicaController",
-                    "function": "impl::set_mica_controller",
-                    "include": "../impl/backdrop_helpers.h"
-                },
-                "DesktopAcrylicController": {
-                    "comment": "The desktop acrylic controller of this window, the same way.",
-                    "type": "Microsoft.UI.Composition.SystemBackdrops.DesktopAcrylicController",
-                    "function": "impl::set_desktop_acrylic_controller",
-                    "include": "../impl/backdrop_helpers.h"
-                }
-            }
+            "comment": "Window is an implicit root with the whole surface; listed only so that SystemBackdrop stays in the profile if that ever changes. A controller of the system backdrop is given to the window it draws under, the window being the target of its material; the backdrops component gives the window those properties."
         },
         "Microsoft.UI.Xaml.WindowActivatedEventArgs": {
             "comment": "Windowing: whether the window is the active one, which the controllers of a system backdrop are told (an inactive window shows the material faded).",

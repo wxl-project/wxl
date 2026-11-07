@@ -19,5 +19,28 @@
     "SplitPanel.h"
   ],
   "libraries": [],
-  "comment": "Grid lengths, panels, split panel and the custom layouts."
+  "comment": "Grid lengths, panels, split panel and the custom layouts.",
+  "requires": {
+    "types": {
+      "Microsoft.UI.Xaml.Controls.Grid": {
+        "members": [],
+        "syntheticMembers": {
+          "RowDefinitions": {
+            "cppType": "RowLengths",
+            "cppInclude": "../GridLengths.h",
+            "function": "impl::set_row_definitions",
+            "include": "../impl/layout_helpers.h",
+            "positional": true
+          },
+          "ColumnDefinitions": {
+            "cppType": "ColumnLengths",
+            "cppInclude": "../GridLengths.h",
+            "function": "impl::set_column_definitions",
+            "include": "../impl/layout_helpers.h",
+            "positional": true
+          }
+        }
+      }
+    }
+  }
 }

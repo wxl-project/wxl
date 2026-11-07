@@ -12,5 +12,32 @@
     "WindowNative.h"
   ],
   "libraries": [],
-  "comment": "The window: native handle, frame, size and tray icon."
+  "comment": "The window: native handle, frame, size and tray icon.",
+  "requires": {
+    "types": {
+      "Microsoft.UI.Xaml.Window": {
+        "members": [],
+        "syntheticMembers": {
+          "MinSize": {
+            "type": "Windows.Graphics.SizeInt32",
+            "function": "impl::set_minimum_size",
+            "include": "../impl/window_helpers.h"
+          },
+          "SizeToContent": {
+            "comment": "Which sides of the window follow its content, as WPF's Window.SizeToContent says it: Manual, Width, Height, WidthAndHeight. WinUI has none -- a Flyout sizes to its content, a Window opens at a large default. The content is read when the window first activates, so the tag may stand before the content in the braces; the window is resized once, when the content has been laid out, to what the content wanted.",
+            "cppType": "SizeToContent",
+            "cppInclude": "../SizeToContent.h",
+            "function": "impl::set_size_to_content",
+            "include": "../impl/window_helpers.h"
+          },
+          "Placement": {
+            "comment": "Where the window was last time and how: ordinary, maximized or full-screen, plus the rectangle it returns to. WinUI has none of it -- AppWindow gives Position and Size, and a window closed maximized reports the size of the screen, so remembering that hands the reader a monitor-sized window the moment they leave the maximized state. What has to be kept is Win32's restore rectangle. The value is text because that is what an application writes to its settings and hands back unread; reading it back is wxl::WindowNative::placement(), since a property tag is a way of setting and there is no braced form of asking.",
+            "type": "String",
+            "function": "impl::window_placement_setter::set",
+            "include": "../impl/window_helpers.h"
+          }
+        }
+      }
+    }
+  }
 }

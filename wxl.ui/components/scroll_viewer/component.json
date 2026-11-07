@@ -1,12 +1,29 @@
 {
   "name": "scroll_viewer",
   "needs": [
-    "dsl"
+    "dsl",
+    "elements"
   ],
   "sources": [
     "impl/vertical_offset_pair.cpp",
     "impl/vertical_offset_pair.h"
   ],
   "libraries": [],
-  "comment": "The binding pair of ScrollViewer.VerticalOffset."
+  "comment": "The binding pair of ScrollViewer.VerticalOffset, and the wheel a viewer passes on.",
+  "requires": {
+    "types": {
+      "Microsoft.UI.Xaml.Controls.ScrollViewer": {
+        "members": [],
+        "syntheticMembers": {
+          "WheelToParent": {
+            "comment": "A wheel turn this viewer cannot use (nothing to scroll up or down, no modifier key) goes on up to the panel that scrolls the page. The viewer takes the wheel and marks it handled even when it scrolls nothing, so without this a horizontal strip of code stops the page.",
+            "cppType": "bool",
+            "cppInclude": "../core.h",
+            "function": "impl::set_wheel_to_parent",
+            "include": "../impl/element_helpers.h"
+          }
+        }
+      }
+    }
+  }
 }

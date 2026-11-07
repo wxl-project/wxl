@@ -1,0 +1,24 @@
+{
+  "name": "tool_tip",
+  "needs": [
+    "elements"
+  ],
+  "sources": [],
+  "libraries": [],
+  "comment": "A tip that is an element of its own rather than text.",
+  "requires": {
+    "types": {
+      "Microsoft.UI.Xaml.UIElement": {
+        "members": [],
+        "syntheticMembers": {
+          "ToolTipElement": {
+            "comment": "The tip as a ToolTip element: content that is not text, a placement, an offset. The hover half of toolTip only -- an element has no words to give a screen reader.",
+            "type": "Microsoft.UI.Xaml.Controls.ToolTip",
+            "function": "impl::set_tool_tip_element",
+            "include": "../impl/element_helpers.h"
+          }
+        }
+      }
+    }
+  }
+}

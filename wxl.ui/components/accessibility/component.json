@@ -6,5 +6,100 @@
     "impl/automation_properties.h"
   ],
   "libraries": [],
-  "comment": "The automation properties of an element, apart from its name; they need the Automation.Peers types."
+  "comment": "The automation properties of an element, apart from its name; they need the Automation.Peers types.",
+  "requires": {
+    "types": {
+      "Microsoft.UI.Xaml.UIElement": {
+        "members": [],
+        "syntheticMembers": {
+          "AutomationId": {
+            "comment": "What a test or a reader's script finds the element by -- AutomationProperties.AutomationId, the attached property.",
+            "type": "String",
+            "function": "impl::automation_properties::set_automation_id",
+            "include": "../impl/automation_properties.h"
+          },
+          "AutomationAccessibilityView": {
+            "comment": "Which view of the automation tree the element is in -- Raw for a picture that says nothing a screen reader should read: AutomationProperties.AccessibilityView, the attached property.",
+            "type": "Microsoft.UI.Xaml.Automation.Peers.AccessibilityView",
+            "function": "impl::automation_properties::set_accessibility_view",
+            "include": "../impl/automation_properties.h"
+          },
+          "AutomationLiveSetting": {
+            "comment": "That a change of the element's text is announced by a screen reader, politely or at once -- AutomationProperties.LiveSetting, the attached property.",
+            "type": "Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting",
+            "function": "impl::automation_properties::set_live_setting",
+            "include": "../impl/automation_properties.h"
+          },
+          "AutomationHeadingLevel": {
+            "comment": "That the element is a heading, and of which level -- AutomationProperties.HeadingLevel, the attached property.",
+            "type": "Microsoft.UI.Xaml.Automation.Peers.AutomationHeadingLevel",
+            "function": "impl::automation_properties::set_heading_level",
+            "include": "../impl/automation_properties.h"
+          },
+          "AutomationLandmarkType": {
+            "comment": "The landmark of the page the element is -- navigation, main, search -- AutomationProperties.LandmarkType, the attached property.",
+            "type": "Microsoft.UI.Xaml.Automation.Peers.AutomationLandmarkType",
+            "function": "impl::automation_properties::set_landmark_type",
+            "include": "../impl/automation_properties.h"
+          },
+          "AutomationControlType": {
+            "comment": "What kind of control a screen reader takes the element for -- AutomationProperties.AutomationControlType, the attached property.",
+            "type": "Microsoft.UI.Xaml.Automation.Peers.AutomationControlType",
+            "function": "impl::automation_properties::set_automation_control_type",
+            "include": "../impl/automation_properties.h"
+          },
+          "AutomationLocalizedControlType": {
+            "comment": "What a screen reader calls that kind of control in the user's language -- AutomationProperties.LocalizedControlType, the attached property.",
+            "type": "String",
+            "function": "impl::automation_properties::set_localized_control_type",
+            "include": "../impl/automation_properties.h"
+          },
+          "AutomationLocalizedLandmarkType": {
+            "comment": "What a screen reader calls the landmark in the user's language -- AutomationProperties.LocalizedLandmarkType, the attached property.",
+            "type": "String",
+            "function": "impl::automation_properties::set_localized_landmark_type",
+            "include": "../impl/automation_properties.h"
+          },
+          "AutomationAcceleratorKey": {
+            "comment": "The shortcut that does what the element does, as a screen reader says it -- AutomationProperties.AcceleratorKey, the attached property.",
+            "type": "String",
+            "function": "impl::automation_properties::set_accelerator_key",
+            "include": "../impl/automation_properties.h"
+          },
+          "AutomationHelpText": {
+            "comment": "A few words of help, spoken after the name -- AutomationProperties.HelpText, the attached property.",
+            "type": "String",
+            "function": "impl::automation_properties::set_help_text",
+            "include": "../impl/automation_properties.h"
+          },
+          "AutomationFullDescription": {
+            "comment": "The long description of the element -- AutomationProperties.FullDescription, the attached property.",
+            "type": "String",
+            "function": "impl::automation_properties::set_full_description",
+            "include": "../impl/automation_properties.h"
+          },
+          "AutomationPositionInSet": {
+            "comment": "The place of the element among its siblings, 1-based -- AutomationProperties.PositionInSet, the attached property.",
+            "cppType": "int32_t",
+            "cppInclude": "../core.h",
+            "function": "impl::automation_properties::set_position_in_set",
+            "include": "../impl/automation_properties.h"
+          },
+          "AutomationSizeOfSet": {
+            "comment": "How many siblings the element has with itself -- AutomationProperties.SizeOfSet, the attached property.",
+            "cppType": "int32_t",
+            "cppInclude": "../core.h",
+            "function": "impl::automation_properties::set_size_of_set",
+            "include": "../impl/automation_properties.h"
+          },
+          "AutomationLabeledBy": {
+            "comment": "The element whose text names this one -- AutomationProperties.LabeledBy, the attached property.",
+            "type": "Microsoft.UI.Xaml.UIElement",
+            "function": "impl::automation_properties::set_labeled_by",
+            "include": "../impl/automation_properties.h"
+          }
+        }
+      }
+    }
+  }
 }
