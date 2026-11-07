@@ -56,7 +56,9 @@ if(TARGET winui-srcgen)
         DIR     "${_wrappers}"
         PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/full.winxl-profile"
         PARTS   1
-        DOCS    "${WXL_DOC_LANGUAGE}")
+        DOCS    "${WXL_DOC_LANGUAGE}"
+        COMPONENT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.ui/components"
+        COMMON_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.ui/src")
     set_property(TARGET docs.wrappers PROPERTY FOLDER docs)
     set(_wrappers_step docs.wrappers)
 else()

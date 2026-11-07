@@ -3,6 +3,12 @@
     "description": "Baseline WinUI surface for wxl: the WinForms-equivalent control set (layout, text, buttons, lists, indication, navigation containers, flyouts/menus), trimmed to the members needed to experiment with Flutter-style declarative UI and Command-based model binding. Application is pre-defined (hand-written, never generated), so it is deliberately absent; Window is generated in every profile as an implicit root (types.json) and is listed here only for the synthetic members WinUI does not have.",
     "extends": [],
 
+    "components": [
+        "window",
+        "elements",
+        "layout"
+    ],
+
     "packages": [
         {
             "id": "Microsoft.WindowsAppSDK.WinUI",

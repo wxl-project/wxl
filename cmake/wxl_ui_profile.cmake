@@ -102,9 +102,17 @@
 
 include_guard(GLOBAL)
 
+# Find PowerShell once, before any function uses it.
+find_program(POWERSHELL_EXE NAMES pwsh powershell)
+if(NOT POWERSHELL_EXE)
+    message(FATAL_ERROR
+        "No PowerShell found: wxl_add_ui_library needs it to read profile components. "
+        "Install PowerShell (pwsh.exe or powershell.exe on PATH).")
+endif()
+
 function(wxl_generate_wrappers name)
     cmake_parse_arguments(PARSE_ARGV 1 A "DECLARE_HEADERS"
-        "DIR;PROFILE;PARTS;DOCS;OUT_PARTS;OUT_SURFACE" "")
+        "DIR;PROFILE;PARTS;DOCS;OUT_PARTS;OUT_SURFACE;COMPONENT_DIR;COMMON_DIR" "COMPONENTS;MANIFESTS")
     if(A_UNPARSED_ARGUMENTS OR A_KEYWORDS_MISSING_VALUES)
         message(FATAL_ERROR
             "wxl_generate_wrappers(${name}): unknown arguments '${A_UNPARSED_ARGUMENTS}' or "
@@ -176,13 +184,27 @@ function(wxl_generate_wrappers name)
         set(_wxl_docs --docs --doc-language "${A_DOCS}")
     endif()
 
+    set(_wxl_component_args "")
+    if(A_COMPONENT_DIR)
+        list(APPEND _wxl_component_args --component-dir "${A_COMPONENT_DIR}")
+    endif()
+    if(A_COMPONENTS)
+        foreach(_wxl_comp IN LISTS A_COMPONENTS)
+            list(APPEND _wxl_component_args --component "${_wxl_comp}")
+        endforeach()
+    endif()
+    if(A_COMMON_DIR)
+        list(APPEND _wxl_component_args --common-dir "${A_COMMON_DIR}")
+    endif()
+
     add_custom_command(
         OUTPUT ${_wxl_parts} "${_wxl_surface}" "${_wxl_stamp}"
         COMMAND "${_wxl_generator}"
                 --profile "${A_PROFILE}" --packages "${_wxl_packages}"
                 --out "${_wxl_out}" --parts ${A_PARTS} ${_wxl_docs}
+                ${_wxl_component_args}
         COMMAND "${CMAKE_COMMAND}" -E touch "${_wxl_stamp}"
-        DEPENDS winui-srcgen "${A_PROFILE}" ${_wxl_profile_files} "${_wxl_packages}"
+        DEPENDS winui-srcgen "${A_PROFILE}" ${_wxl_profile_files} "${_wxl_packages}" ${A_MANIFESTS}
         WORKING_DIRECTORY "${_wxl_tree}"
         COMMENT "winui-srcgen: the wrappers of ${_wxl_name} -> ${_wxl_out}"
         VERBATIM)
@@ -250,27 +272,112 @@ function(wxl_add_ui_library profile)
     set(_wxl_target "wxl.ui.${profile}")
     set(_wxl_root "${CMAKE_BINARY_DIR}/wxl.ui/${profile}")
     set(_wxl_out "${_wxl_root}/wxl")
+
+    # Call the PowerShell script to read components from the profile chain.
+    execute_process(
+        COMMAND "${POWERSHELL_EXE}" -NoProfile -ExecutionPolicy Bypass -File
+                "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/Read-ProfileComponents.ps1"
+                -Profile "${A_PROFILE}"
+                -ComponentDir "${_wxl_common_dir}/components"
+        OUTPUT_VARIABLE _wxl_script_output
+        RESULT_VARIABLE _wxl_script_result
+        ERROR_VARIABLE _wxl_script_error
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_STRIP_TRAILING_WHITESPACE
+    )
+    if(NOT _wxl_script_result EQUAL 0)
+        message(FATAL_ERROR
+            "wxl_add_ui_library(${profile}): PowerShell script Read-ProfileComponents.ps1 failed "
+            "with exit code ${_wxl_script_result}:\n${_wxl_script_error}")
+    endif()
+
+    # Parse the script output: chain:<name>, component:<name>, dir:<path>, source:<file>, library:<target>.
+    set(_wxl_chain_components "")
+    set(_wxl_component_dirs "")
+    set(_wxl_component_sources "")
+    set(_wxl_component_libraries "")
+    set(_wxl_manifests "")
+    set(_wxl_current_component "")
+    set(_wxl_current_dir "")
+
+    string(REPLACE "\n" ";" _wxl_lines "${_wxl_script_output}")
+    foreach(_wxl_line IN LISTS _wxl_lines)
+        if(_wxl_line MATCHES "^(chain|component|dir|source|library):(.*)$")
+            set(_wxl_type "${CMAKE_MATCH_1}")
+            set(_wxl_value "${CMAKE_MATCH_2}")
+            if(_wxl_type STREQUAL "chain")
+                list(APPEND _wxl_chain_components "${_wxl_value}")
+            elseif(_wxl_type STREQUAL "component")
+                set(_wxl_current_component "${_wxl_value}")
+            elseif(_wxl_type STREQUAL "dir")
+                set(_wxl_current_dir "${_wxl_value}")
+                list(APPEND _wxl_component_dirs "${_wxl_current_dir}")
+                list(APPEND _wxl_manifests "${_wxl_current_dir}/component.json")
+            elseif(_wxl_type STREQUAL "source")
+                list(APPEND _wxl_component_sources "${_wxl_current_dir}/${_wxl_value}")
+            elseif(_wxl_type STREQUAL "library")
+                list(APPEND _wxl_component_libraries "${_wxl_value}")
+            endif()
+        endif()
+    endforeach()
+
+    # Add every manifest to CMAKE_CONFIGURE_DEPENDS so CMake reconfigures when they change.
+    foreach(_wxl_manifest IN LISTS _wxl_manifests)
+        set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_wxl_manifest}")
+    endforeach()
+
+    # Chase the profile chain's extends and add each profile to CMAKE_CONFIGURE_DEPENDS.
+    set(_wxl_profile_chain "${A_PROFILE}")
+    set(_wxl_visited_profiles "")
+    while(_wxl_profile_chain)
+        list(POP_FRONT _wxl_profile_chain _wxl_current_profile)
+        if(_wxl_current_profile IN_LIST _wxl_visited_profiles)
+            continue()
+        endif()
+        list(APPEND _wxl_visited_profiles "${_wxl_current_profile}")
+        set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_wxl_current_profile}")
+
+        # Read the profile to find its extends.
+        file(READ "${_wxl_current_profile}" _wxl_profile_content)
+        if(_wxl_profile_content MATCHES "\"extends\"[[:space:]]*:[[:space:]]*\\[([^]]+)\\]")
+            string(REGEX MATCHALL "\"([^\"]+)\"" _wxl_extends_matches "${CMAKE_MATCH_1}")
+            cmake_path(GET _wxl_current_profile PARENT_PATH _wxl_profile_dir)
+            foreach(_wxl_extend_match IN LISTS _wxl_extends_matches)
+                if(_wxl_extend_match MATCHES "\"([^\"]+)\"")
+                    set(_wxl_parent_name "${CMAKE_MATCH_1}")
+                    set(_wxl_parent_profile "${_wxl_profile_dir}/${_wxl_parent_name}.winxl-profile")
+                    list(APPEND _wxl_profile_chain "${_wxl_parent_profile}")
+                endif()
+            endforeach()
+        endif()
+    endwhile()
+
     wxl_generate_wrappers(${_wxl_target}.wrappers
         DIR "${_wxl_out}" PROFILE "${A_PROFILE}" PARTS "${A_PARTS}" DECLARE_HEADERS
+        COMPONENT_DIR "${_wxl_common_dir}/components"
+        COMPONENTS ${_wxl_chain_components}
+        COMMON_DIR "${_wxl_common_dir}/src"
+        MANIFESTS ${_wxl_manifests}
         OUT_PARTS _wxl_parts OUT_SURFACE _wxl_surface)
 
     get_target_property(_wxl_sources wxl.ui.common WXL_UI_PROFILE_SOURCES)
     get_target_property(_wxl_libraries wxl.ui.common WXL_UI_PROFILE_LIBRARIES)
     get_target_property(_wxl_includes wxl.ui.common WXL_UI_PROFILE_INCLUDE_DIRECTORIES)
 
-    add_library(${_wxl_target} STATIC ${_wxl_sources} ${_wxl_parts})
+    add_library(${_wxl_target} STATIC ${_wxl_sources} ${_wxl_component_sources} ${_wxl_parts})
     add_library(wxl::ui.${profile} ALIAS ${_wxl_target})
     add_dependencies(${_wxl_target} ${_wxl_target}.wrappers)
     target_compile_features(${_wxl_target} PUBLIC cxx_std_23)
     target_include_directories(${_wxl_target}
         PUBLIC "$<BUILD_INTERFACE:${_wxl_root}>"
+               "$<BUILD_INTERFACE:${_wxl_component_dirs}>"
         PRIVATE ${_wxl_includes})
     # As in wxl.ui.common: nothing of the layer draws through GDI, and the few
     # files that paint a GDI surface lift it for themselves.
     target_compile_definitions(${_wxl_target} PRIVATE NOGDI)
     target_link_libraries(${_wxl_target}
         PUBLIC wxl::ui.common
-        PRIVATE ${_wxl_libraries})
+        PRIVATE ${_wxl_libraries} ${_wxl_component_libraries})
     set_property(TARGET ${_wxl_target} PROPERTY WXL_WRAPPERS_DIR "${_wxl_out}")
 
     # The declarative surface, compiled the way an application sees it: linked

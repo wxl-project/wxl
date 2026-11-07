@@ -41,6 +41,11 @@ std::filesystem::path defaultProfile() {
     return std::filesystem::path {u8"" WXL_GEN_PROFILES} / u8"base.winxl-profile";
 }
 
+// Каталог компонентов по умолчанию: wxl.ui/components дерева сборки.
+std::filesystem::path defaultComponentDir() {
+    return std::filesystem::path {u8"" WXL_GEN_COMPONENTS};
+}
+
 // Список пакетов восстановления той сборки, из которой редактор запускают, —
 // ключом --packages, как у генератора. Своих версий и папки пакетов NuGet
 // редактор не ищет: без ключа он показывает, как его запустить.
@@ -152,7 +157,7 @@ struct DocumentationReading {
 wxl::Teardown wxl_launched() {
     core::intrusive_ptr<Editor> document;
     try {
-        document = Editor::open(defaultProfile(), restoredPackages());
+        document = Editor::open(defaultProfile(), restoredPackages(), defaultComponentDir());
     } catch (std::exception const& error) {
         auto window = Window {
             title = u"wxl.gen.ui",
