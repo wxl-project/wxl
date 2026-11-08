@@ -438,12 +438,6 @@
                 "InactiveForegroundColor"
             ]
         },
-        "Microsoft.UI.Windowing.OverlappedPresenter": {
-            "comment": "Windowing: a presenter made for a dialog -- a window that is not a main one -- beside the ordinary one extended asks for.",
-            "members": [
-                "CreateForDialog"
-            ]
-        },
         "Microsoft.UI.Windowing.CompactOverlayPresenter": {
             "comment": "Windowing: a small window that stays above all others (picture-in-picture), and how big it starts.",
             "members": [

@@ -342,13 +342,17 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src PREFIX "src" REGULAR_EXPRESSIO
 
 wxl_set_target_folders(wxl.ui.common)
 
-# ---- The library of the full profile, and the surface tests of the others ----
-# Its wrappers generated into <build>/wxl.ui/full/wxl by a step of the build,
-# with the profile layer above: wxl.ui.full (wxl::ui.full) and its surface test
-# wxl.ui.full.surface-test (cmake/wxl_ui_profile.cmake). Without documentation
-# whatever the site does: the site generates its own.
+# ---- The libraries of the profiles, and the surface tests of the others ----
+# Each one's wrappers generated into <build>/wxl.ui/<profile>/wxl by a step of
+# the build, with the profile layer above: wxl.ui.<profile> (wxl::ui.<profile>)
+# and its surface test wxl.ui.<profile>.surface-test (cmake/wxl_ui_profile.cmake).
+# Without documentation whatever the site does: the site generates its own.
+# full is for what needs all of WinUI; extended for the samples its vocabulary
+# covers.
 wxl_add_ui_library(full
     PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/full.winxl-profile")
+wxl_add_ui_library(extended
+    PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/extended.winxl-profile")
 
 # The syntax test over full's vocabulary: many of the classes it writes only
 # full generates, so it is full's alone. The IDE layout is read from the
@@ -361,7 +365,7 @@ wxl_set_target_folders(wxl.ui.full.surface-test PREFIX "tests")
 # and the surface fragments of its components -- compiled against its public
 # interface. No source of a component and no part of the wrappers is compiled.
 if(WXL_TESTS)
-    foreach(_wxl_profile IN ITEMS base extended rich)
+    foreach(_wxl_profile IN ITEMS base rich)
         wxl_add_ui_surface_test(${_wxl_profile}
             PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/${_wxl_profile}.winxl-profile")
     endforeach()

@@ -15,6 +15,28 @@
   "comment": "The window: native handle, frame, size and tray icon.",
   "requires": {
     "types": {
+      "Microsoft.UI.Windowing.AppWindow": {
+        "comment": "WindowNative::makeModal keeps a dialog out of the switcher and gives it its presenter; the tray icon's window and flyout are hidden, sized and placed through it.",
+        "members": [
+          "IsShownInSwitchers",
+          "Presenter",
+          "SetPresenter",
+          "Resize",
+          "Move",
+          "Hide"
+        ]
+      },
+      "Microsoft.UI.Windowing.OverlappedPresenter": {
+        "comment": "WindowNative::makeModal hands a dialog window a modal presenter made for a dialog; the tray icon's window drops its frame and stays on top.",
+        "members": [
+          "CreateForDialog",
+          "IsModal",
+          "IsMinimizable",
+          "IsMaximizable",
+          "SetBorderAndTitleBar",
+          "IsAlwaysOnTop"
+        ]
+      },
       "Microsoft.UI.Xaml.Window": {
         "members": [],
         "syntheticMembers": {
