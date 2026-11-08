@@ -5,13 +5,11 @@
   ],
   "sources": [
     "impl/scroll_viewer_helpers.cpp",
-    "impl/scroll_viewer_helpers.h",
-    "impl/vertical_offset_pair.cpp",
-    "impl/vertical_offset_pair.h"
+    "impl/scroll_viewer_helpers.h"
   ],
   "surface": "scroll_viewer.surface.cpp",
   "libraries": [],
-  "comment": "The binding pair of ScrollViewer.VerticalOffset, and the wheel a viewer passes on.",
+  "comment": "The wheel a viewer passes on.",
   "requires": {
     "types": {
       "Microsoft.UI.Xaml.Controls.ScrollViewer": {

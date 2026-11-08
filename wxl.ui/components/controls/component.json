@@ -11,7 +11,6 @@
     "impl/SettingsCardCore.h",
     "SettingsCard.cpp",
     "SettingsCard.h",
-    "SettingsCardContentAlignment.h",
     "SettingsExpander.cpp",
     "SettingsExpander.h"
   ],
