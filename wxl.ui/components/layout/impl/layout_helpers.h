@@ -13,7 +13,7 @@
 namespace wxl::impl {
 
 // A Grid's rows and columns written as RowDefinitions<u"2*,*,auto,120">, where WinUI takes one
-// RowDefinition object per row; wxl declares the property itself (the profile's
+// RowDefinition object per row; wxl declares the property itself (the component's
 // syntheticMembers). The text was parsed when the code was compiled (GridLengths.h): what arrives
 // is GridLength values, and building the rows has nothing left to refuse.
 

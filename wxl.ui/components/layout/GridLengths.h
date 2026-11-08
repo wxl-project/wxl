@@ -17,7 +17,7 @@
 // a point if wanted. Spaces around an entry are allowed.
 //
 // Rows and columns are values of two types, RowLengths and ColumnLengths, so that a Grid knows
-// which one it was given without a name (its positional route, the profile's syntheticMembers).
+// which one it was given without a name (its positional route, the component's syntheticMembers).
 // How many lengths there are is not part of either type: a choice between two texts --
 // `iconAfter ? ColumnDefinitions<u"*,auto"> : ColumnDefinitions<u"auto,*">` -- is a choice between
 // two values of one type.

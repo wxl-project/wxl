@@ -4,8 +4,8 @@
 // ThemeDictionary), the lookup of a key in the application's resources (resourceBrush,
 // resourceColor) and XAML text loaded (loadXaml).
 //
-// Included by the generated wrapper of ResourceDictionary (the profile's cppInclude), so it names
-// Brush without including the header that defines it.
+// Included by the generated wrapper of ResourceDictionary (the cppInclude of the resources
+// component), so it names Brush without including the header that defines it.
 //
 // Resource -- one entry of a ResourceDictionary: a key and the value under it.
 //
