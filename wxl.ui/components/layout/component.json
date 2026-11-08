@@ -18,6 +18,7 @@
     "SplitPanel.cpp",
     "SplitPanel.h"
   ],
+  "schema": "layout.schema.h",
   "libraries": [],
   "comment": "Grid lengths, panels, split panel and the custom layouts.",
   "requires": {

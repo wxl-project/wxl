@@ -26,6 +26,7 @@
     "ZoomEffect.cpp",
     "ZoomEffect.h"
   ],
+  "schema": "effects.schema.h",
   "libraries": [],
   "comment": "All the effects and the relief of a key, in one component until the effects are cut apart."
 }
