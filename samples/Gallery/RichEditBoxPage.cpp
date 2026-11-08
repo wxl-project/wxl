@@ -68,6 +68,7 @@ FrameworkElement workingMathml() {
         .header = gallery::snippet(mathmlHeader),
         .example = StackPanel {
             spacing = 16.0,
+            description,
             editor,
             TextBlock {u"MathML Code", FontWeight {600}, Margin {0, 0, 0, -8}},
             Border {
