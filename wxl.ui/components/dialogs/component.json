@@ -8,6 +8,7 @@
     "ShowDialog.cpp",
     "ShowDialog.h"
   ],
+  "surface": "dialogs.surface.cpp",
   "libraries": [],
   "comment": "Content dialogs and screen reader announcements."
 }

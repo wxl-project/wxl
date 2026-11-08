@@ -9,6 +9,7 @@
     "impl/vertical_offset_pair.cpp",
     "impl/vertical_offset_pair.h"
   ],
+  "surface": "scroll_viewer.surface.cpp",
   "libraries": [],
   "comment": "The binding pair of ScrollViewer.VerticalOffset, and the wheel a viewer passes on.",
   "requires": {
