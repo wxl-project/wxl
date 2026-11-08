@@ -341,13 +341,28 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src PREFIX "src" REGULAR_EXPRESSIO
 
 wxl_set_target_folders(wxl.ui.common)
 
-# ---- The library of the full profile ----
+# ---- The library of the full profile, and the surface tests of the others ----
 # Its wrappers generated into <build>/wxl.ui/full/wxl by a step of the build,
 # with the profile layer above: wxl.ui.full (wxl::ui.full) and its surface test
 # wxl.ui.full.surface-test (cmake/wxl_ui_profile.cmake). Without documentation
 # whatever the site does: the site generates its own.
 wxl_add_ui_library(full
     PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/full.winxl-profile")
+
+# The syntax test over full's vocabulary: many of the classes it writes only
+# full generates, so it is full's alone.
+target_sources(wxl.ui.full.surface-test PRIVATE test/dsl_surface.cpp)
+
+# The profiles no target of the tree links, kept compiling: each one's wrappers
+# generated as for a library, and its surface test -- the generated schema test
+# and the surface fragments of its components -- compiled against its public
+# interface. No source of a component and no part of the wrappers is compiled.
+if(WXL_TESTS)
+    foreach(_wxl_profile IN ITEMS base extended rich)
+        wxl_add_ui_surface_test(${_wxl_profile}
+            PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/${_wxl_profile}.winxl-profile")
+    endforeach()
+endif()
 
 # The benchmarks (WXL_BUILD_BENCHMARKS at the root) are measurement tools, run
 # deliberately. These two are whole WinUI applications, so they also cost a
