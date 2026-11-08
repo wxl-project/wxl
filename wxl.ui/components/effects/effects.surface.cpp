@@ -1,7 +1,7 @@
 // Compile-time check of the declarative surface of the effects, with the
 // lines of their schema entries (effects.schema.h).
-// Built into the surface test of every profile that selects the component,
-// beside test/dsl_surface.cpp; nothing here runs.
+// Built into the surface test of every profile that selects the component;
+// nothing here runs.
 
 #include "CompositionWindow.h"
 #include "FocusEffect.h"

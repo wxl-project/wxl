@@ -1,4 +1,9 @@
-// Compile-time check of the declarative surface.
+// Compile-time check of the declarative surface over full's vocabulary.
+//
+// Part of wxl.ui.full.surface-test only: many of the classes written here
+// only full generates. The surface tests of the other profiles compile their
+// generated schema_surface.cpp and the fragments of the components they
+// select, without this file.
 //
 // It is built as its own target *without* the cppwinrt include path, so it
 // proves two things at once: that the builder syntax below compiles against
@@ -26,8 +31,7 @@
 // What a component of the profile layer brings is checked beside its sources,
 // in the surface fragment its manifest names (key "surface"): the profile's
 // surface test compiles the fragments of the components it selects. This file
-// keeps the rest: the generated classes and what no component owns yet, some
-// of it on classes only the larger profiles generate.
+// keeps the rest: the generated classes and what no component owns yet.
 
 #include "Bind.h"
 #include "event_awaitable.h"
