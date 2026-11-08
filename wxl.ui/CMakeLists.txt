@@ -351,8 +351,10 @@ wxl_add_ui_library(full
     PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/full.winxl-profile")
 
 # The syntax test over full's vocabulary: many of the classes it writes only
-# full generates, so it is full's alone.
+# full generates, so it is full's alone. The IDE layout is read from the
+# target's sources, so it is laid out again with this one among them.
 target_sources(wxl.ui.full.surface-test PRIVATE test/dsl_surface.cpp)
+wxl_set_target_folders(wxl.ui.full.surface-test PREFIX "tests")
 
 # The profiles no target of the tree links, kept compiling: each one's wrappers
 # generated as for a library, and its surface test -- the generated schema test
