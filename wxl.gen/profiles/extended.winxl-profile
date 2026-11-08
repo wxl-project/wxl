@@ -6,6 +6,10 @@
     ],
     "windowsMetadata": true,
 
+    "components": [
+        "number_box"
+    ],
+
     "types": {
         "Microsoft.UI.Dispatching.DispatcherQueue": {
             "comment": "The way work reaches the UI thread, and the way the event loop is asked to stop. Reached by the walk through Window.dispatcherQueue, so a root only because a discovered type generates no members.",

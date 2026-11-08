@@ -1,6 +1,7 @@
 {
   "name": "markup",
   "needs": [
+    "schema",
     "elements"
   ],
   "sources": [

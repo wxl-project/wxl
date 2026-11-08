@@ -1,15 +1,10 @@
 {
   "name": "layout",
   "needs": [
+    "schema",
     "dsl"
   ],
   "sources": [
-    "AvailableSizeLayout.cpp",
-    "AvailableSizeLayout.h",
-    "CustomLayout.cpp",
-    "CustomLayout.h",
-    "CustomVirtualizingLayout.cpp",
-    "CustomVirtualizingLayout.h",
     "GridLengths.h",
     "impl/layout_helpers.cpp",
     "impl/layout_helpers.h",
@@ -18,10 +13,9 @@
     "SplitPanel.cpp",
     "SplitPanel.h"
   ],
-  "schema": "layout.schema.h",
   "surface": "layout.surface.cpp",
   "libraries": [],
-  "comment": "Grid lengths, panels, split panel and the custom layouts.",
+  "comment": "Grid lengths, the even panels and the split panel.",
   "requires": {
     "types": {
       "Microsoft.UI.Xaml.Controls.Grid": {

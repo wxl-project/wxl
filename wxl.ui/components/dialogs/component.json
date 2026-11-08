@@ -1,6 +1,8 @@
 {
   "name": "dialogs",
-  "needs": [],
+  "needs": [
+    "schema"
+  ],
   "sources": [
     "Announce.cpp",
     "Announce.h",

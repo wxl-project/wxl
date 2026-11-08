@@ -1,7 +1,7 @@
 #pragma once
 
 // The schema entry of the available-size layout, tested in
-// layout.surface.cpp.
+// custom_layouts.surface.cpp.
 
 #include "AvailableSizeLayout.h"
 

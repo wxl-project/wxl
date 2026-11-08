@@ -1,6 +1,7 @@
 {
   "name": "items",
   "needs": [
+    "schema",
     "dsl"
   ],
   "sources": [

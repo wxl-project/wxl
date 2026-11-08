@@ -1,6 +1,6 @@
 // Compile-time check of the declarative surface of the RSDN block.
-// Built into the surface test of every profile that selects the component,
-// beside test/dsl_surface.cpp; nothing here runs.
+// Built into the surface test of every profile that selects the component;
+// nothing here runs.
 
 #include "RsdnBlock.h"
 #include "ui.h"

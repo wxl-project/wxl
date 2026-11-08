@@ -1,6 +1,7 @@
 {
   "name": "rsdn",
   "needs": [
+    "schema",
     "markup"
   ],
   "sources": [
