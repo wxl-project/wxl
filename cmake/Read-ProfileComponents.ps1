@@ -1,6 +1,6 @@
 # Reads a profile chain and its component manifests, printing one line per item
 # CMake needs: chain component names, and for each selected component after needs
-# closure, its directory, sources and libraries.
+# closure, its directory, sources, schema and surface fragments and libraries.
 #
 # Usage: Read-ProfileComponents.ps1 -Profile <path> [-ComponentDir <dir>] ...
 #        powershell.exe -NoProfile -File Read-ProfileComponents.ps1 -Profile ...
@@ -12,6 +12,8 @@
 #   component:<name>   - a selected component (after needs closure)
 #   dir:<path>         - the component directory for the preceding component
 #   source:<path>      - a source file (relative to component dir)
+#   schema:<path>      - the component's schema fragment (relative to component dir)
+#   surface:<path>     - the component's surface test fragment (relative to component dir)
 #   library:<target>   - a CMake library target
 
 param(
@@ -180,6 +182,12 @@ foreach ($name in $selected) {
         foreach ($src in $comp.sources) {
             Write-Output "source:$src"
         }
+    }
+    if ($comp.schema) {
+        Write-Output "schema:$($comp.schema)"
+    }
+    if ($comp.surface) {
+        Write-Output "surface:$($comp.surface)"
     }
     if ($comp.libraries) {
         foreach ($lib in $comp.libraries) {
