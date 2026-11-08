@@ -91,7 +91,24 @@ FrameworkElement thumbnail() {
 }  // namespace
 
 static wxl::FrameworkElement storagePickersPage() {
-    return StackPanel {single(), multiple(), save(), folder(), thumbnail()};
+    return StackPanel {
+        // Подсказка оригинала вверху страницы. Отступ prose {0,12,12,12} — дословно отступ RichTextBlock оригинала: prose
+        // кладёт HtmlBlock ровно в Content InfoBar, где стоял RichTextBlock, поэтому отступ переносится дословно.
+        InfoBar {
+            isClosable = false,
+            isOpen = true,
+            Margin {0, 8, 0, 0},
+            content = gallery::prose(
+                u8"The picker reopens in the <span style=\"semibold\">last selected location and view</span>. The "
+                u8"<code><span style=\"semibold\">SuggestedStartLocation</span></code> and "
+                u8"<code><span style=\"semibold\">ViewMode</span></code> are only applied the "
+                u8"<span style=\"semibold\">first time</span> the picker is opened (for example, right after app "
+                u8"installation or when no previous selection exists).",
+                Thickness {0, 12, 12, 12},
+                false),
+        },
+        single(), multiple(), save(), folder(), thumbnail(),
+    };
 }
 
 REGISTER_GALLERY_PAGE(L"StoragePickers", storagePickersPage);
