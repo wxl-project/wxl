@@ -1,3 +1,21 @@
+// Intro of the example: what SetMathML and GetMathML do and how math mode is
+// turned on. The last paragraph is a <div>, so it carries no paragraph margin;
+// the theme gives every <p> four pixels below, as the original Paragraphs had.
+auto description = HtmlBlock {};
+description.theme(MarkupTheme{.paragraphMargin = Thickness {0, 0, 0, 4}});
+description.registerStyle(u"semibold", {.text = {.weight = 600.0}});
+description.html(
+    u"<p>The <span style=\"semibold\">SetMathML</span> method takes a <a href=\"https://www.w3.org/Math/\">MathML</a> "
+    u"string and displays the equation in the <span style=\"semibold\">RichEditBox</span>. It replaces any existing "
+    u"equation with the new one.</p>"
+    u"<p>The <span style=\"semibold\">GetMathML</span> method retrieves the MathML string of the equation from the "
+    u"<span style=\"semibold\">RichEditBox</span>. However, it only works if the equation is in a single line. If the text "
+    u"spans multiple lines, it returns an empty string, but the equation will still be rendered correctly.</p>"
+    u"<p>Setting the math mode in the <span style=\"semibold\">RichEditBox</span> is necessary to use these methods. it can "
+    u"be enabled using <code>SetMathMode(RichEditMathMode.MathOnly)</code>.</p>"
+    u"<div><span style=\"semibold\">SetMathML</span> and <span style=\"semibold\">GetMathML</span> can be used to restore "
+    u"and save equations.</div>");
+
 // What the editor holds is shown under it as MathML, as often as it changes.
 auto mathml = RsdnBlock {isTextSelectionEnabled = true};
 

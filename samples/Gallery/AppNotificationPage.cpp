@@ -80,7 +80,37 @@ FrameworkElement progress() {
 }  // namespace
 
 static wxl::FrameworkElement appNotificationPage() {
-    return StackPanel {basic(), customLogo(), hero(), controls(), progress()};
+    return StackPanel {
+        // Заставка страницы оригинала: подсказка про «Do Not Disturb» и предупреждение о шуме. Отступ prose {0,12,12,12} —
+        // дословно отступ RichTextBlock оригинала: prose кладёт HtmlBlock ровно в Content InfoBar, где стоял RichTextBlock.
+        StackPanel {
+            spacing = 8,
+            Margin {0, 16, 0, 0},
+            InfoBar {
+                isOpen = true,
+                severity = InfoBarSeverity::Informational,
+                isIconVisible = true,
+                isClosable = false,
+                content = gallery::prose(
+                    u8"If <span style=\"semibold\">Do Not Disturb</span> mode is enabled in system settings, these "
+                    u8"notifications will not appear as toast popups, but they will still be added to the notification "
+                    u8"center and can be viewed there.",
+                    Thickness {0, 12, 12, 12},
+                    false),
+            },
+            InfoBar {
+                isOpen = true,
+                severity = InfoBarSeverity::Warning,
+                title = u"App notifications should not be noisy",
+                message = u"App notifications are designed to convey timely and relevant information without disrupting the user "
+                          u"experience. Excessive use of sound, prolonged durations, or overly attention-seeking visuals can lead to "
+                          u"user fatigue and diminish the overall effectiveness of notifications.",
+                isIconVisible = true,
+                isClosable = false,
+            },
+        },
+        basic(), customLogo(), hero(), controls(), progress(),
+    };
 }
 
 REGISTER_GALLERY_PAGE(L"AppNotification", appNotificationPage);
