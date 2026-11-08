@@ -1,6 +1,7 @@
 {
   "name": "composition",
   "needs": [
+    "schema",
     "window",
     "dsl"
   ],

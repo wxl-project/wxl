@@ -1,6 +1,7 @@
 {
   "name": "scroll_viewer",
   "needs": [
+    "schema",
     "dsl"
   ],
   "sources": [

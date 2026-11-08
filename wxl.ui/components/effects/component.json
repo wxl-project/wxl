@@ -1,6 +1,7 @@
 {
   "name": "effects",
   "needs": [
+    "schema",
     "composition",
     "dsl"
   ],

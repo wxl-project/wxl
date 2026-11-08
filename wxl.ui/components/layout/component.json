@@ -1,6 +1,7 @@
 {
   "name": "layout",
   "needs": [
+    "schema",
     "dsl"
   ],
   "sources": [

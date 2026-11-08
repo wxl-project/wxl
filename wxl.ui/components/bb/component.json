@@ -1,6 +1,7 @@
 {
   "name": "bb",
   "needs": [
+    "schema",
     "markup"
   ],
   "sources": [

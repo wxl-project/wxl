@@ -1,6 +1,7 @@
 {
   "name": "controls",
   "needs": [
+    "schema",
     "elements"
   ],
   "sources": [
