@@ -8,6 +8,7 @@
     "RsdnBlock.h",
     "RsdnBlock.impl.h"
   ],
+  "surface": "rsdn.surface.cpp",
   "libraries": [
     "wxl::rsdn"
   ],

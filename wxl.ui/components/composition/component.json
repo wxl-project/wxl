@@ -17,6 +17,7 @@
     "WindowShade.cpp",
     "WindowShade.h"
   ],
+  "surface": "composition.surface.cpp",
   "libraries": [],
   "comment": "Composition window, drawing surface, texture cache, theme brush and the window shade drawn on a surface."
 }

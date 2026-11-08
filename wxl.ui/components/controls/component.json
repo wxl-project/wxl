@@ -16,6 +16,7 @@
     "SettingsExpander.h"
   ],
   "schema": "controls.schema.h",
+  "surface": "controls.surface.cpp",
   "libraries": [],
   "comment": "Card, settings card, settings expander and the headered content control."
 }

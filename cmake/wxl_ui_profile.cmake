@@ -418,8 +418,6 @@ function(wxl_add_ui_library profile)
     add_library(${_wxl_target}.surface-test OBJECT
         "${_wxl_common_dir}/test/dsl_surface.cpp" "${_wxl_surface}" ${_wxl_SURFACES})
     add_dependencies(${_wxl_target}.surface-test ${_wxl_target}.wrappers)
-    # Where the fragments find the helpers they share with dsl_surface.cpp.
-    target_include_directories(${_wxl_target}.surface-test PRIVATE "${_wxl_common_dir}/test")
     target_link_libraries(${_wxl_target}.surface-test PRIVATE ${_wxl_target})
 
     # The bodies of the controls compiled as one source exceed the 65 279

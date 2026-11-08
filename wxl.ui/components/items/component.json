@@ -12,6 +12,7 @@
     "ItemTemplate.cpp",
     "ItemTemplate.h"
   ],
+  "surface": "items.surface.cpp",
   "libraries": [],
   "comment": "Item templates, item factories and container presets of the list controls.",
   "requires": {
