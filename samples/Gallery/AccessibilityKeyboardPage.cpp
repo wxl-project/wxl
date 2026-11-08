@@ -76,13 +76,13 @@ FrameworkElement accessKeys() {
 }  // namespace
 
 static FrameworkElement accessibilityKeyboardPage() {
-    auto references = StackPanel {automationName = u"Arrow keys references"};
+    auto references = ItemsControl {automationName = u"Arrow keys references"};
     for (auto const& [title, anchor] : std::initializer_list<std::pair<char16_t const*, char16_t const*>> {
              {u"Keyboard interactions: Navigation", u"#navigation"},
              {u"Keyboard interactions: Home and End keys", u"#home-and-end-keys"},
              {u"Keyboard interactions: Page up and Page down keys", u"#page-up-and-page-down-keys"},
              {u"Keyboard interactions: Control group", u"#control-group"}}) {
-        references.children().append(HyperlinkButton {
+        references.items().append(HyperlinkButton {
             content = title, navigateUri = std::u16string {u"https://learn.microsoft.com/windows/apps/design/input/keyboard-interactions"} + anchor});
     }
 
