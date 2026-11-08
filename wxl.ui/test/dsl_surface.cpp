@@ -25,8 +25,9 @@
 //
 // What a component of the profile layer brings is checked beside its sources,
 // in the surface fragment its manifest names (key "surface"): the profile's
-// surface test compiles the fragments of the components it selects, so this
-// file keeps only what stands on the machinery every profile has.
+// surface test compiles the fragments of the components it selects. This file
+// keeps the rest: the generated classes and what no component owns yet, some
+// of it on classes only the larger profiles generate.
 
 #include "Bind.h"
 #include "event_awaitable.h"
