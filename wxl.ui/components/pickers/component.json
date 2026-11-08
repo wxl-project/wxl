@@ -1,9 +1,10 @@
 {
   "name": "pickers",
-  "needs": [
-    "items"
+  "needs": [],
+  "sources": [
+    "impl/file_picker_helpers.cpp",
+    "impl/file_picker_helpers.h"
   ],
-  "sources": [],
   "libraries": [],
   "comment": "The types of files a storage picker offers.",
   "requires": {
@@ -15,7 +16,7 @@
             "comment": "One extension of the filter: \".txt\", or \"*\" for all. Each use of the tag adds one.",
             "type": "String",
             "function": "impl::add_file_type",
-            "include": "../impl/items_helpers.h"
+            "include": "../impl/file_picker_helpers.h"
           }
         }
       },
@@ -27,7 +28,7 @@
             "cppType": "FileTypeChoice",
             "cppInclude": "../FileTypeChoice.h",
             "function": "impl::add_file_type_choice",
-            "include": "../impl/items_helpers.h"
+            "include": "../impl/file_picker_helpers.h"
           }
         }
       }

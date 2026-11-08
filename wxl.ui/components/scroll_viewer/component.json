@@ -1,10 +1,11 @@
 {
   "name": "scroll_viewer",
   "needs": [
-    "dsl",
-    "elements"
+    "dsl"
   ],
   "sources": [
+    "impl/scroll_viewer_helpers.cpp",
+    "impl/scroll_viewer_helpers.h",
     "impl/vertical_offset_pair.cpp",
     "impl/vertical_offset_pair.h"
   ],
@@ -20,7 +21,7 @@
             "cppType": "bool",
             "cppInclude": "../core.h",
             "function": "impl::set_wheel_to_parent",
-            "include": "../impl/element_helpers.h"
+            "include": "../impl/scroll_viewer_helpers.h"
           }
         }
       }

@@ -3,7 +3,10 @@
   "needs": [
     "elements"
   ],
-  "sources": [],
+  "sources": [
+    "impl/resource_dictionary_helpers.cpp",
+    "impl/resource_dictionary_helpers.h"
+  ],
   "libraries": [],
   "comment": "Entries written in place in a ResourceDictionary.",
   "requires": {
@@ -16,14 +19,14 @@
             "cppType": "Resource",
             "cppInclude": "../Resource.h",
             "function": "impl::add_resource",
-            "include": "../impl/element_helpers.h"
+            "include": "../impl/resource_dictionary_helpers.h"
           },
           "ThemeEntry": {
             "comment": "The entries of one theme -- ThemeDictionaries[\"Light\"] of the XAML. The same tag repeated adds one theme each.",
             "cppType": "ThemeDictionary",
             "cppInclude": "../Resource.h",
             "function": "impl::add_theme_dictionary",
-            "include": "../impl/element_helpers.h"
+            "include": "../impl/resource_dictionary_helpers.h"
           }
         }
       }

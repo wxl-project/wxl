@@ -1,9 +1,9 @@
 {
   "name": "navigation",
-  "needs": [
-    "items"
-  ],
+  "needs": [],
   "sources": [
+    "impl/navigation_view_helpers.cpp",
+    "impl/navigation_view_helpers.h",
     "Navigation.cpp",
     "Navigation.h"
   ],
@@ -19,7 +19,7 @@
             "cppType": "core::nullable<AutoSuggestBox>",
             "cppInclude": "../core.h",
             "function": "impl::set_auto_suggest_box",
-            "include": "../impl/items_helpers.h"
+            "include": "../impl/navigation_view_helpers.h"
           }
         }
       }
