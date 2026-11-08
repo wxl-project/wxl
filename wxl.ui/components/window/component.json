@@ -15,6 +15,12 @@
   "comment": "The window: native handle, frame, size and tray icon.",
   "requires": {
     "types": {
+      "Microsoft.UI.Windowing.OverlappedPresenter": {
+        "comment": "WindowNative::makeModal hands a dialog window a presenter made for a dialog.",
+        "members": [
+          "CreateForDialog"
+        ]
+      },
       "Microsoft.UI.Xaml.Window": {
         "members": [],
         "syntheticMembers": {
