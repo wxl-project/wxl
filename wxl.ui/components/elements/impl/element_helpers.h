@@ -10,14 +10,9 @@
 #include <winrt/Microsoft.UI.Xaml.h>
 #include <winrt/Windows.Foundation.h>
 
-#include "Resource.h"
 #include "hstring_param.h"
 #include <wxl/FluentSymbol.h>
 #include <wxl/Microsoft.UI.Input.Enums.h>
-
-namespace wxl {
-class ToolTip;
-}
 
 namespace wxl::impl {
 
@@ -40,17 +35,6 @@ void set_tool_tip(winrt::Microsoft::UI::Xaml::UIElement const& element, hstring_
 void set_automation_name(winrt::Microsoft::UI::Xaml::UIElement const& element,
                          hstring_param const& name);
 
-/// The tip as an element of its own -- content that is not text, a placement, an offset. Only
-/// the hover half: an element has no words to give a screen reader.
-void set_tool_tip_element(winrt::Microsoft::UI::Xaml::UIElement const& element, ToolTip const& tip);
-
-/// `wheelToParent = true` on a ScrollViewer. A viewer takes the wheel and marks it handled even
-/// when it has nothing to scroll along it, so a horizontal code block stops the page around it.
-/// With this on, a wheel turn the viewer cannot use -- no scrollable height, no modifier key held
-/// -- goes on up the tree to the panel that scrolls the page. Added once, when the viewer is
-/// built; false adds nothing.
-void set_wheel_to_parent(winrt::Microsoft::UI::Xaml::Controls::ScrollViewer const& viewer, bool on);
-
 /// The second spelling of SymbolIcon's Symbol: a FluentSymbol, every name the font's own
 /// documentation carries, where WinRT's Symbol has 197 names from Windows 8. SymbolIcon takes a
 /// code point in SymbolThemeFontFamily and nothing else, so the crossing is a cast, written here
@@ -71,15 +55,5 @@ inline bool is_blank(winrt::Windows::Foundation::IInspectable const& content) {
     }
     return false;
 }
-
-// What stands behind `entry = Resource {...}` on a ResourceDictionary: the
-// value, boxed as the framework's own type, under the key. An entry with a key
-// that is already there replaces it, as `Insert` on the dictionary does.
-void add_resource(winrt::Microsoft::UI::Xaml::ResourceDictionary const& dictionary,
-                  Resource const& entry);
-
-// The same under a theme: the entries go in a dictionary of their own that ThemeDictionaries keeps under the theme's name.
-void add_theme_dictionary(winrt::Microsoft::UI::Xaml::ResourceDictionary const& dictionary,
-                          ThemeDictionary const& theme);
 
 }  // namespace wxl::impl

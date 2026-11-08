@@ -8,5 +8,45 @@
     "impl/backdrop_helpers.h"
   ],
   "libraries": [],
-  "comment": "Mica, acrylic and the drag region, which need the system backdrop types."
+  "comment": "Mica, acrylic and the drag region, which need the system backdrop types.",
+  "requires": {
+    "types": {
+      "Microsoft.UI.Xaml.Window": {
+        "members": [],
+        "syntheticMembers": {
+          "NoSystemBackdrop": {
+            "comment": "Takes the system backdrop off the window: `noSystemBackdrop = true`. A wrapper is never empty, so there is no empty backdrop to give systemBackdrop; false leaves the window as it is.",
+            "cppType": "bool",
+            "cppInclude": "../core.h",
+            "function": "impl::clear_system_backdrop",
+            "include": "../impl/backdrop_helpers.h"
+          },
+          "MicaController": {
+            "comment": "The Mica controller of this window: the window becomes its target. The controller still needs its configuration, and Close when the window closes.",
+            "type": "Microsoft.UI.Composition.SystemBackdrops.MicaController",
+            "function": "impl::set_mica_controller",
+            "include": "../impl/backdrop_helpers.h"
+          },
+          "DesktopAcrylicController": {
+            "comment": "The desktop acrylic controller of this window, the same way.",
+            "type": "Microsoft.UI.Composition.SystemBackdrops.DesktopAcrylicController",
+            "function": "impl::set_desktop_acrylic_controller",
+            "include": "../impl/backdrop_helpers.h"
+          }
+        }
+      },
+      "Microsoft.UI.Xaml.UIElement": {
+        "members": [],
+        "syntheticMembers": {
+          "IsDragRegion": {
+            "comment": "Whether an element in a TitleBar drags the window (true), takes clicks (false) or leaves the choice to the TitleBar (empty) -- TitleBar.IsDragRegion, the attached property.",
+            "cppType": "core::nullable<bool>",
+            "cppInclude": "../core.h",
+            "function": "impl::set_drag_region",
+            "include": "../impl/window_helpers.h"
+          }
+        }
+      }
+    }
+  }
 }

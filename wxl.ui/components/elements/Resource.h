@@ -4,16 +4,16 @@
 // ThemeDictionary), the lookup of a key in the application's resources (resourceBrush,
 // resourceColor) and XAML text loaded (loadXaml).
 //
-// Included by the generated wrapper of ResourceDictionary (the profile's cppInclude), so it names
-// Brush without including the header that defines it.
+// Included by the generated wrapper of ResourceDictionary (the cppInclude of the resources
+// component), so it names Brush without including the header that defines it.
 //
 // Resource -- one entry of a ResourceDictionary: a key and the value under it.
 //
 // A dictionary's values are boxed objects of any type; the ones a page
 // overrides in practice are a size, a length, a flag, a colour or a word, and
-// those are the alternatives. The dictionary takes the value in
-// as the framework's own type (impl/element_helpers.cpp), so a Thickness is a
-// Thickness there and a Margin lookup finds it.
+// those are the alternatives. The dictionary takes the value in as the
+// framework's own type (impl/resource_dictionary_helpers.cpp of the resources
+// component), so a Thickness is a Thickness there and a Margin lookup finds it.
 //
 //     ResourceDictionary {
 //         entry = Resource {u"TextBoxTopHeaderMargin", Thickness {0, 2, 0, 2}},

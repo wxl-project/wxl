@@ -13,5 +13,98 @@
     "ItemTemplate.h"
   ],
   "libraries": [],
-  "comment": "Item templates, item factories and container presets of the list controls."
+  "comment": "Item templates, item factories and container presets of the list controls.",
+  "requires": {
+    "types": {
+      "Microsoft.UI.Xaml.Controls.ItemsControl": {
+        "members": [],
+        "syntheticMembers": {
+          "ItemsPanelOrientation": {
+            "comment": "A virtualizing stack in this direction: itemsPanelOrientation = Orientation::Vertical.",
+            "type": "Microsoft.UI.Xaml.Controls.Orientation",
+            "function": "impl::set_items_panel_orientation",
+            "include": "../impl/items_helpers.h"
+          }
+        }
+      },
+      "Microsoft.UI.Xaml.Controls.ListViewBase": {
+        "members": [],
+        "syntheticMembers": {
+          "ItemContainerStyle": {
+            "comment": "What an ItemContainerStyle says, as a preset every container wears once, as the control makes it: itemContainerStyle = Preset {margin = Thickness {5}, horizontalContentAlignment = HorizontalAlignment::Stretch}. The style of wxl is a preset, and a container the control makes is dressed the way a control written by hand is.",
+            "cppType": "ItemContainerPreset",
+            "cppInclude": "../ItemContainerPreset.h",
+            "function": "impl::set_item_container_style",
+            "include": "../impl/items_helpers.h"
+          },
+          "ItemMargin": {
+            "comment": "The margin of every item container, as an ItemContainerStyle with a Setter for Margin would give it: itemMargin = Thickness {5}.",
+            "type": "Microsoft.UI.Xaml.Thickness",
+            "function": "impl::set_item_margin",
+            "include": "../impl/items_helpers.h"
+          },
+          "ItemTemplate": {
+            "comment": "What an ItemTemplate says, as a function from the item to the element that shows it. A DataTemplate of XAML is text bound to the properties of a data object; here the data are C++ objects and the element is made by code.",
+            "cppType": "ItemBuilder",
+            "cppInclude": "../ItemTemplate.h",
+            "function": "impl::set_item_template",
+            "include": "../impl/items_helpers.h"
+          }
+        }
+      },
+      "Microsoft.UI.Xaml.Controls.ItemsRepeater": {
+        "members": [],
+        "syntheticMembers": {
+          "ItemTemplate": {
+            "comment": "The function that makes the element of an item.",
+            "cppType": "ItemBuilder",
+            "cppInclude": "../ItemTemplate.h",
+            "function": "impl::set_repeater_template",
+            "include": "../impl/items_helpers.h"
+          }
+        }
+      },
+      "Microsoft.UI.Xaml.Controls.ItemsView": {
+        "members": [],
+        "syntheticMembers": {
+          "ItemTemplate": {
+            "comment": "The function that makes the element of an item.",
+            "cppType": "ItemBuilder",
+            "cppInclude": "../ItemTemplate.h",
+            "function": "impl::set_items_view_template",
+            "include": "../impl/items_helpers.h"
+          }
+        }
+      },
+      "Microsoft.UI.Xaml.Controls.SwipeControl": {
+        "members": [],
+        "syntheticMembers": {
+          "LeftItemsMode": {
+            "comment": "SwipeItems.Mode of the left items: Reveal shows the buttons, Execute runs the first on a full swipe.",
+            "type": "Microsoft.UI.Xaml.Controls.SwipeMode",
+            "function": "impl::set_left_items_mode",
+            "include": "../impl/items_helpers.h"
+          },
+          "RightItemsMode": {
+            "comment": "SwipeItems.Mode of the right items.",
+            "type": "Microsoft.UI.Xaml.Controls.SwipeMode",
+            "function": "impl::set_right_items_mode",
+            "include": "../impl/items_helpers.h"
+          }
+        }
+      },
+      "Microsoft.UI.Xaml.Controls.TreeView": {
+        "members": [],
+        "syntheticMembers": {
+          "ElementItems": {
+            "comment": "The items (the content of the nodes, or the items of ItemsSource) are elements, and each is shown as itself: elementItems = true. The template of that is XAML text only.",
+            "cppType": "bool",
+            "cppInclude": "../core.h",
+            "function": "impl::set_element_items",
+            "include": "../impl/items_helpers.h"
+          }
+        }
+      }
+    }
+  }
 }

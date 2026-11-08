@@ -46,11 +46,11 @@ private:
 
 /// The smallest the user may make the window, in the raw pixels AppWindow itself works in. It is
 /// kept on the window's overlapped presenter, three hops from the Window, so wxl declares the
-/// property itself (the profile's syntheticMembers). A zero side is left unbounded, which is what
+/// property itself (the component's syntheticMembers). A zero side is left unbounded, which is what
 /// the runtime reads an unset preference as.
 void set_minimum_size(winrt::Microsoft::UI::Xaml::Window const& window, SizeInt32 const& size);
 
-/// Window's `sizeToContent` (the profile's syntheticMembers): the sides `mode` names follow the
+/// Window's `sizeToContent` (the component's syntheticMembers): the sides `mode` names follow the
 /// content, once -- when the window first activates its content is read, and when that content has
 /// been laid out the window is resized to what it wanted. Read at activation rather than here,
 /// because the content may be written after the tag in the window's braces. One side keeps the
@@ -96,7 +96,7 @@ std::u16string_view name_of(placement_state state);
 /// nearest display, and centred there if its rectangle misses that display's work area entirely.
 RECT fit_placement_to_displays(RECT const& wanted);
 
-/// The setter of Window's placement property (the profile's syntheticMembers). A friend of
+/// The setter of Window's placement property (the component's syntheticMembers). A friend of
 /// WindowNative, which keeps the rectangle the window returns to; reading it back is
 /// WindowNative::placement().
 struct window_placement_setter {

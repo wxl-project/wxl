@@ -8,18 +8,12 @@
 
 #include <winrt/Microsoft.UI.Xaml.Controls.Primitives.h>
 #include <winrt/Microsoft.UI.Xaml.Controls.h>
-#include <winrt/Microsoft.Windows.Storage.Pickers.h>
 
 #include "core.h"
 #include "ItemTemplate.h"
 #include "ItemContainerPreset.h"
-#include "FileTypeChoice.h"
 #include "Thickness.h"
-#include "hstring_param.h"
 #include <wxl/Microsoft.UI.Xaml.Controls.Enums.h>
-// AutoSuggestBox complete: core::nullable of an incomplete class picks the raw-pointer form and
-// keeps it for the rest of the translation unit.
-#include <wxl/Microsoft.UI.Xaml.Controls.h>
 
 namespace wxl::impl {
 
@@ -83,19 +77,5 @@ void set_left_items_mode(winrt::Microsoft::UI::Xaml::Controls::SwipeControl cons
 
 void set_right_items_mode(winrt::Microsoft::UI::Xaml::Controls::SwipeControl const& control,
                           SwipeMode mode);
-
-/// `autoSuggestBox = ...` on a NavigationView: the search box of the pane, which the framework
-/// lets be none. A wrapper cannot be empty, so the property takes a core::nullable and an empty
-/// one clears the box.
-void set_auto_suggest_box(winrt::Microsoft::UI::Xaml::Controls::NavigationView const& view,
-                          core::nullable<AutoSuggestBox> const& box);
-
-/// `fileType = u".txt"` on an open picker: one entry appended to the picker's own list.
-void add_file_type(winrt::Microsoft::Windows::Storage::Pickers::FileOpenPicker const& picker,
-                   hstring_param const& extension);
-
-/// `fileTypeChoice = ...` on a save picker: one entry appended to the picker's own list.
-void add_file_type_choice(winrt::Microsoft::Windows::Storage::Pickers::FileSavePicker const& picker,
-                          FileTypeChoice const& choice);
 
 }  // namespace wxl::impl

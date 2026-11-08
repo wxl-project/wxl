@@ -6,5 +6,38 @@
     "impl/shape_helpers.h"
   ],
   "libraries": [],
-  "comment": "Geometry from text and polygon points."
+  "comment": "Geometry from text and polygon points.",
+  "requires": {
+    "types": {
+      "Microsoft.UI.Xaml.Media.Geometry": {
+        "members": [],
+        "fromText": {
+          "function": "impl::geometry_from_text",
+          "include": "../impl/shape_helpers.h"
+        }
+      },
+      "Microsoft.UI.Xaml.Shapes.Polyline": {
+        "members": [],
+        "syntheticMembers": {
+          "Points": {
+            "comment": "The vertices as text, in the form of XAML: points = u\"10,100 60,40 200,40\". Points is a collection of Point that wxl has no class for; the framework's own converter reads the text.",
+            "type": "String",
+            "function": "impl::set_points",
+            "include": "../impl/shape_helpers.h"
+          }
+        }
+      },
+      "Microsoft.UI.Xaml.Shapes.Polygon": {
+        "members": [],
+        "syntheticMembers": {
+          "Points": {
+            "comment": "The vertices as text, in the form of XAML: points = u\"10,100 60,40 200,40\". Points is a collection of Point that wxl has no class for; the framework's own converter reads the text.",
+            "type": "String",
+            "function": "impl::set_points",
+            "include": "../impl/shape_helpers.h"
+          }
+        }
+      }
+    }
+  }
 }

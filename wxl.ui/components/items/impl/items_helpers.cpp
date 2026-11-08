@@ -1,13 +1,6 @@
 #include <winrt/Microsoft.UI.Xaml.Markup.h>
-#include <winrt/Windows.Foundation.Collections.h>
 
 #include "items_helpers.h"
-
-#include "impl/conversions.h"
-
-#include "Object.impl.h"
-#include <wxl/Microsoft.UI.Xaml.Controls.h>
-#include <wxl/Microsoft.UI.Xaml.Controls.impl.h>
 
 namespace wxl::impl {
 
@@ -59,31 +52,6 @@ void set_right_items_mode(controls::SwipeControl const& control, SwipeMode mode)
         control.RightItems(controls::SwipeItems{});
     }
     control.RightItems().Mode(static_cast<controls::SwipeMode>(mode));
-}
-
-void set_auto_suggest_box(winrt::Microsoft::UI::Xaml::Controls::NavigationView const& view,
-                          core::nullable<AutoSuggestBox> const& box) {
-    view.AutoSuggestBox(
-        box ? Object::Impl::as<winrt::Microsoft::UI::Xaml::Controls::AutoSuggestBox>(*box)
-            : winrt::Microsoft::UI::Xaml::Controls::AutoSuggestBox{nullptr});
-}
-
-void add_file_type(winrt::Microsoft::Windows::Storage::Pickers::FileOpenPicker const& picker,
-                   hstring_param const& extension) {
-    picker.FileTypeFilter().Append(to_winrt(extension));
-}
-
-void add_file_type_choice(winrt::Microsoft::Windows::Storage::Pickers::FileSavePicker const& picker,
-                          FileTypeChoice const& choice) {
-    std::vector<winrt::hstring> extensions;
-    extensions.reserve(choice.extensions.size());
-    for (auto const& extension : choice.extensions)
-        extensions.push_back(winrt::hstring{std::wstring_view{
-            reinterpret_cast<wchar_t const*>(extension.data()), extension.size()}});
-    picker.FileTypeChoices().Insert(winrt::hstring{std::wstring_view{
-                                        reinterpret_cast<wchar_t const*>(choice.description.data()),
-                                        choice.description.size()}},
-                                    winrt::single_threaded_vector(std::move(extensions)));
 }
 
 }  // namespace wxl::impl

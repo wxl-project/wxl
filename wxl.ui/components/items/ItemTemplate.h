@@ -4,8 +4,8 @@
 // DataTemplate whose root is a control and whose properties are made from the item
 // (boundTemplate), and the way back from an item to the element its template made (itemElement).
 //
-// Included by the generated wrappers of the list controls (the profile's cppInclude), so it names
-// no type of Microsoft.UI.Xaml.Controls but declares the one it needs: the generated header of
+// Included by the generated wrappers of the list controls (the items component's cppInclude), so
+// it names no type of Microsoft.UI.Xaml.Controls but declares the one it needs: the generated header of
 // that namespace is the one that includes this.
 
 #include <functional>

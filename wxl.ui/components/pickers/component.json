@@ -1,7 +1,37 @@
 {
   "name": "pickers",
   "needs": [],
-  "sources": [],
+  "sources": [
+    "impl/file_picker_helpers.cpp",
+    "impl/file_picker_helpers.h"
+  ],
   "libraries": [],
-  "comment": "File type helpers for pickers (add_file_type, add_file_type_choice to split from items_helpers in S3b.3)"
+  "comment": "The types of files a storage picker offers.",
+  "requires": {
+    "types": {
+      "Microsoft.Windows.Storage.Pickers.FileOpenPicker": {
+        "members": [],
+        "syntheticMembers": {
+          "FileType": {
+            "comment": "One extension of the filter: \".txt\", or \"*\" for all. Each use of the tag adds one.",
+            "type": "String",
+            "function": "impl::add_file_type",
+            "include": "../impl/file_picker_helpers.h"
+          }
+        }
+      },
+      "Microsoft.Windows.Storage.Pickers.FileSavePicker": {
+        "members": [],
+        "syntheticMembers": {
+          "FileTypeChoice": {
+            "comment": "One line of the list of types: the words and the extensions behind them. Each use of the tag adds one.",
+            "cppType": "FileTypeChoice",
+            "cppInclude": "../FileTypeChoice.h",
+            "function": "impl::add_file_type_choice",
+            "include": "../impl/file_picker_helpers.h"
+          }
+        }
+      }
+    }
+  }
 }
