@@ -3,7 +3,7 @@
 # оценить глазами -- эталонные тесты проверяют дерево, а не картинку.
 
 wxl_add_executable(sample.htmlview
-    UI wxl::ui.full
+    UI wxl::ui.extended
     main.cpp
 )
 

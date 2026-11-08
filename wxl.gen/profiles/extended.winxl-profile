@@ -7,7 +7,11 @@
     "windowsMetadata": true,
 
     "components": [
-        "number_box"
+        "bb",
+        "controls",
+        "markup",
+        "number_box",
+        "rsdn"
     ],
 
     "types": {
