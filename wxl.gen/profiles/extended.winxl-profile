@@ -8,7 +8,6 @@
 
     "components": [
         "bb",
-        "controls",
         "markup",
         "number_box",
         "rsdn"

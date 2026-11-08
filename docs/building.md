@@ -792,7 +792,7 @@ wxl_target_assets(sample.quadratic Assets)
 - **`wxl_add_executable(<цель> UI <библиотека> <исходники>…)`:** объявляет
   оконный exe с точкой входа из `wxl::ui.common` и вызывает
   `wxl_target_manifest` и `wxl_target_runtime`. Профиль выбирается в одном
-  месте, именем библиотеки в `UI`: `wxl::ui.extended` у HelloHere и HtmlView, `wxl::ui.full` у остальных примеров, проб и Gallery; без `UI`
+  месте, именем библиотеки в `UI`: `wxl::ui.extended` у HtmlView, `wxl::ui.full` у остальных примеров и проб; без `UI`
   настройка останавливается.
 - **`wxl_target_manifest(<цель>)`:** добавляет к цели манифест из
   `cmake/wxl_app.manifest.in` с её именем: проверенную версию Windows,
