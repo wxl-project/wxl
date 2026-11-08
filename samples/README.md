@@ -21,6 +21,8 @@ tools\build.ps1 -Target sample.gallery
 | [HtmlView](https://github.com/wxl-project/wxl/tree/main/samples/HtmlView) | `sample.htmlview` | Просмотр разметки: `HtmlBlock`, `BbBlock` и `RsdnBlock` над общим `MarkupBlock`. Кнопки добавляют фрагменты, как лента чата; любой файл `.html`, перетащенный в окно, открывается вместо образцов. |
 | [Gallery](Gallery/README.md) | `sample.gallery` | Портированная [WinUI Gallery](https://github.com/microsoft/WinUI-Gallery): те же типы **WinUI**, без XAML. Оболочка с навигацией и поиском, страница на каждый портированный элемент управления, код примера показан под ним. |
 
+Какую библиотеку профиля линкует пример, называет `UI` в его `CMakeLists.txt`: HelloHere и HtmlView линкуют `wxl::ui.extended`, остальные — `wxl::ui.full`.
+
 У части примеров есть собственный `README.md` с подробностями:
 [Quadratic](Quadratic/README.md), [Trayed](Trayed/README.md),
 [Gallery](Gallery/README.md).
