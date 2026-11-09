@@ -772,7 +772,7 @@ std::filesystem::path canonical_path(std::filesystem::path const& path) {
 
 namespace {
 
-// The components selected: those named, closed over `dependencies`, each after its own.
+// The components selected: those named, closed over `dependencies`, each after its dependencies.
 struct component_resolver {
     component_search const& search;
     std::vector<component>& selected;

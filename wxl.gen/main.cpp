@@ -67,8 +67,8 @@ constexpr std::string_view usage = R"(winui-srcgen -- generates wxl wrappers fro
   --component    A component the build read from the chain; repeatable. With
                  --component-dir, the list -- empty when none is given -- is
                  compared as a set with the chain's own "components", before
-                 "dependencies" adds to them, and a mismatch stops the run with both
-                 lists named. Without --component-dir it is refused.
+                 "dependencies" adds to them, and a mismatch stops the run
+                 with both lists named. Without --component-dir it is refused.
   --common-dir   The library's include directory (wxl.ui/src), which holds
                  what no component owns. When set, every include a profile
                  or a selected component gives is checked: "../X.h" must be

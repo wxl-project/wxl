@@ -145,8 +145,8 @@ if ($ComponentDir.Count -eq 0) {
     exit 0
 }
 
-# Load and close components over their dependencies, each after its own; components that
-# depend on each other in a cycle stop the script.
+# Load and close components over their dependencies, each after its dependencies; components
+# that depend on each other in a cycle stop the script.
 $loaded = @{}
 $loading = @{}
 $selected = @()

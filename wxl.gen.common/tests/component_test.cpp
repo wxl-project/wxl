@@ -122,7 +122,7 @@ TEST(component, its_imported_types_are_roots_of_the_walk) {
 }
 
 // The components selected are those the chain names, closed over `dependencies`, each after
-// its own; `named_components` keeps the chain's own list.
+// its dependencies; `named_components` keeps the chain's own list.
 TEST(component, dependencies_are_followed_transitively) {
     auto const directory = scratch(L"dependencies");
     auto const components = directory / L"components";
