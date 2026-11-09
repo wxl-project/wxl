@@ -75,14 +75,14 @@ constexpr float panelReach = 24.0f;
 // so that the kinds of key on a keypad -- each an effect of its own -- are
 // lit by the same two lamps.
 HoverLight const& keyHover() {
-    static HoverLight const light{dsl::size = 260.0, dsl::fullSize = 120.0, dsl::height = 30.0,
-                                  dsl::intensity = 0.4};
+    static HoverLight const light{dsl::size = 260.0f, dsl::fullSize = 120.0f, dsl::height = 30.0f,
+                                  dsl::intensity = 0.4f};
     return light;
 }
 
 BorderLight const& keyBorder() {
-    static BorderLight const light{dsl::size = 340.0, dsl::fullSize = 200.0, dsl::height = 60.0,
-                                   dsl::intensity = 1.5};
+    static BorderLight const light{dsl::size = 340.0f, dsl::fullSize = 200.0f, dsl::height = 60.0f,
+                                   dsl::intensity = 1.5f};
     return light;
 }
 
@@ -124,8 +124,8 @@ struct Button3DEffect::Impl : core::sta_refcounted {
 
     Color ink = rgb(237, 239, 242);
     Color albedo = rgb(68, 72, 79);
-    double specularAmount = 0.15;
-    double specularShine = 30.0;
+    float specularAmount = 0.15f;
+    float specularShine = 30.0f;
 
     double emboss = -1.0;
     double rim = 3.0;
@@ -140,7 +140,7 @@ struct Button3DEffect::Impl : core::sta_refcounted {
     double elevation = 50.0;
     Color lampColor = rgb(255, 255, 255);
     Color ambientColor = rgb(255, 255, 255);
-    double castBlur = 1.0;
+    float castBlur = 1.0f;
     double holeShadow = 1.0;
     double holeSoftness = 1.0;
 
@@ -148,9 +148,9 @@ struct Button3DEffect::Impl : core::sta_refcounted {
     bool pressFlashes = false;
     bool pressMovesLabel = true;
     bool pressShades = false;
-    double diveDepth = 0.33;
-    double diveGain = 2.0;
-    double shadeAmount = 0.2;
+    float diveDepth = 0.33f;
+    float diveGain = 2.0f;
+    float shadeAmount = 0.2f;
     double labelShade = 0.15;
 
     HoverLight hover = keyHover();
@@ -287,8 +287,8 @@ struct Button3DEffect::Impl : core::sta_refcounted {
             gloss.NormalMapSource(source(L"NormalMap"));
             gloss.AmbientAmount(0.0f);
             gloss.DiffuseAmount(0.0f);
-            gloss.SpecularAmount(static_cast<float>(specularAmount));
-            gloss.SpecularShine(static_cast<float>(specularShine));
+            gloss.SpecularAmount(specularAmount);
+            gloss.SpecularShine(specularShine);
 
             effects::ArithmeticCompositeEffect tinted;
             tinted.Source1(source(L"Base"));
@@ -560,7 +560,7 @@ struct Button3DEffect::Impl::Attachment : core::sta_refcounted, core::sta_weak_l
 
     void blur() const {
         if (!cast) return;
-        cast.BlurRadiusMultiplier(static_cast<float>(impl->castBlur));
+        cast.BlurRadiusMultiplier(impl->castBlur);
         cast.MinBlurRadius(0.0f);
         cast.MaxBlurRadius(8.0f);
     }
@@ -586,7 +586,7 @@ struct Button3DEffect::Impl::Attachment : core::sta_refcounted, core::sta_weak_l
         if (!down || impl->pressShades) {
             shade.StartAnimation(
                 L"Opacity",
-                toward(compositor, down ? static_cast<float>(impl->shadeAmount) : 0.0f, time));
+                toward(compositor, down ? impl->shadeAmount : 0.0f, time));
         }
         if (!down || impl->pressMovesLabel) {
             float const by = down ? pressShift : 0.0f;
@@ -609,15 +609,13 @@ struct Button3DEffect::Impl::Attachment : core::sta_refcounted, core::sta_weak_l
             island ? spot_light.island_light_of(island) : nullptr;
         if (!island_light) return;
         bool const dives = down && impl->pressDivesLamp;
-        float const height =
-            spot_light.height * (dives ? static_cast<float>(impl->diveDepth) : 1.0f);
+        float const height = spot_light.height * (dives ? impl->diveDepth : 1.0f);
         if (!down || impl->pressDivesLamp) {
             island_light->light.Properties().StartAnimation(
                 impl::pointer_spot_light::height_property, toward(compositor, height, time));
         }
         if (!island_light->shining) return;
-        float const intensity =
-            spot_light.intensity * (dives ? static_cast<float>(impl->diveGain) : 1.0f);
+        float const intensity = spot_light.intensity * (dives ? impl->diveGain : 1.0f);
         if (down && impl->pressFlashes) {
             auto const pulse = compositor.CreateScalarKeyFrameAnimation();
             pulse.InsertKeyFrame(0.0f, intensity * impl::pointer_spot_light::flash_gain);
@@ -728,12 +726,12 @@ void Button3DEffect::background(Color value) const {
     impl_->albedo = value;
     impl_->repaint();
 }
-void Button3DEffect::specularAmount(double value) const {
-    impl_->specularAmount = std::max(value, 0.0);
+void Button3DEffect::specularAmount(float value) const {
+    impl_->specularAmount = std::max(value, 0.0f);
     impl_->repaint();
 }
-void Button3DEffect::specularShine(double value) const {
-    impl_->specularShine = std::max(value, 1.0);
+void Button3DEffect::specularShine(float value) const {
+    impl_->specularShine = std::max(value, 1.0f);
     impl_->repaint();
 }
 
@@ -790,8 +788,8 @@ void Button3DEffect::ambientColor(Color value) const {
     impl_->ambientColor = value;
     impl_->relight();
 }
-void Button3DEffect::castBlur(double value) const {
-    impl_->castBlur = std::max(value, 0.0);
+void Button3DEffect::castBlur(float value) const {
+    impl_->castBlur = std::max(value, 0.0f);
     impl_->reblur();
 }
 void Button3DEffect::holeShadow(double value) const {
@@ -812,12 +810,12 @@ void Button3DEffect::pressMovesLabel(bool value) const {
     impl_->reshape();
 }
 void Button3DEffect::pressShades(bool value) const { impl_->pressShades = value; }
-void Button3DEffect::diveDepth(double value) const {
-    impl_->diveDepth = std::clamp(value, 0.0, 1.0);
+void Button3DEffect::diveDepth(float value) const {
+    impl_->diveDepth = std::clamp(value, 0.0f, 1.0f);
 }
-void Button3DEffect::diveGain(double value) const { impl_->diveGain = std::max(value, 0.0); }
-void Button3DEffect::shadeAmount(double value) const {
-    impl_->shadeAmount = std::clamp(value, 0.0, 1.0);
+void Button3DEffect::diveGain(float value) const { impl_->diveGain = std::max(value, 0.0f); }
+void Button3DEffect::shadeAmount(float value) const {
+    impl_->shadeAmount = std::clamp(value, 0.0f, 1.0f);
 }
 void Button3DEffect::labelShade(double value) const {
     impl_->labelShade = std::clamp(value, 0.0, 1.0);

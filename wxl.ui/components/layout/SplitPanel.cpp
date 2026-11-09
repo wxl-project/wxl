@@ -235,13 +235,13 @@ UIElement SplitPanel::content() const {
     return Object::Impl::wrap<UIElement>(xaml::UIElement{Impl::of(impl()).content_});
 }
 
-void SplitPanel::openPaneLength(double value) const {
+void SplitPanel::openPaneLength(float value) const {
     SplitPanelCore& object = Impl::of(impl());
-    object.length_ = static_cast<float>(value);
+    object.length_ = value;
     object.InvalidateMeasure();
 }
 
-double SplitPanel::openPaneLength() const { return Impl::of(impl()).length_; }
+float SplitPanel::openPaneLength() const { return Impl::of(impl()).length_; }
 
 void SplitPanel::orientation(Orientation value) const {
     SplitPanelCore& object = Impl::of(impl());
@@ -265,13 +265,13 @@ SplitViewPanePlacement SplitPanel::panePlacement() const {
                                       : SplitViewPanePlacement::Left;
 }
 
-void SplitPanel::spacing(double value) const {
+void SplitPanel::spacing(float value) const {
     SplitPanelCore& object = Impl::of(impl());
-    object.spacing_ = static_cast<float>(value);
+    object.spacing_ = value;
     object.InvalidateMeasure();
 }
 
-double SplitPanel::spacing() const { return Impl::of(impl()).spacing_; }
+float SplitPanel::spacing() const { return Impl::of(impl()).spacing_; }
 
 void SplitPanel::setPositional(UIElement const& value) const {
     if (Impl::of(impl()).pane_) {
