@@ -1,6 +1,6 @@
 {
   "name": "resources",
-  "needs": [
+  "dependencies": [
     "elements"
   ],
   "sources": [
@@ -8,8 +8,8 @@
     "impl/resource_dictionary_helpers.h"
   ],
   "libraries": [],
-  "comment": "Entries written in place in a ResourceDictionary.",
-  "requires": {
+  "description": "Entries written in place in a ResourceDictionary.",
+  "imports": {
     "types": {
       "Microsoft.UI.Xaml.ResourceDictionary": {
         "members": [],

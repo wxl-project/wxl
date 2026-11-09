@@ -1,6 +1,6 @@
 {
   "name": "custom_layouts",
-  "needs": [
+  "dependencies": [
     "schema",
     "dsl"
   ],
@@ -15,5 +15,5 @@
   "schema": "custom_layouts.schema.h",
   "surface": "custom_layouts.surface.cpp",
   "libraries": [],
-  "comment": "The layout objects written in wxl: a layout of two functions, its virtualizing form, and the layout that reports the size its panel was offered."
+  "description": "The layout objects written in wxl: a layout of two functions, its virtualizing form, and the layout that reports the size its panel was offered."
 }

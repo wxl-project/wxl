@@ -1,6 +1,6 @@
 {
   "name": "scroll_viewer",
-  "needs": [
+  "dependencies": [
     "schema",
     "dsl"
   ],
@@ -10,8 +10,8 @@
   ],
   "surface": "scroll_viewer.surface.cpp",
   "libraries": [],
-  "comment": "The wheel a viewer passes on.",
-  "requires": {
+  "description": "The wheel a viewer passes on.",
+  "imports": {
     "types": {
       "Microsoft.UI.Xaml.Controls.ScrollViewer": {
         "members": [],

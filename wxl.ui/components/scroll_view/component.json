@@ -1,13 +1,13 @@
 {
   "name": "scroll_view",
-  "needs": [],
+  "dependencies": [],
   "sources": [
     "impl/scroll_controller_helpers.cpp",
     "impl/scroll_controller_helpers.h"
   ],
   "libraries": [],
-  "comment": "The scroll controllers of ScrollView.",
-  "requires": {
+  "description": "The scroll controllers of ScrollView.",
+  "imports": {
     "types": {
       "Microsoft.UI.Xaml.Controls.ScrollView": {
         "members": [],

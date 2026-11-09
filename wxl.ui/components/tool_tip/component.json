@@ -1,13 +1,13 @@
 {
   "name": "tool_tip",
-  "needs": [],
+  "dependencies": [],
   "sources": [
     "impl/tool_tip_helpers.cpp",
     "impl/tool_tip_helpers.h"
   ],
   "libraries": [],
-  "comment": "A tip that is an element of its own rather than text.",
-  "requires": {
+  "description": "A tip that is an element of its own rather than text.",
+  "imports": {
     "types": {
       "Microsoft.UI.Xaml.UIElement": {
         "members": [],

@@ -1,6 +1,6 @@
 {
   "name": "items",
-  "needs": [
+  "dependencies": [
     "schema",
     "dsl"
   ],
@@ -15,8 +15,8 @@
   ],
   "surface": "items.surface.cpp",
   "libraries": [],
-  "comment": "Item templates, item factories and container presets of the list controls.",
-  "requires": {
+  "description": "Item templates, item factories and container presets of the list controls.",
+  "imports": {
     "types": {
       "Microsoft.UI.Xaml.Controls.ItemsControl": {
         "members": [],

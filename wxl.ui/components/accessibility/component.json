@@ -1,13 +1,13 @@
 {
   "name": "accessibility",
-  "needs": [],
+  "dependencies": [],
   "sources": [
     "impl/automation_properties.cpp",
     "impl/automation_properties.h"
   ],
   "libraries": [],
-  "comment": "The automation properties of an element, apart from its name; they need the Automation.Peers types.",
-  "requires": {
+  "description": "The automation properties of an element, apart from its name; they need the Automation.Peers types.",
+  "imports": {
     "types": {
       "Microsoft.UI.Xaml.UIElement": {
         "members": [],

@@ -1,6 +1,6 @@
 {
   "name": "navigation",
-  "needs": [],
+  "dependencies": [],
   "sources": [
     "impl/navigation_view_helpers.cpp",
     "impl/navigation_view_helpers.h",
@@ -8,8 +8,8 @@
     "Navigation.h"
   ],
   "libraries": [],
-  "comment": "Frame navigation helpers, and the search box of a navigation view.",
-  "requires": {
+  "description": "Frame navigation helpers, and the search box of a navigation view.",
+  "imports": {
     "types": {
       "Microsoft.UI.Xaml.Controls.NavigationView": {
         "members": [],

@@ -1,6 +1,6 @@
 {
   "name": "schema",
-  "needs": [
+  "dependencies": [
     "dsl"
   ],
   "sources": [
@@ -8,5 +8,5 @@
     "ui.h"
   ],
   "libraries": [],
-  "comment": "The aggregate headers: schema.h, the generated schema with the fragments of the profile's components, and ui.h, the one include of an application."
+  "description": "The aggregate headers: schema.h, the generated schema with the fragments of the profile's components, and ui.h, the one include of an application."
 }

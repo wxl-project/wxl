@@ -1,6 +1,6 @@
 {
   "name": "effects",
-  "needs": [
+  "dependencies": [
     "schema",
     "composition",
     "dsl"
@@ -30,5 +30,5 @@
   "schema": "effects.schema.h",
   "surface": "effects.surface.cpp",
   "libraries": [],
-  "comment": "All the effects and the relief of a key, in one component until the effects are cut apart."
+  "description": "All the effects and the relief of a key, in one component until the effects are cut apart."
 }

@@ -101,7 +101,7 @@
 # The components: wxl_add_ui_library and wxl_add_ui_surface_test run
 # cmake/Read-ProfileComponents.ps1 under Windows PowerShell 5.1 at configure --
 # profiles and manifests are JSON with comments, which CMake cannot read. The script prints the components the
-# chain names and, closed over "needs", the directory, sources and libraries of
+# chain names and, closed over "dependencies", the directory, sources and libraries of
 # each. The library compiles those sources, links those libraries PRIVATE and
 # takes each component directory as a PUBLIC include root, which the surface
 # test of the profile takes as a PRIVATE one; the generator is
@@ -259,7 +259,7 @@ endfunction()
 #
 # The components of a profile, as cmake/Read-ProfileComponents.ps1 reads them at
 # configure: <prefix>_CHAIN, the names the chain itself gives (what the generator
-# compares with --component); and, closed over "needs", <prefix>_DIRS,
+# compares with --component); and, closed over "dependencies", <prefix>_DIRS,
 # <prefix>_SOURCES, <prefix>_SCHEMAS and <prefix>_SURFACES (absolute, the last two
 # the fragments of the schema and of its test), <prefix>_LIBRARIES and
 # <prefix>_MANIFESTS. Every

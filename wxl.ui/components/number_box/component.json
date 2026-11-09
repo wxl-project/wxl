@@ -1,6 +1,6 @@
 {
   "name": "number_box",
-  "needs": [
+  "dependencies": [
     "dsl"
   ],
   "sources": [
@@ -8,5 +8,5 @@
     "impl/intermediate_value_pair.h"
   ],
   "libraries": [],
-  "comment": "The binding pair of NumberBox.IntermediateValue."
+  "description": "The binding pair of NumberBox.IntermediateValue."
 }
