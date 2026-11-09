@@ -379,6 +379,31 @@ struct property_tag : deduced_property_tag<key, Owner>, enum_values<Value> {
     }
 };
 
+// The half of a number's tag that is not a number: a binding, whose field has a
+// type of its own and goes to the control through its pair or its setter.
+template <PropertyKey key, typename Owner>
+struct bound_property_tag {
+    template <typename T>
+        requires is_bind<std::decay_t<T>>
+    constexpr setter_op<key, std::decay_t<T>, Owner> operator=(T&& value) const {
+        return {std::forward<T>(value)};
+    }
+};
+
+// A property whose type is a number takes a number only as that type. The value
+// converts at the `=` of the markup, so a narrowing -- `0.4` given to a float --
+// is reported on that line and not inside the dispatch; a widening -- `0.4f` or
+// `2` given to a double -- is silent, as the language makes it.
+template <PropertyKey key, typename Value, typename Owner>
+    requires std::is_arithmetic_v<Value>
+struct property_tag<key, Value, Owner> : bound_property_tag<key, Owner> {
+    using bound_property_tag<key, Owner>::operator=;
+
+    constexpr setter_op<key, Value, Owner> operator=(Value value) const {
+        return {value};
+    }
+};
+
 template <PropertyKey key, typename Owner>
 struct property_tag<key, void, Owner> : deduced_property_tag<key, Owner> {
     using deduced_property_tag<key, Owner>::operator=;
