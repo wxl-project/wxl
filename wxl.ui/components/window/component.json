@@ -1,6 +1,6 @@
 {
   "name": "window",
-  "needs": [],
+  "dependencies": [],
   "sources": [
     "impl/window_frame.cpp",
     "impl/window_helpers.cpp",
@@ -12,8 +12,8 @@
     "WindowNative.h"
   ],
   "libraries": [],
-  "comment": "The window: native handle, frame, size and tray icon.",
-  "requires": {
+  "description": "The window: native handle, frame, size and tray icon.",
+  "imports": {
     "types": {
       "Microsoft.UI.Windowing.AppWindow": {
         "comment": "WindowNative::makeModal keeps a dialog out of the switcher and gives it its presenter; the tray icon's window and flyout are hidden, sized and placed through it.",

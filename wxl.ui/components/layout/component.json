@@ -1,6 +1,6 @@
 {
   "name": "layout",
-  "needs": [
+  "dependencies": [
     "schema",
     "dsl"
   ],
@@ -15,8 +15,8 @@
   ],
   "surface": "layout.surface.cpp",
   "libraries": [],
-  "comment": "Grid lengths, the even panels and the split panel.",
-  "requires": {
+  "description": "Grid lengths, the even panels and the split panel.",
+  "imports": {
     "types": {
       "Microsoft.UI.Xaml.Controls.Grid": {
         "members": [],

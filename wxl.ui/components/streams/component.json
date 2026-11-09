@@ -1,10 +1,10 @@
 {
   "name": "streams",
-  "needs": [],
+  "dependencies": [],
   "sources": [],
   "libraries": [],
-  "comment": "A stream reference the platform opens for a file address too.",
-  "requires": {
+  "description": "A stream reference the platform opens for a file address too.",
+  "imports": {
     "types": {
       "Windows.Storage.Streams.RandomAccessStreamReference": {
         "members": [],

@@ -1,13 +1,13 @@
 {
   "name": "pickers",
-  "needs": [],
+  "dependencies": [],
   "sources": [
     "impl/file_picker_helpers.cpp",
     "impl/file_picker_helpers.h"
   ],
   "libraries": [],
-  "comment": "The types of files a storage picker offers.",
-  "requires": {
+  "description": "The types of files a storage picker offers.",
+  "imports": {
     "types": {
       "Microsoft.Windows.Storage.Pickers.FileOpenPicker": {
         "members": [],

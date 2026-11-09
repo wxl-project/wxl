@@ -92,13 +92,13 @@ std::vector<std::string> names_of(std::vector<component> const& components) {
 
 }  // namespace
 
-// What a component requires joins the roots of the walk, and the root says which component
+// What a component imports joins the roots of the walk, and the root says which component
 // brought it; a type a profile lists too stays the profile's.
-TEST(component, its_required_types_are_roots_of_the_walk) {
+TEST(component, its_imported_types_are_roots_of_the_walk) {
     auto const directory = scratch(L"roots");
     auto const components = directory / L"components";
     write_component(components, "window",
-                    R"("requires": {"types": {"Microsoft.UI.Xaml.Window": {"members": ["Title"]},
+                    R"("imports": {"types": {"Microsoft.UI.Xaml.Window": {"members": ["Title"]},
                                               "Microsoft.UI.Xaml.Controls.Button": {}}})");
     auto const profile = write_profile(
         directory, R"("window")",
@@ -121,14 +121,14 @@ TEST(component, its_required_types_are_roots_of_the_walk) {
     std::filesystem::remove_all(directory);
 }
 
-// The components selected are those the chain names, closed over `needs`, each after the
-// ones it needs; `named_components` keeps the chain's own list.
-TEST(component, needs_are_followed_transitively) {
-    auto const directory = scratch(L"needs");
+// The components selected are those the chain names, closed over `dependencies`, each after
+// its dependencies; `named_components` keeps the chain's own list.
+TEST(component, dependencies_are_followed_transitively) {
+    auto const directory = scratch(L"dependencies");
     auto const components = directory / L"components";
     write_component(components, "core");
-    write_component(components, "elements", R"("needs": ["core"])");
-    write_component(components, "window", R"("needs": ["elements"])");
+    write_component(components, "elements", R"("dependencies": ["core"])");
+    write_component(components, "window", R"("dependencies": ["elements"])");
     auto const base = directory / L"base.winxl-profile";
     write(base, R"({"components": ["elements"]})");
     auto const profile = write_profile(directory, R"("window")", R"("extends": ["base"])");
@@ -161,11 +161,11 @@ TEST(component, a_missing_component_names_the_profile_and_the_directories) {
     std::filesystem::remove_all(directory);
 }
 
-TEST(component, a_cycle_of_needs_is_refused) {
+TEST(component, a_cycle_of_dependencies_is_refused) {
     auto const directory = scratch(L"cycle");
     auto const components = directory / L"components";
-    write_component(components, "a", R"("needs": ["b"])");
-    write_component(components, "b", R"("needs": ["a"])");
+    write_component(components, "a", R"("dependencies": ["b"])");
+    write_component(components, "b", R"("dependencies": ["a"])");
     auto const profile = write_profile(directory, R"("a")");
 
     EXPECT_TRUE(says(stops_with([&] {
@@ -226,20 +226,20 @@ TEST(component, a_key_a_manifest_does_not_have_is_refused) {
     auto const manifest = write_component(directory, "window", R"("sauces": [])");
     EXPECT_TRUE(says(stops_with([&] { load_component(manifest); }), {utf8(manifest), "'sauces'"}));
 
-    auto const required = write_component(directory, "elements", R"("requires": {"brushes": []})");
-    EXPECT_TRUE(says(stops_with([&] { load_component(required); }), {utf8(required), "'brushes'"}));
+    auto const imports = write_component(directory, "elements", R"("imports": {"brushes": []})");
+    EXPECT_TRUE(says(stops_with([&] { load_component(imports); }), {utf8(imports), "'brushes'"}));
 
     std::filesystem::remove_all(directory);
 }
 
 // The build's own list of the chain's components is held to the chain's, as sets and before
-// `needs` adds to them.
+// `dependencies` adds to them.
 TEST(component, the_list_of_the_build_must_match_the_profiles) {
     auto const directory = scratch(L"cross_check");
     auto const components = directory / L"components";
     write_component(components, "core");
-    write_component(components, "grid", R"("needs": ["core"])");
-    write_component(components, "window", R"("needs": ["core"])");
+    write_component(components, "grid", R"("dependencies": ["core"])");
+    write_component(components, "window", R"("dependencies": ["core"])");
     auto const base = directory / L"base.winxl-profile";
     write(base, R"({"components": ["window"]})");
     auto const profile = write_profile(directory, R"("window", "grid")", R"("extends": ["base"])");
@@ -256,7 +256,7 @@ TEST(component, the_list_of_the_build_must_match_the_profiles) {
     std::filesystem::remove_all(directory);
 }
 
-// A name listed twice in "components", "needs", "sources" or "libraries" is a mistake, not a
+// A name listed twice in "components", "dependencies", "sources" or "libraries" is a mistake, not a
 // repetition to fold.
 TEST(component, a_name_listed_twice_is_refused) {
     auto const directory = scratch(L"listed_twice");
@@ -264,9 +264,9 @@ TEST(component, a_name_listed_twice_is_refused) {
     EXPECT_TRUE(says(stops_with([&] { load_profile(profile); }),
                      {utf8(profile), "'components'", "\"window\" twice"}));
 
-    auto const manifest = write_component(directory, "grid", R"("needs": ["core", "core"])");
+    auto const manifest = write_component(directory, "grid", R"("dependencies": ["core", "core"])");
     EXPECT_TRUE(says(stops_with([&] { load_component(manifest); }),
-                     {utf8(manifest), "'needs'", "\"core\" twice"}));
+                     {utf8(manifest), "'dependencies'", "\"core\" twice"}));
 
     auto const sources = write_component(directory, "items", R"("sources": ["a.cpp", "a.cpp"])");
     EXPECT_TRUE(says(stops_with([&] { load_component(sources); }),
@@ -423,11 +423,11 @@ TEST(component, a_definition_other_than_the_profiles_is_refused) {
         auto const profile = write_profile(directory, R"("window")", type(profiles));
         component_search const search{.directories = {components}};
 
-        write_component(components, "window", "\"requires\": {" + type(profiles) + "}");
+        write_component(components, "window", "\"imports\": {" + type(profiles) + "}");
         EXPECT_NO_THROW(resolve_profiles({profile}, restored, search)) << what;
 
         auto const manifest =
-            write_component(components, "window", "\"requires\": {" + type(other) + "}");
+            write_component(components, "window", "\"imports\": {" + type(other) + "}");
         EXPECT_TRUE(says(stops_with([&] { resolve_profiles({profile}, restored, search); }),
                          {utf8(std::filesystem::canonical(manifest)), utf8(profile),
                           std::string{what}}));
@@ -436,7 +436,7 @@ TEST(component, a_definition_other_than_the_profiles_is_refused) {
     std::filesystem::remove_all(directory);
 }
 
-// What a component's own `requires` includes is checked as well, and reported against its
+// What a component's own `imports` includes is checked as well, and reported against its
 // manifest.
 TEST(component, an_include_of_a_component_names_the_manifest) {
     auto const directory = scratch(L"includes_component");
@@ -444,7 +444,7 @@ TEST(component, an_include_of_a_component_names_the_manifest) {
     auto const common = directory / L"common";
     auto const manifest = write_component(
         components, "window",
-        R"("requires": {"types": {"Microsoft.UI.Xaml.Window": {"syntheticMembers": {"MinSize": )"
+        R"("imports": {"types": {"Microsoft.UI.Xaml.Window": {"syntheticMembers": {"MinSize": )"
         R"({"type": "Windows.Graphics.SizeInt32", "function": "f", "include": "../missing.h"}}}}})");
     std::filesystem::create_directories(common);
     auto const profile = write_profile(directory, R"("window")");

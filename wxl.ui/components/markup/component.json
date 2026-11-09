@@ -1,6 +1,6 @@
 {
   "name": "markup",
-  "needs": [
+  "dependencies": [
     "schema",
     "elements"
   ],
@@ -18,5 +18,5 @@
   ],
   "surface": "markup.surface.cpp",
   "libraries": [],
-  "comment": "Formatted text blocks and the HTML block."
+  "description": "Formatted text blocks and the HTML block."
 }

@@ -171,7 +171,7 @@ struct profile {
     std::vector<std::string> extends;
 
     // The components the profile selects ("components"), by name; a component's own
-    // `needs` are added when the set is resolved.
+    // `dependencies` are added when the set is resolved.
     std::vector<std::string> components;
 
     // The lowest Windows App SDK release (the umbrella package
@@ -206,7 +206,7 @@ struct profile {
 };
 
 // A component: a directory holding component.json, the hand-written code of wxl.ui that
-// calls a part of the projection, and what that code asks the projection for. `requirements`
+// calls a part of the projection, and what that code asks the projection for. `imports`
 // is read with the keys a profile has for it (types, packages, windowsMetadata) and joins the
 // roots of the walk like one more profile of the chain, so a type it lists is generated
 // whoever else lists it. The other keys describe the component to the build.
@@ -215,19 +215,19 @@ struct component {
     std::filesystem::path source;     // the component.json
     std::filesystem::path directory;  // the one that holds it
     // What the walk is asked to start from -- the packages, the listed types with everything
-    // written under them, and the Windows metadata: the keys a profile and the `requires` of a
+    // written under them, and the Windows metadata: the keys a profile and the `imports` of a
     // component share.
-    profile requirements;
-    std::vector<std::string> needs;      // other components, by name
-    std::vector<std::string> sources;    // files of the component, relative to its directory
-    std::vector<std::string> libraries;  // targets the component links
-    std::string schema;                  // fragment of schema.h, relative to the directory
-    std::string surface;                 // its compile-only test, relative to the directory
-    std::string comment;
+    profile imports;
+    std::vector<std::string> dependencies;  // other components, by name
+    std::vector<std::string> sources;       // files of the component, relative to its directory
+    std::vector<std::string> libraries;     // targets the component links
+    std::string schema;                     // fragment of schema.h, relative to the directory
+    std::string surface;                    // its compile-only test, relative to the directory
+    std::string description;
 };
 
 // Reads one component.json. Throws std::runtime_error naming the file on malformed JSON, on a
-// key the manifest or its `requirements` does not have, and on a name that is not the name of
+// key the manifest or its `imports` does not have, and on a name that is not the name of
 // the directory the file is in.
 component load_component(std::filesystem::path const& manifest);
 
@@ -361,8 +361,8 @@ struct profile_set {
         std::filesystem::path by;
     };
 
-    // The components the chain names, in the order it names them, before "needs" adds to them;
-    // and the components selected, each after those it needs.
+    // The components the chain names, in the order it names them, before "dependencies" adds to
+    // them; and the components selected, each after its dependencies.
     std::vector<component_request> named_components;
     std::vector<component> components;
 
@@ -490,10 +490,10 @@ profile_set resolve_profiles(std::vector<std::filesystem::path> const& paths,
                              component_search const& search = {});
 
 // Compares the components a build read from the profile chain on its own with those the chain
-// names in "components" before "needs" adds to them, as sets: the build compiles the components
-// it read, and the projection is made for those the chain names. An empty list matches a chain
-// naming none. Throws std::runtime_error naming both lists and the profile that names each
-// component of the chain.
+// names in "components" before "dependencies" adds to them, as sets: the build compiles the
+// components it read, and the projection is made for those the chain names. An empty list
+// matches a chain naming none. Throws std::runtime_error naming both lists and the profile that
+// names each component of the chain.
 void check_build_components(profile_set const& profiles,
                             std::vector<std::string> const& build_components);
 

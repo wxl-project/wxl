@@ -1,6 +1,6 @@
 {
   "name": "elements",
-  "needs": [
+  "dependencies": [
     "dsl"
   ],
   "sources": [
@@ -12,8 +12,8 @@
     "Resource.h"
   ],
   "libraries": [],
-  "comment": "What every element asks of its helpers: tool tip, cursor, fluent symbol, automation name, resources, and the focus pair of UIElement.",
-  "requires": {
+  "description": "What every element asks of its helpers: tool tip, cursor, fluent symbol, automation name, resources, and the focus pair of UIElement.",
+  "imports": {
     "types": {
       "Microsoft.UI.Xaml.UIElement": {
         "members": [],

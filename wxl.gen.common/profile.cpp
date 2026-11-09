@@ -599,7 +599,7 @@ void member_filter::merge(member_filter const& other) {
 namespace {
 
 // What the walk is asked to start from -- the packages, the listed types with everything
-// written under them, and the Windows metadata: the keys a profile and the `requires` of a
+// written under them, and the Windows metadata: the keys a profile and the `imports` of a
 // component share. A type listed without "styles" asks for all of its styles when
 // `all_styles_by_default`, and for none otherwise.
 void read_requirements(value const& document, std::filesystem::path const& path, profile& prof,
@@ -677,8 +677,8 @@ component load_component(std::filesystem::path const& manifest) {
     comp.source = manifest;
     comp.directory = manifest.parent_path();
     refuse_other_keys(document, manifest, "component",
-                      {"name", "requires", "needs", "sources", "schema", "surface", "libraries",
-                       "comment"});
+                      {"name", "imports", "dependencies", "sources", "schema", "surface",
+                       "libraries", "description"});
     comp.name = required_string(document, manifest, "name", "component");
 
     auto const directory_name = wxl::core::unicode::to_utf8(comp.directory.filename());
@@ -688,28 +688,28 @@ component load_component(std::filesystem::path const& manifest) {
                                    comp.name, directory_name.chars()));
     }
 
-    comp.needs = read_names(document, manifest, "needs");
+    comp.dependencies = read_names(document, manifest, "dependencies");
     comp.sources = read_names(document, manifest, "sources");
     comp.libraries = read_names(document, manifest, "libraries");
     comp.schema = string_or(document, manifest, "schema", {});
     comp.surface = string_or(document, manifest, "surface", {});
-    comp.comment = string_or(document, manifest, "comment", {});
+    comp.description = string_or(document, manifest, "description", {});
 
     // Read as a profile of the chain is, so the merge and the checks of packages and
     // versions treat it as one and name the manifest.
     // A component asks for no brushes, and a type it lists without "styles" for none of its
     // styles: a profile's default of all of them would widen whatever the profiles narrowed. A
     // type only a component lists has no styles entry, and so keeps all of its styles.
-    comp.requirements.name = comp.name;
-    comp.requirements.source = manifest;
-    comp.requirements.brushes = member_filter::none();
-    if (value const* const required = document.find("requires")) {
-        if (!required->is_object()) {
-            fail(manifest, "'requires' must be an object");
+    comp.imports.name = comp.name;
+    comp.imports.source = manifest;
+    comp.imports.brushes = member_filter::none();
+    if (value const* const imports = document.find("imports")) {
+        if (!imports->is_object()) {
+            fail(manifest, "'imports' must be an object");
         }
-        refuse_other_keys(*required, manifest, "'requires'",
+        refuse_other_keys(*imports, manifest, "'imports'",
                           {"types", "packages", "windowsMetadata"});
-        read_requirements(*required, manifest, comp.requirements, false);
+        read_requirements(*imports, manifest, comp.imports, false);
     }
     return comp;
 }
@@ -772,11 +772,11 @@ std::filesystem::path canonical_path(std::filesystem::path const& path) {
 
 namespace {
 
-// The components selected: those named, closed over `needs`, each after those it needs.
+// The components selected: those named, closed over `dependencies`, each after its dependencies.
 struct component_resolver {
     component_search const& search;
     std::vector<component>& selected;
-    std::vector<std::string> following;  // the chain of `needs` being followed, for a cycle
+    std::vector<std::string> following;  // the chain of `dependencies` being followed, for a cycle
 
     void select(std::string const& name, std::filesystem::path const& wanted_by) {
         if (std::ranges::any_of(selected, [&](component const& comp) { return comp.name == name; })) {
@@ -785,7 +785,7 @@ struct component_resolver {
         if (auto const at = std::ranges::find(following, name); at != following.end()) {
             std::vector<std::string> cycle(at, following.end());
             cycle.push_back(name);
-            fail(wanted_by, std::format("the components need each other in a cycle: {}",
+            fail(wanted_by, std::format("the components depend on each other in a cycle: {}",
                                         wxl::core::join(cycle, " -> ")));
         }
         auto comp = load_component(find(name, wanted_by));
@@ -796,8 +796,8 @@ struct component_resolver {
                                         wxl::core::unicode::to_utf8(comp.source).chars()));
         }
         following.push_back(name);
-        for (auto&& need : comp.needs) {
-            select(need, comp.source);
+        for (auto&& dependency : comp.dependencies) {
+            select(dependency, comp.source);
         }
         following.pop_back();
         selected.push_back(std::move(comp));
@@ -892,7 +892,7 @@ struct profile_loader {
         result.loaded.push_back(prof.name);
     }
 
-    // The components named in the chain, each after those it needs, merged after the
+    // The components named in the chain, each after its dependencies, merged after the
     // profiles: a type both list is reported against the profile.
     void load_components(component_search const& search) {
         component_resolver resolver{search, result.components};
@@ -900,11 +900,11 @@ struct profile_loader {
             resolver.select(name, by);
         }
         for (auto&& comp : result.components) {
-            merge(comp.requirements, {comp.source, comp.name});
+            merge(comp.imports, {comp.source, comp.name});
         }
     }
 
-    // A profile, or the `requires` of a component, joined to the set.
+    // A profile, or the `imports` of a component, joined to the set.
     void merge(profile const& prof, listing const& by) {
         // Versions and packages wait for the second pass: the release the set
         // needs is the highest minimum of all its profiles, and the check of
