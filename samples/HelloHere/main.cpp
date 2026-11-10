@@ -8,11 +8,13 @@ using namespace wxl;
 using namespace wxl::core;
 using namespace wxl::dsl;
 
+namespace {
+
 // Presets are their arguments, and these are constants: laid out by the
 // compiler, with nothing to run for them at start-up.
 namespace presets {
-    inline constexpr Preset centeredAndWrapped{hAlign.center, textWrapping.wrap};
-    inline constexpr Preset allCentered{hAlign.center, vAlign.center};
+    constexpr Preset centeredAndWrapped{hAlign.center, textWrapping.wrap};
+    constexpr Preset allCentered{hAlign.center, vAlign.center};
 }
 
 ElementTheme nextTheme(ElementTheme value) {
@@ -44,11 +46,13 @@ std::u16string themeName(ElementTheme value)
     }
 }
 
+}  // namespace
+
 Teardown wxl_launched() {
-    // The theme the root requests. It starts at Default, so the window follows the
-    // system until the button asks for Light or Dark. Its bindings own the controls
-    // they drive, so the Teardown keeps it as long as the window lives, and a handler
-    // on those controls refers to it without owning it.
+    // The theme the window requests. It starts at Default, so the window follows the
+    // system until the button asks for Light or Dark. Its bindings own what they
+    // drive, so the Teardown keeps it as long as the window lives, and a handler on
+    // those controls refers to it without owning it.
     auto const themeOwner = make_refcounted<observable<ElementTheme>>(ElementTheme::Default);
     observable<ElementTheme>& theme = *themeOwner;
 
@@ -152,10 +156,11 @@ Teardown wxl_launched() {
     auto window = Window {
         title = u"Hello from WXL",
         minSize = {500, 420},
+        // On the window, not on its content: the frame follows it too.
+        requestedTheme = BindOutput {theme},
         Grid {
             RowDefinitions<u"auto,*,auto">,
             background = brushes.SolidBackgroundFillColor.Base,
-            requestedTheme = BindOutput {theme},
             topBar,
             card,
         },

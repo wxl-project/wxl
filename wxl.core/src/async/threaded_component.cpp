@@ -59,11 +59,11 @@ public:
     HANDLE thread_ = nullptr;
 };
 
-inline core::not_null<threaded_component::impl_t> threaded_component::impl() {
+core::not_null<threaded_component::impl_t> threaded_component::impl() {
     return core::as_not_null(static_cast<impl_t*>(component::impl().get()));
 }
 
-inline core::not_null<const threaded_component::impl_t> threaded_component::impl() const {
+core::not_null<const threaded_component::impl_t> threaded_component::impl() const {
     return core::as_not_null(static_cast<const impl_t*>(component::impl().get()));
 }
 

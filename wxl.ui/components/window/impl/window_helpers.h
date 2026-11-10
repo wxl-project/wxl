@@ -17,6 +17,7 @@
 #include "SizeToContent.h"
 #include "core.h"
 #include "hstring_param.h"
+#include <wxl/Microsoft.UI.Xaml.Enums.h>
 #include <wxl/Windows.Graphics.Structs.h>
 
 namespace wxl::impl {
@@ -104,6 +105,30 @@ struct window_placement_setter {
     /// blindly, a window whose monitor was unplugged opens where nobody can see it.
     static void set(winrt::Microsoft::UI::Xaml::Window const& window, hstring_param const& text);
 };
+
+/// The setter of Window's requestedTheme property (the component's syntheticMembers). A friend of
+/// WindowNative, which keeps the theme until the island has a root to carry it; reading it back
+/// is WindowNative::actualTheme(). Defined in WindowNative.cpp.
+struct window_theme_setter {
+    /// The theme is kept, the frame takes it now, and the island's root takes it once the content
+    /// has been laid out -- at once, if it has been. A window activated with no content to find
+    /// the root from is a mistake, and stops.
+    static void set(winrt::Microsoft::UI::Xaml::Window const& window, ElementTheme requested);
+};
+
+/// What a request shows: itself, or for Default the application's theme.
+ElementTheme shown_theme(ElementTheme requested);
+
+/// Puts `requested` on `root`, the topmost element of a window's island, which everything the
+/// window shows inherits it from. Shared by both windows, which differ only in how they find
+/// their root.
+void request_island_theme(winrt::Microsoft::UI::Xaml::FrameworkElement const& root,
+                          ElementTheme requested);
+
+/// The frame of `hwnd` takes the theme `root` shows, and follows it from now on: a change of the
+/// request, and of the system's theme under Default. Once per root. The handler holds the handle
+/// alone; the root goes with the window.
+void frame_follows(HWND__* hwnd, winrt::Microsoft::UI::Xaml::FrameworkElement const& root);
 
 /// DWMWA_USE_IMMERSIVE_DARK_MODE: the frame in the dark theme, or back in the light one. With
 /// frame_caption, defined in window_frame.cpp of its own: dwmapi.h drags in uxtheme.h, which wants

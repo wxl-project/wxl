@@ -32,6 +32,7 @@
 #include <vector>
 
 #include <winrt/Microsoft.UI.Windowing.h>
+#include <winrt/Microsoft.UI.Xaml.Media.h>
 #include <winrt/Microsoft.UI.Xaml.h>
 #include <winrt/base.h>
 
@@ -54,6 +55,7 @@ namespace wxl {
 namespace {
 
 namespace windowing = winrt::Microsoft::UI::Windowing;
+namespace xaml = winrt::Microsoft::UI::Xaml;
 
 using drop_handler = std::function<void(std::vector<std::wstring> const&)>;
 
@@ -166,6 +168,11 @@ struct WindowNative::native_state {
 
     /// The handler of the files dropped on the window; empty until acceptFileDrops.
     drop_handler drops;
+
+    /// The theme Window's requestedTheme asked for, and the root of the window's island that
+    /// carries it: null until the content has been laid out and the root found.
+    ElementTheme theme = ElementTheme::Default;
+    xaml::FrameworkElement root{nullptr};
 };
 
 /// The one subclass procedure: the backdrop's paints, the dropped files, and the window's going.
@@ -294,6 +301,90 @@ struct WindowNative::subclass {
     }
 };
 
+/// The theme of a window, said once for the window. WinUI keeps a theme on elements alone, and
+/// inherits it down the tree: Window has no RequestedTheme, Application.RequestedTheme is fixed
+/// once there is content, and a theme put on the content is lost when the content is replaced.
+/// Above the content stands the window's own chrome, and its topmost element -- the root of the
+/// island -- is made with the window's first content and stays for the window's life: replacing
+/// the content, or setting none, leaves it where it is with the theme it was given. So that is
+/// where the theme goes, and everything the window shows inherits it, except content that asks
+/// for a theme of its own. What the root is is WinUI's business; it is found by walking up from
+/// the content to the last element there is, not by its type, and only once the content has
+/// been laid out -- before that the content has no parent.
+struct WindowNative::island {
+    /// The topmost element above `content`, which is in the tree.
+    static xaml::FrameworkElement root_above(xaml::FrameworkElement const& content) {
+        xaml::FrameworkElement top = content;
+        for (auto node = xaml::Media::VisualTreeHelper::GetParent(content); node;
+             node = xaml::Media::VisualTreeHelper::GetParent(node)) {
+            if (auto const element = node.try_as<xaml::FrameworkElement>()) top = element;
+        }
+        return top;
+    }
+
+    /// The window's entry, of a window that has one: a handler that comes after the window has
+    /// gone finds nothing and does nothing.
+    static native_state* kept(HWND hwnd) {
+        auto& all = subclass::states();
+        auto const found = all.find(hwnd);
+        return found != all.end() ? &found->second : nullptr;
+    }
+
+    /// The root found: it takes the theme, and the frame follows what it shows from now on.
+    static void adopt(HWND hwnd, native_state& state, xaml::FrameworkElement const& root) {
+        state.root = root;
+        root.RequestedTheme(static_cast<xaml::ElementTheme>(state.theme));
+        impl::frame_follows(hwnd, root);
+    }
+
+    /// Finds the root from the window's content: at once if the content has been laid out, when
+    /// it loads if not, and when the window activates if it has no content yet -- the content may
+    /// be written after the tag in the window's braces. Both handlers take themselves off when
+    /// they come and hold the handle alone, never the window: Loaded's is the content's, and the
+    /// content belongs to the window. A window shown with no content has nothing to find the root
+    /// from, and stops.
+    ///
+    /// Content replaced before it was ever laid out never loads, and the root is not found until
+    /// the theme is asked for again: nothing tells this code that the content changed -- the
+    /// setter of Window.Content is the platform's, and is not intercepted. The handler left on
+    /// that content holds nothing but the handle.
+    static void seek(xaml::Window const& window, native_state& state) {
+        HWND const hwnd = handle_of(window);
+        auto const content = window.Content().try_as<xaml::FrameworkElement>();
+        if (!content) {
+            if (window.Visible()) {
+                core::abort("wxl: requestedTheme on a window shown with no content to find "
+                            "its island from");
+            }
+            auto const activated = std::make_shared<winrt::event_token>();
+            *activated = window.Activated([activated](winrt::Windows::Foundation::IInspectable const& sender,
+                                                      xaml::WindowActivatedEventArgs const&) {
+                auto const shown = sender.as<xaml::Window>();
+                shown.Activated(*activated);
+                if (native_state* const state = kept(handle_of(shown)); state && !state->root) {
+                    seek(shown, *state);
+                }
+            });
+            return;
+        }
+
+        if (content.IsLoaded()) {
+            adopt(hwnd, state, root_above(content));
+            return;
+        }
+
+        auto const loaded = std::make_shared<winrt::event_token>();
+        *loaded = content.Loaded([loaded, hwnd](winrt::Windows::Foundation::IInspectable const& sender,
+                                                xaml::RoutedEventArgs const&) {
+            auto const element = sender.as<xaml::FrameworkElement>();
+            element.Loaded(*loaded);
+            if (native_state* const state = kept(hwnd); state && !state->root) {
+                adopt(hwnd, *state, root_above(element));
+            }
+        });
+    }
+};
+
 WindowNative::native_state* WindowNative::state_of(HWND__* hwnd) {
     if (!hwnd) return nullptr;
 
@@ -358,6 +449,15 @@ hstring WindowNative::placement(Window const& window) {
         wxl::core::append_number(text, value);
     }
     return hstring{text};
+}
+
+ElementTheme WindowNative::actualTheme(Window const& window) {
+    // A window with no theme asked for shows the application's; one whose root is not found yet
+    // shows, once it is, what was asked.
+    native_state const* const state = island::kept(handle(window));
+    if (!state) return impl::shown_theme(ElementTheme::Default);
+    if (state->root) return static_cast<ElementTheme>(state->root.ActualTheme());
+    return impl::shown_theme(state->theme);
 }
 
 void WindowNative::setBackdropColor(Window const& window, Color color) {
@@ -566,6 +666,30 @@ void window_placement_setter::set(winrt::Microsoft::UI::Xaml::Window const& wind
     if (wanted->state == placement_state::full_screen) {
         window.AppWindow().SetPresenter(windowing::AppWindowPresenterKind::FullScreen);
     }
+}
+
+void window_theme_setter::set(winrt::Microsoft::UI::Xaml::Window const& window,
+                              ElementTheme requested) {
+    using island = WindowNative::island;
+    HWND const hwnd = handle_of(window);
+    WindowNative::native_state* const state = WindowNative::state_of(hwnd);
+    if (!state) {
+        core::abort("wxl: requestedTheme on a window with no handle to keep it by");
+    }
+    state->theme = requested;
+
+    // Found already: the root takes the request, and its ActualThemeChanged repaints the frame.
+    if (state->root) {
+        request_island_theme(state->root, requested);
+        return;
+    }
+
+    // Not yet: the frame is right from the first frame, and the root takes the theme once found
+    // -- whatever was asked last, since it reads the state then. Asked again before that, the
+    // search starts again from the content the window holds now: the first one to find the root
+    // adopts it, and any other finds it adopted and does nothing.
+    frame_dark(hwnd, shown_theme(requested) == ElementTheme::Dark);
+    island::seek(window, *state);
 }
 
 }  // namespace impl

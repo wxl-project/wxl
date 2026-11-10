@@ -1,5 +1,7 @@
 // Квадратное уравнение: три коэффициента на входе, дискриминант и корни на выходе.
-// Модель — поля с оповещением, интерфейс — одно выражение, привязанное к ним.
+// Модель — поля с оповещением, интерфейс одним выражением, привязанным к модели.
+
+#include <complex>
 
 #include "Bind.h"
 #include "Card.h"
@@ -14,9 +16,18 @@ using namespace wxl;
 using namespace wxl::core;
 using namespace wxl::dsl;
 
-// Девять значащих цифр — у double и у обеих частей complex одинаково.
-u16_text toText(auto value) {
-    return format(u"{:.9g}", value);
+namespace {
+
+u16_text toText(double value) { return format(u"{:.9g}", value); }
+
+u16_text toText(std::complex<double> value) {
+    if (value.imag() == 0.0)
+        return format(u"{:.9g}", value.real());
+
+    if (value.imag() > 0.0)
+        return format(u"{:.9g}+{:.9g}i", value.real(), value.imag());
+
+    return format(u"{:.9g}{:.9g}i", value.real(), value.imag());
 }
 
 // Ответ сравнивается, и равный ответ поля вывода не перезаписывает: observable::set
@@ -35,15 +46,12 @@ constexpr double blank = std::numeric_limits<double>::quiet_NaN();
 Answer solve(double a, double b, double c) {
     u16_text const none{u"—"};
 
-    if (std::isnan(a) || std::isnan(b) || std::isnan(c))
-        return {none, none, none};
+    if (std::isnan(a) || std::isnan(b) || std::isnan(c)) return {none, none, none};
 
     if (a == 0) {
-        if (b != 0)
-            return {none, toText(-c / b), none};
+        if (b != 0) return {none, toText(-c / b), none};
 
-        if (c == 0)
-            return {none, u16_text{u"ℝ"}, none};
+        if (c == 0) return {none, u16_text{u"ℝ"}, none};
 
         return {none, u16_text{u"∅"}, none};
     }
@@ -76,32 +84,34 @@ struct Equation : sta_refcounted {
     observable<Answer> answer{a, b, c, solve};
 };
 
-// Пресеты — это их аргументы, и здесь они константы: их раскладывает
-// компилятор, и при запуске для них ничего не выполняется.
 namespace presets {
-    inline constexpr Preset common {
-        fontSize = 18,
-        hAlign.center,
-        vAlign.center,
-    };
 
-    inline constexpr Preset txt {
-        common, // Пресеты могут вкладываться друг в друга
-        FontWeight {600},
-        foreground = colors.blue,
-    };
+// Пресеты — это набор их аргументов, и здесь они константы
+constexpr Preset common {
+    fontSize = 18,
+    hAlign.center,
+    vAlign.center,
+};
 
-    inline constexpr Preset input {
-        common,
-        width = 200,
-    };
+constexpr Preset txt {
+    common,  // Пресеты могут вкладываться друг в друга
+    FontWeight{600},
+    foreground = colors.blue,
+};
 
-    inline constexpr Preset output {
-        common,
-        width = 300,
-        isReadOnly = true,
-    };
-}
+constexpr Preset input {
+    common,
+    width = 200,
+};
+
+constexpr Preset output {
+    common,
+    width = 300,
+    isReadOnly = true,
+};
+
+}  // namespace presets
+}  // namespace
 
 wxl::Teardown wxl_launched() {
     // Время жизни модели требуется продлить

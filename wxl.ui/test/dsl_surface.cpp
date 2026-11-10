@@ -351,15 +351,15 @@ static_assert(impl::iterating<decltype([](repeat<3>) noexcept { return Button{};
 // the one carrying a template is a constant object whose template is made
 // at start-up, in the pool that stands from before main().
 namespace library_presets {
-inline constexpr Preset shape{CornerRadius{12}, translation = {0, 0, 32}};
+constexpr Preset shape{CornerRadius{12}, translation = {0, 0, 32}};
 
-inline Preset const card{
+Preset const card{
     shape,
     background = brushes.Card.BackgroundFillColor.Default,
     shadow = Template<ThemeShadow>{},
 };
 
-inline Preset const stamp{
+Preset const stamp{
     Template<Button>{content = L"fresh per application"},
 };
 }
@@ -898,7 +898,7 @@ static_assert(!std::is_default_constructible_v<ElementCompositionPreview>,
 
 // A colour written for a brush is a solid brush of that colour -- in the
 // syntax only: the setter itself still takes a brush and nothing else.
-inline constexpr Preset tinted{background = colors.white, borderBrush = Color{255, 0, 0, 0}};
+constexpr Preset tinted{background = colors.white, borderBrush = Color{255, 0, 0, 0}};
 
 [[maybe_unused]] void colours_for_brushes() {
     Border scrim{background = rgba(224, 224, 208, 0.627), tinted};

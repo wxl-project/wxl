@@ -79,7 +79,7 @@ struct wxl::impl::event_adder<test_event> {
 
 namespace {
 
-inline constexpr wxl::impl::event_tag<test_event> onTest;
+constexpr wxl::impl::event_tag<test_event> onTest;
 
 // The token is the one handle of its subscription: not copied, and moving it empties the source.
 static_assert(!std::is_copy_constructible_v<EventToken>);
