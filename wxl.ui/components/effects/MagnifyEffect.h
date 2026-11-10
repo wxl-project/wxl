@@ -20,8 +20,8 @@
 //
 //     MagnifyEffect {
 //         1.2f,                  // or scale = 1.2f, or scale = Size{1.3f, 1.1f}
-//         maximum = 1.35,        // where the way in turns back
-//         minimum = 0.95,        // where the way out turns back
+//         maximum = 1.35f,       // where the way in turns back
+//         minimum = 0.95f,       // where the way out turns back
 //         duration = 250ms,      // the first phase of each motion
 //         delayTime = 80ms,      // before growing: a pointer passing over
 //     }                          // does not jerk the element
@@ -29,7 +29,7 @@
 // maximum and minimum are the far points each motion swings to before
 // settling: maximum past the scale on the way in, minimum past 1 on the way
 // out. For a shrinking effect they lie the other way round --
-// `MagnifyEffect {0.8f, maximum = 0.7, minimum = 1.2}` dips to 0.7 and settles
+// `MagnifyEffect {0.8f, maximum = 0.7f, minimum = 1.2f}` dips to 0.7 and settles
 // at 0.8, then springs to 1.2 and settles at 1. Unset, or on the wrong side,
 // there is no swing.
 //
@@ -140,8 +140,8 @@ public:
 
     /// The far points the way in and the way out swing to, as scales on the
     /// axis that moves further. Unset, the motion does not swing.
-    void maximum(double value) const;
-    void minimum(double value) const;
+    void maximum(float value) const;
+    void minimum(float value) const;
 
     /// The whole of each motion. Unset, 140 ms in and 180 out; with a swing,
     /// 300 and 360.

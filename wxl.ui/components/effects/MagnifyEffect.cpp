@@ -41,21 +41,21 @@ winrt::Windows::Foundation::TimeSpan timespan(core::duration d) {
 // of a·s·sin(πs) − s³ on [0, 1], which is the curve's own formula with the
 // end at the origin. It grows with the amplitude a, so the amplitude that
 // swings exactly to a given far point is found by bisection.
-double back_overshoot(double a) {
-    double best = 0.0;
+float back_overshoot(float a) {
+    float best = 0.0f;
     for (int i = 1; i < 256; ++i) {
-        double const s = i / 256.0;
-        best = std::max(best, a * s * std::sin(std::numbers::pi * s) - s * s * s);
+        float const s = i / 256.0f;
+        best = std::max(best, a * s * std::sin(std::numbers::pi_v<float> * s) - s * s * s);
     }
     return best;
 }
 
-double back_amplitude(double past) {
-    double low = 0.0;
-    double high = 1.0;
-    while (back_overshoot(high) < past) high *= 2.0;
+float back_amplitude(float past) {
+    float low = 0.0f;
+    float high = 1.0f;
+    while (back_overshoot(high) < past) high *= 2.0f;
     for (int i = 0; i < 32; ++i) {
-        double const mid = (low + high) / 2.0;
+        float const mid = (low + high) / 2.0f;
         (back_overshoot(mid) < past ? low : high) = mid;
     }
     return high;
@@ -65,8 +65,8 @@ double back_amplitude(double past) {
 struct MagnifyEffect::Impl : core::sta_refcounted {
     // ---- The settings ----
     Size scale{1.2f, 1.2f};
-    core::nullable<double> maximum;
-    core::nullable<double> minimum;
+    core::nullable<float> maximum;
+    core::nullable<float> minimum;
     core::nullable<core::duration> duration;
     core::duration delay{};
     MagnifyTarget target = MagnifyTarget::Element;  // read when an element is attached
@@ -86,7 +86,7 @@ struct MagnifyEffect::Impl : core::sta_refcounted {
 
     // The axis that moves further from 1: what maximum and minimum are
     // measured on. Below 1 on it the effect shrinks under the pointer.
-    double leading() const {
+    float leading() const {
         return std::abs(scale.width - 1.0f) >= std::abs(scale.height - 1.0f) ? scale.width
                                                                              : scale.height;
     }
@@ -139,15 +139,15 @@ struct MagnifyEffect::Impl : core::sta_refcounted {
         // scale. maximum is where the way in turns back, minimum the way out,
         // so for a shrinking effect maximum is below the scale and minimum
         // above 1. A value on the wrong side of its end gives no swing.
-        double const travel = leading() - 1.0;
-        double past_top = 0.0;
-        double past_bottom = 0.0;
-        if (travel != 0.0) {
+        float const travel = leading() - 1.0f;
+        float past_top = 0.0f;
+        float past_bottom = 0.0f;
+        if (travel != 0.0f) {
             if (maximum) {
-                past_top = std::max(0.0, (*maximum - 1.0) / travel - 1.0);
+                past_top = std::max(0.0f, (*maximum - 1.0f) / travel - 1.0f);
             }
             if (minimum) {
-                past_bottom = std::max(0.0, -(*minimum - 1.0) / travel);
+                past_bottom = std::max(0.0f, -(*minimum - 1.0f) / travel);
             }
         }
 
@@ -155,17 +155,17 @@ struct MagnifyEffect::Impl : core::sta_refcounted {
         // turns smoothly and comes back, the way a thrown thing does. Two
         // key frames glued at the far point would stop there twice. The
         // amplitude is found from the far point once, here.
-        auto const motion = [&](float to, double past, std::chrono::milliseconds natural,
+        auto const motion = [&](float to, float past, std::chrono::milliseconds natural,
                                 std::chrono::milliseconds natural_swing) {
             auto const animation = compositor.CreateScalarKeyFrameAnimation();
             animation.Duration(duration ? timespan(*duration)
                                         : winrt::Windows::Foundation::TimeSpan{
-                                              past != 0.0 ? natural_swing : natural});
+                                              past != 0.0f ? natural_swing : natural});
             composition::CompositionEasingFunction easing = curve;
-            if (past != 0.0) {
+            if (past != 0.0f) {
                 easing = composition::CompositionEasingFunction::CreateBackEasingFunction(
                     compositor, composition::CompositionEasingFunctionMode::Out,
-                    static_cast<float>(back_amplitude(past)));
+                    back_amplitude(past));
             }
             animation.InsertKeyFrame(1.0f, to, easing);
             return animation;
@@ -191,12 +191,12 @@ void MagnifyEffect::scale(Size value) const {
     impl_->changed();
 }
 
-void MagnifyEffect::maximum(double value) const {
+void MagnifyEffect::maximum(float value) const {
     impl_->maximum = value;
     impl_->changed();
 }
 
-void MagnifyEffect::minimum(double value) const {
+void MagnifyEffect::minimum(float value) const {
     impl_->minimum = value;
     impl_->changed();
 }

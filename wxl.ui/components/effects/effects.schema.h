@@ -167,10 +167,10 @@ struct MagnifyEffect {
     static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Scale, ::wxl::Size,
                                                ::wxl::MagnifyEffect>
         scale{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Maximum, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Maximum, float,
                                                ::wxl::MagnifyEffect>
         maximum{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Minimum, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Minimum, float,
                                                ::wxl::MagnifyEffect>
         minimum{};
     static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Duration, ::wxl::core::duration,

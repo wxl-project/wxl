@@ -274,11 +274,11 @@ using namespace wxl::dsl;
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::MagnifyEffect::scale = {1.3f, 1.1f});
 }
 [[maybe_unused]] void MagnifyEffect_maximum_assigned(::wxl::MagnifyEffect const& object,
-                                                     double value) {
+                                                     float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::MagnifyEffect::maximum = value);
 }
 [[maybe_unused]] void MagnifyEffect_minimum_assigned(::wxl::MagnifyEffect const& object,
-                                                     double value) {
+                                                     float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::MagnifyEffect::minimum = value);
 }
 [[maybe_unused]] void MagnifyEffect_duration_assigned(::wxl::MagnifyEffect const& object,
@@ -292,7 +292,7 @@ using namespace wxl::dsl;
 // What grows is positional, among the scale and the tags.
 [[maybe_unused]] void MagnifyEffect_target_positional() {
     using namespace ::wxl::dsl;
-    ::wxl::MagnifyEffect const content{1.2f, ::wxl::MagnifyTarget::Content, maximum = 1.35};
+    ::wxl::MagnifyEffect const content{1.2f, ::wxl::MagnifyTarget::Content, maximum = 1.35f};
     ::wxl::MagnifyEffect const alone{::wxl::MagnifyTarget::Content};
     ::wxl::Button const button{u"Play", content};
     (void)alone;

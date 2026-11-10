@@ -309,7 +309,7 @@ wxl::Teardown wxl_launched() {
     // эффект, и анимации у всех кнопок общие. Кнопка ловит указатель всей
     // площадью, а растёт её знак: у кнопки, которая растёт сама, XAML
     // закрывает подсказку через миг после того, как показал.
-    auto const pop = MagnifyEffect {1.2f, MagnifyTarget::Content, maximum = 1.35, minimum = 0.95};
+    auto const pop = MagnifyEffect {1.2f, MagnifyTarget::Content, maximum = 1.35f, minimum = 0.95f};
 
     auto const toolButton = Preset {
         styles.Button.CommandBarFlyoutEllipsis,
