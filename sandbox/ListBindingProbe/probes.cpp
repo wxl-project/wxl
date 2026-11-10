@@ -32,6 +32,7 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
+#include <share.h>
 #include <cstring>
 #include <deque>
 #include <functional>
@@ -1544,7 +1545,7 @@ void plan(Script& script) {
 }  // namespace
 
 void start(WxlListMaker makeList) {
-    logFile = ::_wfopen((exeDirectoryW() + L"list-binding-probe.txt").c_str(), L"w");
+    logFile = ::_wfsopen((exeDirectoryW() + L"list-binding-probe.txt").c_str(), L"w", _SH_DENYNO);
     current = new Run;
     auto& r = run();
     r.makeList = makeList;

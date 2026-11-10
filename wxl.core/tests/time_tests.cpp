@@ -28,7 +28,7 @@ TEST(DurationTest, ATimeoutTooLargeToExpressStopsShortOfForever) {
     // 0xFFFFFFFF is Win32's INFINITE, and it is the one value this conversion must never
     // produce: turning a long wait into an endless one is the rounding error a caller could
     // never recover from. Waiting forever is a call of its own and never comes through here.
-    const duration a_century = duration::from_sec(100 * 365 * 24 * 60 * 60);
+    const duration a_century = duration::from_sec(100ull * 365 * 24 * 60 * 60);
 
     EXPECT_EQ(to_os_timeout_ms(a_century), 0xFFFF'FFFEu);
 }

@@ -261,8 +261,10 @@ struct App : ApplicationT<App> {
 }  // namespace
 
 int main() {
-    if (wchar_t const* const wide = _wgetenv(L"PROBE_OPTS")) {
+    wchar_t* wide = nullptr;
+    if (_wdupenv_s(&wide, nullptr, L"PROBE_OPTS") == 0 && wide) {
         std::string const o = winrt::to_string(wide);
+        std::free(wide);
         std::string word;
         for (char const* p = o.c_str();; ++p) {
             if (*p == ',' || *p == 0) {
