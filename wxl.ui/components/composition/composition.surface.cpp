@@ -3,6 +3,7 @@
 // Built into the surface test of every profile that selects the component;
 // nothing here runs.
 
+#include "Bind.h"
 #include "CompositionWindow.h"
 #include "DrawingSurface.h"
 #include "TextureCache.h"
@@ -21,6 +22,15 @@ using namespace wxl::dsl;
 [[maybe_unused]] void composition_window_backdrop() {
     CompositionWindow const window{systemBackdrop = MicaBackdrop{}};
     window.systemBackdrop(MicaBackdrop{});
+}
+
+// The theme of everything the window shows, said on the window as on Window, and read back.
+[[maybe_unused]] void composition_window_theme(core::observable<ElementTheme>& theme) {
+    CompositionWindow const window{requestedTheme = ElementTheme::Dark};
+    CompositionWindow const bound{requestedTheme = BindOutput{theme}};
+    window.requestedTheme(ElementTheme::Default);
+    ElementTheme const shown = bound.actualTheme();
+    (void)shown;
 }
 
 // wxl's own window written the same way: a handle, so every member is const
