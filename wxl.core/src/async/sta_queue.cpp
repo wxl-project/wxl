@@ -220,7 +220,7 @@ public:
         return S_OK;
     }
 
-    inline async_op& op() const noexcept { return *op_; }
+    async_op& op() const noexcept { return *op_; }
 
 private:
     ~returning_handler() = default;
