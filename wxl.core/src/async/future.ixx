@@ -13,6 +13,8 @@ export namespace wxl::async {
 
 namespace detail {
 
+class future_accessor;
+
 /// Base untyped future.
 class future_base : public shared_state_holder<const future_shared_state>
 {
@@ -137,7 +139,7 @@ struct future_get_return<T&> {
 /// with no argument at all when T is void. Naming the two invoke_result specializations rather
 /// than their ::type is what keeps the unused branch from being instantiated.
 template <typename T, class t_task>
-using result_of_t = typename std::conditional_t<std::is_void_v<T>, std::invoke_result<t_task>,
+using result_of_t = std::conditional_t<std::is_void_v<T>, std::invoke_result<t_task>,
                                                 std::invoke_result<t_task, T>>::type;
 
 }  // namespace detail
@@ -202,7 +204,7 @@ public:
     ///
     /// \exception If an exception was stored in the shared state referenced by this future (e.g.
     /// via a call to promise::set_exception()) then that exception will be thrown.
-    typename detail::future_get_return<T>::type get() const {
+    detail::future_get_return<T>::type get() const {
         const detail::state* state = checked_state()->get();
         return detail::resolved_state<T>::from(state)->value();
     }
@@ -253,7 +255,7 @@ public:
     template <class t_when_ready>
         requires detail::nothrow_callback<std::remove_cvref_t<t_when_ready>, future<T>>
     const future<T>& when_ready(t_when_ready&& when_ready_callback) const {
-        checked_state()->template when_ready1<T>(std::forward<t_when_ready>(when_ready_callback));
+        checked_state()->when_ready1<T>(std::forward<t_when_ready>(when_ready_callback));
         return *this;
     }
 
@@ -288,7 +290,7 @@ public:
 
         future_shared_state_ptr ticket = core::make_refcounted<future_shared_state>();
 
-        checked_state()->template next<T, t_result>(std::forward<t_next_task>(task), ticket.get());
+        checked_state()->next<T, t_result>(std::forward<t_next_task>(task), ticket.get());
 
         return future<t_result>(ticket.get());
     }
@@ -583,9 +585,8 @@ protected:
 
     /// Move assignmnet.
     inline promise_base& operator=(promise_base&& other) noexcept {
-        future_shared_state* const my_state = state();
-
-        if (my_state) my_state->checked_decrement_promise_count();
+        if (future_shared_state* const my_state = state())
+            my_state->checked_decrement_promise_count();
 
         base::operator=(std::move(other));
         return *this;
@@ -713,7 +714,7 @@ public:
     inline future<void> get_future() const { return future<void>(checked_state()); }
 
     /// Exchanges the shared states of this promise and \p other.
-    inline void swap(promise<void>& other) { promise_base::swap(other); }
+    inline void swap(promise<void>& other) noexcept { promise_base::swap(other); }
 
     /// Returns a promise without a shared state.
     inline static promise<void> invalid_promise() { return promise(nullptr); }
