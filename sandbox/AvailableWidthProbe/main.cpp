@@ -20,10 +20,11 @@
 //
 // Окно ставится в 1000, 500, 900, 500; через 1,2 с после каждого шага в PROBE_LOG пишется, что видно.
 
-// _wfopen объявлен в заголовке библиотеки C, и он включается раньше ui.h: core.h, до которого ui.h доходит
+// _wfsopen и _SH_DENYNO объявлены в заголовках библиотеки C, и они включаются раньше ui.h: core.h, до которого ui.h доходит
 // через свои заголовки, импортирует wxl.core, а стандартный заголовок, не встреченный до импорта, MSVC после
 // него не принимает.
 #include <cstdio>
+#include <share.h>
 
 #include "ui.h"
 #include "Bind.h"
@@ -88,7 +89,7 @@ wxl::Teardown wxl_launched() {
     std::string const words {core::unicode::repaired(core::environment::variable(L"PROBE_OPTS")).to_utf8().chars()};
     for (auto const word : std::string_view {words} | std::views::split(',')) opts.insert(std::string(std::string_view(word)));
     std::filesystem::path const path {core::environment::variable(L"PROBE_LOG")};
-    logFile = _wfopen(path.empty() ? L"available-width.log" : path.c_str(), L"w");
+    logFile = _wfsopen(path.empty() ? L"available-width.log" : path.c_str(), L"w", _SH_DENYNO);
     std::fprintf(logFile, "opts: %s\n", words.c_str());
     std::fflush(logFile);
 

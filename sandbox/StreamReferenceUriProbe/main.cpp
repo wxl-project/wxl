@@ -32,6 +32,7 @@
 #include <shlwapi.h>
 
 #include <cstdio>
+#include <share.h>
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -338,7 +339,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
     wchar_t exe[MAX_PATH];
     GetModuleFileNameW(nullptr, exe, MAX_PATH);
     std::filesystem::path const here = std::filesystem::path {exe}.parent_path();
-    g_log = _wfopen((here / L"stream-reference-uri-probe.log").c_str(), L"wb");
+    g_log = _wfsopen((here / L"stream-reference-uri-probe.log").c_str(), L"wb", _SH_DENYNO);
     std::setvbuf(g_log, nullptr, _IONBF, 0);
 
     std::filesystem::path root = L"M:\\Temp\\uriprobe";
