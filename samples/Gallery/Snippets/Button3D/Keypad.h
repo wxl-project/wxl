@@ -17,16 +17,18 @@ struct Model {
     core::observable<double> rise {3.0}, travel {5.0};
     // Постоянный свет и тени.
     core::observable<double> shadow {0.7}, azimuth {120.0}, elevation {50.0};
-    core::observable<double> holeShadow {1.0}, holeSoftness {1.0}, castBlur {1.0};
+    core::observable<double> holeShadow {1.0}, holeSoftness {1.0};
+    core::observable<float> castBlur {1.0f};
     // Нажатие.
     core::observable<bool> pressDivesLamp {true}, pressFlashes {false}, pressMovesLabel {true}, pressShades {false};
-    core::observable<double> diveDepth {0.33}, diveGain {2.0}, shadeAmount {0.2}, labelShade {0.15};
+    core::observable<float> diveDepth {0.33f}, diveGain {2.0f}, shadeAmount {0.2f};
+    core::observable<double> labelShade {0.15};
     // Материал.
-    core::observable<double> specularAmount {0.15}, specularShine {30.0};
+    core::observable<float> specularAmount {0.15f}, specularShine {30.0f};
     // Лампы над указателем: выключенная светит с яркостью ноль.
     core::observable<bool> spotOn {true}, edgeOn {true};
-    core::observable<double> spotSize {260.0}, spotFull {120.0}, spotHeight {30.0}, spotIntensity {0.4};
-    core::observable<double> edgeSize {340.0}, edgeFull {200.0}, edgeHeight {60.0}, edgeIntensity {1.5};
+    core::observable<float> spotSize {260.0f}, spotFull {120.0f}, spotHeight {30.0f}, spotIntensity {0.4f};
+    core::observable<float> edgeSize {340.0f}, edgeFull {200.0f}, edgeHeight {60.0f}, edgeIntensity {1.5f};
 
     Model() {
         // Поле ведёт сеттер: всех четырёх эффектов разом, а emboss у нижней
@@ -40,10 +42,6 @@ struct Model {
                     (effect->*setter)(value);
                 }
             };
-        };
-        // Ползунок хранит double, а эти сеттеры принимают float.
-        auto const allFloat = [all](auto setter) {
-            return [all, setter](double value) { all(setter)(static_cast<float>(value)); };
         };
         follow(emboss, [this](double value) {
             for (Button3DEffect const* effect : {&numeric, &action, &large}) effect->emboss(value);
@@ -60,34 +58,34 @@ struct Model {
         follow(elevation, all(&Button3DEffect::elevation));
         follow(holeShadow, all(&Button3DEffect::holeShadow));
         follow(holeSoftness, all(&Button3DEffect::holeSoftness));
-        follow(castBlur, allFloat(&Button3DEffect::castBlur));
+        follow(castBlur, all(&Button3DEffect::castBlur));
         follow(pressDivesLamp, all(&Button3DEffect::pressDivesLamp));
         follow(pressFlashes, all(&Button3DEffect::pressFlashes));
         follow(pressMovesLabel, all(&Button3DEffect::pressMovesLabel));
         follow(pressShades, all(&Button3DEffect::pressShades));
-        follow(diveDepth, allFloat(&Button3DEffect::diveDepth));
-        follow(diveGain, allFloat(&Button3DEffect::diveGain));
-        follow(shadeAmount, allFloat(&Button3DEffect::shadeAmount));
+        follow(diveDepth, all(&Button3DEffect::diveDepth));
+        follow(diveGain, all(&Button3DEffect::diveGain));
+        follow(shadeAmount, all(&Button3DEffect::shadeAmount));
         follow(labelShade, all(&Button3DEffect::labelShade));
-        follow(specularAmount, allFloat(&Button3DEffect::specularAmount));
-        follow(specularShine, allFloat(&Button3DEffect::specularShine));
+        follow(specularAmount, all(&Button3DEffect::specularAmount));
+        follow(specularShine, all(&Button3DEffect::specularShine));
 
-        follow(spotSize, [this](double value) { spot.size(static_cast<float>(value)); });
-        follow(spotFull, [this](double value) { spot.fullSize(static_cast<float>(value)); });
-        follow(spotHeight, [this](double value) { spot.height(static_cast<float>(value)); });
-        follow(spotIntensity, [this](double) { relamp(); });
+        follow(spotSize, [this](float value) { spot.size(value); });
+        follow(spotFull, [this](float value) { spot.fullSize(value); });
+        follow(spotHeight, [this](float value) { spot.height(value); });
+        follow(spotIntensity, [this](float) { relamp(); });
         follow(spotOn, [this](bool) { relamp(); });
-        follow(edgeSize, [this](double value) { edge.size(static_cast<float>(value)); });
-        follow(edgeFull, [this](double value) { edge.fullSize(static_cast<float>(value)); });
-        follow(edgeHeight, [this](double value) { edge.height(static_cast<float>(value)); });
-        follow(edgeIntensity, [this](double) { relamp(); });
+        follow(edgeSize, [this](float value) { edge.size(value); });
+        follow(edgeFull, [this](float value) { edge.fullSize(value); });
+        follow(edgeHeight, [this](float value) { edge.height(value); });
+        follow(edgeIntensity, [this](float) { relamp(); });
         follow(edgeOn, [this](bool) { relamp(); });
     }
 
 
     void relamp() const {
-        spot.intensity(spotOn.get() ? static_cast<float>(spotIntensity.get()) : 0.0f);
-        edge.intensity(edgeOn.get() ? static_cast<float>(edgeIntensity.get()) : 0.0f);
+        spot.intensity(spotOn.get() ? spotIntensity.get() : 0.0f);
+        edge.intensity(edgeOn.get() ? edgeIntensity.get() : 0.0f);
     }
 };
 auto const model = gallery::hold<Model>();
@@ -133,7 +131,8 @@ auto example = Border {
     },
 };
 // Панель настроек: ползунок, флажок и группа -- те же строки, что у стенда.
-auto const slider = [](char16_t const* title, core::observable<double>& field, double low, double high, double step) {
+// Поле -- того типа, что берёт сеттер эффекта: double или float.
+auto const slider = [](char16_t const* title, auto& field, double low, double high, double step) {
     return Slider {header = title, minimum = low, maximum = high, stepFrequency = step, smallChange = step,
                    value = Bind {field}};
 };
