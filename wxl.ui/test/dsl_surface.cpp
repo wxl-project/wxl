@@ -485,6 +485,7 @@ struct BoundModel : core::sta_refcounted {
     core::observable<Color> tint;
     core::observable<int> row;
     core::observable<double> amount;
+    core::observable<float> level;
     core::observable<Reading> reading;
 };
 }  // namespace
@@ -497,12 +498,14 @@ struct BoundModel : core::sta_refcounted {
     ToggleSwitch{isOn = Bind{model->busy}};
     ComboBox{selectedIndex = Bind{model->row}};  // Selector's pair
     NumberBox{value = Bind{model->amount}};
-    NumberBox{value = Bind{model->row}};  // a double property binds an int as well
+    NumberBox{value = Bind{model->level}};  // a double property binds a float as well
     CheckBox{isChecked = Bind{model->busy}};  // ToggleButton's pair
     ToggleButton{isChecked = Bind{model->busy}};
     RadioButtons{selectedIndex = Bind{model->row}};
     Slider{value = Bind{model->amount}};
+    Slider{value = Bind{model->level}};
     RatingControl{value = Bind{model->amount}};
+    RatingControl{value = Bind{model->level}};
     ColorPicker{color = Bind{model->tint}};
     ToggleMenuFlyoutItem{isChecked = Bind{model->busy}};
     RadioMenuFlyoutItem{isChecked = Bind{model->busy}};

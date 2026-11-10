@@ -28,7 +28,7 @@ struct Settings {
     wxl::core::observable<bool> englishDocumentation {false};
 
     // Кегль сведений справа внизу.
-    wxl::core::observable<int> detailsFontSize {16};
+    wxl::core::observable<double> detailsFontSize {16.0};
 
     // Как виден фокус с клавиатуры — номер в wxl::FocusLook: рамка системы,
     // подъём, свечение.
