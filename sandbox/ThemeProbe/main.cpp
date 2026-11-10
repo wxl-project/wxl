@@ -28,6 +28,7 @@
 
 #include <cstdarg>
 #include <cstdio>
+#include <share.h>
 #include <functional>
 #include <string>
 #include <utility>
@@ -283,7 +284,7 @@ wxl::Teardown wxl_launched() {
     std::wstring logPath{path};
     logPath.resize(logPath.find_last_of(L'\\') + 1);
     logPath += L"theme-probe.txt";
-    logFile = ::_wfopen(logPath.c_str(), L"w");
+    logFile = ::_wfsopen(logPath.c_str(), L"w", _SH_DENYNO);
     startTick = ::GetTickCount64();
 
     probe = new Probe{};

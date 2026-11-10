@@ -93,8 +93,8 @@ struct FaceLight : pointer_spot_light {
         return brush;
     }
 
-    void set_diffuse(double value) {
-        diffuse = static_cast<float>(std::max(value, 0.0));
+    void set_diffuse(float value) {
+        diffuse = std::max(value, 0.0f);
         if (brush) brush.Properties().InsertScalar(diffuseProperty, diffuse);
     }
 };
@@ -209,14 +209,14 @@ struct EdgeLight : pointer_spot_light {
         std::erase_if(edges, [&](Edge const& edge) { return edge.layer == layer; });
     }
 
-    void set_diffuse(double value) {
-        diffuse = static_cast<float>(std::max(value, 0.0));
+    void set_diffuse(float value) {
+        diffuse = std::max(value, 0.0f);
         for (Ring const& ring : rings)
             ring.brush.Properties().InsertScalar(diffuseProperty, diffuse);
     }
 
-    void set_thickness(double value) {
-        thickness = static_cast<float>(std::max(value, 0.0));
+    void set_thickness(float value) {
+        thickness = std::max(value, 0.0f);
         for (Ring& ring : rings) ring.draw(thickness);
     }
 
@@ -312,14 +312,14 @@ HoverLight::HoverLight(HoverLight const& other) noexcept = default;
 HoverLight& HoverLight::operator=(HoverLight const& other) noexcept = default;
 HoverLight::~HoverLight() = default;
 
-void HoverLight::size(double value) const { impl_->set_size(value); }
-void HoverLight::fullSize(double value) const { impl_->set_full(value); }
-void HoverLight::height(double value) const { impl_->set_height(value); }
-void HoverLight::intensity(double value) const { impl_->set_intensity(value); }
-void HoverLight::diffuseAmount(double value) const { impl_->set_diffuse(value); }
+void HoverLight::size(float value) const { impl_->set_size(value); }
+void HoverLight::fullSize(float value) const { impl_->set_full(value); }
+void HoverLight::height(float value) const { impl_->set_height(value); }
+void HoverLight::intensity(float value) const { impl_->set_intensity(value); }
+void HoverLight::diffuseAmount(float value) const { impl_->set_diffuse(value); }
 void HoverLight::color(Color value) const { impl_->set_color(value); }
-void HoverLight::constantAttenuation(double value) const { impl_->set_constant_attenuation(value); }
-void HoverLight::linearAttenuation(double value) const { impl_->set_linear_attenuation(value); }
+void HoverLight::constantAttenuation(float value) const { impl_->set_constant_attenuation(value); }
+void HoverLight::linearAttenuation(float value) const { impl_->set_linear_attenuation(value); }
 
 struct BorderLight::Impl final : EdgeLight {
 };
@@ -331,17 +331,15 @@ BorderLight::BorderLight(BorderLight const& other) noexcept = default;
 BorderLight& BorderLight::operator=(BorderLight const& other) noexcept = default;
 BorderLight::~BorderLight() = default;
 
-void BorderLight::size(double value) const { impl_->set_size(value); }
-void BorderLight::fullSize(double value) const { impl_->set_full(value); }
-void BorderLight::height(double value) const { impl_->set_height(value); }
-void BorderLight::intensity(double value) const { impl_->set_intensity(value); }
-void BorderLight::diffuseAmount(double value) const { impl_->set_diffuse(value); }
+void BorderLight::size(float value) const { impl_->set_size(value); }
+void BorderLight::fullSize(float value) const { impl_->set_full(value); }
+void BorderLight::height(float value) const { impl_->set_height(value); }
+void BorderLight::intensity(float value) const { impl_->set_intensity(value); }
+void BorderLight::diffuseAmount(float value) const { impl_->set_diffuse(value); }
 void BorderLight::color(Color value) const { impl_->set_color(value); }
-void BorderLight::constantAttenuation(double value) const {
-    impl_->set_constant_attenuation(value);
-}
-void BorderLight::linearAttenuation(double value) const { impl_->set_linear_attenuation(value); }
-void BorderLight::strokeThickness(double value) const { impl_->set_thickness(value); }
+void BorderLight::constantAttenuation(float value) const { impl_->set_constant_attenuation(value); }
+void BorderLight::linearAttenuation(float value) const { impl_->set_linear_attenuation(value); }
+void BorderLight::strokeThickness(float value) const { impl_->set_thickness(value); }
 void BorderLight::cornerRadius(CornerRadius value) const {
     impl_->set_corner(static_cast<float>(value.topLeft));
 }

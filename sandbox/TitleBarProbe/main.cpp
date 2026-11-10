@@ -45,6 +45,7 @@
 #include <cmath>
 #include <cstdarg>
 #include <cstdio>
+#include <share.h>
 #include <functional>
 #include <limits>
 #include <string>
@@ -720,7 +721,7 @@ wxl::Teardown wxl_launched() {
     std::wstring logPath{path};
     logPath.resize(logPath.find_last_of(L'\\') + 1);
     logPath += L"titlebar-probe.log";
-    logFile = ::_wfopen(logPath.c_str(), L"w");
+    logFile = ::_wfsopen(logPath.c_str(), L"w", _SH_DENYNO);
     startTick = ::GetTickCount64();
 
     probe = new Probe{};

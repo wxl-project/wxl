@@ -9,7 +9,11 @@ namespace wxl::core {
 
 // The `lib` segment is initialised before the `user` one the rest of the program lands in, and
 // destroyed after it: that is what puts the pool ahead of the first wxl object and behind the last.
+// C4073 warns that the initialisers go to the library segment, which is the intent here.
+#pragma warning(push)
+#pragma warning(disable : 4073)
 #pragma init_seg(lib)
+#pragma warning(pop)
 
 namespace {
 

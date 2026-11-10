@@ -5,9 +5,11 @@
 #
 #   WXL_LANGUAGE_OPTIONS          the compile options (Windows), for a whole
 #                                 directory rather than a target
-#   wxl_apply_language_options()  sets them and the language level in the
-#                                 calling directory: the root of the wxl tree
-#                                 does, when the tree is the top-level project
+#   WXL_WARNING_OPTIONS           the warning level of wxl's own targets
+#   wxl_apply_language_options()  sets them, the warning level and the language
+#                                 level in the calling directory: the root of
+#                                 the wxl tree does, when the tree is the
+#                                 top-level project
 #   wxl_check_language_options()  checks that the calling directory has them,
 #                                 and stops with the lines to add when it has
 #                                 not: the root does, when a project adds it
@@ -70,6 +72,12 @@
 
 set(WXL_LANGUAGE_OPTIONS /permissive- /utf-8 /Zc:throwingNew)
 
+# The warning level wxl's own targets, its samples and its sandbox are built at.
+# Not part of the language: warning options are not hashed by CMake 4.4, so a
+# project that adds wxl keeps the level of its own, and the check above does not
+# ask for it.
+set(WXL_WARNING_OPTIONS /W3)
+
 function(wxl_apply_language_options)
     set(CMAKE_CXX_STANDARD 23 PARENT_SCOPE)
     set(CMAKE_CXX_STANDARD_REQUIRED ON PARENT_SCOPE)
@@ -78,7 +86,7 @@ function(wxl_apply_language_options)
     set(CMAKE_CXX_SCAN_FOR_MODULES ON PARENT_SCOPE)
 
     if(WIN32)
-        add_compile_options(${WXL_LANGUAGE_OPTIONS})
+        add_compile_options(${WXL_LANGUAGE_OPTIONS} ${WXL_WARNING_OPTIONS})
     endif()
 endfunction()
 

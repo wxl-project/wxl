@@ -5,7 +5,7 @@
 //
 //     TextBlock {
 //         u"7",
-//         GaussianBlurEffect {color = rgb(0, 0, 0), blurRadius = 3.0f, gamma = 0.5},
+//         GaussianBlurEffect {color = rgb(0, 0, 0), blurRadius = 3.0f, gamma = 0.5f},
 //     }
 //
 // The halo a DropShadow gives (HaloEffect) fades the way a Gaussian fades,
@@ -55,9 +55,9 @@ public:
     void setPositional(Color value) const { color(value); }
 
     void color(Color value) const;
-    void blurRadius(double value) const;
-    void opacity(double value) const;
-    void gamma(double value) const;
+    void blurRadius(float value) const;
+    void opacity(float value) const;
+    void gamma(float value) const;
     void zIndex(int32_t value) const;
 
     template <typename Obj>

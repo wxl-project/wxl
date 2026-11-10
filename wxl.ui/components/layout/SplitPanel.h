@@ -4,8 +4,8 @@
 // тянут мышью:
 //
 //     SplitPanel {
-//         openPaneLength = 520.0,
-//         spacing = 8.0,
+//         openPaneLength = 520.0f,
+//         spacing = 8.0f,
 //         pane = types,       // левая часть
 //         content = members,  // правая
 //     }
@@ -54,8 +54,8 @@ public:
     UIElement content() const;
 
     /// Размер pane по оси панели; его же меняет перетаскивание границы.
-    void openPaneLength(double value) const;
-    double openPaneLength() const;
+    void openPaneLength(float value) const;
+    float openPaneLength() const;
 
     /// Horizontal -- части рядом, vertical -- одна над другой.
     void orientation(Orientation value) const;
@@ -66,8 +66,8 @@ public:
     SplitViewPanePlacement panePlacement() const;
 
     /// Ширина зазора -- он же поле, за которое тянут.
-    void spacing(double value) const;
-    double spacing() const;
+    void spacing(float value) const;
+    float spacing() const;
 
     /// Безымянный элемент -- pane, если её ещё нет, иначе content.
     using base_t::setPositional;

@@ -42,8 +42,8 @@ struct Reveal {
     BorderLight border;
     RevealEffect reveal {hover, border};
 
-    HoverLight keyHover {diffuseAmount = 0.5};
-    BorderLight keyBorder {diffuseAmount = 0.9};
+    HoverLight keyHover {diffuseAmount = 0.5f};
+    BorderLight keyBorder {diffuseAmount = 0.9f};
     Button3DEffect relief {
         foreground = rgb(255, 227, 180),
         background = rgba(176, 98, 30, 0.933),
@@ -55,39 +55,39 @@ struct Reveal {
 
     Reveal() {
         tune(hoverSize, u"HoverLight size", [this](double value) {
-            hover.size(value);
-            keyHover.size(value);
+            hover.size(static_cast<float>(value));
+            keyHover.size(static_cast<float>(value));
         });
         tune(hoverHeight, u"HoverLight height", [this](double value) {
-            hover.height(value);
-            keyHover.height(value);
+            hover.height(static_cast<float>(value));
+            keyHover.height(static_cast<float>(value));
         });
         tune(hoverIntensity, u"HoverLight intensity", [this](double value) {
-            hover.intensity(value);
-            keyHover.intensity(value);
+            hover.intensity(static_cast<float>(value));
+            keyHover.intensity(static_cast<float>(value));
         });
-        tune(hoverDiffuse, u"HoverLight diffuseAmount", [this](double value) { hover.diffuseAmount(value); });
+        tune(hoverDiffuse, u"HoverLight diffuseAmount", [this](double value) { hover.diffuseAmount(static_cast<float>(value)); });
         tune(keyHoverDiffuse, u"HoverLight diffuseAmount, Button3DEffect",
-             [this](double value) { keyHover.diffuseAmount(value); });
+             [this](double value) { keyHover.diffuseAmount(static_cast<float>(value)); });
 
         tune(borderSize, u"BorderLight size", [this](double value) {
-            border.size(value);
-            keyBorder.size(value);
+            border.size(static_cast<float>(value));
+            keyBorder.size(static_cast<float>(value));
         });
         tune(borderHeight, u"BorderLight height", [this](double value) {
-            border.height(value);
-            keyBorder.height(value);
+            border.height(static_cast<float>(value));
+            keyBorder.height(static_cast<float>(value));
         });
         tune(borderIntensity, u"BorderLight intensity", [this](double value) {
-            border.intensity(value);
-            keyBorder.intensity(value);
+            border.intensity(static_cast<float>(value));
+            keyBorder.intensity(static_cast<float>(value));
         });
-        tune(borderDiffuse, u"BorderLight diffuseAmount", [this](double value) { border.diffuseAmount(value); });
+        tune(borderDiffuse, u"BorderLight diffuseAmount", [this](double value) { border.diffuseAmount(static_cast<float>(value)); });
         tune(keyBorderDiffuse, u"BorderLight diffuseAmount, Button3DEffect",
-             [this](double value) { keyBorder.diffuseAmount(value); });
+             [this](double value) { keyBorder.diffuseAmount(static_cast<float>(value)); });
         tune(thickness, u"BorderLight strokeThickness", [this](double value) {
-            border.strokeThickness(value);
-            keyBorder.strokeThickness(value);
+            border.strokeThickness(static_cast<float>(value));
+            keyBorder.strokeThickness(static_cast<float>(value));
         });
         tune(corner, u"BorderLight cornerRadius", [this](double value) {
             border.cornerRadius(CornerRadius {value});
@@ -101,16 +101,16 @@ struct Reveal {
             keyBorder.color(value);
         });
         tune(constantAttenuation, u"constantAttenuation", [this](double value) {
-            hover.constantAttenuation(value);
-            border.constantAttenuation(value);
-            keyHover.constantAttenuation(value);
-            keyBorder.constantAttenuation(value);
+            hover.constantAttenuation(static_cast<float>(value));
+            border.constantAttenuation(static_cast<float>(value));
+            keyHover.constantAttenuation(static_cast<float>(value));
+            keyBorder.constantAttenuation(static_cast<float>(value));
         });
         tune(linearAttenuation, u"linearAttenuation", [this](double value) {
-            hover.linearAttenuation(value);
-            border.linearAttenuation(value);
-            keyHover.linearAttenuation(value);
-            keyBorder.linearAttenuation(value);
+            hover.linearAttenuation(static_cast<float>(value));
+            border.linearAttenuation(static_cast<float>(value));
+            keyHover.linearAttenuation(static_cast<float>(value));
+            keyBorder.linearAttenuation(static_cast<float>(value));
         });
     }
 

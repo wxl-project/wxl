@@ -46,7 +46,7 @@
 // bare in the braces, a light takes the place of the key's own, with every
 // setting it has:
 //
-//     HoverLight spot {size = 200, fullSize = 100, height = 30, intensity = 0.4};
+//     HoverLight spot {size = 200, fullSize = 100, height = 30, intensity = 0.4f};
 //     Button3DEffect numericKey {background = rgb(68, 72, 79), spot};
 //     Button3DEffect actionKey {background = rgb(48, 68, 116), spot};
 //
@@ -87,8 +87,8 @@ public:
     // The material.
     void foreground(Color value) const;
     void background(Color value) const;
-    void specularAmount(double value) const;
-    void specularShine(double value) const;
+    void specularAmount(float value) const;
+    void specularShine(float value) const;
 
     // The shape.
     void emboss(double value) const;
@@ -105,7 +105,7 @@ public:
     void elevation(double value) const;
     void lampColor(Color value) const;
     void ambientColor(Color value) const;
-    void castBlur(double value) const;
+    void castBlur(float value) const;
     void holeShadow(double value) const;
     void holeSoftness(double value) const;
 
@@ -114,9 +114,9 @@ public:
     void pressFlashes(bool value) const;
     void pressMovesLabel(bool value) const;
     void pressShades(bool value) const;
-    void diveDepth(double value) const;
-    void diveGain(double value) const;
-    void shadeAmount(double value) const;
+    void diveDepth(float value) const;
+    void diveGain(float value) const;
+    void shadeAmount(float value) const;
     void labelShade(double value) const;
 
     /// A bare light takes the place of the key's own. Buttons attached before

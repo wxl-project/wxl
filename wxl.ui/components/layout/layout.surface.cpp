@@ -110,7 +110,7 @@ struct [[maybe_unused]] grid_in_a_model {
 [[maybe_unused]] void SplitPanel_vertical_trailing(::wxl::UIElement const& top,
                                                    ::wxl::UIElement const& bottom) {
     using namespace ::wxl::dsl;
-    ::wxl::SplitPanel const split{orientation.vertical, panePlacement.right, openPaneLength = 200.0,
+    ::wxl::SplitPanel const split{orientation.vertical, panePlacement.right, openPaneLength = 200.0f,
                                   content = top, pane = bottom};
     (void)split;
 }

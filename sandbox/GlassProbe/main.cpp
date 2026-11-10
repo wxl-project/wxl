@@ -45,6 +45,7 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
+#include <share.h>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -219,7 +220,7 @@ void report(char const* what, Counts const& c) {
 
 void saveBmp(std::vector<std::uint32_t> const& pixels, int w, int h) {
     std::wstring const path = folder + L"glass-probe-" + std::wstring{winrt::to_hstring(modeName())} + L".bmp";
-    FILE* file = ::_wfopen(path.c_str(), L"wb");
+    FILE* file = ::_wfsopen(path.c_str(), L"wb", _SH_DENYNO);
     if (!file) return;
     BITMAPFILEHEADER fh{};
     BITMAPINFOHEADER ih{sizeof(BITMAPINFOHEADER), w, -h, 1, 32, BI_RGB};
@@ -329,7 +330,7 @@ wxl::Teardown wxl_launched() {
     ::GetModuleFileNameW(nullptr, path, MAX_PATH);
     folder = path;
     folder.resize(folder.find_last_of(L'\\') + 1);
-    logFile = ::_wfopen((folder + L"glass-probe.log").c_str(), L"w");
+    logFile = ::_wfsopen((folder + L"glass-probe.log").c_str(), L"w", _SH_DENYNO);
     startTick = ::GetTickCount64();
 
     // --system-engine: движок композиции ОС вместо движка в процессе (Windows App

@@ -40,12 +40,8 @@ GlassEffect& GlassEffect::operator=(GlassEffect const& other) noexcept = default
 GlassEffect::~GlassEffect() = default;
 
 void GlassEffect::color(Color value) const { impl_->color = value; }
-void GlassEffect::blurRadius(double value) const {
-    impl_->blurRadius = static_cast<float>(std::max(value, 0.0));
-}
-void GlassEffect::opacity(double value) const {
-    impl_->opacity = static_cast<float>(std::clamp(value, 0.0, 1.0));
-}
+void GlassEffect::blurRadius(float value) const { impl_->blurRadius = std::max(value, 0.0f); }
+void GlassEffect::opacity(float value) const { impl_->opacity = std::clamp(value, 0.0f, 1.0f); }
 
 namespace {
 

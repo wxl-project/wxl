@@ -12,6 +12,6 @@ Border {
         FontWeight {600},
         hAlign.center,
         foreground = rgb(237, 239, 242),
-        GaussianBlurEffect {color = rgb(0, 0, 0), blurRadius = 3.0f, gamma = 0.5},
+        GaussianBlurEffect {color = rgb(0, 0, 0), blurRadius = 3.0f, gamma = 0.5f},
     },
 };

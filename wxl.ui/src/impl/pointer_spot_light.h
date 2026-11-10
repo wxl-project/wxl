@@ -210,26 +210,26 @@ struct pointer_spot_light : core::sta_refcounted {
         for (island_spot_light const& island_light : island_lights) aim(island_light);
     }
 
-    void set_size(double value) {
-        size = static_cast<float>(std::max(value, 0.0));
+    void set_size(float value) {
+        size = std::max(value, 0.0f);
         retune();
     }
 
-    void set_full(double value) {
-        full = static_cast<float>(std::max(value, 0.0));
+    void set_full(float value) {
+        full = std::max(value, 0.0f);
         retune();
     }
 
-    void set_height(double value) {
-        height = static_cast<float>(std::max(value, 0.0));
+    void set_height(float value) {
+        height = std::max(value, 0.0f);
         retune();
         for (island_spot_light const& island_light : island_lights) {
             island_light.light.Properties().InsertScalar(height_property, height);
         }
     }
 
-    void set_intensity(double value) {
-        intensity = static_cast<float>(std::max(value, 0.0));
+    void set_intensity(float value) {
+        intensity = std::max(value, 0.0f);
         for (island_spot_light const& island_light : island_lights) fade(island_light);
     }
 
@@ -238,13 +238,13 @@ struct pointer_spot_light : core::sta_refcounted {
         retune();
     }
 
-    void set_constant_attenuation(double value) {
-        constant_attenuation = static_cast<float>(value);
+    void set_constant_attenuation(float value) {
+        constant_attenuation = value;
         retune();
     }
 
-    void set_linear_attenuation(double value) {
-        linear_attenuation = static_cast<float>(value);
+    void set_linear_attenuation(float value) {
+        linear_attenuation = value;
         retune();
     }
 };

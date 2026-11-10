@@ -1,6 +1,6 @@
 // Один неон на рамку и надпись: эффект — ручка, и один экземпляр, записанный
 // заранее, присоединяется к любому числу элементов.
-GaussianBlurEffect const neon {color = rgb(255, 43, 214), blurRadius = 16.0f, gamma = 0.6};
+GaussianBlurEffect const neon {color = rgb(255, 43, 214), blurRadius = 16.0f, gamma = 0.6f};
 
 auto example =
 Border {
@@ -19,13 +19,13 @@ Border {
                 height = 86,
                 stroke = rgb(184, 251, 255),
                 strokeThickness = 4.0,
-                GaussianBlurEffect {color = rgb(0, 200, 255), blurRadius = 18.0f, gamma = 0.6},
+                GaussianBlurEffect {color = rgb(0, 200, 255), blurRadius = 18.0f, gamma = 0.6f},
             },
             Image {
                 source = u"Assets/Effects/Coctail.png",
                 width = 50,
                 height = 50,
-                GaussianBlurEffect {color = rgb(0, 200, 255), blurRadius = 10.0f, gamma = 0.6},
+                GaussianBlurEffect {color = rgb(0, 200, 255), blurRadius = 10.0f, gamma = 0.6f},
             },
         },
 
@@ -60,7 +60,7 @@ Border {
             height = 28,
             vAlign.center,
             fill = rgb(255, 246, 176),
-            GaussianBlurEffect {color = rgb(255, 160, 0), blurRadius = 36.0f, gamma = 0.4},
+            GaussianBlurEffect {color = rgb(255, 160, 0), blurRadius = 36.0f, gamma = 0.4f},
         },
     },
 };
