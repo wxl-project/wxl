@@ -57,9 +57,9 @@ auto options = Grid {
             auto const atBottom = view.verticalOffset() == view.scrollableHeight();
             if (args.newValue() <= 30.0 && args.newValue() >= -30) {
                 if (args.newValue() < args.oldValue()) {
-                    velocity = atTop ? 30 : -30;
+                    velocity = atTop ? 30.0f : -30.0f;
                 } else {
-                    velocity = atBottom ? -30 : 30;
+                    velocity = atBottom ? -30.0f : 30.0f;
                 }
             } else if (args.newValue() < 30.0 && atTop) {
                 velocity = 30;

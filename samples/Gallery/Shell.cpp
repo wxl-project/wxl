@@ -46,8 +46,8 @@ struct WindowSize {
 WindowSize savedSize;
 
 std::filesystem::path stateFile() {
-    wchar_t const* const base = _wgetenv(L"LOCALAPPDATA");
-    return base ? std::filesystem::path{base} / L"wxl" / L"Gallery" / L"state.txt" : std::filesystem::path{};
+    std::wstring const base = core::environment::variable(L"LOCALAPPDATA");
+    return base.empty() ? std::filesystem::path{} : std::filesystem::path{base} / L"wxl" / L"Gallery" / L"state.txt";
 }
 
 void loadState() {
@@ -695,12 +695,12 @@ Window createMainWindow() {
 
     // Для проверки страницы без ввода: GALLERY_PAGE=<UniqueId> открывает её сразу (Settings — страницу настроек),
     // GALLERY_TOP=1 ставит панель навигации сверху.
-    if (wchar_t const* const top = _wgetenv(L"GALLERY_TOP"); top && *top) {
+    if (!core::environment::variable(L"GALLERY_TOP").empty()) {
         setNavigationOnTop(true);
     }
-    if (wchar_t const* const page = _wgetenv(L"GALLERY_PAGE"); page && *page) {
-        std::wstring_view const name {page};
-        show({name == L"Settings" ? Place::Settings : name == L"AllControls" ? Place::AllControls : Place::Item, page}, true);
+    if (std::wstring page = core::environment::variable(L"GALLERY_PAGE"); !page.empty()) {
+        Place const place = page == L"Settings" ? Place::Settings : page == L"AllControls" ? Place::AllControls : Place::Item;
+        show({place, std::move(page)}, true);
     }
     return window;
 }
