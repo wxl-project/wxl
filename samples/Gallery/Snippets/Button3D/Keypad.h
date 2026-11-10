@@ -4,8 +4,8 @@
 // справа: её поля пишут в сеттеры, и клавиши меняются на ходу. Четыре эффекта
 // делят одну пару ламп над указателем.
 struct Model {
-    HoverLight spot {size = 260, fullSize = 120, height = 30, intensity = 0.4f};
-    BorderLight edge {size = 340, fullSize = 200, height = 60, intensity = 1.5f};
+    HoverLight spot {size = 260.0f, fullSize = 120.0f, height = 30.0f, intensity = 0.4f};
+    BorderLight edge {size = 340.0f, fullSize = 200.0f, height = 60.0f, intensity = 1.5f};
     Button3DEffect numeric {foreground = rgb(237, 239, 242), background = rgb(68, 72, 79), spot, edge};
     Button3DEffect action {foreground = rgb(255, 227, 180), background = rgb(176, 98, 30), spot, edge};
     Button3DEffect large {foreground = rgb(237, 239, 242), background = rgb(68, 72, 79), spot, edge};

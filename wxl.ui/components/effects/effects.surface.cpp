@@ -215,11 +215,11 @@ using namespace wxl::dsl;
     Button{u"7", key};
     // The lights over the pointer, written bare: one pair given to two kinds
     // of key, and one light written in place.
-    HoverLight const spot{size = 200, fullSize = 100, diffuseAmount = 0.4f};
-    BorderLight const glow{size = 340, fullSize = 200};
+    HoverLight const spot{size = 200.0f, fullSize = 100.0f, diffuseAmount = 0.4f};
+    BorderLight const glow{size = 340.0f, fullSize = 200.0f};
     Button3DEffect const lit{background = rgb(68, 72, 79), spot, glow};
     Button3DEffect const other{background = rgb(48, 68, 116), spot, glow};
-    Button3DEffect const dark{background = rgb(48, 68, 116), HoverLight{intensity = 0}};
+    Button3DEffect const dark{background = rgb(48, 68, 116), HoverLight{intensity = 0.0f}};
     Button{u"8", lit};
     Button{u"+", other};
     Button{u"-", dark};
@@ -255,9 +255,9 @@ using namespace wxl::dsl;
     using namespace ::wxl::dsl;
     BevelEffect const raised{rgba(255, 255, 255, 0.27),
                              rgba(0, 0, 0, 0.38),
-                             strokeThickness = 2,
-                             blurRadius = 1,
-                             offset = 2,
+                             strokeThickness = 2.0f,
+                             blurRadius = 1.0f,
+                             offset = 2.0f,
                              Margin{1},
                              CornerRadius{6}};
     Button const key{u"=", raised};
@@ -271,7 +271,7 @@ using namespace wxl::dsl;
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::MagnifyEffect::scale = value);
 }
 [[maybe_unused]] void MagnifyEffect_scale_braced(::wxl::MagnifyEffect const& object) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::MagnifyEffect::scale = {1.3, 1.1});
+    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::MagnifyEffect::scale = {1.3f, 1.1f});
 }
 [[maybe_unused]] void MagnifyEffect_maximum_assigned(::wxl::MagnifyEffect const& object,
                                                      double value) {
@@ -371,9 +371,9 @@ using namespace wxl::dsl;
 [[maybe_unused]] void RevealEffect_in_braces() {
     using namespace ::wxl;
     using namespace ::wxl::dsl;
-    HoverLight const hover{size = 140, height = 120, intensity = 1.0f, diffuseAmount = 0.69f};
-    BorderLight const border{size = 340,
-                             height = 120,
+    HoverLight const hover{size = 140.0f, height = 120.0f, intensity = 1.0f, diffuseAmount = 0.69f};
+    BorderLight const border{size = 340.0f,
+                             height = 120.0f,
                              intensity = 1.0f,
                              diffuseAmount = 1.24f,
                              strokeThickness = 1.5f,
@@ -383,7 +383,7 @@ using namespace wxl::dsl;
                              CornerRadius{4}};
     RevealEffect const reveal{hover, border, zIndex = 1};
     Button{u"7", reveal};
-    Border{RevealEffect{HoverLight{size = 90}}};
+    Border{RevealEffect{HoverLight{size = 90.0f}}};
 }
 
 }  // namespace
