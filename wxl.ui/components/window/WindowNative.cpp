@@ -312,18 +312,6 @@ struct WindowNative::subclass {
 /// the content to the last element there is, not by its type, and only once the content has
 /// been laid out -- before that the content has no parent.
 struct WindowNative::island {
-    static bool dark(ElementTheme shown) { return shown == ElementTheme::Dark; }
-    static bool dark(xaml::ElementTheme shown) { return shown == xaml::ElementTheme::Dark; }
-
-    /// What a request shows while there is no root to ask: itself, or for Default the
-    /// application's theme.
-    static ElementTheme expected(ElementTheme requested) {
-        if (requested != ElementTheme::Default) return requested;
-        return xaml::Application::Current().RequestedTheme() == xaml::ApplicationTheme::Dark
-                   ? ElementTheme::Dark
-                   : ElementTheme::Light;
-    }
-
     /// The topmost element above `content`, which is in the tree.
     static xaml::FrameworkElement root_above(xaml::FrameworkElement const& content) {
         xaml::FrameworkElement top = content;
@@ -342,17 +330,11 @@ struct WindowNative::island {
         return found != all.end() ? &found->second : nullptr;
     }
 
-    /// The root found: it takes the theme, and the frame follows what it shows from now on --
-    /// a change of the request, and of the system's theme under Default. The handler holds the
-    /// handle alone; the root goes with the window.
+    /// The root found: it takes the theme, and the frame follows what it shows from now on.
     static void adopt(HWND hwnd, native_state& state, xaml::FrameworkElement const& root) {
         state.root = root;
         root.RequestedTheme(static_cast<xaml::ElementTheme>(state.theme));
-        root.ActualThemeChanged(
-            [hwnd](xaml::FrameworkElement const& self, winrt::Windows::Foundation::IInspectable const&) {
-                impl::frame_dark(hwnd, dark(self.ActualTheme()));
-            });
-        impl::frame_dark(hwnd, dark(root.ActualTheme()));
+        impl::frame_follows(hwnd, root);
     }
 
     /// Finds the root from the window's content: at once if the content has been laid out, when
@@ -473,9 +455,9 @@ ElementTheme WindowNative::actualTheme(Window const& window) {
     // A window with no theme asked for shows the application's; one whose root is not found yet
     // shows, once it is, what was asked.
     native_state const* const state = island::kept(handle(window));
-    if (!state) return island::expected(ElementTheme::Default);
+    if (!state) return impl::shown_theme(ElementTheme::Default);
     if (state->root) return static_cast<ElementTheme>(state->root.ActualTheme());
-    return island::expected(state->theme);
+    return impl::shown_theme(state->theme);
 }
 
 void WindowNative::setBackdropColor(Window const& window, Color color) {
@@ -698,16 +680,7 @@ void window_theme_setter::set(winrt::Microsoft::UI::Xaml::Window const& window,
 
     // Found already: the root takes the request, and its ActualThemeChanged repaints the frame.
     if (state->root) {
-        // Back to Default through the application's theme said outright. Straight from Dark to
-        // Default the root reports the application's theme, and part of the content -- the
-        // text of a TextBlock that sets no foreground -- keeps the colour of the dark one: white
-        // on a light background. Through the theme itself it is redrawn, and the Default after
-        // it changes nothing that shows.
-        if (requested == ElementTheme::Default) {
-            state->root.RequestedTheme(
-                static_cast<xaml::ElementTheme>(island::expected(ElementTheme::Default)));
-        }
-        state->root.RequestedTheme(static_cast<xaml::ElementTheme>(requested));
+        request_island_theme(state->root, requested);
         return;
     }
 
@@ -715,7 +688,7 @@ void window_theme_setter::set(winrt::Microsoft::UI::Xaml::Window const& window,
     // -- whatever was asked last, since it reads the state then. Asked again before that, the
     // search starts again from the content the window holds now: the first one to find the root
     // adopts it, and any other finds it adopted and does nothing.
-    frame_dark(hwnd, island::dark(island::expected(requested)));
+    frame_dark(hwnd, shown_theme(requested) == ElementTheme::Dark);
     island::seek(window, *state);
 }
 

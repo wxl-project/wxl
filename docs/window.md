@@ -27,7 +27,10 @@
   окна (`placement`) и темы всего окна (`requestedTheme`). Тема ставится на
   корень острова XAML, который стоит над содержимым и переживает его замену,
   поэтому её наследует любое содержимое окна, а рамка окна следует за ней;
-  прочитать её можно через `WindowNative::actualTheme(window)`.
+  прочитать её можно через `WindowNative::actualTheme(window)`. У
+  `CompositionWindow` та же пара — `requestedTheme` и `actualTheme()`, — а
+  `showDialog` показывает диалог без собственной темы в теме окна, над
+  которым он открыт.
 - **`wxl::CompositionWindow`** (`CompositionWindow.h`) — собственный класс
   окна верхнего уровня, создаваемый с расширенным стилем
   `WS_EX_NOREDIRECTIONBITMAP`. Данное решение полностью отключает

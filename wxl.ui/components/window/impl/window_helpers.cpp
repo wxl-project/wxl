@@ -90,6 +90,37 @@ void set_size_to_content(winrt::Microsoft::UI::Xaml::Window const& window, SizeT
         });
 }
 
+ElementTheme shown_theme(ElementTheme requested) {
+    namespace xaml = winrt::Microsoft::UI::Xaml;
+    if (requested != ElementTheme::Default) return requested;
+    return xaml::Application::Current().RequestedTheme() == xaml::ApplicationTheme::Dark
+               ? ElementTheme::Dark
+               : ElementTheme::Light;
+}
+
+void request_island_theme(winrt::Microsoft::UI::Xaml::FrameworkElement const& root,
+                          ElementTheme requested) {
+    using winrt::Microsoft::UI::Xaml::ElementTheme;
+    // Back to Default through the application's theme said outright. Straight from Dark to
+    // Default the root reports the application's theme, and part of the content -- the text of a
+    // TextBlock that sets no foreground -- keeps the colour of the dark one: white on a light
+    // background. Through the theme itself it is redrawn, and the Default after it changes
+    // nothing that shows.
+    if (requested == wxl::ElementTheme::Default) {
+        root.RequestedTheme(static_cast<ElementTheme>(shown_theme(requested)));
+    }
+    root.RequestedTheme(static_cast<ElementTheme>(requested));
+}
+
+void frame_follows(HWND__* hwnd, winrt::Microsoft::UI::Xaml::FrameworkElement const& root) {
+    namespace xaml = winrt::Microsoft::UI::Xaml;
+    root.ActualThemeChanged(
+        [hwnd](xaml::FrameworkElement const& self, winrt::Windows::Foundation::IInspectable const&) {
+            frame_dark(hwnd, self.ActualTheme() == xaml::ElementTheme::Dark);
+        });
+    frame_dark(hwnd, root.ActualTheme() == xaml::ElementTheme::Dark);
+}
+
 void set_drag_region(winrt::Microsoft::UI::Xaml::UIElement const& element,
                      core::nullable<bool> const& value) {
     using winrt::Microsoft::UI::Xaml::Controls::TitleBar;

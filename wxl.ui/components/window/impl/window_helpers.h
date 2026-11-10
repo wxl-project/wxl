@@ -116,6 +116,20 @@ struct window_theme_setter {
     static void set(winrt::Microsoft::UI::Xaml::Window const& window, ElementTheme requested);
 };
 
+/// What a request shows: itself, or for Default the application's theme.
+ElementTheme shown_theme(ElementTheme requested);
+
+/// Puts `requested` on `root`, the topmost element of a window's island, which everything the
+/// window shows inherits it from. Shared by both windows, which differ only in how they find
+/// their root.
+void request_island_theme(winrt::Microsoft::UI::Xaml::FrameworkElement const& root,
+                          ElementTheme requested);
+
+/// The frame of `hwnd` takes the theme `root` shows, and follows it from now on: a change of the
+/// request, and of the system's theme under Default. Once per root. The handler holds the handle
+/// alone; the root goes with the window.
+void frame_follows(HWND__* hwnd, winrt::Microsoft::UI::Xaml::FrameworkElement const& root);
+
 /// DWMWA_USE_IMMERSIVE_DARK_MODE: the frame in the dark theme, or back in the light one. With
 /// frame_caption, defined in window_frame.cpp of its own: dwmapi.h drags in uxtheme.h, which wants
 /// the GDI types NOGDI keeps out of the rest of the library, and NOGDI is lifted there alone.
