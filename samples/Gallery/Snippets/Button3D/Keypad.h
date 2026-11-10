@@ -41,7 +41,7 @@ struct Model {
                 }
             };
         };
-        // A slider holds a double; these setters take a float.
+        // Ползунок хранит double, а эти сеттеры принимают float.
         auto const allFloat = [all](auto setter) {
             return [all, setter](double value) { all(setter)(static_cast<float>(value)); };
         };

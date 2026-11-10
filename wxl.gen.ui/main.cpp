@@ -377,7 +377,7 @@ wxl::Teardown wxl_launched() {
     // Левая часть — по ширине дерева: самая широкая строка, рамка и поле.
     // Граница перетаскивается и дальше, до следующей подгонки.
     left->wantedWidth.on_change([editorView](double width) noexcept {
-        editorView.openPaneLength(std::clamp(std::ceil(static_cast<float>(width)) + 14.0f, 240.0f, 900.0f));
+        editorView.openPaneLength(static_cast<float>(std::clamp(std::ceil(width) + 14.0, 240.0, 900.0)));
     });
 
     // Настройки — страницей, на месте редактора, как у NavigationView принято.
