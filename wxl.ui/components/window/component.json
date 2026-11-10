@@ -52,6 +52,12 @@
             "function": "impl::set_size_to_content",
             "include": "../impl/window_helpers.h"
           },
+          "RequestedTheme": {
+            "comment": "The theme of everything the window shows, said once for the window rather than on whatever its content happens to be. WinUI has nowhere to say it: Window has no RequestedTheme, Application.RequestedTheme is fixed once there is content, and the content's own is lost when the content is replaced. The theme is put on the root of the window's island -- the topmost element above the content, which outlives every content the window is given -- as soon as the content has been laid out; content asking for a theme of its own keeps it. The frame follows what the island shows. Reading it back is wxl::WindowNative::actualTheme().",
+            "type": "Microsoft.UI.Xaml.ElementTheme",
+            "function": "impl::window_theme_setter::set",
+            "include": "../impl/window_helpers.h"
+          },
           "Placement": {
             "comment": "Where the window was last time and how: ordinary, maximized or full-screen, plus the rectangle it returns to. WinUI has none of it -- AppWindow gives Position and Size, and a window closed maximized reports the size of the screen, so remembering that hands the reader a monitor-sized window the moment they leave the maximized state. What has to be kept is Win32's restore rectangle. The value is text because that is what an application writes to its settings and hands back unread; reading it back is wxl::WindowNative::placement(), since a property tag is a way of setting and there is no braced form of asking.",
             "type": "String",

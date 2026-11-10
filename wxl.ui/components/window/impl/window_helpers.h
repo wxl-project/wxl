@@ -17,6 +17,7 @@
 #include "SizeToContent.h"
 #include "core.h"
 #include "hstring_param.h"
+#include <wxl/Microsoft.UI.Xaml.Enums.h>
 #include <wxl/Windows.Graphics.Structs.h>
 
 namespace wxl::impl {
@@ -103,6 +104,16 @@ struct window_placement_setter {
     /// Puts the window where the text says, fitted to the monitors that exist now: restored
     /// blindly, a window whose monitor was unplugged opens where nobody can see it.
     static void set(winrt::Microsoft::UI::Xaml::Window const& window, hstring_param const& text);
+};
+
+/// The setter of Window's requestedTheme property (the component's syntheticMembers). A friend of
+/// WindowNative, which keeps the theme until the island has a root to carry it; reading it back
+/// is WindowNative::actualTheme(). Defined in WindowNative.cpp.
+struct window_theme_setter {
+    /// The theme is kept, the frame takes it now, and the island's root takes it once the content
+    /// has been laid out -- at once, if it has been. A window activated with no content to find
+    /// the root from is a mistake, and stops.
+    static void set(winrt::Microsoft::UI::Xaml::Window const& window, ElementTheme requested);
 };
 
 /// DWMWA_USE_IMMERSIVE_DARK_MODE: the frame in the dark theme, or back in the light one. With
