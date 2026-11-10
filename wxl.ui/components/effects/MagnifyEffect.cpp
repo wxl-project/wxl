@@ -180,7 +180,7 @@ struct MagnifyEffect::Impl : core::sta_refcounted {
 
 MagnifyEffect::MagnifyEffect() : impl_{new Impl, /*add_ref=*/false} {}
 
-MagnifyEffect::MagnifyEffect(double scale) : MagnifyEffect() { this->scale(scale); }
+MagnifyEffect::MagnifyEffect(float scale) : MagnifyEffect() { this->scale(scale); }
 
 MagnifyEffect::MagnifyEffect(MagnifyEffect const& other) noexcept = default;
 MagnifyEffect& MagnifyEffect::operator=(MagnifyEffect const& other) noexcept = default;

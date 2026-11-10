@@ -292,7 +292,7 @@ using namespace wxl::dsl;
 // What grows is positional, among the scale and the tags.
 [[maybe_unused]] void MagnifyEffect_target_positional() {
     using namespace ::wxl::dsl;
-    ::wxl::MagnifyEffect const content{1.2, ::wxl::MagnifyTarget::Content, maximum = 1.35};
+    ::wxl::MagnifyEffect const content{1.2f, ::wxl::MagnifyTarget::Content, maximum = 1.35};
     ::wxl::MagnifyEffect const alone{::wxl::MagnifyTarget::Content};
     ::wxl::Button const button{u"Play", content};
     (void)alone;
