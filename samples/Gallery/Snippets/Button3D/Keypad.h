@@ -4,8 +4,8 @@
 // справа: её поля пишут в сеттеры, и клавиши меняются на ходу. Четыре эффекта
 // делят одну пару ламп над указателем.
 struct Model {
-    HoverLight spot {size = 260, fullSize = 120, height = 30, intensity = 0.4};
-    BorderLight edge {size = 340, fullSize = 200, height = 60, intensity = 1.5};
+    HoverLight spot {size = 260, fullSize = 120, height = 30, intensity = 0.4f};
+    BorderLight edge {size = 340, fullSize = 200, height = 60, intensity = 1.5f};
     Button3DEffect numeric {foreground = rgb(237, 239, 242), background = rgb(68, 72, 79), spot, edge};
     Button3DEffect action {foreground = rgb(255, 227, 180), background = rgb(176, 98, 30), spot, edge};
     Button3DEffect large {foreground = rgb(237, 239, 242), background = rgb(68, 72, 79), spot, edge};
@@ -41,6 +41,10 @@ struct Model {
                 }
             };
         };
+        // A slider holds a double; these setters take a float.
+        auto const allFloat = [all](auto setter) {
+            return [all, setter](double value) { all(setter)(static_cast<float>(value)); };
+        };
         follow(emboss, [this](double value) {
             for (Button3DEffect const* effect : {&numeric, &action, &large}) effect->emboss(value);
             inverted.emboss(-value);
@@ -56,34 +60,34 @@ struct Model {
         follow(elevation, all(&Button3DEffect::elevation));
         follow(holeShadow, all(&Button3DEffect::holeShadow));
         follow(holeSoftness, all(&Button3DEffect::holeSoftness));
-        follow(castBlur, all(&Button3DEffect::castBlur));
+        follow(castBlur, allFloat(&Button3DEffect::castBlur));
         follow(pressDivesLamp, all(&Button3DEffect::pressDivesLamp));
         follow(pressFlashes, all(&Button3DEffect::pressFlashes));
         follow(pressMovesLabel, all(&Button3DEffect::pressMovesLabel));
         follow(pressShades, all(&Button3DEffect::pressShades));
-        follow(diveDepth, all(&Button3DEffect::diveDepth));
-        follow(diveGain, all(&Button3DEffect::diveGain));
-        follow(shadeAmount, all(&Button3DEffect::shadeAmount));
+        follow(diveDepth, allFloat(&Button3DEffect::diveDepth));
+        follow(diveGain, allFloat(&Button3DEffect::diveGain));
+        follow(shadeAmount, allFloat(&Button3DEffect::shadeAmount));
         follow(labelShade, all(&Button3DEffect::labelShade));
-        follow(specularAmount, all(&Button3DEffect::specularAmount));
-        follow(specularShine, all(&Button3DEffect::specularShine));
+        follow(specularAmount, allFloat(&Button3DEffect::specularAmount));
+        follow(specularShine, allFloat(&Button3DEffect::specularShine));
 
-        follow(spotSize, [this](double value) { spot.size(value); });
-        follow(spotFull, [this](double value) { spot.fullSize(value); });
-        follow(spotHeight, [this](double value) { spot.height(value); });
+        follow(spotSize, [this](double value) { spot.size(static_cast<float>(value)); });
+        follow(spotFull, [this](double value) { spot.fullSize(static_cast<float>(value)); });
+        follow(spotHeight, [this](double value) { spot.height(static_cast<float>(value)); });
         follow(spotIntensity, [this](double) { relamp(); });
         follow(spotOn, [this](bool) { relamp(); });
-        follow(edgeSize, [this](double value) { edge.size(value); });
-        follow(edgeFull, [this](double value) { edge.fullSize(value); });
-        follow(edgeHeight, [this](double value) { edge.height(value); });
+        follow(edgeSize, [this](double value) { edge.size(static_cast<float>(value)); });
+        follow(edgeFull, [this](double value) { edge.fullSize(static_cast<float>(value)); });
+        follow(edgeHeight, [this](double value) { edge.height(static_cast<float>(value)); });
         follow(edgeIntensity, [this](double) { relamp(); });
         follow(edgeOn, [this](bool) { relamp(); });
     }
 
 
     void relamp() const {
-        spot.intensity(spotOn.get() ? spotIntensity.get() : 0.0);
-        edge.intensity(edgeOn.get() ? edgeIntensity.get() : 0.0);
+        spot.intensity(spotOn.get() ? static_cast<float>(spotIntensity.get()) : 0.0f);
+        edge.intensity(edgeOn.get() ? static_cast<float>(edgeIntensity.get()) : 0.0f);
     }
 };
 auto const model = gallery::hold<Model>();
