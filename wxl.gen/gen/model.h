@@ -299,8 +299,8 @@ struct dsl {
 // crosses: `get` reads the control `c` as that type, `set` writes the field's
 // `value` into it.
 struct binding_field {
-    std::string type;  // "int"
-    std::string get;   // "static_cast<int>(c.value())"
+    std::string type;  // "float"
+    std::string get;   // "static_cast<float>(c.value())"
     std::string set;   // "c.value(value)"
 };
 

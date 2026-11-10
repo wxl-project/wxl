@@ -342,8 +342,8 @@ public:
         settings_.minimizeOnClose.on_change([this](bool const&) noexcept { saveSettings(settings_); });
         // The base size: the console goes to it, and it becomes what Ctrl+0
         // returns to. This is the one setting the transient zoom does not touch.
-        settings_.fontSize.on_change([this](int const&) noexcept {
-            zoomSize_ = settings_.fontSize.get();
+        settings_.fontSize.on_change([this](double const&) noexcept {
+            zoomSize_ = settings_.fontPixels();
             applyFont();
             saveSettings(settings_);
         });
@@ -369,7 +369,7 @@ public:
         // The current size starts at the base -- a fresh run starts there,
         // whatever the last run's transient zoom left off at, which is why the
         // zoom is not saved.
-        zoomSize_ = settings_.fontSize.get();
+        zoomSize_ = settings_.fontPixels();
         applyFont();
         applyConsoleTheme(settings_.theme.get());
 
@@ -729,7 +729,7 @@ private:
     /// Back to the base size -- what Ctrl+0 does. The base is the settings' size,
     /// the one the zoom never wrote to.
     void zoomReset() {
-        zoomSize_ = settings_.fontSize.get();
+        zoomSize_ = settings_.fontPixels();
         applyFont();
     }
 

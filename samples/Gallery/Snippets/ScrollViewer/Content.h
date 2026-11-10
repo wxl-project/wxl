@@ -5,7 +5,7 @@ struct Model {
     core::observable<int> verticalMode{1};
     core::observable<int> horizontalBar{1};
     core::observable<int> verticalBar{1};
-    core::observable<double> zoom{4};
+    core::observable<float> zoom{4.0f};
 };
 auto const model = gallery::hold<Model>();
 
@@ -23,7 +23,7 @@ auto viewer = ScrollViewer {
     verticalScrollMode = BindOutput {model->verticalMode, [](int chosen) { return static_cast<ScrollMode>(chosen); }},
     horizontalScrollBarVisibility = BindOutput {model->horizontalBar, [](int chosen) { return static_cast<ScrollBarVisibility>(chosen); }},
     verticalScrollBarVisibility = BindOutput {model->verticalBar, [](int chosen) { return static_cast<ScrollBarVisibility>(chosen); }},
-    onLoaded += [model](ScrollViewer const& self) { self.changeView({}, {}, static_cast<float>(model->zoom.get())); },
+    onLoaded += [model](ScrollViewer const& self) { self.changeView({}, {}, model->zoom.get()); },
     // The zoom made with the wheel or a pinch is the zoom of the slider.
     onViewChanged += [model](ScrollViewer const& self, ScrollViewerViewChangedEventArgs& args) {
         if (!args.isIntermediate()) {

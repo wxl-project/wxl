@@ -266,7 +266,7 @@ wxl::Teardown wxl_launched() {
         editor->englishDocumentation(english);
         saveSettings(*raw);
     });
-    settings->detailsFontSize.on_change([raw = settings.get(), editor = document.get(), showInfo](int) noexcept {
+    settings->detailsFontSize.on_change([raw = settings.get(), editor = document.get(), showInfo](double) noexcept {
         showInfo(editor->info.get());
         saveSettings(*raw);
     });

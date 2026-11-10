@@ -13,7 +13,7 @@ Border {
             CornerRadius {6},
             BorderThickness {4},
             background = rgb(180, 180, 180),
-            BevelEffect {rgb(255, 255, 255), rgb(60, 60, 60), strokeThickness = 4, blurRadius = 0},
+            BevelEffect {rgb(255, 255, 255), rgb(60, 60, 60), strokeThickness = 4.0f, blurRadius = 0.0f},
             TextBlock {u"BevelEffect", hAlign.center, vAlign.center},
         },
 

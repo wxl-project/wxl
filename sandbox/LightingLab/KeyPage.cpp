@@ -155,7 +155,7 @@ struct Keys {
     core::observable<double> holeAmount {1.0};
     core::observable<double> holeSoft {1.0};
     // Падающая тень на панель: размытие в долях того, что даёт композитор.
-    core::observable<double> castBlur {1.0};
+    core::observable<float> castBlur {1.0f};
     // Проба: панель без своего цвета -- ложится ли тень на прозрачный приёмник.
     core::observable<bool> clearPanel {false};
 
@@ -179,13 +179,13 @@ struct Keys {
     core::observable<bool> hold {false};
     core::observable<double> diveDepth {0.33};
     core::observable<double> diveGain {2.0};
-    core::observable<double> shadeAmount {0.2};
+    core::observable<float> shadeAmount {0.2f};
     // Клавиша, чей знак сейчас утоплен: знаки -- текст XAML и следят за полем.
     core::observable<int> labelDown {-1};
 
     // Материал.
-    core::observable<double> specularAmount {0.15};
-    core::observable<double> specularShine {30.0};
+    core::observable<float> specularAmount {0.15f};
+    core::observable<float> specularShine {30.0f};
     core::observable<Color> numericColor {rgb(68, 72, 79)};
     core::observable<Color> actionColor {rgb(176, 98, 30)};
     core::observable<bool> hardBorder {true};
@@ -314,7 +314,7 @@ struct Keys {
         lab::onAny([this] { paint(); }, specularAmount, specularShine);
         lab::onAny([this] { relight(); }, shadow, azimuth, elevation, lampColor, ambientColor);
         rise.on_change([this](double const&) noexcept { sink(); });
-        castBlur.on_change([this](double const&) noexcept { blur(); });
+        castBlur.on_change([this](float const&) noexcept { blur(); });
         clearPanel.on_change([this](bool const& clear) noexcept {
             panelBrush.color(clear ? rgba(30, 31, 34, 0.0) : rgb(30, 31, 34));
         });
@@ -423,7 +423,7 @@ struct Keys {
     void blur() noexcept {
         lab::attempt(shadowStatus, u"CompositionProjectedShadow", [this] {
             for (auto const& made : casts) {
-                made.blurRadiusMultiplier(static_cast<float>(castBlur.get()));
+                made.blurRadiusMultiplier(castBlur.get());
                 made.minBlurRadius(0.0f);
                 made.maxBlurRadius(8.0f);
             }
@@ -586,8 +586,8 @@ struct Keys {
                 gloss.normalMapSource(source(u"NormalMap"));
                 gloss.ambientAmount(0.0f);
                 gloss.diffuseAmount(0.0f);
-                gloss.specularAmount(static_cast<float>(specularAmount.get()));
-                gloss.specularShine(static_cast<float>(specularShine.get()));
+                gloss.specularAmount(specularAmount.get());
+                gloss.specularShine(specularShine.get());
 
                 ArithmeticCompositeEffect tinted;
                 tinted.source1(source(u"Base"));
@@ -817,7 +817,7 @@ struct Keys {
             rimSprites[index].startAnimation(u"Offset.Z", toward(depthOf(index), pressTime));
             if (pressShades.get()) {
                 shadeSprites[index].startAnimation(u"Opacity",
-                                                   toward(static_cast<float>(shadeAmount.get()), pressTime));
+                                                   toward(shadeAmount.get(), pressTime));
             }
             if (pressMovesLabel.get()) {
                 labelDown.set(index);

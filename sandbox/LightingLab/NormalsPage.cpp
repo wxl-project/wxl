@@ -95,8 +95,8 @@ struct Normals {
     core::observable<double> elevation {45.0};
     // Повороты первой пары плиток: её кисть и её спрайт вертят ползунки, при
     // нулях это плитка как есть.
-    core::observable<double> brushTurn {0.0};
-    core::observable<double> spriteTurn {0.0};
+    core::observable<float> brushTurn {0.0f};
+    core::observable<float> spriteTurn {0.0f};
     core::observable<hstring> status;
 
     Compositor compositor;
@@ -123,8 +123,8 @@ struct Normals {
 
         map.on_change([this](int const&) noexcept { redraw(); });
         lab::onAny([this] { relight(); }, azimuth, elevation);
-        brushTurn.on_change([this](double const&) noexcept { paint(); });
-        spriteTurn.on_change([this](double const&) noexcept { turn(); });
+        brushTurn.on_change([this](float const&) noexcept { paint(); });
+        spriteTurn.on_change([this](float const&) noexcept { turn(); });
 
         redraw();
         paint();
@@ -192,7 +192,7 @@ struct Normals {
             for (Tile const& placed : tiles) {
                 if (configs[placed.config].what == What::plain) {
                     placed.sprite.centerPoint({tile / 2, tile / 2, 0.0f});
-                    placed.sprite.rotationAngleInDegrees(static_cast<float>(spriteTurn.get()));
+                    placed.sprite.rotationAngleInDegrees(spriteTurn.get());
                 }
             }
         });
@@ -225,7 +225,7 @@ struct Normals {
         switch (what) {
         case What::plain:
             brush.centerPoint(middle);
-            brush.rotationAngleInDegrees(static_cast<float>(brushTurn.get()));
+            brush.rotationAngleInDegrees(brushTurn.get());
             break;
         case What::brushTurn30:
             brush.centerPoint(middle);

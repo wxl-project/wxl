@@ -246,8 +246,8 @@
     // derived from it, so a key has one pair along a line of inheritance.
     //
     // The field's type follows the property's, one rule per type: a bool and
-    // a Color as they are, an int32 as an int, a double as a double and as an
-    // int (truncated on the way in), a nullable bool as a bool (empty reads
+    // a Color as they are, an int32 as an int, a double as a double and as a
+    // float (narrowed on the way in), a nullable bool as a bool (empty reads
     // false), a string as checked UTF-16, core::u16_text (repaired on the way
     // in).
     //
