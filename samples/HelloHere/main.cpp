@@ -8,11 +8,13 @@ using namespace wxl;
 using namespace wxl::core;
 using namespace wxl::dsl;
 
+namespace {
+
 // Presets are their arguments, and these are constants: laid out by the
 // compiler, with nothing to run for them at start-up.
 namespace presets {
-    inline constexpr Preset centeredAndWrapped{hAlign.center, textWrapping.wrap};
-    inline constexpr Preset allCentered{hAlign.center, vAlign.center};
+    constexpr Preset centeredAndWrapped{hAlign.center, textWrapping.wrap};
+    constexpr Preset allCentered{hAlign.center, vAlign.center};
 }
 
 ElementTheme nextTheme(ElementTheme value) {
@@ -43,6 +45,8 @@ std::u16string themeName(ElementTheme value)
         return u"Default System";
     }
 }
+
+}  // namespace
 
 Teardown wxl_launched() {
     // The theme the window requests. It starts at Default, so the window follows the

@@ -50,7 +50,7 @@ public:
     void TearDown() override { sta_loop::stop(); }
 };
 
-inline ::testing::Environment* const driven_env =
+::testing::Environment* const driven_env =
     ::testing::AddGlobalTestEnvironment(new driven_environment);
 
 /// One operation whose body says, on the worker, that it has run -- so a test can wait
