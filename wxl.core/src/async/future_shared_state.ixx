@@ -265,6 +265,21 @@ struct when_failed_pending_state : pending_state {
     t_when_failed when_failed_;
 };
 
+/// The one node that sees both outcomes: its callback is handed the state that resolved the
+/// future, a value or an exception, and decides for itself. A caller that treats the two outcomes
+/// differently takes one node of this kind instead of a success node plus a failure node.
+template <typename t_when_resolved>
+struct when_resolved_pending_state : pending_state {
+    when_resolved_pending_state(pending_state* prev, t_when_resolved when_resolved) noexcept
+        : pending_state(prev), when_resolved_(std::move(when_resolved)) {}
+
+    void resolve(const future_shared_state*, const state* by_state) noexcept final {
+        std::invoke(when_resolved_, by_state);
+    }
+
+    t_when_resolved when_resolved_;
+};
+
 template <typename t_when_ready>
 struct when_ready_pending_state : pending_state {
     when_ready_pending_state(pending_state* prev, t_when_ready when_ready) noexcept
@@ -290,24 +305,14 @@ struct when_ready_pending_state_ex : pending_state {
     t_when_ready when_ready_;
 };
 
-struct set_exception_func {
-    inline explicit set_exception_func(future_shared_state* result) noexcept : result_(result) {}
-
-    inline explicit set_exception_func(const future_shared_state_ptr& result) noexcept
+/// A when_resolved callback that resolves \p result the way the state it is handed was resolved:
+/// with a void value on a value, with the same exception on a failure. The value itself is not
+/// carried over, so it serves a result that is a future<void>.
+struct forward_outcome_func {
+    inline explicit forward_outcome_func(const future_shared_state_ptr& result) noexcept
         : result_(result) {}
 
-    void operator()(const std::exception_ptr& e) noexcept;
-
-    future_shared_state_ptr result_;
-};
-
-template <typename T>
-struct set_value_func {
-    explicit set_value_func(future_shared_state* result) noexcept : result_(result) {}
-
-    explicit set_value_func(const future_shared_state_ptr& result) noexcept : result_(result) {}
-
-    void operator()(const T& value) noexcept;
+    void operator()(const state* by_state) noexcept;
 
     future_shared_state_ptr result_;
 };
@@ -478,6 +483,13 @@ public:
     /// failed already, otherwise when it is resolved. A state that holds a value never calls it.
     template <class t_when_failed>
     void when_failed(t_when_failed callback) const;
+
+    /// Calls \p callback with the state that resolved this one -- a value or an exception --
+    /// once it is resolved: at once if it is already, otherwise when it is resolved. One node
+    /// serves both outcomes, which is what a caller that handles them together wants instead of
+    /// a when_succeeded_void plus a when_failed. The callback must be noexcept.
+    template <class t_when_resolved>
+    void when_resolved(t_when_resolved callback) const;
 
     /// The callback takes no argument.
     template <class t_when_ready>
@@ -824,6 +836,25 @@ void future_shared_state::when_failed(t_when_failed callback) const {
     }
 }
 
+template <class t_when_resolved>
+void future_shared_state::when_resolved(t_when_resolved callback) const {
+    using when_resolved_pending_state = detail::when_resolved_pending_state<t_when_resolved>;
+
+    when_resolved_pending_state* new_state = nullptr;
+    state* state = state_.load();
+
+    while (true) {
+        if (ready(state)) {
+            std::invoke(new_state ? new_state->when_resolved_ : callback, state);
+
+            destroy(new_state);
+            return;
+        }
+
+        if (try_attach_continuation(new_state, state, std::move(callback))) return;
+    }
+}
+
 template <class t_when_ready>
 void future_shared_state::when_ready0(t_when_ready callback) const {
     using when_ready_pending_state = detail::when_ready_pending_state<t_when_ready>;
@@ -927,63 +958,13 @@ inline bool future_shared_state::try_attach_continuation(t_next_pending_state*& 
 
 namespace detail {
 
-inline void set_exception_func::operator()(const std::exception_ptr& e) noexcept {
-    result_->set_exception(e);
-}
-
-template <typename T>
-void set_value_func<T>::operator()(const T& value) noexcept {
-    result_->set_value(value);
-}
-
-template <>
-struct set_value_func<void> {
-    inline explicit set_value_func(future_shared_state* result) : result_(result) {}
-
-    inline explicit set_value_func(const future_shared_state_ptr& result) : result_(result) {}
-
-    inline void operator()() const noexcept { result_->set_value(); }
-    future_shared_state_ptr result_;
-};
-
-template <class t_next_async_task, class T>
-struct next_async_task {
-    next_async_task(const t_next_async_task& task, const future_shared_state_ptr& result)
-        : task_(task), result_(result) {}
-
-    void operator()(const T& value) noexcept {
-        try {
-            task_(value)
-                .when_succeeded(set_value_func<void>(result_))
-                .when_failed(set_exception_func(result_));
-        } catch (...) {
-            result_->set_exception();
-        }
+inline void forward_outcome_func::operator()(const state* by_state) noexcept {
+    if (by_state->id() == state_id::resolved) {
+        result_->set_value();
+    } else {
+        result_->set_exception(by_state);
     }
-
-    t_next_async_task task_;
-    future_shared_state_ptr result_;
-};
-
-// @todo: do we need this template specialization anymore?
-template <class t_next_async_task>
-struct next_async_task<t_next_async_task, void> {
-    next_async_task(const t_next_async_task& task, const future_shared_state_ptr& result)
-        : task_(task), result_(result) {}
-
-    void operator()() noexcept {
-        try {
-            task_()
-                .when_succeeded(set_value_func<void>(result_))
-                .when_failed(set_exception_func(result_));
-        } catch (...) {
-            result_->set_exception();
-        }
-    }
-
-    t_next_async_task task_;
-    future_shared_state_ptr result_;
-};
+}
 
 /// Routes a success subscription to the arity the value type calls for: with the value for a
 /// future<T>, with nothing for a future<void>.
