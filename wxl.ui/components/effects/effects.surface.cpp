@@ -29,10 +29,10 @@ using namespace wxl::dsl;
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HaloEffect::color = value);
 }
 [[maybe_unused]] void HaloEffect_blurRadius_assigned(::wxl::HaloEffect const& object,
-                                                     double value) {
+                                                     float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HaloEffect::blurRadius = value);
 }
-[[maybe_unused]] void HaloEffect_opacity_assigned(::wxl::HaloEffect const& object, double value) {
+[[maybe_unused]] void HaloEffect_opacity_assigned(::wxl::HaloEffect const& object, float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HaloEffect::opacity = value);
 }
 [[maybe_unused]] void HaloEffect_offset_assigned(::wxl::HaloEffect const& object,
@@ -47,15 +47,15 @@ using namespace wxl::dsl;
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::GaussianBlurEffect::color = value);
 }
 [[maybe_unused]] void GaussianBlurEffect_blurRadius_assigned(
-    ::wxl::GaussianBlurEffect const& object, double value) {
+    ::wxl::GaussianBlurEffect const& object, float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::GaussianBlurEffect::blurRadius = value);
 }
 [[maybe_unused]] void GaussianBlurEffect_opacity_assigned(::wxl::GaussianBlurEffect const& object,
-                                                          double value) {
+                                                          float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::GaussianBlurEffect::opacity = value);
 }
 [[maybe_unused]] void GaussianBlurEffect_gamma_assigned(::wxl::GaussianBlurEffect const& object,
-                                                        double value) {
+                                                        float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::GaussianBlurEffect::gamma = value);
 }
 [[maybe_unused]] void GaussianBlurEffect_zIndex_assigned(::wxl::GaussianBlurEffect const& object,
@@ -70,7 +70,7 @@ using namespace wxl::dsl;
     using namespace ::wxl::dsl;
     HaloEffect const halo{color = rgb(92, 138, 32), blurRadius = 14.0f};
     HaloEffect const bare{rgb(92, 138, 32)};
-    GaussianBlurEffect const glow{rgb(0, 0, 0), blurRadius = 3.0f, gamma = 0.5, opacity = 0.9,
+    GaussianBlurEffect const glow{rgb(0, 0, 0), blurRadius = 3.0f, gamma = 0.5f, opacity = 0.9f,
                                   zIndex = 1};
     TextBlock{u"0", halo, bare, glow};
 }
@@ -81,17 +81,17 @@ using namespace wxl::dsl;
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::GlassEffect::color = value);
 }
 [[maybe_unused]] void GlassEffect_blurRadius_assigned(::wxl::GlassEffect const& object,
-                                                      double value) {
+                                                      float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::GlassEffect::blurRadius = value);
 }
-[[maybe_unused]] void GlassEffect_opacity_assigned(::wxl::GlassEffect const& object, double value) {
+[[maybe_unused]] void GlassEffect_opacity_assigned(::wxl::GlassEffect const& object, float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::GlassEffect::opacity = value);
 }
 // The pane under a panel, with a bare tint and the tags.
 [[maybe_unused]] void glass_in_braces() {
     using namespace ::wxl;
     using namespace ::wxl::dsl;
-    GlassEffect const pane{rgba(255, 255, 255, 0.2), blurRadius = 24.0f, opacity = 0.9};
+    GlassEffect const pane{rgba(255, 255, 255, 0.2), blurRadius = 24.0f, opacity = 0.9f};
     Border{pane, GlassEffect{blurRadius = 12.0f}};
 }
 
@@ -113,11 +113,11 @@ using namespace wxl::dsl;
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::emboss = value);
 }
 [[maybe_unused]] void Button3DEffect_specularAmount_assigned(::wxl::Button3DEffect const& object,
-                                                             double value) {
+                                                             float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::specularAmount = value);
 }
 [[maybe_unused]] void Button3DEffect_specularShine_assigned(::wxl::Button3DEffect const& object,
-                                                            double value) {
+                                                            float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::specularShine = value);
 }
 [[maybe_unused]] void Button3DEffect_rim_assigned(::wxl::Button3DEffect const& object,
@@ -161,7 +161,7 @@ using namespace wxl::dsl;
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::ambientColor = value);
 }
 [[maybe_unused]] void Button3DEffect_castBlur_assigned(::wxl::Button3DEffect const& object,
-                                                       double value) {
+                                                       float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::castBlur = value);
 }
 [[maybe_unused]] void Button3DEffect_holeShadow_assigned(::wxl::Button3DEffect const& object,
@@ -190,15 +190,15 @@ using namespace wxl::dsl;
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::pressShades = value);
 }
 [[maybe_unused]] void Button3DEffect_diveDepth_assigned(::wxl::Button3DEffect const& object,
-                                                        double value) {
+                                                        float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::diveDepth = value);
 }
 [[maybe_unused]] void Button3DEffect_diveGain_assigned(::wxl::Button3DEffect const& object,
-                                                       double value) {
+                                                       float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::diveGain = value);
 }
 [[maybe_unused]] void Button3DEffect_shadeAmount_assigned(::wxl::Button3DEffect const& object,
-                                                          double value) {
+                                                          float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::shadeAmount = value);
 }
 [[maybe_unused]] void Button3DEffect_labelShade_assigned(::wxl::Button3DEffect const& object,
@@ -215,7 +215,7 @@ using namespace wxl::dsl;
     Button{u"7", key};
     // The lights over the pointer, written bare: one pair given to two kinds
     // of key, and one light written in place.
-    HoverLight const spot{size = 200, fullSize = 100, diffuseAmount = 0.4};
+    HoverLight const spot{size = 200, fullSize = 100, diffuseAmount = 0.4f};
     BorderLight const glow{size = 340, fullSize = 200};
     Button3DEffect const lit{background = rgb(68, 72, 79), spot, glow};
     Button3DEffect const other{background = rgb(48, 68, 116), spot, glow};
@@ -227,14 +227,14 @@ using namespace wxl::dsl;
 
 // BevelEffect -- written by hand, so its schema lines are too.
 [[maybe_unused]] void BevelEffect_strokeThickness_assigned(::wxl::BevelEffect const& object,
-                                                           double value) {
+                                                           float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BevelEffect::strokeThickness = value);
 }
 [[maybe_unused]] void BevelEffect_blurRadius_assigned(::wxl::BevelEffect const& object,
-                                                      double value) {
+                                                      float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BevelEffect::blurRadius = value);
 }
-[[maybe_unused]] void BevelEffect_offset_assigned(::wxl::BevelEffect const& object, double value) {
+[[maybe_unused]] void BevelEffect_offset_assigned(::wxl::BevelEffect const& object, float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BevelEffect::offset = value);
 }
 [[maybe_unused]] void BevelEffect_margin_assigned(::wxl::BevelEffect const& object,
@@ -300,17 +300,17 @@ using namespace wxl::dsl;
 }
 
 // RevealEffect and its two lights -- written by hand, so their schema lines are too.
-[[maybe_unused]] void HoverLight_size_assigned(::wxl::HoverLight const& object, double value) {
+[[maybe_unused]] void HoverLight_size_assigned(::wxl::HoverLight const& object, float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HoverLight::size = value);
 }
-[[maybe_unused]] void HoverLight_height_assigned(::wxl::HoverLight const& object, double value) {
+[[maybe_unused]] void HoverLight_height_assigned(::wxl::HoverLight const& object, float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HoverLight::height = value);
 }
-[[maybe_unused]] void HoverLight_intensity_assigned(::wxl::HoverLight const& object, double value) {
+[[maybe_unused]] void HoverLight_intensity_assigned(::wxl::HoverLight const& object, float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HoverLight::intensity = value);
 }
 [[maybe_unused]] void HoverLight_diffuseAmount_assigned(::wxl::HoverLight const& object,
-                                                        double value) {
+                                                        float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HoverLight::diffuseAmount = value);
 }
 [[maybe_unused]] void HoverLight_color_assigned(::wxl::HoverLight const& object,
@@ -318,26 +318,26 @@ using namespace wxl::dsl;
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HoverLight::color = value);
 }
 [[maybe_unused]] void HoverLight_constantAttenuation_assigned(::wxl::HoverLight const& object,
-                                                              double value) {
+                                                              float value) {
     ::wxl::impl::apply_argument(object,
                                 ::wxl::dsl::schema::HoverLight::constantAttenuation = value);
 }
 [[maybe_unused]] void HoverLight_linearAttenuation_assigned(::wxl::HoverLight const& object,
-                                                            double value) {
+                                                            float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HoverLight::linearAttenuation = value);
 }
-[[maybe_unused]] void BorderLight_size_assigned(::wxl::BorderLight const& object, double value) {
+[[maybe_unused]] void BorderLight_size_assigned(::wxl::BorderLight const& object, float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BorderLight::size = value);
 }
-[[maybe_unused]] void BorderLight_height_assigned(::wxl::BorderLight const& object, double value) {
+[[maybe_unused]] void BorderLight_height_assigned(::wxl::BorderLight const& object, float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BorderLight::height = value);
 }
 [[maybe_unused]] void BorderLight_intensity_assigned(::wxl::BorderLight const& object,
-                                                     double value) {
+                                                     float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BorderLight::intensity = value);
 }
 [[maybe_unused]] void BorderLight_diffuseAmount_assigned(::wxl::BorderLight const& object,
-                                                         double value) {
+                                                         float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BorderLight::diffuseAmount = value);
 }
 [[maybe_unused]] void BorderLight_color_assigned(::wxl::BorderLight const& object,
@@ -345,16 +345,16 @@ using namespace wxl::dsl;
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BorderLight::color = value);
 }
 [[maybe_unused]] void BorderLight_constantAttenuation_assigned(::wxl::BorderLight const& object,
-                                                               double value) {
+                                                               float value) {
     ::wxl::impl::apply_argument(object,
                                 ::wxl::dsl::schema::BorderLight::constantAttenuation = value);
 }
 [[maybe_unused]] void BorderLight_linearAttenuation_assigned(::wxl::BorderLight const& object,
-                                                             double value) {
+                                                             float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BorderLight::linearAttenuation = value);
 }
 [[maybe_unused]] void BorderLight_strokeThickness_assigned(::wxl::BorderLight const& object,
-                                                           double value) {
+                                                           float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BorderLight::strokeThickness = value);
 }
 [[maybe_unused]] void BorderLight_cornerRadius_assigned(::wxl::BorderLight const& object,
@@ -366,20 +366,20 @@ using namespace wxl::dsl;
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::RevealEffect::zIndex = value);
 }
 // The braces as they are written: the generic tags on each light, whole
-// numbers where the setter takes a double, a corner radius by its own type,
+// numbers where the setter takes a float, a corner radius by its own type,
 // the lights bare in the effect and the effect attached to a Button.
 [[maybe_unused]] void RevealEffect_in_braces() {
     using namespace ::wxl;
     using namespace ::wxl::dsl;
-    HoverLight const hover{size = 140, height = 120, intensity = 1.0, diffuseAmount = 0.69};
+    HoverLight const hover{size = 140, height = 120, intensity = 1.0f, diffuseAmount = 0.69f};
     BorderLight const border{size = 340,
                              height = 120,
-                             intensity = 1.0,
-                             diffuseAmount = 1.24,
-                             strokeThickness = 1.5,
+                             intensity = 1.0f,
+                             diffuseAmount = 1.24f,
+                             strokeThickness = 1.5f,
                              color = rgb(255, 255, 255),
-                             constantAttenuation = 1.0,
-                             linearAttenuation = 0.0,
+                             constantAttenuation = 1.0f,
+                             linearAttenuation = 0.0f,
                              CornerRadius{4}};
     RevealEffect const reveal{hover, border, zIndex = 1};
     Button{u"7", reveal};

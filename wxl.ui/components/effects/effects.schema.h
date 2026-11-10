@@ -17,10 +17,10 @@ struct HaloEffect {
     static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Color, ::wxl::Color,
                                                ::wxl::HaloEffect>
         color{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::BlurRadius, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::BlurRadius, float,
                                                ::wxl::HaloEffect>
         blurRadius{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Opacity, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Opacity, float,
                                                ::wxl::HaloEffect>
         opacity{};
     static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Offset, ::wxl::Vector3,
@@ -35,13 +35,13 @@ struct GaussianBlurEffect {
     static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Color, ::wxl::Color,
                                                ::wxl::GaussianBlurEffect>
         color{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::BlurRadius, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::BlurRadius, float,
                                                ::wxl::GaussianBlurEffect>
         blurRadius{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Opacity, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Opacity, float,
                                                ::wxl::GaussianBlurEffect>
         opacity{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Gamma, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Gamma, float,
                                                ::wxl::GaussianBlurEffect>
         gamma{};
     static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::ZIndex, int32_t,
@@ -53,10 +53,10 @@ struct GlassEffect {
     static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Color, ::wxl::Color,
                                                ::wxl::GlassEffect>
         color{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::BlurRadius, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::BlurRadius, float,
                                                ::wxl::GlassEffect>
         blurRadius{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Opacity, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Opacity, float,
                                                ::wxl::GlassEffect>
         opacity{};
 };
@@ -68,10 +68,10 @@ struct Button3DEffect {
     static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Background, ::wxl::Color,
                                                ::wxl::Button3DEffect>
         background{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::SpecularAmount, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::SpecularAmount, float,
                                                ::wxl::Button3DEffect>
         specularAmount{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::SpecularShine, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::SpecularShine, float,
                                                ::wxl::Button3DEffect>
         specularShine{};
     static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Emboss, double,
@@ -110,7 +110,7 @@ struct Button3DEffect {
     static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::AmbientColor, ::wxl::Color,
                                                ::wxl::Button3DEffect>
         ambientColor{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::CastBlur, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::CastBlur, float,
                                                ::wxl::Button3DEffect>
         castBlur{};
     static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::HoleShadow, double,
@@ -131,13 +131,13 @@ struct Button3DEffect {
     static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::PressShades, bool,
                                                ::wxl::Button3DEffect>
         pressShades{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::DiveDepth, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::DiveDepth, float,
                                                ::wxl::Button3DEffect>
         diveDepth{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::DiveGain, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::DiveGain, float,
                                                ::wxl::Button3DEffect>
         diveGain{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::ShadeAmount, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::ShadeAmount, float,
                                                ::wxl::Button3DEffect>
         shadeAmount{};
     static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::LabelShade, double,
@@ -146,13 +146,13 @@ struct Button3DEffect {
 };
 
 struct BevelEffect {
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::StrokeThickness, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::StrokeThickness, float,
                                                ::wxl::BevelEffect>
         strokeThickness{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::BlurRadius, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::BlurRadius, float,
                                                ::wxl::BevelEffect>
         blurRadius{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Offset, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Offset, float,
                                                ::wxl::BevelEffect>
         offset{};
     static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Margin, ::wxl::Thickness,
@@ -182,56 +182,56 @@ struct MagnifyEffect {
 };
 
 struct HoverLight {
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Size, double, ::wxl::HoverLight>
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Size, float, ::wxl::HoverLight>
         size{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::FullSize, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::FullSize, float,
                                                ::wxl::HoverLight>
         fullSize{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Height, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Height, float,
                                                ::wxl::HoverLight>
         height{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Intensity, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Intensity, float,
                                                ::wxl::HoverLight>
         intensity{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::DiffuseAmount, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::DiffuseAmount, float,
                                                ::wxl::HoverLight>
         diffuseAmount{};
     static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Color, ::wxl::Color,
                                                ::wxl::HoverLight>
         color{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::ConstantAttenuation, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::ConstantAttenuation, float,
                                                ::wxl::HoverLight>
         constantAttenuation{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::LinearAttenuation, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::LinearAttenuation, float,
                                                ::wxl::HoverLight>
         linearAttenuation{};
 };
 
 struct BorderLight {
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Size, double, ::wxl::BorderLight>
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Size, float, ::wxl::BorderLight>
         size{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::FullSize, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::FullSize, float,
                                                ::wxl::BorderLight>
         fullSize{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Height, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Height, float,
                                                ::wxl::BorderLight>
         height{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Intensity, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Intensity, float,
                                                ::wxl::BorderLight>
         intensity{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::DiffuseAmount, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::DiffuseAmount, float,
                                                ::wxl::BorderLight>
         diffuseAmount{};
     static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::Color, ::wxl::Color,
                                                ::wxl::BorderLight>
         color{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::ConstantAttenuation, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::ConstantAttenuation, float,
                                                ::wxl::BorderLight>
         constantAttenuation{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::LinearAttenuation, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::LinearAttenuation, float,
                                                ::wxl::BorderLight>
         linearAttenuation{};
-    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::StrokeThickness, double,
+    static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::StrokeThickness, float,
                                                ::wxl::BorderLight>
         strokeThickness{};
     static constexpr ::wxl::impl::property_tag<::wxl::PropertyKey::CornerRadius,

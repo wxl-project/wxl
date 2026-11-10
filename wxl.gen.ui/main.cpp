@@ -345,8 +345,8 @@ wxl::Teardown wxl_launched() {
     // под ними, меньше, сведения о выбранном — как у просмотрщиков библиотек
     // типов.
     auto const editorView = SplitPanel {
-        openPaneLength = 520.0,
-        spacing = 8.0,
+        openPaneLength = 520.0f,
+        spacing = 8.0f,
         // Дерево — на сплошном фоне, белом в светлой теме.
         pane = Border {
             framed,
@@ -356,8 +356,8 @@ wxl::Teardown wxl_launched() {
         content = SplitPanel {
             orientation.vertical,
             panePlacement.right,
-            openPaneLength = 180.0,
-            spacing = 8.0,
+            openPaneLength = 180.0f,
+            spacing = 8.0f,
             content = Border {
                 framed,
                 background = brushes.SolidBackgroundFillColor.Quarternary,
@@ -377,7 +377,7 @@ wxl::Teardown wxl_launched() {
     // Левая часть — по ширине дерева: самая широкая строка, рамка и поле.
     // Граница перетаскивается и дальше, до следующей подгонки.
     left->wantedWidth.on_change([editorView](double width) noexcept {
-        editorView.openPaneLength(std::clamp(std::ceil(width) + 14.0, 240.0, 900.0));
+        editorView.openPaneLength(static_cast<float>(std::clamp(std::ceil(width) + 14.0, 240.0, 900.0)));
     });
 
     // Настройки — страницей, на месте редактора, как у NavigationView принято.
