@@ -558,6 +558,25 @@ struct BoundModel : core::sta_refcounted {
     ScrollViewer{schema::ScrollViewer::verticalOffset = Bind{model->amount}};
 }
 
+// A number is taken as the property's own type, converted at the `=`: a float
+// property takes a float and an int literal, a double one widens both, and a
+// binding keeps its field's type. A narrowing -- `rotation = 0.4` -- is a
+// warning on the line that writes it, which no assertion here can see.
+[[maybe_unused]] void numbers_take_the_property_type() {
+    auto const model = core::make_refcounted<BoundModel>();
+
+    Border{rotation = 0.4f};
+    Border{rotation = 2};
+    TextBlock{fontSize = 0.4f};
+    TextBlock{fontSize = 2};
+    Border{rotation = BindOutput{model->level}};
+    TextBlock{fontSize = BindOutput{model->level}};
+
+    static_assert(std::same_as<decltype(rotation = 2), impl::setter_op<PropertyKey::Rotation, float>>);
+    static_assert(
+        std::same_as<decltype(fontSize = 0.4f), impl::setter_op<PropertyKey::FontSize, double>>);
+}
+
 // Copy construction must not be hijacked by the variadic constructor -- the
 // single-argument case is what the constraint on it exists for.
 [[maybe_unused]] void copying(Button const& source) {
