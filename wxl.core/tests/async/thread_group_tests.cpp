@@ -189,3 +189,27 @@ TEST(ThreadGroupTest, detached_thread_start_test) {
     const duration timeout = duration::from_ms(5000);
     EXPECT_TRUE(thread_group::join_detached_threads_for(timeout));
 }
+
+// The untimed join returns once the last detached thread exits. The thread waits for a release
+// that a third thread gives only after the test signals that it is entering the join, so the
+// join normally finds the thread still counted and waits for its exit to wake it.
+TEST(ThreadGroupTest, join_detached_threads_returns_when_the_last_thread_exits) {
+    semaphore thread_release(0);
+    semaphore join_starting(0);
+
+    thread_group::spawn_detached([&thread_release] { thread_release.acquire(); });
+
+    ASSERT_NE(0u, thread_group::detached_thread_count());
+
+    std::thread releaser([&] {
+        join_starting.acquire();
+        thread_release.release();
+    });
+
+    join_starting.release();
+    thread_group::join_detached_threads();
+
+    EXPECT_EQ(0u, thread_group::detached_thread_count());
+
+    releaser.join();
+}
