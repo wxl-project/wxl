@@ -620,7 +620,7 @@ PUBLIC_FUTURE_T_TEST_CASE(public_future_test_t) {
         promise<T> p;
         shared_future<T> f = future_helper::move_to_public(p.get_future());
 
-        joining_thread thread(&promise<T>::set_value, &p, test_value<T>());
+        joining_thread thread([&p] { p.set_value(test_value<T>()); });
 
         ASSERT_EQ(f.get(), test_value<T>());
         ASSERT_TRUE(f.has_value());

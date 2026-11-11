@@ -152,6 +152,11 @@ template <typename T>
 struct resolved_state : resolved_state_base {
     explicit resolved_state(const T& value) : value_(value) {}
 
+    /// Takes the value over. Not for a reference T, which refers to an object and owns nothing.
+    explicit resolved_state(T&& value)
+        requires(!std::is_reference_v<T>)
+        : value_(std::move(value)) {}
+
     static const resolved_state<T>* from(const state* state) noexcept {
         assert(state && state->id() == state_id::resolved);
         assert(dynamic_cast<const resolved_state<T>*>(state));
@@ -404,20 +409,14 @@ public:
     ///         another concurrent set_value()/set_exception() call. May be ignored.
     template <typename T>
     bool set_value(const T& value) {
-        if (pending()) {
-            // Owner may be deleted during subsequent calls, so wee need our own pointer.
-            future_shared_state_ptr keep_me(this);
+        return store_value<T>(value);
+    }
 
-            state* new_state = construct<detail::resolved_state<T>>(value);
-
-            if (resolve(new_state)) {
-                return true;
-            }
-
-            destroy(new_state);
-        }
-
-        return false;
+    /// The same, moving \p value into the shared state instead of copying it.
+    template <typename T>
+        requires(!std::is_reference_v<T>)
+    bool set_value(T&& value) {
+        return store_value<T>(std::move(value));
     }
 
     /// Atomically stores the exception pointer into the shared state and makes the state ready.
@@ -599,6 +598,25 @@ protected:
     }
 
 private:
+    /// Builds a resolved_state<T> from \p value -- copied or moved, as the caller hands it -- and
+    /// makes it the state's result.
+    template <typename T, typename t_value>
+    bool store_value(t_value&& value) {
+        if (pending()) {
+            // Owner may be deleted during subsequent calls, so we need our own pointer.
+            future_shared_state_ptr keep_me(this);
+
+            state* new_state =
+                construct<detail::resolved_state<T>>(std::forward<t_value>(value));
+
+            if (resolve(new_state)) return true;
+
+            destroy(new_state);
+        }
+
+        return false;
+    }
+
     inline bool resolve(state* new_state) noexcept {
         using namespace detail;
 
@@ -665,7 +683,7 @@ struct next_helper {
     static void call(t_next_task& task, const state* state, future_shared_state* ticket) {
         try {
             const resolved_state<T>* by_state = resolved_state<T>::from(state);
-            ticket->set_value(std::invoke(task, by_state->value()));
+            ticket->set_value<t_result>(std::invoke(task, by_state->value()));
         } catch (...) {
             ticket->set_exception();
         }
@@ -676,7 +694,7 @@ template <typename t_result, typename t_next_task>
 struct next_helper<void, t_result, t_next_task> {
     static void call(t_next_task& task, const state*, future_shared_state* ticket) {
         try {
-            ticket->set_value(std::invoke(task));
+            ticket->set_value<t_result>(std::invoke(task));
         } catch (...) {
             ticket->set_exception();
         }
