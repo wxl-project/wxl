@@ -140,8 +140,8 @@ public:
 
     /// The far points the way in and the way out swing to, as scales on the
     /// axis that moves further. Unset, the motion does not swing.
-    void maximum(float value) const;
-    void minimum(float value) const;
+    void maximum(double value) const;
+    void minimum(double value) const;
 
     /// The whole of each motion. Unset, 140 ms in and 180 out; with a swing,
     /// 300 and 360.

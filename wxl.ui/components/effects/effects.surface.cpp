@@ -145,11 +145,11 @@ using namespace wxl::dsl;
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::travel = value);
 }
 [[maybe_unused]] void Button3DEffect_azimuth_assigned(::wxl::Button3DEffect const& object,
-                                                      double value) {
+                                                      float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::azimuth = value);
 }
 [[maybe_unused]] void Button3DEffect_elevation_assigned(::wxl::Button3DEffect const& object,
-                                                        double value) {
+                                                        float value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::elevation = value);
 }
 [[maybe_unused]] void Button3DEffect_lampColor_assigned(::wxl::Button3DEffect const& object,
@@ -227,7 +227,7 @@ using namespace wxl::dsl;
 
 // BevelEffect -- written by hand, so its schema lines are too.
 [[maybe_unused]] void BevelEffect_strokeThickness_assigned(::wxl::BevelEffect const& object,
-                                                           float value) {
+                                                           double value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BevelEffect::strokeThickness = value);
 }
 [[maybe_unused]] void BevelEffect_blurRadius_assigned(::wxl::BevelEffect const& object,
@@ -274,11 +274,11 @@ using namespace wxl::dsl;
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::MagnifyEffect::scale = {1.3f, 1.1f});
 }
 [[maybe_unused]] void MagnifyEffect_maximum_assigned(::wxl::MagnifyEffect const& object,
-                                                     float value) {
+                                                     double value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::MagnifyEffect::maximum = value);
 }
 [[maybe_unused]] void MagnifyEffect_minimum_assigned(::wxl::MagnifyEffect const& object,
-                                                     float value) {
+                                                     double value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::MagnifyEffect::minimum = value);
 }
 [[maybe_unused]] void MagnifyEffect_duration_assigned(::wxl::MagnifyEffect const& object,
@@ -354,7 +354,7 @@ using namespace wxl::dsl;
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BorderLight::linearAttenuation = value);
 }
 [[maybe_unused]] void BorderLight_strokeThickness_assigned(::wxl::BorderLight const& object,
-                                                           float value) {
+                                                           double value) {
     ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BorderLight::strokeThickness = value);
 }
 [[maybe_unused]] void BorderLight_cornerRadius_assigned(::wxl::BorderLight const& object,
