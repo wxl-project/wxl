@@ -215,8 +215,8 @@ public:
     /// отменённым `token` вызов не делает ничего. Конец окна (WM_DESTROY) отменяет
     /// загрузку и забывает её, а уничтоженное окно загрузку не начинает:
     /// winrt::hresult_error RO_E_CLOSED.
-    void backgroundAsync(BackgroundImage const& image, async::cancellation_token token) const;
-    void backgroundAsync(std::filesystem::path const& image, async::cancellation_token token) const;
+    void backgroundAsync(BackgroundImage const& image, async::stop_token token) const;
+    void backgroundAsync(std::filesystem::path const& image, async::stop_token token) const;
 
     /// Куда приложение цепляет собственные визуалы -- над задним фоном, под
     /// островом. Контейнер во всё окно, ресайзится вместе с ним.

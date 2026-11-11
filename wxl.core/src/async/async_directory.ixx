@@ -2,7 +2,7 @@ module;
 
 export module wxl.core:async.async_directory;
 
-import :async.cancellation;
+import :async.stop_token;
 import :async.sta_loop;
 import :async.task;
 import :directory;
@@ -22,7 +22,7 @@ export namespace wxl::async {
 /// for: opening, list(), exists(), create_all() and remove() own what they touch
 /// and are orphanable; next() and close() borrow this object.
 ///
-/// And the same second form under a `cancellation_token`, its last argument, for all
+/// And the same second form under a `stop_token`, its last argument, for all
 /// of them but close(): asked, an operation not started is never started, and one standing
 /// in the system has the synchronous call it stands in cancelled where the system can cancel
 /// it; list() and create_all() stop between their steps. The cancellation is the answer of
@@ -114,26 +114,26 @@ public:
     /// with the token while it lives, and under a token cancelled already nothing is started.
     /// Each returns the same task as its form without a token.
     ///@{
-    static task<async_directory> open(const core::path& pattern, cancellation_token token);
+    static task<async_directory> open(const core::path& pattern, stop_token token);
 
     /// Lists everything that \p pattern matches; the operation can be canceled through \p token.
     [[nodiscard]] static task<std::vector<listed_entry>> list(const core::path& pattern,
-                                                              cancellation_token token);
+                                                              stop_token token);
 
     /// Returns the next entry, or `std::nullopt` when the enumeration is over; the operation can
     /// be canceled through \p token.
-    [[nodiscard]] task<std::optional<entry>> next(cancellation_token token);
+    [[nodiscard]] task<std::optional<entry>> next(stop_token token);
 
     /// Tests whether a directory exists at \p path; the operation can be canceled through
     /// \p token.
-    [[nodiscard]] static task<bool> exists(const core::path& path, cancellation_token token);
+    [[nodiscard]] static task<bool> exists(const core::path& path, stop_token token);
 
     /// Creates the whole chain of directories of \p p; the operation can be canceled through
     /// \p token.
-    [[nodiscard]] static task<> create_all(const core::path& p, cancellation_token token);
+    [[nodiscard]] static task<> create_all(const core::path& p, stop_token token);
 
     /// Removes the empty directory at \p path; the operation can be canceled through \p token.
-    [[nodiscard]] static task<> remove(const core::path& path, cancellation_token token);
+    [[nodiscard]] static task<> remove(const core::path& path, stop_token token);
     ///@}
 
 private:

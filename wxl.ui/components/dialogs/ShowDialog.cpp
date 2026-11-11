@@ -35,9 +35,9 @@ namespace xaml = winrt::Microsoft::UI::Xaml;
 // the theme at all, and the second is handed it back at once, the handler taken off.
 async::task<> show_in_theme_of(xaml::Controls::ContentDialog const& native,
                                ContentDialog const& dialog, xaml::UIElement const& host,
-                               async::cancellation_token token) {
+                               async::stop_token token) {
     auto const shown = host.try_as<xaml::FrameworkElement>();
-    if (!shown || native.RequestedTheme() != xaml::ElementTheme::Default || token.is_canceled())
+    if (!shown || native.RequestedTheme() != xaml::ElementTheme::Default || token.stop_requested())
         return impl::show_dialog(dialog, std::move(token));
 
     native.RequestedTheme(shown.ActualTheme());
@@ -59,7 +59,7 @@ async::task<> show_in_theme_of(xaml::Controls::ContentDialog const& native,
 }  // namespace
 
 async::task<> showDialog(ContentDialog const& dialog, UIElement const& host,
-                         async::cancellation_token token) {
+                         async::stop_token token) {
     xaml::Controls::ContentDialog const& native = *Object::Impl::get_typed<ContentDialog>(dialog);
     if (!host) return impl::show_dialog(dialog, std::move(token));
 
@@ -73,7 +73,7 @@ async::task<> showDialog(ContentDialog const& dialog, UIElement const& host,
 // A window is named by what it shows: a dialog raised from a window belongs
 // over that same content, in that same island.
 async::task<> showDialog(ContentDialog const& dialog, Window const& host,
-                         async::cancellation_token token) {
+                         async::stop_token token) {
     return showDialog(dialog, host.content(), std::move(token));
 }
 

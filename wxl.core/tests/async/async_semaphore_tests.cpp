@@ -24,7 +24,7 @@ namespace {
 
 /// Takes a permit and keeps it, writing down that it got there.
 task<> takes(async_semaphore& semaphore, std::vector<int>& order, int id,
-             cancellation_token token) {
+             stop_token token) {
     co_await semaphore.acquire(std::move(token));
     order.push_back(id);
 }
@@ -37,7 +37,7 @@ task<> produces(async_semaphore& ready, int& value) {
 
 /// Waits for the signal, and reads what it signals.
 task<int> consumes(async_semaphore& ready, const int& value) {
-    co_await ready.acquire(cancellation_token{});
+    co_await ready.acquire(stop_token{});
     co_return value;
 }
 
@@ -57,7 +57,7 @@ TEST_F(AsyncSemaphoreTest, AFreePermitIsTakenWithoutSuspending) {
     async_semaphore semaphore(1);
     std::vector<int> order;
 
-    task<> first = takes(semaphore, order, 1, cancellation_token{});
+    task<> first = takes(semaphore, order, 1, stop_token{});
 
     EXPECT_TRUE(first.done()) << "the co_await suspended on a free permit";
     EXPECT_EQ(order, std::vector<int>{1});
@@ -74,9 +74,9 @@ TEST_F(AsyncSemaphoreTest, WaitersAreServedInTheOrderTheyCame) {
     async_semaphore semaphore(0);
     std::vector<int> order;
 
-    task<> first = takes(semaphore, order, 1, cancellation_token{});
-    task<> second = takes(semaphore, order, 2, cancellation_token{});
-    task<> third = takes(semaphore, order, 3, cancellation_token{});
+    task<> first = takes(semaphore, order, 1, stop_token{});
+    task<> second = takes(semaphore, order, 2, stop_token{});
+    task<> third = takes(semaphore, order, 3, stop_token{});
 
     EXPECT_FALSE(first.done());
     EXPECT_FALSE(second.done());
@@ -105,12 +105,12 @@ TEST_F(AsyncSemaphoreTest, APermitHandedToAWaiterIsNotFreeForOthers) {
     async_semaphore semaphore(0);
     std::vector<int> order;
 
-    task<> waiting = takes(semaphore, order, 1, cancellation_token{});
+    task<> waiting = takes(semaphore, order, 1, stop_token{});
 
     semaphore.release();
     EXPECT_FALSE(semaphore.try_acquire()) << "the permit handed over was taken by try_acquire()";
 
-    task<> later = takes(semaphore, order, 2, cancellation_token{});
+    task<> later = takes(semaphore, order, 2, stop_token{});
     EXPECT_FALSE(later.done()) << "the permit handed over was taken by a later acquire";
 
     sta_loop::run_until(waiting);
@@ -127,10 +127,10 @@ TEST_F(AsyncSemaphoreTest, APermitHandedToAWaiterIsNotFreeForOthers) {
 // cancellation at once: the free permit is still there.
 TEST_F(AsyncSemaphoreTest, UnderATokenCancelledAlreadyTheAcquireThrowsAtOnce) {
     async_semaphore semaphore(1);
-    cancellation_source source;
+    stop_source source;
     std::vector<int> order;
 
-    source.cancel();
+    source.request_stop();
     task<> refused = takes(semaphore, order, 1, source.token());
 
     ASSERT_TRUE(refused.done()) << "the acquire under a cancelled token suspended";
@@ -146,14 +146,14 @@ TEST_F(AsyncSemaphoreTest, UnderATokenCancelledAlreadyTheAcquireThrowsAtOnce) {
 // turn, not inside the cancel, the count is untouched, and the others are served in their order.
 TEST_F(AsyncSemaphoreTest, AWaiterCancelledInLineLeavesItAndTheOthersKeepTheirOrder) {
     async_semaphore semaphore(0);
-    cancellation_source source;
+    stop_source source;
     std::vector<int> order;
 
-    task<> first = takes(semaphore, order, 1, cancellation_token{});
+    task<> first = takes(semaphore, order, 1, stop_token{});
     task<> canceled = takes(semaphore, order, 2, source.token());
-    task<> third = takes(semaphore, order, 3, cancellation_token{});
+    task<> third = takes(semaphore, order, 3, stop_token{});
 
-    source.cancel();
+    source.request_stop();
     EXPECT_FALSE(canceled.done()) << "the waiter was resumed inside the cancel";
     EXPECT_EQ(sta_loop::outstanding(), 1u) << "the cancelled waiter is owed a turn";
 
@@ -172,14 +172,14 @@ TEST_F(AsyncSemaphoreTest, AWaiterCancelledInLineLeavesItAndTheOthersKeepTheirOr
 // line, and ends with the cancellation on its own turn.
 TEST_F(AsyncSemaphoreTest, CancelledAfterTheHandOverThePermitGoesToTheNextWaiter) {
     async_semaphore semaphore(0);
-    cancellation_source source;
+    stop_source source;
     std::vector<int> order;
 
     task<> canceled = takes(semaphore, order, 1, source.token());
-    task<> next = takes(semaphore, order, 2, cancellation_token{});
+    task<> next = takes(semaphore, order, 2, stop_token{});
 
     semaphore.release();
-    source.cancel();
+    source.request_stop();
 
     EXPECT_THROW(sta_loop::run_until(canceled), operation_canceled_exception);
     sta_loop::run_until(next);
@@ -191,13 +191,13 @@ TEST_F(AsyncSemaphoreTest, CancelledAfterTheHandOverThePermitGoesToTheNextWaiter
 // With nobody behind it, the permit a cancelled waiter was handed goes back to the count.
 TEST_F(AsyncSemaphoreTest, CancelledAfterTheHandOverThePermitGoesBackToTheCount) {
     async_semaphore semaphore(0);
-    cancellation_source source;
+    stop_source source;
     std::vector<int> order;
 
     task<> canceled = takes(semaphore, order, 1, source.token());
 
     semaphore.release();
-    source.cancel();
+    source.request_stop();
 
     EXPECT_THROW(sta_loop::run_until(canceled), operation_canceled_exception);
     EXPECT_TRUE(order.empty());
@@ -212,8 +212,8 @@ TEST_F(AsyncSemaphoreTest, AFrameDestroyedInLineLeavesIt) {
     async_semaphore semaphore(0);
     std::vector<int> order;
 
-    task<> dropped = takes(semaphore, order, 1, cancellation_token{});
-    task<> next = takes(semaphore, order, 2, cancellation_token{});
+    task<> dropped = takes(semaphore, order, 1, stop_token{});
+    task<> next = takes(semaphore, order, 2, stop_token{});
 
     dropped = {};
     EXPECT_EQ(sta_loop::outstanding(), 0u);
@@ -232,8 +232,8 @@ TEST_F(AsyncSemaphoreTest, AFrameDestroyedAfterTheHandOverPassesThePermitOn) {
     async_semaphore semaphore(0);
     std::vector<int> order;
 
-    task<> dropped = takes(semaphore, order, 1, cancellation_token{});
-    task<> next = takes(semaphore, order, 2, cancellation_token{});
+    task<> dropped = takes(semaphore, order, 1, stop_token{});
+    task<> next = takes(semaphore, order, 2, stop_token{});
 
     semaphore.release();
     EXPECT_EQ(sta_loop::outstanding(), 1u) << "the waiter handed the permit is owed a turn";
@@ -244,7 +244,7 @@ TEST_F(AsyncSemaphoreTest, AFrameDestroyedAfterTheHandOverPassesThePermitOn) {
     sta_loop::run_until(next);
     EXPECT_EQ(order, std::vector<int>{2});
 
-    task<> alone = takes(semaphore, order, 3, cancellation_token{});
+    task<> alone = takes(semaphore, order, 3, stop_token{});
     semaphore.release();
     alone = {};
     EXPECT_EQ(sta_loop::outstanding(), 0u) << "the dropped waiter's turn was left in line";
@@ -257,12 +257,12 @@ TEST_F(AsyncSemaphoreTest, AFrameDestroyedAfterTheHandOverPassesThePermitOn) {
 // taken out of line, and the semaphore is as it was.
 TEST_F(AsyncSemaphoreTest, AFrameDestroyedAfterItsCancellationLeavesNoTurn) {
     async_semaphore semaphore(0);
-    cancellation_source source;
+    stop_source source;
     std::vector<int> order;
 
     task<> dropped = takes(semaphore, order, 1, source.token());
 
-    source.cancel();
+    source.request_stop();
     EXPECT_EQ(sta_loop::outstanding(), 1u);
 
     dropped = {};
@@ -279,10 +279,10 @@ TEST_F(AsyncSemaphoreTest, ReleasingSeveralPermitsServesAsManyWaitersInOrder) {
     async_semaphore semaphore(0);
     std::vector<int> order;
 
-    task<> first = takes(semaphore, order, 1, cancellation_token{});
-    task<> second = takes(semaphore, order, 2, cancellation_token{});
-    task<> third = takes(semaphore, order, 3, cancellation_token{});
-    task<> fourth = takes(semaphore, order, 4, cancellation_token{});
+    task<> first = takes(semaphore, order, 1, stop_token{});
+    task<> second = takes(semaphore, order, 2, stop_token{});
+    task<> third = takes(semaphore, order, 3, stop_token{});
+    task<> fourth = takes(semaphore, order, 4, stop_token{});
 
     semaphore.release(3);
     EXPECT_TRUE(order.empty());
@@ -303,7 +303,7 @@ TEST_F(AsyncSemaphoreTest, PermitsLeftOverByAReleaseGoToTheCount) {
     async_semaphore semaphore(0);
     std::vector<int> order;
 
-    task<> waiting = takes(semaphore, order, 1, cancellation_token{});
+    task<> waiting = takes(semaphore, order, 1, stop_token{});
 
     semaphore.release(3);
 
@@ -338,7 +338,7 @@ TEST_F(AsyncSemaphoreTest, ASourceDestroyedEndsTheWaitUnderItsToken) {
     task<> canceled;
 
     {
-        cancellation_source source;
+        stop_source source;
         canceled = takes(semaphore, order, 1, source.token());
     }
 
@@ -375,7 +375,7 @@ void release_over_max() {
     release_once_more(semaphore);
 }
 
-task<> waits_on(async_semaphore& semaphore) { co_await semaphore.acquire(cancellation_token{}); }
+task<> waits_on(async_semaphore& semaphore) { co_await semaphore.acquire(stop_token{}); }
 
 void destroy_with_a_waiter() {
     report_failures_to_stderr();
@@ -404,7 +404,7 @@ void release_over_a_handed_permit() {
 
 // clang-format off: the test reads the line of the call as its own line + 1
 constexpr std::uint_least32_t line_of_the_foreign_acquire = std::source_location::current().line() + 1;
-void acquire_there(async_semaphore& semaphore) { (void)semaphore.acquire(cancellation_token{}); }
+void acquire_there(async_semaphore& semaphore) { (void)semaphore.acquire(stop_token{}); }
 // clang-format on
 
 void acquire_from_another_thread() {

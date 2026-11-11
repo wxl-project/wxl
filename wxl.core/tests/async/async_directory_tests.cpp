@@ -181,7 +181,7 @@ task<> lists_at_once(path pattern, std::vector<async_directory::listed_entry>& o
     std::ranges::sort(out, {}, &async_directory::listed_entry::name);
 }
 
-task<> cancelable_lists_at_once(path pattern, cancellation_token token,
+task<> cancelable_lists_at_once(path pattern, stop_token token,
                                 std::vector<async_directory::listed_entry>& out) {
     out = co_await async_directory::list(pattern, token);
 
@@ -238,7 +238,7 @@ TEST_F(AsyncDirectoryTest, ListUnderATokenBringsWhatThePlainOneDoesUntilAsked) {
     given_a_file(L"one.dat");
     given_a_file(L"two.dat");
 
-    cancellation_source source;
+    stop_source source;
     std::vector<async_directory::listed_entry> found;
 
     sta_loop::run_until(cancelable_lists_at_once(root_ / L"*.dat", source.token(), found));
@@ -247,7 +247,7 @@ TEST_F(AsyncDirectoryTest, ListUnderATokenBringsWhatThePlainOneDoesUntilAsked) {
     EXPECT_EQ(found[0].name, L"one.dat");
     EXPECT_EQ(found[1].name, L"two.dat");
 
-    source.cancel();
+    source.request_stop();
 
     std::vector<async_directory::listed_entry> again;
     task<> asked = cancelable_lists_at_once(root_ / L"*.dat", source.token(), again);

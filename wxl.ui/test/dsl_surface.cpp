@@ -846,7 +846,7 @@ void handing_work_over(DispatcherQueue const& queue) {
 }
 
 // A wait for a quiet moment on the UI thread's queue, which nobody names.
-async::task<> after_a_quiet_moment(async::cancellation_token token) {
+async::task<> after_a_quiet_moment(async::stop_token token) {
     WaitableTimer timer{std::chrono::milliseconds{1500}, std::move(token)};
     timer.restart();
     co_await timer;
@@ -1456,15 +1456,15 @@ static_assert(requires(click_wait_t& proxy) { proxy.operator co_await(); });
 // byte it had: its awaiter is the pointer and two flags it can be cancelled
 // through, and the idle wait the size it was.
 using cancelable_click_wait_t = decltype(on_event<EventKey::Click>(
-    std::declval<Button const&>(), std::declval<async::cancellation_token>()));
+    std::declval<Button const&>(), std::declval<async::stop_token>()));
 using cancelable_key_wait_t = decltype(on_event<EventKey::KeyDown>(
-    std::declval<Button const&>(), std::declval<async::cancellation_token>()));
+    std::declval<Button const&>(), std::declval<async::stop_token>()));
 
 static_assert(
     std::is_same_v<cancelable_click_wait_t,
-                   impl::cancelable_event_awaitable<impl::keyed_event<EventKey::Click, Button>>>);
+                   impl::stoppable_event_awaitable<impl::keyed_event<EventKey::Click, Button>>>);
 static_assert(std::is_same_v<decltype(onClick(std::declval<Button const&>(),
-                                              std::declval<async::cancellation_token>())),
+                                              std::declval<async::stop_token>())),
                              cancelable_click_wait_t>);
 static_assert(!std::is_move_constructible_v<cancelable_click_wait_t>);
 
@@ -1477,9 +1477,9 @@ static_assert(std::is_same_v<decltype(std::declval<cancelable_key_wait_t&>().nex
 
 static_assert(sizeof(click_wait_t::awaiter) == 2 * sizeof(void*));
 static_assert(sizeof(cancelable_click_wait_t) ==
-              sizeof(click_wait_t) + sizeof(async::cancellation_token));
-static_assert(async::detail::cancelable_awaiter<click_wait_t::awaiter>);
-static_assert(async::detail::cancelable_awaiter<UiThread::Idle>);
+              sizeof(click_wait_t) + sizeof(async::stop_token));
+static_assert(async::detail::stoppable_awaiter<click_wait_t::awaiter>);
+static_assert(async::detail::stoppable_awaiter<UiThread::Idle>);
 static_assert(sizeof(UiThread::Idle) == sizeof(impl::event_wait) +
                                             sizeof(core::intrusive_ptr<impl::idle_link>) +
                                             sizeof(void*));
@@ -1548,7 +1548,7 @@ struct probe_task {
 
 // The same waits under a cancellation token, given last -- and the idle wait
 // beside them, with and without one.
-[[maybe_unused]] probe_task awaiting_under_a_token(Button button, async::cancellation_token token) {
+[[maybe_unused]] probe_task awaiting_under_a_token(Button button, async::stop_token token) {
     auto clicks = on_event<EventKey::Click>(button, token);
     RoutedEventArgs& args = co_await clicks;
     static_cast<void>(args);
@@ -1575,11 +1575,11 @@ struct probe_task {
 static_assert(std::is_same_v<decltype(std::declval<ContentDialog const&>().showAsync()),
                              async::task<ContentDialogResult>>);
 static_assert(std::is_same_v<decltype(std::declval<ContentDialog const&>().showAsync(
-                                 std::declval<async::cancellation_token>())),
+                                 std::declval<async::stop_token>())),
                              async::task<ContentDialogResult>>);
 
 [[maybe_unused]] async::task<bool> asking_under_a_token(ContentDialog dialog,
-                                                        async::cancellation_token token) {
+                                                        async::stop_token token) {
     co_return co_await dialog.showAsync(std::move(token)) == ContentDialogResult::Primary;
 }
 
@@ -1588,30 +1588,30 @@ static_assert(std::is_same_v<decltype(std::declval<ContentDialog const&>().showA
 // tuple, none as nothing -- as values, but for a reference to non-const, the channel the
 // coroutine answers through.
 using count_wait_t = decltype(on_event(std::declval<core::event<void(int)>&>(),
-                                       std::declval<async::cancellation_token>()));
+                                       std::declval<async::stop_token>()));
 
 static_assert(std::is_same_v<decltype(std::declval<count_wait_t&>().await_resume()), int>);
 static_assert(std::is_same_v<decltype(on_event(std::declval<core::event<void(int&) noexcept>&>(),
-                                               std::declval<async::cancellation_token>())
+                                               std::declval<async::stop_token>())
                                           .await_resume()),
                              int&>);
 static_assert(
     std::is_same_v<decltype(on_event(std::declval<core::event<void(std::u16string const&, int)>&>(),
-                                     std::declval<async::cancellation_token>())
+                                     std::declval<async::stop_token>())
                                 .await_resume()),
                    std::tuple<std::u16string, int>>);
 static_assert(
     std::is_same_v<decltype(on_event(std::declval<core::event<void(std::u16string const&)>&>(),
-                                     std::declval<async::cancellation_token>())
+                                     std::declval<async::stop_token>())
                                 .await_resume()),
                    std::u16string>);
 static_assert(std::is_same_v<decltype(on_event(std::declval<core::event<void()>&>(),
-                                               std::declval<async::cancellation_token>())
+                                               std::declval<async::stop_token>())
                                           .await_resume()),
                              void>);
 static_assert(!std::is_move_constructible_v<count_wait_t>);
 static_assert(
-    async::detail::cancelable_awaiter<impl::core_event_wait<core::event<void(int)>, int>>);
+    async::detail::stoppable_awaiter<impl::core_event_wait<core::event<void(int)>, int>>);
 
 // A reference to const comes as a copy, so a type whose copy would be sliced to its static
 // type -- or that has none -- is refused where the wait is made, with a static_assert that says
@@ -1629,7 +1629,7 @@ static_assert(!impl::invocation_answerable<sliced_answer const&>);
 [[maybe_unused]] probe_task awaiting_an_event_of_the_model(
     core::event<void(int)>& counted,
     core::event<void(std::u16string const&, int) noexcept>& renamed, core::event<void()>& reset,
-    async::cancellation_token token) {
+    async::stop_token token) {
     int const count = co_await on_event(counted, token);
     static_cast<void>(count);
 

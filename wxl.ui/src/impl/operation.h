@@ -145,21 +145,21 @@ class winrt_cancelable_operation_producer final
 public:
     /// Made only under a token that has a source and is not cancelled yet.
     winrt_cancelable_operation_producer(WinrtOp operation, Convert convert, Dispatcher dispatcher,
-                                        async::cancellation_token token)
+                                        async::stop_token token)
         : base(std::move(operation), std::move(convert)),
           dispatcher_(std::move(dispatcher)),
           token_(std::move(token)),
           registration_(*this) {
-        coro_check(!async::detail::cancellation_state_of(token_)->canceled(),
+        coro_check(!async::detail::stop_state_of(token_)->stop_requested(),
                    "winrt_cancelable_operation_producer: made under a token cancelled already",
                    async::detail::site::current());
 
-        registration_.register_with(*async::detail::cancellation_state_of(token_));
+        registration_.register_with(*async::detail::stop_state_of(token_));
     }
 
     /// Out of the event before the token goes.
     ~winrt_cancelable_operation_producer() override {
-        registration_.unregister(*async::detail::cancellation_state_of(token_));
+        registration_.unregister(*async::detail::stop_state_of(token_));
     }
 
     /// The turn the cancellation posted. Answered already -- the completion came first -- it does
@@ -197,9 +197,9 @@ private:
     }
 
     Dispatcher dispatcher_;
-    async::cancellation_token token_;
+    async::stop_token token_;
     /// The producer's place in the token's event, built into it.
-    async::cancellation_registration<&winrt_cancelable_operation_producer::on_stopping>
+    async::stop_registration<&winrt_cancelable_operation_producer::on_stopping>
         registration_;
 };
 
@@ -256,10 +256,10 @@ async::task<R> start_winrt_on_dispatcher(WinrtOp operation, Dispatcher const& di
 template <class R, class Begin, dispatcher_like Dispatcher, class Convert>
 async::task<R> start_cancelable_winrt_on_dispatcher(Begin&& begin, Dispatcher const& dispatcher,
                                                     Convert convert,
-                                                    async::cancellation_token token) {
-    if (!async::detail::cancellation_state_of(token))
+                                                    async::stop_token token) {
+    if (!token.stop_possible())
         return start_winrt_on_dispatcher<R>(begin(), dispatcher, std::move(convert));
-    if (token.is_canceled()) return async::detail::canceled_task<R>();
+    if (token.stop_requested()) return async::detail::canceled_task<R>();
 
     auto operation = begin();
     using producer_t = winrt_cancelable_operation_producer<R, std::decay_t<decltype(operation)>,
@@ -294,7 +294,7 @@ async::task<> start_winrt_action(WinrtOp operation) {
 /// cancelled already, and then nothing is started.
 template <class R, class Begin, class Convert>
 async::task<R> start_cancelable_winrt_operation(Begin&& begin, Convert convert,
-                                                async::cancellation_token token) {
+                                                async::stop_token token) {
     return start_cancelable_winrt_on_dispatcher<R>(
         std::forward<Begin>(begin),
         winrt_dispatcher{winrt::Microsoft::UI::Dispatching::DispatcherQueue::GetForCurrentThread()},
@@ -303,7 +303,7 @@ async::task<R> start_cancelable_winrt_operation(Begin&& begin, Convert convert,
 
 /// start_winrt_action in the form with a token.
 template <class Begin>
-async::task<> start_cancelable_winrt_action(Begin&& begin, async::cancellation_token token) {
+async::task<> start_cancelable_winrt_action(Begin&& begin, async::stop_token token) {
     return start_cancelable_winrt_on_dispatcher<void>(
         std::forward<Begin>(begin),
         winrt_dispatcher{winrt::Microsoft::UI::Dispatching::DispatcherQueue::GetForCurrentThread()},

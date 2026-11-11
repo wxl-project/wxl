@@ -1269,7 +1269,7 @@ struct CompositionWindow::Impl : core::refcounted, core::intrusive_list_node<Imp
     // Загрузка начинается в самом вызове, под токеном своего источника, сделанного
     // под `owner`; ждёт её задача, которую держит сама загрузка в background_load
     // (impl/background_load.h). Путь -- уже рядом с приложением.
-    void load_background(BackgroundImage image, async::cancellation_token owner);
+    void load_background(BackgroundImage image, async::stop_token owner);
 
     // Устройство под поверхностями заменено: картинка задника, загруженная на
     // ходу, пуста вместе с поверхностью кэша -- она грузится снова, под тем же
@@ -1718,12 +1718,12 @@ void CompositionWindow::background(DrawingSurface const& surface) const {
 }
 
 void CompositionWindow::backgroundAsync(std::filesystem::path const& image,
-                                        async::cancellation_token token) const {
+                                        async::stop_token token) const {
     backgroundAsync(BackgroundImage{image}, std::move(token));
 }
 
 void CompositionWindow::backgroundAsync(BackgroundImage const& image,
-                                        async::cancellation_token token) const {
+                                        async::stop_token token) const {
     // Кэш держит текстуру, так что тот же путь во второй раз сменит задник без
     // загрузки.
     impl_->load_background({Application::makeAbsolute(image.path), image.fill, image.color},
@@ -1731,17 +1731,17 @@ void CompositionWindow::backgroundAsync(BackgroundImage const& image,
 }
 
 void CompositionWindow::Impl::load_background(BackgroundImage image,
-                                              async::cancellation_token owner) {
+                                              async::stop_token owner) {
     // Под отменённым токеном не делается ничего, как у getAsync и у всякой
     // операции с токеном: ни загрузки, ни отмены прежней, ни отказа.
-    if (owner.is_canceled()) return;
+    if (owner.stop_requested()) return;
     // Окно уничтожено -- показывать загруженное негде, а загрузка, начатая после
     // его конца, не отменилась бы ничем, кроме токена владельца: RO_E_CLOSED, как
     // у острова. Замена устройства сюда после конца не приходит: close_xaml забыл,
     // что просили.
     if (xaml_closed)
         throw winrt::hresult_error{RO_E_CLOSED, L"wxl::CompositionWindow: окно уже закрыто"};
-    async::cancellation_token const load = background_load.start(std::move(owner), image);
+    async::stop_token const load = background_load.start(std::move(owner), image);
     // Окно держит ожидание полем (в загрузке), и оно уходит раньше окна: состояние
     // берётся простым указателем.
     background_load.hold(

@@ -6,7 +6,7 @@ module;
 export module wxl.core:async.sta_loop;
 
 import :async.async_op;
-import :async.cancellation;
+import :async.stop_token;
 import :async.coroutine_checks;
 import :async.overlapped_op;
 import :async.io_port;
@@ -542,7 +542,7 @@ public:
     /// source this is the form without a token.
     template <class Fn>
     [[nodiscard]] static task<std::invoke_result_t<std::decay_t<Fn>&>> async_call(
-        Fn&& fn, cancellation_token token);
+        Fn&& fn, stop_token token);
 
     /// The orphanable body waited for under its owner's token: for work the owner may stop
     /// wanting before it is done -- a picture no longer shown, the application closing.
@@ -572,7 +572,7 @@ public:
     /// without a token.
     template <class Fn>
     [[nodiscard]] static task<orphanable_result_t<std::decay_t<Fn>>> async_call(
-        orphanable_t, Fn&& fn, cancellation_token token);
+        orphanable_t, Fn&& fn, stop_token token);
 
     /// The same for an operation written out as a class of its own: whoever
     /// needs more than a lambda can do -- state that survives being executed
@@ -589,12 +589,12 @@ public:
     }
 
     /// The same under a token: `Op` is made here out of `args`, and is registered with `token`
-    /// while it lives (`detail::cancelable_operation`) -- cancelled, it is asked to stop
+    /// while it lives (`detail::stoppable_operation`) -- cancelled, it is asked to stop
     /// (`async_op::cancel()`, its on_cancel()), and answers what then happens to it. The token
     /// comes first, ahead of whatever the operation is made of. Under a token cancelled
     /// already nothing is made; under one with no source this is the form above.
     template <class Op, class... Args>
-    [[nodiscard]] static task<typename Op::result_type> async_run(cancellation_token token,
+    [[nodiscard]] static task<typename Op::result_type> async_run(stop_token token,
                                                                   Args&&... args);
 
     /// Starts an overlapped operation here, on the STA thread, without the trip to the
@@ -881,15 +881,15 @@ inline void send_orphanable(async_op& op) { sta_loop::mode_->send_orphanable(op)
 /// its value or its own failure -- a change that got through answers that it did.
 template <class Fn>
 [[nodiscard]] task<orphanable_result_t<std::decay_t<Fn>>> async_call_waiting_for_body(
-    orphanable_t, Fn&& fn, cancellation_token token) {
+    orphanable_t, Fn&& fn, stop_token token) {
     using result_t = orphanable_result_t<std::decay_t<Fn>>;
 
-    if (!cancellation_state_of(token))
+    if (!token.stop_possible())
         return sta_loop::async_call(orphanable, std::forward<Fn>(fn));
-    if (token.is_canceled()) return canceled_task<result_t>();
+    if (token.stop_requested()) return canceled_task<result_t>();
 
     std::unique_ptr<async_op_t<result_t>> op(
-        new cancelable_operation<orphanable_op_f<std::decay_t<Fn>>>(std::move(token),
+        new stoppable_operation<orphanable_op_f<std::decay_t<Fn>>>(std::move(token),
                                                                     std::forward<Fn>(fn)));
 
     send_orphanable(*op);
@@ -901,14 +901,14 @@ template <class Fn>
 
 template <class Fn>
 task<std::invoke_result_t<std::decay_t<Fn>&>> sta_loop::async_call(Fn&& fn,
-                                                                   cancellation_token token) {
+                                                                   stop_token token) {
     using result_t = std::invoke_result_t<std::decay_t<Fn>&>;
 
-    if (!detail::cancellation_state_of(token)) return async_call(std::forward<Fn>(fn));
-    if (token.is_canceled()) return detail::canceled_task<result_t>();
+    if (!token.stop_possible()) return async_call(std::forward<Fn>(fn));
+    if (token.stop_requested()) return detail::canceled_task<result_t>();
 
     std::unique_ptr<async_op_t<result_t>> op(
-        new detail::cancelable_operation<async_op_f<std::decay_t<Fn>>>(std::move(token),
+        new detail::stoppable_operation<async_op_f<std::decay_t<Fn>>>(std::move(token),
                                                                        std::forward<Fn>(fn)));
 
     return async_run(std::move(op));
@@ -929,17 +929,17 @@ class orphanable_wait final : public pooled<orphanable_wait<R>, async_op_t<R>>, 
 {
 public:
     /// Made only under a token that has a source and is not cancelled yet.
-    inline explicit orphanable_wait(cancellation_token token)
+    inline explicit orphanable_wait(stop_token token)
         : loop_turn{&orphanable_wait::take_turn}, token_(std::move(token)), registration_(*this) {
-        coro_check(!cancellation_state_of(token_)->canceled(),
+        coro_check(!stop_state_of(token_)->stop_requested(),
                    "orphanable_wait: made under a token cancelled already",
                    detail::site::current());
 
-        registration_.register_with(*cancellation_state_of(token_));
+        registration_.register_with(*stop_state_of(token_));
     }
 
     /// Out of the event before the token goes.
-    inline ~orphanable_wait() override { registration_.unregister(*cancellation_state_of(token_)); }
+    inline ~orphanable_wait() override { registration_.unregister(*stop_state_of(token_)); }
 
     /// The body has been sent: from now on the two are linked.
     inline void attach_body(async_op_t<R>& body) noexcept { body_ = &body; }
@@ -978,7 +978,7 @@ private:
     /// The token was cancelled. A body still out is left an orphan, the answer becomes the
     /// cancellation, and the loop is given the turn that resumes the waiter. Answered
     /// already, the wait keeps its answer.
-    inline void on_token_canceled() noexcept {
+    inline void on_stop_requested() noexcept {
         if (!body_) return;
 
         detach_body();
@@ -986,16 +986,16 @@ private:
         sta_loop::queue_loop_turn(*this);
     }
 
-    /// The loop's call for the turn on_token_canceled() gave: the wait, answered, is completed
+    /// The loop's call for the turn on_stop_requested() gave: the wait, answered, is completed
     /// as an operation the loop takes back is -- its waiter resumed, or, given up meanwhile, the
     /// wait deleted.
     inline static bool take_turn(loop_turn& turn) {
         return static_cast<orphanable_wait&>(turn).complete();
     }
 
-    cancellation_token token_;
+    stop_token token_;
     /// The wait's place in the token's event.
-    cancellation_registration<&orphanable_wait::on_token_canceled> registration_;
+    stop_registration<&orphanable_wait::on_stop_requested> registration_;
 
     /// The body while the two are linked; null once either end has broken the link.
     async_op_t<R>* body_ = nullptr;
@@ -1040,7 +1040,7 @@ private:
 
 template <class Fn>
 task<orphanable_result_t<std::decay_t<Fn>>> sta_loop::async_call(orphanable_t, Fn&& fn,
-                                                                 cancellation_token token) {
+                                                                 stop_token token) {
     using result_t = orphanable_result_t<std::decay_t<Fn>>;
 
     // The answer moves from the body to the wait inside the loop's call that takes the body
@@ -1049,8 +1049,8 @@ task<orphanable_result_t<std::decay_t<Fn>>> sta_loop::async_call(orphanable_t, F
                   "sta_loop::async_call(orphanable, fn, token): the result must move without "
                   "throwing");
 
-    if (!detail::cancellation_state_of(token)) return async_call(orphanable, std::forward<Fn>(fn));
-    if (token.is_canceled()) return detail::canceled_task<result_t>();
+    if (!token.stop_possible()) return async_call(orphanable, std::forward<Fn>(fn));
+    if (token.stop_requested()) return detail::canceled_task<result_t>();
 
     std::unique_ptr<detail::orphanable_wait<result_t>> wait(
         new detail::orphanable_wait<result_t>(std::move(token)));
@@ -1064,17 +1064,17 @@ task<orphanable_result_t<std::decay_t<Fn>>> sta_loop::async_call(orphanable_t, F
 }
 
 template <class Op, class... Args>
-task<typename Op::result_type> sta_loop::async_run(cancellation_token token, Args&&... args) {
+task<typename Op::result_type> sta_loop::async_run(stop_token token, Args&&... args) {
     using result_t = typename Op::result_type;
 
-    if (!detail::cancellation_state_of(token))
+    if (!token.stop_possible())
         return async_run(
             std::unique_ptr<async_op_t<result_t>>(new Op(std::forward<Args>(args)...)));
 
-    if (token.is_canceled()) return detail::canceled_task<result_t>();
+    if (token.stop_requested()) return detail::canceled_task<result_t>();
 
     return async_run(std::unique_ptr<async_op_t<result_t>>(
-        new detail::cancelable_operation<Op>(std::move(token), std::forward<Args>(args)...)));
+        new detail::stoppable_operation<Op>(std::move(token), std::forward<Args>(args)...)));
 }
 
 }  // export namespace wxl::async

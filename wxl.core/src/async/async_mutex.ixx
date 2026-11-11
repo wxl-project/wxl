@@ -5,7 +5,7 @@ module;
 export module wxl.core:async.async_mutex;
 
 import :async.async_semaphore;
-import :async.cancellation;
+import :async.stop_token;
 import :async.coroutine_checks;
 import std;
 
@@ -57,7 +57,7 @@ public:
     /// \param token what ends the wait, required: the holder may keep the lock as long as it
     ///        pleases. A token of nobody is accepted and costs nothing.
     /// \param where the caller's line, for a strict build's report; left to its default.
-    [[nodiscard]] inline lock_awaiter lock(cancellation_token token,
+    [[nodiscard]] inline lock_awaiter lock(stop_token token,
                                            detail::site where = detail::site::current());
 
 private:
@@ -153,7 +153,7 @@ public:
 private:
     friend class async_mutex;
 
-    inline lock_awaiter(async_mutex& mutex, cancellation_token token, detail::site where)
+    inline lock_awaiter(async_mutex& mutex, stop_token token, detail::site where)
         : mutex_(mutex), acquire_(mutex.semaphore_.acquire(std::move(token), where)) {}
 
     async_mutex& mutex_;
@@ -164,7 +164,7 @@ inline async_mutex::guard async_mutex::try_lock(detail::site where) noexcept {
     return guard(semaphore_.try_acquire(where) ? this : nullptr);
 }
 
-inline async_mutex::lock_awaiter async_mutex::lock(cancellation_token token, detail::site where) {
+inline async_mutex::lock_awaiter async_mutex::lock(stop_token token, detail::site where) {
     return lock_awaiter(*this, std::move(token), where);
 }
 

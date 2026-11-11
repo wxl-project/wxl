@@ -125,7 +125,7 @@ std::size_t projection_arity(member_info const& member);
 // The name of the token a form with one takes last: `token`, and `cancellation` where the
 // method has a parameter `token` of its own -- a name of the projection's, which is not wxl's to
 // change. Throws when the method has both.
-std::string cancellation_parameter_name(std::vector<param_info> const& params);
+std::string stop_parameter_name(std::vector<param_info> const& params);
 
 // What a member cannot be generated for, so the trimming stays visible
 // instead of a member simply not being there.

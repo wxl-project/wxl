@@ -64,7 +64,7 @@ export import :async.async_op;
 export import :async.async_semaphore;
 export import :async.barrier;
 export import :async.bump_buffer;
-export import :async.cancellation;
+export import :async.stop_token;
 export import :async.completion_counter;
 export import :async.coroutine_checks;
 export import :async.countdown_event;

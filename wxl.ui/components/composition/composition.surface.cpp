@@ -38,7 +38,7 @@ using namespace wxl::dsl;
 // it is built right in the braces; its own events take the same tags, and a
 // copy captured by a lambda is the same window.
 [[maybe_unused]] void composition_window(TitleBar const& built, Grid const& page,
-                                         async::cancellation_token token) {
+                                         async::stop_token token) {
     CompositionWindow window{
         title = L"App",
         minSize = {820, 560},
@@ -93,7 +93,7 @@ static_assert(!loads_background_without_a_token<BackgroundImage> &&
 
 // A texture from the cache, under a token as every operation of the platform's.
 [[maybe_unused]] async::task<CompositionDrawingSurface> cached_texture(
-    TextureCache& cache, async::cancellation_token token) {
+    TextureCache& cache, async::stop_token token) {
     return cache.getAsync(std::filesystem::path{L"C:/Pictures/photo.png"}, std::move(token));
 }
 

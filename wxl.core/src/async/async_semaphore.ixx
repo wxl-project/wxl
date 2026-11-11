@@ -4,7 +4,7 @@ module;
 
 export module wxl.core:async.async_semaphore;
 
-import :async.cancellation;
+import :async.stop_token;
 import :async.coroutine_checks;
 import :async.sta_loop;
 import :async.sta_thread;
@@ -72,10 +72,10 @@ public:
     inline void await_suspend(std::coroutine_handle<> waiter) noexcept;
 
     /// The permit is the caller's now: taken at once, or handed over before the turn that
-    /// resumed it. A cancelled wait is not asked (detail::cancelable_wait).
+    /// resumed it. A cancelled wait is not asked (detail::stoppable_wait).
     inline void await_resume() const noexcept {}
 
-    /// The token fired (detail::cancelable_awaiter), on the coroutines' thread; resumes nobody.
+    /// The token fired (detail::stoppable_awaiter), on the coroutines' thread; resumes nobody.
     /// Before the wait began: it will not suspend. In line: out of it, and the loop is given the
     /// turn that resumes it. Handed a permit whose turn has not come: the permit is passed on,
     /// and the turn already in line resumes it with the cancellation.
@@ -163,11 +163,11 @@ public:
     /// What `co_await semaphore.acquire(token)` waits in: made in place in the awaiting frame,
     /// and neither copied nor moved, since the semaphore's line and the loop hold it by address.
     /// The wait is registered with the token while it is suspended
-    /// (detail::cancelable_wait), by a registration built into it.
+    /// (detail::stoppable_wait), by a registration built into it.
     class [[nodiscard("an acquire takes nothing until it is co_awaited")]] acquire_awaiter
-        : public detail::cancelable_wait<acquire_awaiter>
+        : public detail::stoppable_wait<acquire_awaiter>
     {
-        friend class detail::cancelable_wait<acquire_awaiter>;
+        friend class detail::stoppable_wait<acquire_awaiter>;
         friend class async_semaphore;
 
     public:
@@ -179,16 +179,16 @@ public:
         inline ~acquire_awaiter() { this->unregister_from_token(); }
 
     private:
-        inline acquire_awaiter(async_semaphore& semaphore, cancellation_token token) noexcept
+        inline acquire_awaiter(async_semaphore& semaphore, stop_token token) noexcept
             : token_(std::move(token)), wait_(semaphore) {}
 
         inline detail::semaphore_wait& awaiter() noexcept { return wait_; }
 
-        inline detail::cancellation_state* state() const noexcept {
-            return detail::cancellation_state_of(token_);
+        inline detail::stop_state* state() const noexcept {
+            return detail::stop_state_of(token_);
         }
 
-        cancellation_token token_;
+        stop_token token_;
         detail::semaphore_wait wait_;
     };
 
@@ -238,7 +238,7 @@ public:
     ///        keeps its permit. A token of nobody is accepted and costs nothing.
     /// \param where the caller's line, for a strict build's report; left to its default.
     [[nodiscard]] inline acquire_awaiter acquire(
-        cancellation_token token, [[maybe_unused]] detail::site where = detail::site::current()) {
+        stop_token token, [[maybe_unused]] detail::site where = detail::site::current()) {
         coro_check(sta_thread::is_current(),
                    "async_semaphore: acquired on a thread other than its coroutines'", where);
         return acquire_awaiter(*this, std::move(token));

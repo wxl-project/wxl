@@ -266,7 +266,7 @@ public:
         }
 
         // Cancelled by the token of the form with one
-        // (async::detail::cancelable_awaiter): a wait that is
+        // (async::detail::stoppable_awaiter): a wait that is
         // suspended is resumed by the queue's next turn, or by the event if it
         // comes first -- never by cancel() itself; one that has not begun never
         // suspends. Either way the args are not asked for.
@@ -280,7 +280,7 @@ public:
 
         // What the answering form answers when its token was cancelled: a
         // reason without an error, stopped by request.
-        result_t await_canceled() noexcept
+        result_t await_stopped() noexcept
             requires(!Throwing)
         {
             return result_t{std::unexpect};
@@ -335,7 +335,7 @@ private:
 // The same subscription under a cancellation token: what on_event() and the
 // tags make when they are given one last -- `co_await onClick(button, token)`.
 //
-// Every wait on it is registered with the token (impl::cancelable_event_wait): the wait in
+// Every wait on it is registered with the token (impl::stoppable_event_wait): the wait in
 // progress when the token is cancelled ends, and every later one ends at once,
 // the throwing form with async::operation_canceled_exception and the answering
 // form with an empty error. The token is held here and lent to each wait, which
@@ -343,7 +343,7 @@ private:
 // type rather than a field of the plain one: a wait made without a token keeps
 // every byte and every instruction it had.
 template <typename Source>
-class cancelable_event_awaitable
+class stoppable_event_awaitable
 {
     using event_t = event_awaitable<Source>;
 
@@ -353,20 +353,20 @@ public:
     using args_value_t = typename event_t::args_value_t;
     using next_result_t = typename event_t::next_result_t;
 
-    cancelable_event_awaitable(Source source, async::cancellation_token token)
+    stoppable_event_awaitable(Source source, async::stop_token token)
         : event_{std::move(source)}, token_{std::move(token)} {}
 
-    cancelable_event_awaitable(cancelable_event_awaitable const&) = delete;
-    cancelable_event_awaitable& operator=(cancelable_event_awaitable const&) = delete;
+    stoppable_event_awaitable(stoppable_event_awaitable const&) = delete;
+    stoppable_event_awaitable& operator=(stoppable_event_awaitable const&) = delete;
 
     template <bool Throwing>
-    using awaiter_t = impl::cancelable_event_wait<typename event_t::template awaiter_t<Throwing>,
-                                                  async::detail::cancellation_state*>;
+    using awaiter_t = impl::stoppable_event_wait<typename event_t::template awaiter_t<Throwing>,
+                                                  async::detail::stop_state*>;
 
     using awaiter = awaiter_t<true>;
 
     awaiter operator co_await() noexcept {
-        return awaiter{async::detail::cancellation_state_of(token_), event_};
+        return awaiter{async::detail::stop_state_of(token_), event_};
     }
 
     // As on the plain proxy: waiting writes down who is waiting.
@@ -375,12 +375,12 @@ public:
     /// The answering form under the token: a cancelled wait answers with an
     /// empty error rather than throwing.
     awaiter_t<false> next() noexcept {
-        return awaiter_t<false>{async::detail::cancellation_state_of(token_), event_};
+        return awaiter_t<false>{async::detail::stop_state_of(token_), event_};
     }
 
 private:
     event_t event_;
-    async::cancellation_token token_;
+    async::stop_token token_;
 };
 
 // Where a wait gets its event from. Three of them, and they differ only in
@@ -468,23 +468,23 @@ impl::event_awaitable<impl::type_event<Add, Remove>> on_event(Add add, Remove re
 /// Each of the three under a cancellation token, given last:
 /// `on_event<EventKey::Click>(button, token)`.
 template <EventKey key, typename Obj>
-impl::cancelable_event_awaitable<impl::keyed_event<key, Obj>> on_event(
-    Obj const& source, async::cancellation_token token) {
-    return impl::cancelable_event_awaitable<impl::keyed_event<key, Obj>>{{source},
+impl::stoppable_event_awaitable<impl::keyed_event<key, Obj>> on_event(
+    Obj const& source, async::stop_token token) {
+    return impl::stoppable_event_awaitable<impl::keyed_event<key, Obj>>{{source},
                                                                          std::move(token)};
 }
 
 template <typename Obj, typename Add, typename Remove>
-impl::cancelable_event_awaitable<impl::member_event<Obj, Add, Remove>> on_event(
-    Obj const& source, Add add, Remove remove, async::cancellation_token token) {
-    return impl::cancelable_event_awaitable<impl::member_event<Obj, Add, Remove>>{
+impl::stoppable_event_awaitable<impl::member_event<Obj, Add, Remove>> on_event(
+    Obj const& source, Add add, Remove remove, async::stop_token token) {
+    return impl::stoppable_event_awaitable<impl::member_event<Obj, Add, Remove>>{
         {source, add, remove}, std::move(token)};
 }
 
 template <impl::function_pointer Add, impl::function_pointer Remove>
-impl::cancelable_event_awaitable<impl::type_event<Add, Remove>> on_event(
-    Add add, Remove remove, async::cancellation_token token) {
-    return impl::cancelable_event_awaitable<impl::type_event<Add, Remove>>{{add, remove},
+impl::stoppable_event_awaitable<impl::type_event<Add, Remove>> on_event(
+    Add add, Remove remove, async::stop_token token) {
+    return impl::stoppable_event_awaitable<impl::type_event<Add, Remove>>{{add, remove},
                                                                            std::move(token)};
 }
 
@@ -492,21 +492,21 @@ impl::cancelable_event_awaitable<impl::type_event<Add, Remove>> on_event(
 /// cancellation token. An event cleared or ended while the coroutine waits ends the wait,
 /// on the queue's next turn, as one whose event will not come.
 template <typename... Args>
-impl::cancelable_event_wait<impl::core_event_wait<core::event<void(Args...)>, Args...>,
-                            async::cancellation_token>
-on_event(core::event<void(Args...)>& event, async::cancellation_token token) {
-    return impl::cancelable_event_wait<impl::core_event_wait<core::event<void(Args...)>, Args...>,
-                                       async::cancellation_token>{std::move(token), event};
+impl::stoppable_event_wait<impl::core_event_wait<core::event<void(Args...)>, Args...>,
+                            async::stop_token>
+on_event(core::event<void(Args...)>& event, async::stop_token token) {
+    return impl::stoppable_event_wait<impl::core_event_wait<core::event<void(Args...)>, Args...>,
+                                       async::stop_token>{std::move(token), event};
 }
 
 /// The same for the signature spelled noexcept.
 template <typename... Args>
-impl::cancelable_event_wait<impl::core_event_wait<core::event<void(Args...) noexcept>, Args...>,
-                            async::cancellation_token>
-on_event(core::event<void(Args...) noexcept>& event, async::cancellation_token token) {
-    return impl::cancelable_event_wait<
+impl::stoppable_event_wait<impl::core_event_wait<core::event<void(Args...) noexcept>, Args...>,
+                            async::stop_token>
+on_event(core::event<void(Args...) noexcept>& event, async::stop_token token) {
+    return impl::stoppable_event_wait<
         impl::core_event_wait<core::event<void(Args...) noexcept>, Args...>,
-        async::cancellation_token>{std::move(token), event};
+        async::stop_token>{std::move(token), event};
 }
 
 /// The keyed wait through its tag: `onClick(button)` is `on_event<EventKey::Click>(button)`.
@@ -526,8 +526,8 @@ template <EventKey key, typename Owner>
 template <typename Obj, typename Token>
     requires std::derived_from<Obj, Object>
 auto impl::event_tag<key, Owner>::operator()(Obj const& source, Token token) const {
-    static_assert(std::is_same_v<Token, async::cancellation_token>,
-                  "wxl: an event is awaited under an async::cancellation_token");
+    static_assert(std::is_same_v<Token, async::stop_token>,
+                  "wxl: an event is awaited under an async::stop_token");
     impl::check_owner<Owner, Obj>();
 
     return on_event<key>(source, std::move(token));

@@ -63,7 +63,7 @@ wxl_add_module_library(wxl.core STATIC
         async/async_semaphore.ixx
         async/barrier.ixx
         async/bump_buffer.ixx
-        async/cancellation.ixx
+        async/stop_token.ixx
         async/completion_counter.ixx
         async/coroutine_checks.ixx
         async/countdown_event.ixx
