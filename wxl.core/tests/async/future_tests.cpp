@@ -1140,6 +1140,143 @@ STRESS_TEST_CASE(future, next_unwrap_with_a_continuation_returning_a_future_fail
     ASSERT_TRUE(has_exception<specific_exception>(result));
 }
 
+// next_unwrap() with a continuation that returns a future<U>: the result is a future<U> too, and
+// it carries the value of the continuation's future, or its exception.
+
+namespace {
+template <class F>
+concept unwraps = requires(const test_future& f, F task) { f.next_unwrap(task); };
+
+static_assert(unwraps<future<int> (*)()>);
+static_assert(unwraps<test_future (*)()>);
+static_assert(!unwraps<int (*)()>, "a continuation returning a plain value is next()'s");
+
+/// A value that may be copied \c copies_left times; the copy after that throws. It is what fails
+/// the copy into the result, and only that one: the copy into the inner state is let through.
+struct copy_fails_when_spent {
+    explicit copy_fails_when_spent(int* copies_left) noexcept : copies_left_(copies_left) {}
+
+    copy_fails_when_spent(const copy_fails_when_spent& other) : copies_left_(other.copies_left_) {
+        if ((*copies_left_)-- == 0) throw specific_exception();
+    }
+
+    int* copies_left_;
+};
+}
+
+STRESS_TEST_CASE(future, next_unwrap_to_a_value_completed_later) {
+    test_promise source;
+    promise<std::string> inner;
+
+    future<std::string> result =
+        source.get_future().next_unwrap([&] { return inner.get_future(); });
+
+    source.set_value();
+    ASSERT_EQ(future_status::timeout, result.wait_for(duration::zero()));
+
+    inner.set_value("done");
+    ASSERT_EQ(future_status::ready, result.wait_for(duration::zero()));
+    ASSERT_EQ("done", result.get());
+}
+
+STRESS_TEST_CASE(future, next_unwrap_to_a_value_ready_already) {
+    promise<int> source;
+    source.set_value(41);
+
+    future<int> result =
+        source.get_future().next_unwrap([](int v) { return make_ready_future(v + 1); });
+
+    ASSERT_EQ(future_status::ready, result.wait_for(duration::zero()));
+    ASSERT_EQ(42, result.get());
+}
+
+STRESS_TEST_CASE(future, next_unwrap_to_a_value_outlives_the_inner_future) {
+    test_promise source;
+    std::optional<future<std::string>> result;
+
+    {
+        promise<std::string> inner;
+        result = source.get_future().next_unwrap([&] { return inner.get_future(); });
+        source.set_value();
+        inner.set_value("kept");
+    }
+
+    ASSERT_EQ("kept", result->get());
+}
+
+STRESS_TEST_CASE(future, next_unwrap_to_a_value_over_a_failed_source) {
+    bool called = false;
+
+    future<int> result = failed_future().next_unwrap([&] {
+        called = true;
+        return make_ready_future(1);
+    });
+
+    ASSERT_EQ(future_status::ready, result.wait_for(duration::zero()));
+    ASSERT_THROW(result.get(), specific_exception);
+    ASSERT_FALSE(called);
+}
+
+STRESS_TEST_CASE(future, next_unwrap_to_a_value_with_a_continuation_that_throws) {
+    test_promise source;
+
+    future<int> result = source.get_future().next_unwrap([]() -> future<int> {
+        throw specific_exception();
+    });
+
+    source.set_value();
+    ASSERT_EQ(future_status::ready, result.wait_for(duration::zero()));
+    ASSERT_THROW(result.get(), specific_exception);
+}
+
+STRESS_TEST_CASE(future, next_unwrap_to_a_value_failing_later) {
+    test_promise source;
+    promise<int> inner;
+
+    future<int> result = source.get_future().next_unwrap([&] { return inner.get_future(); });
+
+    source.set_value();
+    inner.set_exception(specific_exception_instance);
+
+    ASSERT_EQ(future_status::ready, result.wait_for(duration::zero()));
+    ASSERT_THROW(result.get(), specific_exception);
+}
+
+// The copy into the result is made where the inner future resolves: on the spot when it has a
+// value already, inside the inner promise's set_value() when it gets one later. Either way the
+// failed copy fails the result rather than escaping.
+
+STRESS_TEST_CASE(future, next_unwrap_to_a_value_ready_already_whose_copy_throws) {
+    int copies_left = 1;  // the one into the inner state
+
+    promise<copy_fails_when_spent> inner;
+    inner.set_value(copy_fails_when_spent(&copies_left));
+
+    test_promise source;
+    future<copy_fails_when_spent> result =
+        source.get_future().next_unwrap([&] { return inner.get_future(); });
+
+    source.set_value();
+    ASSERT_EQ(future_status::ready, result.wait_for(duration::zero()));
+    ASSERT_THROW(result.get(), specific_exception);
+}
+
+STRESS_TEST_CASE(future, next_unwrap_to_a_value_completed_later_whose_copy_throws) {
+    int copies_left = 1;  // the one into the inner state
+
+    promise<copy_fails_when_spent> inner;
+    test_promise source;
+    future<copy_fails_when_spent> result =
+        source.get_future().next_unwrap([&] { return inner.get_future(); });
+
+    source.set_value();
+    ASSERT_EQ(future_status::timeout, result.wait_for(duration::zero()));
+
+    ASSERT_TRUE(inner.set_value(copy_fails_when_spent(&copies_left)));
+    ASSERT_EQ(future_status::ready, result.wait_for(duration::zero()));
+    ASSERT_THROW(result.get(), specific_exception);
+}
+
 STRESS_TEST_CASE(future, when_all_completed_completed_by_value) {
     test_promise p1;
     test_promise p2;
