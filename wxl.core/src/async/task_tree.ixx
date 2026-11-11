@@ -181,7 +181,7 @@ public:
 
     /// Takes over the node of \p other, leaving \p other empty. The handle count of the node
     /// this handle referred to drops by one. Assignment to itself does nothing.
-    task_tree_handle& operator=(task_tree_handle&& other);
+    task_tree_handle& operator=(task_tree_handle&& other) noexcept;
 
     /// Marks the task as succeeded.
     ///

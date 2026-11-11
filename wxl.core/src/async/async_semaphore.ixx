@@ -53,7 +53,6 @@ public:
     inline explicit semaphore_wait(async_semaphore& semaphore) noexcept
         : loop_turn{&semaphore_wait::take_turn},
           semaphore_(semaphore),
-          waiter_(),
           stage_(stage::idle) {}
 
     /// The frame goes. A wait that is over has nothing left to do here; one still in line takes
@@ -200,7 +199,7 @@ public:
     inline explicit async_semaphore(
         std::ptrdiff_t count, std::ptrdiff_t max = std::numeric_limits<std::ptrdiff_t>::max(),
         [[maybe_unused]] detail::site where = detail::site::current()) noexcept
-        : count_(count), handed_(0), max_(max), waiters_() {
+        : count_(count), handed_(0), max_(max) {
         coro_check(sta_thread::is_current(),
                    "async_semaphore: made on a thread other than its coroutines'", where);
         coro_check(0 <= count && count <= max, "async_semaphore: a count outside [0, max]", where);
@@ -249,6 +248,7 @@ public:
     /// or, with nobody waiting, to the count. Resumes nobody here. The permits not held -- free
     /// and handed over -- may not exceed the maximum: a build that checks stops at a release
     /// over it, which is a permit given back twice.
+    /// \param n the permits given back.
     /// \param where the caller's line, for a strict build's report; left to its default.
     inline void release(std::ptrdiff_t n = 1,
                         [[maybe_unused]] detail::site where = detail::site::current()) noexcept {

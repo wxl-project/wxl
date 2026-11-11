@@ -282,7 +282,7 @@ class sta_loop
     /// answers whether it took over a callback the dispatcher is owed, which
     /// return_dispatcher_trigger() then settles.
     ///@{
-    static bool is_back(async_op* op) noexcept;
+    static bool is_back(const async_op* op) noexcept;
     static bool wait_until_back(async_op* op) noexcept;
     static void take_if_next(async_op* op) noexcept;
     static void return_dispatcher_trigger() noexcept;
@@ -688,6 +688,7 @@ public:
     /// write to see through, a test. The task is the caller's and has to last the call;
     /// a temporary does, for the length of its statement.
     ///
+    /// \param work the task to run until it ends.
     /// \param where the caller's line, for a strict build's report; left to its default.
     template <class R>
     inline static R run_until(task<R>& work, detail::site where = detail::site::current()) {

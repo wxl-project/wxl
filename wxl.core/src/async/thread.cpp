@@ -29,7 +29,7 @@ void thread::set_affinity(const cpu_indexes& indexes) {
     for (size_t index : indexes) {
         if (index >= sizeof(DWORD_PTR) * 8) throw std::invalid_argument("CPU index out of range");
 
-        mask |= (DWORD_PTR(1) << index);
+        mask |= (static_cast<DWORD_PTR>(1) << index);
     }
 
     if (::SetThreadAffinityMask(::GetCurrentThread(), mask) == 0)

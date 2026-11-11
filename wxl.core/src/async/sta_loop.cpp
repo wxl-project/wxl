@@ -26,7 +26,7 @@ void async_op::abandon(async_op* op) noexcept {
     if (owed) sta_loop::return_dispatcher_trigger();
 }
 
-bool sta_loop::is_back(async_op* op) noexcept {
+bool sta_loop::is_back(const async_op* op) noexcept {
     auto at = from_worker_reader_.look_ahead();
 
     while (async_op** const next = from_worker_reader_.peek(at))

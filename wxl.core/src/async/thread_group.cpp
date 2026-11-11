@@ -1,6 +1,7 @@
 module;
 #include "pch.h"
 #include <objbase.h>  // CoInitializeEx/CoUninitialize: WIN32_LEAN_AND_MEAN прячет их с ole2.h
+#include <process.h>  // _beginthreadex
 
 module wxl.core;
 import std;
@@ -18,15 +19,6 @@ void set_current_thread_name(const core::u8_view name) {
     if (name.empty()) return;
 
     ::SetThreadDescription(::GetCurrentThread(), name.to_utf16().c_str());
-}
-
-/// The same for a name that is already UTF-16. A view has no terminator, and
-/// SetThreadDescription takes a pointer and no length, so the copy is what
-/// makes one -- a dozen characters, once per thread.
-void set_current_thread_name(const core::u16_view name) {
-    if (name.empty()) return;
-
-    ::SetThreadDescription(::GetCurrentThread(), core::u16_text(name).c_str());
 }
 
 /// Global counter of detached threads. A thread's procedure takes the thread off it as its
@@ -81,12 +73,6 @@ public:
     ~windows_handle() { close_handle_if_needed(); }
 
     bool valid() const { return (handle_ != INVALID_HANDLE_VALUE); }
-
-    HANDLE release() {
-        HANDLE tmp = handle_;
-        handle_ = INVALID_HANDLE_VALUE;
-        return tmp;
-    }
 
     void reset(HANDLE const handle = INVALID_HANDLE_VALUE) {
         if (handle == handle_) return;
@@ -249,7 +235,7 @@ private:
     void notify_thread_exit(thread_info* thread_info);
 
     /// join the thread
-    void join_thread(thread_info* thread_info);
+    static void join_thread(thread_info* thread_info);
 
     /// join all threads in finished state.
     void join_finished_threads();
@@ -296,10 +282,10 @@ public:
           info_(group ? core::make_refcounted<thread_info>() : nullptr) {}
 
     /// Gets the group of the thread, or `nullptr` for a detached thread.
-    thread_group* group() { return group_.get(); }
+    thread_group* group() const { return group_.get(); }
 
     /// Gets the information about the managed thread, or `nullptr` for a detached thread.
-    thread_info* info() { return info_.get(); }
+    thread_info* info() const { return info_.get(); }
 
     /// Returns the future of the promise that the thread body reports through.
     future<void> get_future() const { return result_.get_future(); }
@@ -594,17 +580,18 @@ void thread_starter::start_thread() {
                                  std::to_string(thread_handle));
     }
 
+    const HANDLE handle = reinterpret_cast<HANDLE>(thread_handle);
+
     if (info) {
-        info->thread_handle().reset(HANDLE(thread_handle));
+        info->thread_handle().reset(handle);
 
         // A thread that never ran has not taken the starter over: the caller still owns it,
         // and the thread, left suspended, never touches it.
-        if (::ResumeThread(HANDLE(thread_handle)) == static_cast<DWORD>(-1))
-            throw last_error("ResumeThread");
+        if (::ResumeThread(handle) == static_cast<DWORD>(-1)) throw last_error("ResumeThread");
 
         // WARNING: from here on 'this' could be already deleted by the thread.
     } else {
-        ::CloseHandle(HANDLE(thread_handle));
+        ::CloseHandle(handle);
     }
 
     detached_thread_error_guard.ok = true;
