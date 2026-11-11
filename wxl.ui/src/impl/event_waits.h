@@ -48,15 +48,15 @@ class event_wait : public core::intrusive_list_node<event_wait>
 {
 public:
     /// Resumes the coroutine and tells it that what it waited for will not
-    /// come. \p error carries a failure to report as it stands; empty means
-    /// there is nothing to say beyond "cancelled".
-    void end(core::nullable<std::exception_ptr> error = {}) noexcept {
+    /// come. \p reason carries an error to report as it stands; the default
+    /// one says the wait was stopped and nothing more.
+    void end(async::stop_reason reason = {}) noexcept {
         if (!waiter_) {
             return;
         }
 
         ended_ = true;
-        error_ = error;
+        reason_ = std::move(reason);
 
         // Last statement, always: the coroutine may run to its end inside
         // this call, and this object -- a local of its frame -- is destroyed
@@ -112,7 +112,7 @@ protected:
 
         waiter_ = waiter;
         ended_ = false;
-        error_ = {};
+        reason_ = {};
         suspended_waits().push_back(core::as_not_null(this));
     }
 
@@ -126,7 +126,7 @@ protected:
 
     bool ended() const noexcept { return ended_; }
 
-    core::nullable<std::exception_ptr> const& error() const noexcept { return error_; }
+    async::stop_reason const& reason() const noexcept { return reason_; }
 
     /// Resumes whoever is waiting because the event happened.
     void deliver() noexcept {
@@ -159,8 +159,8 @@ protected:
 
     /// What the throwing form of a wait does when the wait ended instead.
     [[noreturn]] void throw_ended() const {
-        if (error_) {
-            std::rethrow_exception(*error_);
+        if (reason_.stopped_due_to_error()) {
+            std::rethrow_exception(reason_.error());
         }
 
         throw async::operation_canceled_exception{
@@ -202,7 +202,7 @@ private:
 
     std::coroutine_handle<> waiter_;
     bool ended_ = false;
-    core::nullable<std::exception_ptr> error_;
+    async::stop_reason reason_;
 };
 
 /// A wait of this thread under a cancellation token: the awaiter made in place, what
