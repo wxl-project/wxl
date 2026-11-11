@@ -251,10 +251,11 @@ struct class_group {
 // What the builder syntax needs to know about the members that were
 // generated, and about the members of the classes wxl writes by hand.
 struct dsl {
-    // Property name -> the wxl type of its value, empty when different
-    // classes declare that name with different types (the braced form
-    // `margin = {20}` needs one definite type; the deduced form does not).
-    std::map<std::string, std::string> property_value_type;
+    // Property name -> the wxl types of its value, one where every class
+    // declaring the name agrees and several where they do not: `opacity` is a
+    // double on a UIElement and a float on a Visual. The tag takes each of them;
+    // the braced form `margin = {20}` needs one definite type.
+    std::map<std::string, std::set<std::string>> property_value_types;
     std::set<std::string> events;
 
     // Properties whose value is a class the tag can also build from braces:
@@ -332,8 +333,8 @@ struct binding_pair_info {
 // things follow from being generated per class rather than per member: the
 // anchor knows its owner, so writing one class's member on another is
 // refused by name instead of deep inside a template, and it knows the type
-// that class declares the property with -- which the flat vocabulary has to
-// give up wherever two classes disagree.
+// that class declares the property with -- where two classes disagree, the
+// flat vocabulary knows only the list of them.
 struct schema {
     struct member {
         // Bound: a property that exists on this class as a binding target
@@ -358,8 +359,8 @@ struct schema {
 
         // False where the class declares the same property with more than
         // one type -- SymbolIcon takes both a Symbol and a FluentSymbol. The
-        // anchor then carries no type, exactly as the flat tag does, and
-        // keeps only the deduced assignment; `type` stays the first of them,
+        // anchor then carries no type and keeps only the deduced assignment;
+        // `type` stays the first of them,
         // because the test still has to hand it something it accepts.
         bool single_type = true;
 

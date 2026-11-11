@@ -40,6 +40,82 @@ void write_enum_values(std::ostream& file, dsl const& d) {
     }
 }
 
+// The types a tag takes, in the order of the set, which is what keeps the
+// output the same from run to run. A Brush takes a Color already -- the solid
+// brush of that colour (impl::solid_color_brush), which is still the colour for
+// a setter that takes one -- so beside a Brush a Color would be a second
+// operator= over the same argument.
+std::vector<std::string> tag_types(std::set<std::string> const& declared) {
+    std::vector<std::string> types;
+    for (auto&& type : declared) {
+        if (type == "Color" && declared.contains("Brush")) {
+            continue;
+        }
+        types.push_back(type);
+    }
+    return types;
+}
+
+// The types of a tag as its template argument: the one type, or impl::one_of
+// over the list. `one_of` is spelled as the namespace it is written in sees it.
+std::string tag_value(std::vector<std::string> const& types, std::string_view one_of) {
+    if (types.size() == 1) {
+        return types.front();
+    }
+    std::string list;
+    for (auto&& type : types) {
+        list += list.empty() ? type : ", " + type;
+    }
+    return std::format("{}<{}>", one_of, list);
+}
+
+// The values of each list over several enumerations, in namespace impl, after
+// the values of the enumerations themselves and ahead of the first tag over the
+// list. Each value name is written once: a name one enumeration of the list has
+// is that enumeration's value, a name several share is one
+// impl::shared_enum_value, which the setter of the object takes as its own
+// enumeration. A list over one enumeration needs nothing here -- it inherits the
+// values of that one (impl::enum_values<one_of<...>>).
+void write_list_enum_values(std::ostream& file, dsl const& d) {
+    auto const has_values = [&d](std::string const& type) {
+        auto const values = d.enumerators.find(type);
+        return values != d.enumerators.end() && !values->second.empty();
+    };
+    std::set<std::vector<std::string>> lists;
+    for (auto&& [name, declared] : d.property_value_types) {
+        auto types = tag_types(declared);
+        if (std::ranges::count_if(types, has_values) > 1) {
+            lists.insert(std::move(types));
+        }
+    }
+
+    for (auto&& types : lists) {
+        // Value name -> the enumeration and the enumerator of each that has it.
+        std::map<std::string, std::vector<std::pair<std::string, std::string>>> values;
+        for (auto&& type : types) {
+            if (has_values(type)) {
+                for (auto&& [member, enumerator] : d.enumerators.at(type)) {
+                    values[member].emplace_back(type, enumerator);
+                }
+            }
+        }
+        std::print(file, "\ntemplate <>\nstruct enum_values<{}> {{\n", tag_value(types, "one_of"));
+        for (auto&& [member, spellings] : values) {
+            if (spellings.size() == 1) {
+                std::print(file, "    static constexpr {0} {1} = {0}::{2};\n", spellings.front().first,
+                           member, spellings.front().second);
+                continue;
+            }
+            std::string shared;
+            for (auto&& [type, enumerator] : spellings) {
+                shared += std::format("{}{}::{}", shared.empty() ? "" : ", ", type, enumerator);
+            }
+            std::print(file, "    static constexpr shared_enum_value<{}> {}{{}};\n", shared, member);
+        }
+        std::print(file, "}};\n");
+    }
+}
+
 // The dispatch behind the tags, in namespace impl: one specialisation per
 // key.
 void write_dispatch(std::ostream& file, dsl const& d) {
@@ -50,7 +126,7 @@ void write_dispatch(std::ostream& file, dsl const& d) {
     // refuses the assignment at the tag rather than inside this body -- and
     // so that a binding can ask, before it commits to writing, whether there
     // is anything to write to.
-    for (auto&& [name, value_type] : d.property_value_type) {
+    for (auto&& [name, value_types] : d.property_value_types) {
         std::print(file, R"(
 template <>
 struct property_setter<PropertyKey::{0}> {{
@@ -155,39 +231,41 @@ struct event_adder<EventKey::{0}> {{
 // The tag of one property: what its type and the vocabulary around it make
 // it.
 void write_property_tag(std::ostream& file, dsl const& d, std::string const& name,
-                        std::string const& value_type) {
+                        std::set<std::string> const& declared) {
+    auto const types = tag_types(declared);
+    auto const value = tag_value(types, "impl::one_of");
+
     // A collection that a setter can also be given in one go --
     // `rowDefinitions[a, b]` and `rowDefinitions = lengths` are the same
     // property said two ways -- so the tag carries both.
     if (d.collection_element.count(name)) {
         std::print(file, "inline constexpr impl::assignable_collection_tag<PropertyKey::{}, {}> {};\n",
-                   name, value_type.empty() ? "void" : value_type, member_name(name));
+                   name, value, member_name(name));
         return;
     }
 
     // A class the tag builds from braces as well as takes built:
     // `titleBar = { leftHeader = ..., content = ... }`. Only with a
     // definite type -- a disagreement leaves nothing to build.
-    if (d.braced.count(name) && !value_type.empty()) {
+    if (d.braced.count(name) && types.size() == 1) {
         std::print(file, "inline constexpr impl::braced_property_tag<PropertyKey::{}, {}> {};\n", name,
-                   value_type, member_name(name));
+                   value, member_name(name));
         return;
     }
 
-    // A property whose declarations disagree on the type gets no
-    // definite one, and with it no braced form -- `void` leaves only
-    // the deduced assignment. An enum-typed property is written the same
+    // A property whose declarations disagree on the type takes each of them,
+    // impl::one_of over the list. An enum-typed property is written the same
     // way: the values it accepts come with its type (impl::enum_values), so
     // `orientation.horizontal` needs no enum name.
-    std::print(file, "inline constexpr impl::property_tag<PropertyKey::{}, {}> {};\n", name,
-               value_type.empty() ? "void" : value_type, member_name(name));
+    std::print(file, "inline constexpr impl::property_tag<PropertyKey::{}, {}> {};\n", name, value,
+               member_name(name));
 }
 
 // The tags, in namespace dsl: properties, attached properties, collections,
 // events.
 void write_tag_objects(std::ostream& file, dsl const& d) {
-    for (auto&& [name, value_type] : d.property_value_type) {
-        write_property_tag(file, d, name, value_type);
+    for (auto&& [name, declared] : d.property_value_types) {
+        write_property_tag(file, d, name, declared);
     }
 
     if (!d.attached.empty()) {
@@ -201,7 +279,7 @@ void write_tag_objects(std::ostream& file, dsl const& d) {
     if (!d.collection_element.empty()) {
         std::print(file, "\n");
         for (auto&& [name, element] : d.collection_element) {
-            if (d.property_value_type.count(name)) {
+            if (d.property_value_types.count(name)) {
                 continue;  // already written above, carrying both forms
             }
             std::print(file, "inline constexpr impl::collection_tag<PropertyKey::{}> {};\n", name,
@@ -232,8 +310,9 @@ void write_dsl(output const& out, dsl const& d, emitted& em) {
 
     std::print(file, "\nnamespace wxl {{\n\nnamespace impl {{\n");
     // Ahead of everything below: a specialisation has to precede the first
-    // property_tag over its enumeration.
+    // property_tag over its enumeration or its list.
     write_enum_values(file, d);
+    write_list_enum_values(file, d);
     write_dispatch(file, d);
 
     // The tags live in a namespace of their own so that consuming code brings
@@ -245,7 +324,7 @@ void write_dsl(output const& out, dsl const& d, emitted& em) {
 
     em.add(path);
     std::print("generated {} ({} property tags, {} collection tags, {} event tags)\n",
-               wxl::core::unicode::to_utf8(path).chars(), d.property_value_type.size(),
+               wxl::core::unicode::to_utf8(path).chars(), d.property_value_types.size(),
                d.collection_element.size(), d.events.size());
 }
 

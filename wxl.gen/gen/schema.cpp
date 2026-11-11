@@ -23,8 +23,8 @@ import wxl.core;
 // carries its owner, so writing one class's member on another is refused by
 // name (impl::check_owner) instead of failing several expansions deeper. And
 // it carries the type *that class* declares the property with -- the flat tag
-// has to fall back to `void` wherever two classes disagree, and with it loses
-// the braced form, which is why `startPoint = {0, 0}` never worked through
+// takes the list of them wherever two classes disagree, and a braced list
+// fits more than one, which is why `startPoint = {0, 0}` never worked through
 // `dsl::` and works here.
 //
 // Everything emitted here is also exercised by the test file this same
