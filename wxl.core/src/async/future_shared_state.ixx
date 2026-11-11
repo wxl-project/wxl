@@ -409,42 +409,14 @@ public:
     ///         another concurrent set_value()/set_exception() call. May be ignored.
     template <typename T>
     bool set_value(const T& value) {
-        if (pending()) {
-            // Owner may be deleted during subsequent calls, so wee need our own pointer.
-            future_shared_state_ptr keep_me(this);
-
-            state* new_state = construct<detail::resolved_state<T>>(value);
-
-            if (resolve(new_state)) {
-                return true;
-            }
-
-            destroy(new_state);
-        }
-
-        return false;
+        return store_value<T>(value);
     }
 
-    /// The same, moving \p value into the shared state instead of copying it. A value that loses
-    /// the race to another set_value()/set_exception() is moved from all the same and destroyed
-    /// with the state built around it.
+    /// The same, moving \p value into the shared state instead of copying it.
     template <typename T>
         requires(!std::is_reference_v<T>)
     bool set_value(T&& value) {
-        if (pending()) {
-            // Owner may be deleted during subsequent calls, so wee need our own pointer.
-            future_shared_state_ptr keep_me(this);
-
-            state* new_state = construct<detail::resolved_state<T>>(std::move(value));
-
-            if (resolve(new_state)) {
-                return true;
-            }
-
-            destroy(new_state);
-        }
-
-        return false;
+        return store_value<T>(std::move(value));
     }
 
     /// Atomically stores the exception pointer into the shared state and makes the state ready.
@@ -626,6 +598,25 @@ protected:
     }
 
 private:
+    /// Builds a resolved_state<T> from \p value -- copied or moved, as the caller hands it -- and
+    /// makes it the state's result.
+    template <typename T, typename t_value>
+    bool store_value(t_value&& value) {
+        if (pending()) {
+            // Owner may be deleted during subsequent calls, so we need our own pointer.
+            future_shared_state_ptr keep_me(this);
+
+            state* new_state =
+                construct<detail::resolved_state<T>>(std::forward<t_value>(value));
+
+            if (resolve(new_state)) return true;
+
+            destroy(new_state);
+        }
+
+        return false;
+    }
+
     inline bool resolve(state* new_state) noexcept {
         using namespace detail;
 
