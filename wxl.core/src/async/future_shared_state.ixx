@@ -152,6 +152,11 @@ template <typename T>
 struct resolved_state : resolved_state_base {
     explicit resolved_state(const T& value) : value_(value) {}
 
+    /// Takes the value over. Not for a reference T, which refers to an object and owns nothing.
+    explicit resolved_state(T&& value)
+        requires(!std::is_reference_v<T>)
+        : value_(std::move(value)) {}
+
     static const resolved_state<T>* from(const state* state) noexcept {
         assert(state && state->id() == state_id::resolved);
         assert(dynamic_cast<const resolved_state<T>*>(state));
@@ -409,6 +414,28 @@ public:
             future_shared_state_ptr keep_me(this);
 
             state* new_state = construct<detail::resolved_state<T>>(value);
+
+            if (resolve(new_state)) {
+                return true;
+            }
+
+            destroy(new_state);
+        }
+
+        return false;
+    }
+
+    /// The same, moving \p value into the shared state instead of copying it. A value that loses
+    /// the race to another set_value()/set_exception() is moved from all the same and destroyed
+    /// with the state built around it.
+    template <typename T>
+        requires(!std::is_reference_v<T>)
+    bool set_value(T&& value) {
+        if (pending()) {
+            // Owner may be deleted during subsequent calls, so wee need our own pointer.
+            future_shared_state_ptr keep_me(this);
+
+            state* new_state = construct<detail::resolved_state<T>>(std::move(value));
 
             if (resolve(new_state)) {
                 return true;

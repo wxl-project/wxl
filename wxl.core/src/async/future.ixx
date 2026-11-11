@@ -755,6 +755,16 @@ public:
     ///         another concurrent set_value()/set_exception() call. May be ignored.
     bool set_value(const T& value) { return checked_state()->set_value<T>(value); }
 
+    /// Sets the result to the given value, moving it into the shared state. A value that comes
+    /// too late -- the state is resolved already -- is moved from all the same.
+    /// \return true if this call resolved the state; false if it was already resolved by
+    ///         another concurrent set_value()/set_exception() call. May be ignored.
+    bool set_value(T&& value)
+        requires(!std::is_reference_v<T>)
+    {
+        return checked_state()->set_value<T>(std::move(value));
+    }
+
     /// Returns a promise without a shared state.
     static promise<T> invalid_promise() { return promise(nullptr); }
 
