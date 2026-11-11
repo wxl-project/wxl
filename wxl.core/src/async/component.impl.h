@@ -18,7 +18,7 @@ class component::impl_t : public future_shared_state, public core::synchronized_
 
 public:
     /// Constructs the state that synchronizes on \p sync_root_arg.
-    explicit impl_t(core::sync_root_holder sync_root_arg);
+    explicit impl_t(const core::sync_root_holder& sync_root_arg);
     /// Constructs the state that synchronizes on \p sync_root_arg.
     explicit impl_t(core::not_null<core::sync_root> sync_root_arg);
 

@@ -92,7 +92,7 @@ public:
     }
 
     /// Returns `false`: a pool under this policy is never closed.
-    constexpr bool closed() const noexcept { return false; }
+    static constexpr bool closed() noexcept { return false; }
 };
 
 // The alignas members below are meant to cost padding: that is what keeps the lines

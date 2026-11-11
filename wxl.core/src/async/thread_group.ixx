@@ -40,7 +40,7 @@ public:
     ///
     /// @throw an exception if cannot register the cleanup function (for example for externally
     /// created thread).
-    inline static void at_thread_exit(void (*cleanup_func)(void)) {
+    inline static void at_thread_exit(void (*cleanup_func)()) {
         at_thread_exit_impl(cleanup_func, nullptr, nullptr);
     }
 
@@ -70,6 +70,7 @@ public:
     ///        so that a name nobody has vouched for is refused here rather than inside the
     ///        thread that was started with it: u8"disk io" needs no call at all, and a name
     ///        built at run time goes through wxl::core::unicode::checked() where it is built.
+    /// \param thread_proc the body the new thread runs.
     future<void> spawn_named(core::u8_view thread_name, const thread_proc& thread_proc);
     /// @}
 
@@ -190,13 +191,13 @@ public:
     ~thread_scope();
 
     /// Gets the group that the scope owns.
-    inline thread_group* get() { return group_.get(); }
+    inline thread_group* get() const { return group_.get(); }
 
     /// Provides member access to the group that the scope owns.
-    inline thread_group* operator->() { return group_.get(); }
+    inline thread_group* operator->() const { return group_.get(); }
 
     /// Converts the scope to a pointer to the group that it owns.
-    inline operator thread_group*() { return group_.get(); }
+    inline operator thread_group*() const { return group_.get(); }
 
 private:
     thread_group_ptr group_;
