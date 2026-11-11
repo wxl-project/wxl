@@ -166,7 +166,7 @@ public:
     [[nodiscard]] task<std::size_t> write(std::span<const std::byte> from);
 
     /// \throw last_error if the file's length could not be had.
-    [[nodiscard]] task<std::uint64_t> size();
+    [[nodiscard]] task<std::uint64_t> size() const;
 
     /// \throw last_error if the flush failed -- and a failed flush is the
     ///        difference between a file that survives a power cut and one that

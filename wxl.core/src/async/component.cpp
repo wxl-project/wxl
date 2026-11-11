@@ -406,7 +406,7 @@ void component::on_stopped() {
     callbacks(reason);
 }
 
-component::impl_t::impl_t(core::sync_root_holder sync_root_arg)
+component::impl_t::impl_t(const core::sync_root_holder& sync_root_arg)
     : core::synchronized_(sync_root_arg) {}
 
 component::impl_t::impl_t(core::not_null<core::sync_root> sync_root_arg)
@@ -506,7 +506,7 @@ void destroy_stop_request(const std::exception_ptr* error) noexcept {
 
 }  // namespace
 
-const stop_reason stop_reason::abort() {
+stop_reason stop_reason::abort() {
     if (core::module_cleanup::process_is_terminating())
         return stop_reason(std::make_exception_ptr(operation_canceled_exception()));
 
@@ -525,7 +525,7 @@ bool component::impl_t::try_to_win_stopping_race(const std::exception_ptr& error
 
     // Takes a copy (via new) of std::exception_ptr, or the address of a static empty/abort
     // std::exception_ptr object.
-    const std::exception_ptr* stop_request = nullptr;
+    const std::exception_ptr* stop_request;
 
     if (core::module_cleanup::process_is_terminating()) {
         stop_request = new std::exception_ptr(error);

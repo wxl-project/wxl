@@ -122,7 +122,7 @@ void orphan_state::cancel() noexcept {
     }
 }
 
-void orphan_state::cancel_synchronous_io() noexcept {
+void orphan_state::cancel_synchronous_io() const noexcept {
     // The body is held inside the operation from here until the stage moves on, so what is
     // aborted can only be a call of its own.
     if (const HANDLE thread = ::OpenThread(THREAD_TERMINATE, FALSE, thread_)) {

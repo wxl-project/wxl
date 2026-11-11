@@ -21,9 +21,6 @@ class future;
 
 future<void> make_ready_future();
 
-template <typename T>
-future<T> make_ready_future(const T& value);
-
 /// State of a \c Future object (similar to std::future_status, @see
 /// http://en.cppreference.com/w/cpp/thread/future_status ).
 enum class future_status
@@ -153,7 +150,7 @@ protected:
 /// Future's shared state has a value.
 template <typename T>
 struct resolved_state : resolved_state_base {
-    explicit resolved_state(const T& value) : resolved_state_base(), value_(value) {}
+    explicit resolved_state(const T& value) : value_(value) {}
 
     static const resolved_state<T>* from(const state* state) noexcept {
         assert(state && state->id() == state_id::resolved);

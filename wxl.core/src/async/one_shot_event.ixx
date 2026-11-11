@@ -101,7 +101,7 @@ private:
         if (handle event = event_obj_.load(std::memory_order_acquire)) set_event(event);
     }
 
-    void set_event(handle event) const noexcept;
+    static void set_event(handle event) noexcept;
 };
 
 }  // export namespace wxl::async
