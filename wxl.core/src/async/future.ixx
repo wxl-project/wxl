@@ -370,6 +370,10 @@ public:
         using t_task = std::remove_cvref_t<t_next_task>;
         using t_result = detail::result_of_t<T, t_task>;
 
+        static_assert(!std::is_rvalue_reference_v<t_result>,
+                      "next(): a continuation returning X&& has nothing a future could hold -- "
+                      "return X by value, or X& to refer to an object that outlives the future");
+
         future_shared_state_ptr ticket = core::make_refcounted<future_shared_state>();
 
         checked_state()->next<T, t_result>(std::forward<t_next_task>(task), ticket.get());

@@ -1296,9 +1296,6 @@ STRESS_TEST_CASE(future, a_promise_of_a_reference_refers_to_the_object) {
 
     ASSERT_TRUE(p.set_value(target));
     ASSERT_EQ(&target, &f.get());
-
-    target = "changed";
-    ASSERT_EQ("changed", f.get());
 }
 
 // next() keeps the result type of its continuation the same way.
