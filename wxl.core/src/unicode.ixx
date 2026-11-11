@@ -43,6 +43,13 @@ import std;
 
 namespace wxl::core {
 
+/// The types a character is held in: char, wchar_t and the three that name an
+/// encoding. None of them is a number, though each converts to one.
+export template <typename T>
+concept character = std::same_as<T, char> || std::same_as<T, wchar_t> ||
+                    std::same_as<T, char8_t> || std::same_as<T, char16_t> ||
+                    std::same_as<T, char32_t>;
+
 /// Well-formed Unicode text, in whichever string type holds it.
 ///
 /// Only the two shapes below exist -- a view of text somebody else owns, and a

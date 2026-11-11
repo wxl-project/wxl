@@ -1828,18 +1828,14 @@ private:
         auto& info = source_.info;
         auto& d = context_.m.dsl;
         auto const& value = member.params.front().type;
-        auto [it, inserted] = d.property_value_type.emplace(member.winrt_name, value.value_type);
-        if (!inserted && it->second != value.value_type) {
-            it->second.clear();  // no single type, so no braced form
-        }
+        d.property_value_types[member.winrt_name].insert(value.value_type);
         d.includes.insert(value.public_includes.begin(), value.public_includes.end());
 
         // The schema keeps the type this class declares it with, which is
-        // the disagreement above resolved rather than given up on -- for
-        // the disagreement between *classes*. One class saying it twice
-        // is a different thing (SymbolIcon takes both Symbol and
-        // FluentSymbol) and lands where the flat tag lands: no single
-        // type, so no braced form, and one member rather than two.
+        // the flat tag's list narrowed to one -- for the disagreement
+        // between *classes*. One class saying it twice is a different
+        // thing (SymbolIcon takes both Symbol and FluentSymbol): no single
+        // type, so only the deduced form, and one member rather than two.
         auto const declared =
             std::find_if(klass_.members.begin(), klass_.members.end(), [&member](auto&& already) {
                 return already.kind == schema::member::kind_t::Property &&
@@ -2000,8 +1996,8 @@ void group_classes(std::vector<class_source>& sources, model& m) {
 // actually has, since a tag is the only thing that surfaces them.
 void add_enumerators(type_kinds const& kinds, closure const& cl, dsl& d) {
     std::set<std::string> enum_types;
-    for (auto&& [name, value_type] : d.property_value_type) {
-        enum_types.insert(value_type);
+    for (auto&& [name, value_types] : d.property_value_types) {
+        enum_types.insert(value_types.begin(), value_types.end());
     }
     for (auto&& type : kinds.enums) {
         auto const name = std::string{type.TypeName()};
@@ -2014,13 +2010,10 @@ void add_enumerators(type_kinds const& kinds, closure const& cl, dsl& d) {
 // The vocabulary of the classes wxl writes by hand (types.json): no
 // metadata declares it, and the dispatch behind a tag is a template on the
 // object, so a key and a tag are all such a member needs. A generated class
-// that declares the same name with another type leaves no definite one.
+// that declares the same name with another type adds its type to the list.
 void add_hand_written_vocabulary(type_map const& types, dsl& d) {
     auto const add = [&d](auto const& member) {
-        auto [it, inserted] = d.property_value_type.emplace(member.name, member.value_type);
-        if (!inserted && it->second != member.value_type) {
-            it->second.clear();
-        }
+        d.property_value_types[member.name].insert(member.value_type);
         if (!member.include.empty()) {
             d.includes.insert(member.include);
         }
@@ -2036,10 +2029,7 @@ void add_hand_written_vocabulary(type_map const& types, dsl& d) {
     // include is its function's, which BindingPairs.h needs and Members.h
     // does not.
     for (auto&& member : types.bound_members) {
-        auto [it, inserted] = d.property_value_type.emplace(member.name, member.value_type);
-        if (!inserted && it->second != member.value_type) {
-            it->second.clear();
-        }
+        d.property_value_types[member.name].insert(member.value_type);
     }
 }
 
