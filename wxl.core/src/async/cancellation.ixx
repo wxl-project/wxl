@@ -36,6 +36,7 @@ public:
 };
 
 class cancellation_token;
+class cancellation_source;
 
 namespace detail {
 
@@ -145,7 +146,7 @@ cancellation_state* cancellation_state_of(const cancellation_token& token) noexc
 template <auto Callback>
 class cancellation_registration final : public detail::cancellation_event::func_t
 {
-    using owner_t = typename core::impl::member_owner<decltype(Callback)>::type;
+    using owner_t = core::impl::member_owner<decltype(Callback)>::type;
 
 public:
     /// Constructs a registration, not registered yet, that calls `Callback` on \p owner.

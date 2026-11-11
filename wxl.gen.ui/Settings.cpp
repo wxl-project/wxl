@@ -40,7 +40,8 @@ void loadSettings(Settings& settings) {
     settings.englishDocumentation.set(
         readDword(root, L"EnglishDocumentation", settings.englishDocumentation.get()) != 0);
     // Кегль из реестра — в пределах, которые даёт попап.
-    auto const size = static_cast<int>(readDword(root, L"DetailsFontSize", settings.detailsFontSize.get()));
+    auto const size = static_cast<int>(
+        readDword(root, L"DetailsFontSize", static_cast<DWORD>(std::lround(settings.detailsFontSize.get()))));
     settings.detailsFontSize.set(std::clamp(size, 12, 24));
     auto const look = static_cast<int>(readDword(root, L"FocusLook", settings.focusLook.get()));
     settings.focusLook.set(std::clamp(look, 0, 2));
@@ -58,7 +59,7 @@ void saveSettings(Settings const& settings) {
     writeDword(root, L"HidePredefined", settings.hidePredefined.get() ? 1 : 0);
     writeDword(root, L"ShowSignatures", settings.showSignatures.get() ? 1 : 0);
     writeDword(root, L"EnglishDocumentation", settings.englishDocumentation.get() ? 1 : 0);
-    writeDword(root, L"DetailsFontSize", static_cast<DWORD>(settings.detailsFontSize.get()));
+    writeDword(root, L"DetailsFontSize", static_cast<DWORD>(std::lround(settings.detailsFontSize.get())));
     writeDword(root, L"FocusLook", static_cast<DWORD>(settings.focusLook.get()));
     ::RegCloseKey(root);
 }

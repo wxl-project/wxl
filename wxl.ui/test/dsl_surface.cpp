@@ -396,8 +396,8 @@ Preset const stamp{
 // object a property asks for is a template's to build.
 [[maybe_unused]] void own_preset() {
     constexpr Preset glow{
-        center = Point{0.33, 0.33},
-        gradientOrigin = {0.33, 0.33},
+        center = Point{0.33f, 0.33f},
+        gradientOrigin = {0.33f, 0.33f},
         radiusX = 1.1,
         radiusY = 1.3,
     };
@@ -419,8 +419,8 @@ Preset const stamp{
 // the same way it would be written inside the object's.
 [[maybe_unused]] void templates_of_presets() {
     constexpr Preset shape{
-        center = Point{0.33, 0.33},
-        gradientOrigin = {0.33, 0.33},
+        center = Point{0.33f, 0.33f},
+        gradientOrigin = {0.33f, 0.33f},
         radiusX = 1.1,
         radiusY = 1.3,
     };
@@ -485,6 +485,7 @@ struct BoundModel : core::sta_refcounted {
     core::observable<Color> tint;
     core::observable<int> row;
     core::observable<double> amount;
+    core::observable<float> level;
     core::observable<Reading> reading;
 };
 }  // namespace
@@ -497,12 +498,14 @@ struct BoundModel : core::sta_refcounted {
     ToggleSwitch{isOn = Bind{model->busy}};
     ComboBox{selectedIndex = Bind{model->row}};  // Selector's pair
     NumberBox{value = Bind{model->amount}};
-    NumberBox{value = Bind{model->row}};  // a double property binds an int as well
+    NumberBox{value = Bind{model->level}};  // a double property binds a float as well
     CheckBox{isChecked = Bind{model->busy}};  // ToggleButton's pair
     ToggleButton{isChecked = Bind{model->busy}};
     RadioButtons{selectedIndex = Bind{model->row}};
     Slider{value = Bind{model->amount}};
+    Slider{value = Bind{model->level}};
     RatingControl{value = Bind{model->amount}};
+    RatingControl{value = Bind{model->level}};
     ColorPicker{color = Bind{model->tint}};
     ToggleMenuFlyoutItem{isChecked = Bind{model->busy}};
     RadioMenuFlyoutItem{isChecked = Bind{model->busy}};

@@ -1,6 +1,7 @@
 module;
 #include "pch.h"
 #include <objbase.h>  // CoInitializeEx/CoUninitialize: WIN32_LEAN_AND_MEAN прячет их с ole2.h
+#include <process.h>  // _beginthreadex
 
 module wxl.core;
 import std;
@@ -20,15 +21,6 @@ void set_current_thread_name(const core::u8_view name) {
     ::SetThreadDescription(::GetCurrentThread(), name.to_utf16().c_str());
 }
 
-/// The same for a name that is already UTF-16. A view has no terminator, and
-/// SetThreadDescription takes a pointer and no length, so the copy is what
-/// makes one -- a dozen characters, once per thread.
-void set_current_thread_name(const core::u16_view name) {
-    if (name.empty()) return;
-
-    ::SetThreadDescription(::GetCurrentThread(), core::u16_text(name).c_str());
-}
-
 /// Global counter of detached threads. A thread's procedure takes the thread off it as its
 /// last step, with release, and the count is read with acquire: a reader that sees zero sees
 /// everything every detached thread did before that -- its body, its promise, the destruction
@@ -36,6 +28,15 @@ void set_current_thread_name(const core::u16_view name) {
 /// on the release sequences of those before it. So what the threads were given may go once
 /// the wait returns.
 std::atomic<size_t> s_detached_thread_counter{0};
+
+/// Takes a detached thread off the counter, and the thread that brings it to zero wakes
+/// whoever waits for detached threads. A waiter parks only on a nonzero value and waits for
+/// zero, and a change made before it parks makes WaitOnAddress return at once, so the change
+/// to zero is the only one it has to be woken for.
+void remove_detached_thread() noexcept {
+    if (s_detached_thread_counter.fetch_sub(1, std::memory_order_release) == 1)
+        ::WakeByAddressAll(&s_detached_thread_counter);
+}
 
 core::thread_id s_main_thread_id = core::current_thread_id();
 
@@ -72,12 +73,6 @@ public:
     ~windows_handle() { close_handle_if_needed(); }
 
     bool valid() const { return (handle_ != INVALID_HANDLE_VALUE); }
-
-    HANDLE release() {
-        HANDLE tmp = handle_;
-        handle_ = INVALID_HANDLE_VALUE;
-        return tmp;
-    }
 
     void reset(HANDLE const handle = INVALID_HANDLE_VALUE) {
         if (handle == handle_) return;
@@ -221,7 +216,7 @@ public:
                 if (group_.get())
                     group_.get()->impl_->notify_thread_exit(thread_info_);
                 else
-                    s_detached_thread_counter.fetch_sub(1, std::memory_order_release);
+                    remove_detached_thread();
             } catch (...) {
                 assert(!"Unexpected exception");
             }
@@ -240,7 +235,7 @@ private:
     void notify_thread_exit(thread_info* thread_info);
 
     /// join the thread
-    void join_thread(thread_info* thread_info);
+    static void join_thread(thread_info* thread_info);
 
     /// join all threads in finished state.
     void join_finished_threads();
@@ -287,10 +282,10 @@ public:
           info_(group ? core::make_refcounted<thread_info>() : nullptr) {}
 
     /// Gets the group of the thread, or `nullptr` for a detached thread.
-    thread_group* group() { return group_.get(); }
+    thread_group* group() const { return group_.get(); }
 
     /// Gets the information about the managed thread, or `nullptr` for a detached thread.
-    thread_info* info() { return info_.get(); }
+    thread_info* info() const { return info_.get(); }
 
     /// Returns the future of the promise that the thread body reports through.
     future<void> get_future() const { return result_.get_future(); }
@@ -349,27 +344,29 @@ size_t thread_group::detached_thread_count() noexcept {
 }
 
 void thread_group::join_detached_threads() {
-    while (0 != detached_thread_count()) {
-        std::this_thread::yield();
-    }
+    for (size_t count; 0 != (count = detached_thread_count());)
+        ::WaitOnAddress(&s_detached_thread_counter, &count, sizeof count, INFINITE);
 }
 
 bool thread_group::join_detached_threads_for(core::duration timeout) {
-    if (0 == detached_thread_count()) {
-        return true;
-    }
+    size_t count = detached_thread_count();
+
+    if (0 == count) return true;
 
     const core::timeout_timer timer(timeout);
 
-    while (timer.remaining()) {
-        if (0 == detached_thread_count()) {
-            return true;
-        }
+    while (true) {
+        const core::duration remaining = timer.remaining();
 
-        std::this_thread::yield();
+        if (!remaining) return 0 == detached_thread_count();
+
+        ::WaitOnAddress(&s_detached_thread_counter, &count, sizeof count,
+                        core::to_os_timeout_ms(remaining));
+
+        count = detached_thread_count();
+
+        if (0 == count) return true;
     }
-
-    return 0 == detached_thread_count();
 }
 
 core::thread_id thread_group::main_thread_id() { return s_main_thread_id; }
@@ -555,7 +552,7 @@ void thread_starter::start_thread() {
     struct detached_thread_error_guard {
         bool ok;
         ~detached_thread_error_guard() {
-            if (!ok) s_detached_thread_counter.fetch_sub(1, std::memory_order_relaxed);
+            if (!ok) remove_detached_thread();
         }
     } detached_thread_error_guard = {false};
 
@@ -583,17 +580,18 @@ void thread_starter::start_thread() {
                                  std::to_string(thread_handle));
     }
 
+    const HANDLE handle = reinterpret_cast<HANDLE>(thread_handle);
+
     if (info) {
-        info->thread_handle().reset(HANDLE(thread_handle));
+        info->thread_handle().reset(handle);
 
         // A thread that never ran has not taken the starter over: the caller still owns it,
         // and the thread, left suspended, never touches it.
-        if (::ResumeThread(HANDLE(thread_handle)) == static_cast<DWORD>(-1))
-            throw last_error("ResumeThread");
+        if (::ResumeThread(handle) == static_cast<DWORD>(-1)) throw last_error("ResumeThread");
 
         // WARNING: from here on 'this' could be already deleted by the thread.
     } else {
-        ::CloseHandle(HANDLE(thread_handle));
+        ::CloseHandle(handle);
     }
 
     detached_thread_error_guard.ok = true;

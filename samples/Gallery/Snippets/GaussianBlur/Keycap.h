@@ -5,7 +5,7 @@ Border {
     background = rgb(68, 72, 79),
     borderBrush = colors.black,
     BorderThickness {1},
-    BevelEffect {rgba(255, 255, 255, 0.46), rgba(0, 0, 0, 0.55), Margin {1.5}, strokeThickness = 1, offset = 2},
+    BevelEffect {rgba(255, 255, 255, 0.46), rgba(0, 0, 0, 0.55), Margin {1.5}, strokeThickness = 1.0f, offset = 2.0f},
     TextBlock {
         u"7",
         fontSize = 44,

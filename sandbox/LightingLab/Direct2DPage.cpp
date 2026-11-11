@@ -46,22 +46,22 @@ struct Carving {
     core::observable<int> lightKind {0};
     core::observable<bool> diffuseOn {true};
     core::observable<bool> specularOn {true};
-    core::observable<double> ambientShare {0.25};
-    core::observable<double> diffuseConstant {1.0};
-    core::observable<double> specularConstant {0.5};
-    core::observable<double> specularExponent {24.0};
-    core::observable<double> azimuth {120.0};
-    core::observable<double> elevation {40.0};
-    core::observable<double> lightHeight {180.0};
-    core::observable<double> focus {4.0};
-    core::observable<double> cone {50.0};
+    core::observable<float> ambientShare {0.25f};
+    core::observable<float> diffuseConstant {1.0f};
+    core::observable<float> specularConstant {0.5f};
+    core::observable<float> specularExponent {24.0f};
+    core::observable<float> azimuth {120.0f};
+    core::observable<float> elevation {40.0f};
+    core::observable<float> lightHeight {180.0f};
+    core::observable<float> focus {4.0f};
+    core::observable<float> cone {50.0f};
     core::observable<Color> lightColor {rgb(255, 246, 232)};
 
     core::observable<int> profile {0};
-    core::observable<double> softness {5.0};
-    core::observable<double> surfaceScale {10.0};
-    core::observable<double> kernel {1.0};
-    core::observable<double> corner {22.0};
+    core::observable<float> softness {5.0f};
+    core::observable<float> surfaceScale {10.0f};
+    core::observable<float> kernel {1.0f};
+    core::observable<float> corner {22.0f};
     core::observable<bool> engraved {true};
     core::observable<Color> keyColor {rgb(68, 72, 79)};
     core::observable<Color> panelColor {rgb(42, 44, 49)};
@@ -126,7 +126,7 @@ struct Carving {
 
     D2D1_ROUNDED_RECT keyOutline(int index) const {
         float const left = lab::keyLeft(index % lab::keyColumns), top = lab::keyTop(index / lab::keyColumns);
-        float const radius = static_cast<float>(corner.get());
+        float const radius = corner.get();
         return {D2D1::RectF(left, top, left + lab::keySide, top + lab::keySide), radius, radius};
     }
 
@@ -222,24 +222,24 @@ struct Carving {
         // Размытие края -- ширина кромки: чем шире переход альфы, тем положе склон.
         auto const blur = make(CLSID_D2D1GaussianBlur);
         blur->SetInput(0, heights.Get());
-        blur->SetValue(D2D1_GAUSSIANBLUR_PROP_STANDARD_DEVIATION, static_cast<float>(softness.get()) * scale);
+        blur->SetValue(D2D1_GAUSSIANBLUR_PROP_STANDARD_DEVIATION, softness.get() * scale);
         blur->SetValue(D2D1_GAUSSIANBLUR_PROP_BORDER_MODE, D2D1_BORDER_MODE_HARD);
 
         int const kind = lightKind.get();
         D2D1_VECTOR_3F const lamp = D2D1::Vector3F(lightX * scale, lightY * scale,
-                                                    static_cast<float>(lightHeight.get()) * scale);
+                                                    lightHeight.get() * scale);
         D2D1_VECTOR_3F const aimedAt = D2D1::Vector3F(lightX * scale, lightY * scale, 0.0f);
         D2D1_VECTOR_3F const tint = toVector(lightColor.get());
-        float const relief = static_cast<float>(surfaceScale.get()) * scale;
-        D2D1_VECTOR_2F const unit = D2D1::Vector2F(static_cast<float>(kernel.get()) * scale,
-                                                    static_cast<float>(kernel.get()) * scale);
+        float const relief = surfaceScale.get() * scale;
+        D2D1_VECTOR_2F const unit = D2D1::Vector2F(kernel.get() * scale,
+                                                    kernel.get() * scale);
         // Direct2D ведёт азимут от оси x к оси y, а она на экране смотрит вниз: лампа,
         // стоящая под углом сверху экрана, для него стоит под обратным углом.
-        float const turn = 360.0f - static_cast<float>(azimuth.get());
-        float const rise = static_cast<float>(elevation.get());
+        float const turn = 360.0f - azimuth.get();
+        float const rise = elevation.get();
 
         auto const diffuse = [&] {
-            float const share = static_cast<float>(diffuseConstant.get());
+            float const share = diffuseConstant.get();
             if (kind == 0) {
                 auto const effect = make(CLSID_D2D1DistantDiffuse);
                 effect->SetValue(D2D1_DISTANTDIFFUSE_PROP_AZIMUTH, turn);
@@ -262,8 +262,8 @@ struct Carving {
             auto const effect = make(CLSID_D2D1SpotDiffuse);
             effect->SetValue(D2D1_SPOTDIFFUSE_PROP_LIGHT_POSITION, lamp);
             effect->SetValue(D2D1_SPOTDIFFUSE_PROP_POINTS_AT, aimedAt);
-            effect->SetValue(D2D1_SPOTDIFFUSE_PROP_FOCUS, static_cast<float>(focus.get()));
-            effect->SetValue(D2D1_SPOTDIFFUSE_PROP_LIMITING_CONE_ANGLE, static_cast<float>(cone.get()));
+            effect->SetValue(D2D1_SPOTDIFFUSE_PROP_FOCUS, focus.get());
+            effect->SetValue(D2D1_SPOTDIFFUSE_PROP_LIMITING_CONE_ANGLE, cone.get());
             effect->SetValue(D2D1_SPOTDIFFUSE_PROP_DIFFUSE_CONSTANT, share);
             effect->SetValue(D2D1_SPOTDIFFUSE_PROP_SURFACE_SCALE, relief);
             effect->SetValue(D2D1_SPOTDIFFUSE_PROP_COLOR, tint);
@@ -272,8 +272,8 @@ struct Carving {
         };
 
         auto const specular = [&] {
-            float const share = static_cast<float>(specularConstant.get());
-            float const exponent = static_cast<float>(specularExponent.get());
+            float const share = specularConstant.get();
+            float const exponent = specularExponent.get();
             if (kind == 0) {
                 auto const effect = make(CLSID_D2D1DistantSpecular);
                 effect->SetValue(D2D1_DISTANTSPECULAR_PROP_AZIMUTH, turn);
@@ -298,8 +298,8 @@ struct Carving {
             auto const effect = make(CLSID_D2D1SpotSpecular);
             effect->SetValue(D2D1_SPOTSPECULAR_PROP_LIGHT_POSITION, lamp);
             effect->SetValue(D2D1_SPOTSPECULAR_PROP_POINTS_AT, aimedAt);
-            effect->SetValue(D2D1_SPOTSPECULAR_PROP_FOCUS, static_cast<float>(focus.get()));
-            effect->SetValue(D2D1_SPOTSPECULAR_PROP_LIMITING_CONE_ANGLE, static_cast<float>(cone.get()));
+            effect->SetValue(D2D1_SPOTSPECULAR_PROP_FOCUS, focus.get());
+            effect->SetValue(D2D1_SPOTSPECULAR_PROP_LIMITING_CONE_ANGLE, cone.get());
             effect->SetValue(D2D1_SPOTSPECULAR_PROP_SPECULAR_EXPONENT, exponent);
             effect->SetValue(D2D1_SPOTSPECULAR_PROP_SPECULAR_CONSTANT, share);
             effect->SetValue(D2D1_SPOTSPECULAR_PROP_SURFACE_SCALE, relief);
@@ -309,7 +309,7 @@ struct Carving {
         };
 
         // Цвет × (общий свет + рассеянный): произведение двух входов и доля первого.
-        float const ambient = static_cast<float>(ambientShare.get());
+        float const ambient = ambientShare.get();
         auto const lit = make(CLSID_D2D1ArithmeticComposite);
         lit->SetInput(0, colors.Get());
         if (diffuseOn.get()) {

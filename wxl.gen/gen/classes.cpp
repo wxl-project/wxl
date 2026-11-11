@@ -2048,7 +2048,8 @@ void add_hand_written_vocabulary(type_map const& types, dsl& d) {
 // covers. `c` is the control and `value` the field's value; `name` is the
 // property as the wrapper spells it.
 //
-// A double binds as it is and as an int, truncated on the way in. A nullable
+// A double binds as it is and as a float, narrowed on the way in: the float
+// field asks for that precision, and an empty NumberBox's NaN stays NaN. A nullable
 // bool -- IsChecked, whose third state a three-state box has -- binds as a
 // bool, empty reading false. A string binds as core::u16_text: the control
 // hands back units nothing guaranteed -- a paste is whatever the clipboard
@@ -2064,7 +2065,7 @@ std::vector<binding_field> binding_fields(std::string_view type, std::string_vie
     if (type == "bool" || type == "Color" || type == "double") {
         auto fields = std::vector{as_is(type)};
         if (type == "double") {
-            fields.push_back({"int", std::format("static_cast<int>(c.{}())", name),
+            fields.push_back({"float", std::format("static_cast<float>(c.{}())", name),
                               std::format("c.{}(value)", name)});
         }
         return fields;

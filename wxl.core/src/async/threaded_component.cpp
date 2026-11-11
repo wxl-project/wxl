@@ -19,7 +19,7 @@ class threaded_component::impl_t : public component::impl_t
 public:
     /// Constructs the state that synchronizes on \p sync_root_arg, for a thread of \p group,
     /// or for a detached thread if \p group is null.
-    impl_t(core::sync_root_holder sync_root_arg, thread_group* group)
+    impl_t(const core::sync_root_holder& sync_root_arg, thread_group* group)
         : base(sync_root_arg), group_(group) {}
 
     /// The owner, as its own type. A protected member of component may be reached only

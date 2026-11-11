@@ -1,7 +1,6 @@
 module;
 
 #include "platform.h"
-#include "abi.h"
 
 export module wxl.core:async.io_port;
 
@@ -37,6 +36,7 @@ public:
 
     /// Takes what has arrived, a batch at a time.
     ///
+    /// \param into the entries to fill.
     /// \param wait whether to sleep until something arrives; without it the answer is
     ///        what is there now.
     /// \return how many entries were filled.

@@ -296,7 +296,7 @@ task<std::size_t> async_file::write(std::span<const std::byte> from, cancellatio
     return sta_loop::async_run(std::move(op));
 }
 
-task<std::uint64_t> async_file::size() {
+task<std::uint64_t> async_file::size() const {
     ensure(file_.opened() && "async_file: no file was opened");
 
     return sta_loop::call_here([this] {

@@ -40,20 +40,18 @@ struct count_down_func {
     core::intrusive_ptr<countdown_state> countdown_;
 };
 
-/// Fails the whole combination with the first exception any of its futures reports.
-struct fail_all_func {
-    void operator()(const std::exception_ptr& e) const noexcept { countdown_->set_exception(e); }
+/// Counts a success down and fails the whole combination with the first exception any of its
+/// futures reports: one subscription for both outcomes.
+struct count_down_or_fail_func {
+    void operator()(const state* by_state) const noexcept {
+        if (by_state->id() == state_id::resolved) {
+            countdown_->decrement();
+        } else {
+            countdown_->set_exception(by_state);
+        }
+    }
 
     core::intrusive_ptr<countdown_state> countdown_;
-};
-
-/// Resolves a when_any combination from whichever future finishes first, with its outcome.
-struct first_of_func {
-    void operator()() const noexcept { result_->set_value(); }
-
-    void operator()(const std::exception_ptr& e) const noexcept { result_->set_exception(e); }
-
-    future_shared_state_ptr result_;
 };
 
 }  // namespace
@@ -68,10 +66,9 @@ void countdown::add_ready(const future_shared_state* f) {
 void countdown::add_succeeded_or_failed(const future_shared_state* f) {
     as_countdown(state_)->increment();
 
-    // when_succeeded_void ignores the value the future carries, which is exactly what a
-    // combinator wants -- and what lets one non-template subscription serve every future<T>.
-    f->when_succeeded_void(count_down_func{as_countdown(state_)});
-    f->when_failed(fail_all_func{as_countdown(state_)});
+    // The callback takes the resolving state without looking at the value in it, which is what
+    // a combinator wants -- and what lets one non-template subscription serve every future<T>.
+    f->when_resolved(count_down_or_fail_func{as_countdown(state_)});
 }
 
 future<void> countdown::get_future() {
@@ -82,8 +79,7 @@ future<void> countdown::get_future() {
 first_of::first_of() : state_(core::make_refcounted<future_shared_state>()) {}
 
 void first_of::add(const future_shared_state* f) {
-    f->when_succeeded_void(first_of_func{state_});
-    f->when_failed(first_of_func{state_});
+    f->when_resolved(forward_outcome_func(state_));
 }
 
 future<void> first_of::get_future() const { return future<void>(state_.get()); }

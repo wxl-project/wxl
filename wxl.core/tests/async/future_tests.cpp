@@ -996,6 +996,150 @@ STRESS_TEST_CASE(future, when_any_completed_by_exception_async) {
     ASSERT_TRUE(!result.has_value());
 }
 
+// The combinators and next_unwrap() subscribe to a future's outcome once. A future that has
+// already resolved when it is handed over takes a different road through that subscription than
+// a pending one does -- the callback runs on the spot -- so each outcome is checked in both.
+
+namespace {
+test_future ready_future() {
+    test_promise p;
+    p.set_value();
+    return p.get_future();
+}
+
+test_future failed_future() {
+    test_promise p;
+    p.set_exception(specific_exception_instance);
+    return p.get_future();
+}
+}
+
+STRESS_TEST_CASE(future, when_all_over_futures_ready_already) {
+    test_future result = when_all_succeeded_or_any_failed(ready_future(), ready_future());
+
+    ASSERT_EQ(future_status::ready, result.wait_for(duration::zero()));
+    ASSERT_TRUE(result.has_value());
+}
+
+STRESS_TEST_CASE(future, when_all_over_a_ready_future_and_a_pending_one) {
+    test_promise p;
+
+    test_future result = when_all_succeeded_or_any_failed(ready_future(), p.get_future());
+    ASSERT_EQ(future_status::timeout, result.wait_for(duration::zero()));
+
+    p.set_value();
+    ASSERT_EQ(future_status::ready, result.wait_for(duration::zero()));
+    ASSERT_TRUE(result.has_value());
+}
+
+STRESS_TEST_CASE(future, when_all_over_a_failed_future_already) {
+    test_promise p;
+
+    test_future result =
+        when_all_succeeded_or_any_failed(ready_future(), failed_future(), p.get_future());
+
+    ASSERT_EQ(future_status::ready, result.wait_for(duration::zero()));
+    ASSERT_TRUE(has_exception<specific_exception>(result));
+
+    p.set_value();  // the pending one resolving later must leave the failure as it is
+    ASSERT_TRUE(has_exception<specific_exception>(result));
+}
+
+STRESS_TEST_CASE(future, when_any_over_a_ready_future_already) {
+    test_promise p;
+
+    test_future result = when_any(p.get_future(), ready_future());
+
+    ASSERT_EQ(future_status::ready, result.wait_for(duration::zero()));
+    ASSERT_TRUE(result.has_value());
+}
+
+STRESS_TEST_CASE(future, when_any_over_a_failed_future_already) {
+    test_promise p;
+
+    test_future result = when_any(p.get_future(), failed_future());
+
+    ASSERT_EQ(future_status::ready, result.wait_for(duration::zero()));
+    ASSERT_TRUE(has_exception<specific_exception>(result));
+
+    p.set_value();  // the first outcome stays the outcome
+    ASSERT_TRUE(has_exception<specific_exception>(result));
+}
+
+STRESS_TEST_CASE(future, next_unwrap_over_a_future_ready_already) {
+    test_future result = ready_future().next_unwrap([] { return make_ready_future(); });
+
+    ASSERT_EQ(future_status::ready, result.wait_for(duration::zero()));
+    ASSERT_TRUE(result.has_value());
+}
+
+STRESS_TEST_CASE(future, next_unwrap_over_a_value_ready_already) {
+    promise<int> p;
+    p.set_value(41);
+
+    int received = 0;
+
+    test_future result = p.get_future().next_unwrap([&](int v) {
+        received = v;
+        return make_ready_future();
+    });
+
+    ASSERT_EQ(future_status::ready, result.wait_for(duration::zero()));
+    ASSERT_TRUE(result.has_value());
+    ASSERT_EQ(41, received);
+}
+
+STRESS_TEST_CASE(future, next_unwrap_over_a_failed_future_already) {
+    bool called = false;
+
+    test_future result = failed_future().next_unwrap([&] {
+        called = true;
+        return make_ready_future();
+    });
+
+    ASSERT_EQ(future_status::ready, result.wait_for(duration::zero()));
+    ASSERT_TRUE(has_exception<specific_exception>(result));
+    ASSERT_FALSE(called);
+}
+
+STRESS_TEST_CASE(future, next_unwrap_with_a_continuation_that_throws) {
+    test_promise p;
+
+    test_future result = p.get_future().next_unwrap([]() -> test_future {
+        throw specific_exception();
+    });
+    ASSERT_EQ(future_status::timeout, result.wait_for(duration::zero()));
+
+    p.set_value();
+    ASSERT_EQ(future_status::ready, result.wait_for(duration::zero()));
+    ASSERT_TRUE(has_exception<specific_exception>(result));
+}
+
+STRESS_TEST_CASE(future, next_unwrap_with_a_continuation_returning_a_failed_future) {
+    test_promise p;
+
+    test_future result = p.get_future().next_unwrap([] { return failed_future(); });
+    ASSERT_EQ(future_status::timeout, result.wait_for(duration::zero()));
+
+    p.set_value();
+    ASSERT_EQ(future_status::ready, result.wait_for(duration::zero()));
+    ASSERT_TRUE(has_exception<specific_exception>(result));
+}
+
+STRESS_TEST_CASE(future, next_unwrap_with_a_continuation_returning_a_future_failing_later) {
+    test_promise source;
+    test_promise inner;
+
+    test_future result = source.get_future().next_unwrap([&] { return inner.get_future(); });
+
+    source.set_value();
+    ASSERT_EQ(future_status::timeout, result.wait_for(duration::zero()));
+
+    inner.set_exception(specific_exception_instance);
+    ASSERT_EQ(future_status::ready, result.wait_for(duration::zero()));
+    ASSERT_TRUE(has_exception<specific_exception>(result));
+}
+
 STRESS_TEST_CASE(future, when_all_completed_completed_by_value) {
     test_promise p1;
     test_promise p2;

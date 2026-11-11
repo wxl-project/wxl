@@ -29,11 +29,11 @@ public:
     }
 
     /// Blocks until the counter reaches zero.
-    inline void wait() { ready_promise_.get_future().wait(); }
+    inline void wait() const { ready_promise_.get_future().wait(); }
 
     /// Blocks until the counter reaches zero or \p timeout elapses.
     /// \return \c false only on timeout.
-    inline bool wait_for(core::duration timeout) {
+    inline bool wait_for(core::duration timeout) const {
         return ready_promise_.get_future().wait_for(timeout) == future_status::ready;
     }
 

@@ -35,6 +35,9 @@ inline constexpr orphanable_t orphanable{};
 template <class R>
 class task;
 
+template <class R>
+class async_op_t;
+
 namespace detail {
 
 /// The coroutine awaiting a result, in one word. The handle's address is that of a frame,
@@ -709,7 +712,7 @@ private:
     };
 
     /// Cancels the synchronous call the body's thread stands in, if it stands in one.
-    void cancel_synchronous_io() noexcept;
+    void cancel_synchronous_io() const noexcept;
 
     std::atomic<stage> stage_{stage::waiting};
 

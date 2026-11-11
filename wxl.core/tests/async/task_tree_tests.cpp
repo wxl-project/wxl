@@ -447,7 +447,7 @@ STRESS_TEST_CASE(task_tree, next_completed_by_exception_async) {
 }
 
 // Deliberately *not* an anonymous namespace: async_func is fed to future::next_unwrap(),
-// which instantiates wxl.core's next_async_task<> with it. With an internal-linkage
+// which instantiates wxl.core's unwrap_func<> with it. With an internal-linkage
 // argument type MSVC (19.51) ends up emitting intrusive_ptr<future_shared_state>'s
 // module-attached members into two COMDATs in this object file, and the linker rejects
 // that with LNK1179. Giving the type external linkage avoids the compiler bug.

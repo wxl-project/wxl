@@ -307,6 +307,10 @@ target_link_libraries(wxl.core PRIVATE ole32)
 # factory and the string behind its name are runtimeobject.
 target_link_libraries(wxl.core PRIVATE coremessaging runtimeobject)
 
+# PRIVATE: the wait for detached threads (async/thread_group.cpp) parks on the
+# thread counter with WaitOnAddress, which lives in synchronization.
+target_link_libraries(wxl.core PRIVATE synchronization)
+
 # Errors are reported by throwing: a broken document is an exception of the
 # XML and JSON readers, allocation is the one thing the HTML parser may throw,
 # and writing to a log output can fail -- a full disk, a file that went away --

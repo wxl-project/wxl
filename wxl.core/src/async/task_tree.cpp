@@ -204,7 +204,7 @@ task_tree_handle& task_tree_handle::operator=(const task_tree_handle& other) {
     return *this;
 }
 
-task_tree_handle& task_tree_handle::operator=(task_tree_handle&& other) {
+task_tree_handle& task_tree_handle::operator=(task_tree_handle&& other) noexcept {
     if (this != &other) {
         if (detail::task_tree_state* my_state = state()) my_state->decrement_task_handle_count();
 
@@ -226,7 +226,7 @@ namespace {
 
 // The unresolved-task counter and the 'finished' flag share one word so that both change in a
 // single atomic step; the flag takes the top bit, which no plausible number of subtasks reaches.
-constexpr size_t is_finished_bit = size_t(1) << (std::numeric_limits<size_t>::digits - 1);
+constexpr size_t is_finished_bit = size_t{1} << (std::numeric_limits<size_t>::digits - 1);
 constexpr size_t counter_mask = ~is_finished_bit;
 
 constexpr bool is_finished(size_t counter) noexcept { return (counter & is_finished_bit) != 0; }

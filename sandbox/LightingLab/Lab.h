@@ -46,7 +46,10 @@ inline constexpr float keyTop(int row) { return keyGap + static_cast<float>(row)
 
 // --- Строки панели настроек (Controls.cpp) ---
 
+// Поле -- того типа, что берёт его сеттер: float для источников света и эффектов.
 wxl::FrameworkElement sliderRow(char16_t const* title, wxl::core::observable<double>& field, double low,
+                                double high, double step);
+wxl::FrameworkElement sliderRow(char16_t const* title, wxl::core::observable<float>& field, double low,
                                 double high, double step);
 wxl::FrameworkElement choiceRow(char16_t const* title, wxl::core::observable<int>& field,
                                 std::span<char16_t const* const> names);

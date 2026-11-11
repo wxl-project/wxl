@@ -55,9 +55,9 @@ struct Sample {
     core::observable<double> elevation {30.0};
 
     // Точечный свет и прожектор: место лампы в координатах списка.
-    core::observable<double> lightX {lab::stageWidth / 2.0};
-    core::observable<double> lightY {lab::stageHeight / 2.0};
-    core::observable<double> lightZ {75.0};
+    core::observable<float> lightX {lab::stageWidth / 2.0f};
+    core::observable<float> lightY {lab::stageHeight / 2.0f};
+    core::observable<float> lightZ {75.0f};
 
     core::observable<hstring> mapStatus;
     core::observable<hstring> brushStatus;
@@ -245,8 +245,8 @@ struct Sample {
             spot.targets().removeAll();
             distant.targets().removeAll();
 
-            Vector3 const place {static_cast<float>(lightX.get()), static_cast<float>(lightY.get()),
-                                 static_cast<float>(lightZ.get())};
+            Vector3 const place {lightX.get(), lightY.get(),
+                                 lightZ.get()};
 
             switch (mode.get()) {
             case 0:

@@ -12,10 +12,9 @@ hstring number(double value) {
     return hstring {core::to_u16(value, std::chars_format::fixed, 2)};
 }
 
-}  // namespace
-
-FrameworkElement lab::sliderRow(char16_t const* title, core::observable<double>& field, double low, double high,
-                                double step) {
+template <class Value>
+FrameworkElement slider(char16_t const* title, core::observable<Value>& field, double low, double high,
+                        double step) {
     return Grid {
         ColumnDefinitions<u"*,auto">,
         RowDefinitions<u"auto,auto">,
@@ -32,6 +31,18 @@ FrameworkElement lab::sliderRow(char16_t const* title, core::observable<double>&
             value = Bind {field},
         },
     };
+}
+
+}  // namespace
+
+FrameworkElement lab::sliderRow(char16_t const* title, core::observable<double>& field, double low, double high,
+                                double step) {
+    return slider(title, field, low, high, step);
+}
+
+FrameworkElement lab::sliderRow(char16_t const* title, core::observable<float>& field, double low, double high,
+                                double step) {
+    return slider(title, field, low, high, step);
 }
 
 FrameworkElement lab::choiceRow(char16_t const* title, core::observable<int>& field,

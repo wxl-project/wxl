@@ -96,7 +96,7 @@ wxl::FrameworkElement prose(Snippet html, wxl::Thickness margin, bool textSelect
 // настройки, копирование кода), а не примеров: как у кнопок панели в примере
 // Effects.
 inline wxl::MagnifyEffect appButtonHoverEffect() {
-    return wxl::MagnifyEffect {1.2, wxl::dsl::maximum = 1.35, wxl::dsl::minimum = 0.95};
+    return wxl::MagnifyEffect {1.2f, wxl::dsl::maximum = 1.35f, wxl::dsl::minimum = 0.95f};
 }
 
 // Страница-образец окон примеров Windowing (SamplePage1..4 оригинала): плитки

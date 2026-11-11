@@ -13,7 +13,7 @@ public:
     inline static stop_reason stop_requested() { return stop_reason(); }
 
     /// \return A stop_reason holding a cached operation_canceled_exception.
-    static const stop_reason abort();
+    static stop_reason abort();
 
     /// Constructs a stop reason with the error \p error. An empty \p error means stopped by
     /// request.

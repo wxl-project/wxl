@@ -37,6 +37,10 @@ public:
     /// kernel keeps the whole of a request's buffer pinned for its duration.
     static constexpr std::size_t call_size = 64 * 1024 * 1024;
 
+    /// \param what whether the operation reads or writes.
+    /// \param file the handle, opened for overlapped I/O.
+    /// \param data the buffer read into or written from.
+    /// \param size the length of the buffer, in bytes.
     /// \param at where in the file; an overlapped handle keeps no position of its own.
     /// \param skips_port what io_port::attach() answered for this file.
     overlapped_op(kind what, HANDLE file, void* data, std::size_t size, std::uint64_t at,
