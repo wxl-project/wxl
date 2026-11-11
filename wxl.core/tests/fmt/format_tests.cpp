@@ -62,6 +62,8 @@ static_assert(formats<std::complex<double>>);
 static_assert(!formats<std::u16string_view>);
 static_assert(!formats<const char16_t*>);
 static_assert(!formats<char16_t>);
+static_assert(!formats<char> && !formats<wchar_t> && !formats<char8_t> && !formats<char32_t>);
+static_assert(formats<unsigned char>);
 static_assert(!formats<std::string_view>);
 static_assert(!formats<wxl::core::u8_view>);
 

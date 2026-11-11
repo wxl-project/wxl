@@ -24,9 +24,7 @@ template <typename T>
 concept u16_argument = std::same_as<T, u16_view> || std::same_as<T, u16_text>;
 
 template <typename T>
-concept number_argument = std::is_arithmetic_v<T> && !std::same_as<T, char> &&
-                          !std::same_as<T, wchar_t> && !std::same_as<T, char8_t> &&
-                          !std::same_as<T, char16_t> && !std::same_as<T, char32_t>;
+concept number_argument = std::is_arithmetic_v<T> && !character<T>;
 
 template <typename T>
 struct is_complex : std::false_type {};
