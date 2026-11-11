@@ -174,7 +174,7 @@ public:
         // A fixed seed: the point is a heap that is not in address order, and a different
         // one each run would make the numbers unrepeatable for no gain.
         std::mt19937_64 shuffling{20260822};
-        std::shuffle(order.begin(), order.end(), shuffling);
+        std::ranges::shuffle(order, shuffling);
 
         order.resize(holes);
 
