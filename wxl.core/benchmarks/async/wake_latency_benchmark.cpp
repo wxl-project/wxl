@@ -75,19 +75,16 @@ private:
 };
 
 struct stats {
-    double mean;
     double median;
     double p90;
-    double max;
 };
 
 stats summarize(std::vector<double> samples) {
     std::sort(samples.begin(), samples.end());
 
-    const double sum = std::accumulate(samples.begin(), samples.end(), 0.0);
     const std::size_t n = samples.size();
 
-    return {sum / static_cast<double>(n), samples[n / 2], samples[n * 9 / 10], samples[n - 1]};
+    return {samples[n / 2], samples[n * 9 / 10]};
 }
 
 void spin_for(std::chrono::nanoseconds how_long) {

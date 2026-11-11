@@ -176,10 +176,14 @@ private:
 class async_logger final : public base_logger
 {
 public:
+    /// \param sink Where the finished lines go. Held by reference, so it
+    ///        outlives the logger.
+    /// \param level The initial level of the logger.
     /// \param warm_entries How many entries to make up front. Zero leaves the
     ///        pool to grow into its work, which costs an allocation per line
     ///        until it has; a thread that must not allocate at all once it is
     ///        running asks for as many as it can have in flight at once.
+    /// \param pool_size The preferred number of entries the pool keeps.
     explicit async_logger(async_sink& sink, severity level = severity::info,
                           std::size_t warm_entries = 0, std::size_t pool_size = 256);
 

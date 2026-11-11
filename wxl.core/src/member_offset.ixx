@@ -14,14 +14,14 @@ std::ptrdiff_t field_offset(t_member t_obj::* member_ptr) {
 /// makes typed object from source address and offset
 template <typename t_obj>
 t_obj* typed_offset(void* source, std::ptrdiff_t offset) {
-    char* s = reinterpret_cast<char*>(source);
+    char* s = static_cast<char*>(source);
     return reinterpret_cast<t_obj*>(s + offset);
 }
 
 /// makes typed object from const source address and offset
 template <typename t_obj>
 const t_obj* typed_offset(const void* source, std::ptrdiff_t offset) {
-    const char* s = reinterpret_cast<const char*>(source);
+    const char* s = static_cast<const char*>(source);
     return reinterpret_cast<t_obj*>(s + offset);
 }
 

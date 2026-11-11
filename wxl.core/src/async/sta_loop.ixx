@@ -283,8 +283,8 @@ class sta_loop
     /// return_dispatcher_trigger() then settles.
     ///@{
     static bool is_back(const async_op* op) noexcept;
-    static bool wait_until_back(async_op* op) noexcept;
-    static void take_if_next(async_op* op) noexcept;
+    static bool wait_until_back(const async_op* op) noexcept;
+    static void take_if_next(const async_op* op) noexcept;
     static void return_dispatcher_trigger() noexcept;
     ///@}
 

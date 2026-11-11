@@ -87,7 +87,7 @@ public:
 
 private:
     queue_t queue_;
-    typename queue_t::reader reader_{queue_};
+    queue_t::reader reader_{queue_};
 };
 
 struct node : wxl::core::intrusive_slist_node<node> {

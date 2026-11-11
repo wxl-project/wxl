@@ -10,6 +10,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
 
 import wxl.core;
 

@@ -377,7 +377,7 @@ public:
             return false;
         }
 
-        typename contender_t::reader reader_;
+        contender_t::reader reader_;
         waiting_first* contender_;
     };
 

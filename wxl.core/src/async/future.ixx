@@ -650,7 +650,7 @@ protected:
     /// Move constructor.
     inline promise_base(promise_base&& other) noexcept : base(std::move(other)) {}
 
-    /// Copy assignmnet.
+    /// Copy assignment.
     inline promise_base& operator=(const promise_base& other) {
         future_shared_state* const my_state = state();
         future_shared_state* const other_state = other.state();
@@ -666,7 +666,7 @@ protected:
         return *this;
     }
 
-    /// Move assignmnet.
+    /// Move assignment.
     inline promise_base& operator=(promise_base&& other) noexcept {
         if (future_shared_state* const my_state = state())
             my_state->checked_decrement_promise_count();

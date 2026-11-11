@@ -190,8 +190,8 @@ std::size_t g_worker_cpu = unpinned;
 template <class config_t>
 class loop_t : public wxl::core::noncopyable
 {
-    using to_worker_t = typename config_t::to_worker_t;
-    using from_worker_t = typename config_t::from_worker_t;
+    using to_worker_t = config_t::to_worker_t;
+    using from_worker_t = config_t::from_worker_t;
 
 public:
     loop_t() : from_worker_reader_(from_worker_), worker_([this] { run(); }) {}
@@ -366,7 +366,7 @@ private:
 
     to_worker_t to_worker_;
     from_worker_t from_worker_;
-    typename from_worker_t::reader from_worker_reader_;
+    from_worker_t::reader from_worker_reader_;
 
     std::atomic<std::uint64_t> sent_{0};
     std::atomic<std::uint64_t> executed_{0};
@@ -392,8 +392,6 @@ public:
         return inline_awaitable<std::decay_t<Fn>, production_loop, padded>(*this,
                                                                            std::forward<Fn>(fn));
     }
-
-    bool run_one() { return sta_loop::run_one(); }
 
     void run_until(auto done) { sta_loop::run_until(done); }
 };
@@ -421,11 +419,6 @@ struct latency_samples {
     void reserve(std::size_t n) {
         out.reserve(n);
         back.reserve(n);
-    }
-
-    void clear() {
-        out.clear();
-        back.clear();
     }
 };
 

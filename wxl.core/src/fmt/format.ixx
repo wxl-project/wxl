@@ -51,7 +51,7 @@ struct formatter<std::complex<T>, Char> : formatter<T, Char> {
     /// imaginary part is set and `+` otherwise; the imaginary part follows as
     /// its absolute value.
     template <typename Context>
-    auto format(const std::complex<T>& value, Context& ctx) const -> typename Context::iterator {
+    auto format(const std::complex<T>& value, Context& ctx) const -> Context::iterator {
         using part = formatter<T, Char>;
         auto out = ctx.out();
         *out++ = Char('(');
