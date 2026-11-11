@@ -113,6 +113,41 @@ public:
     }
 };
 
+/// The single subscription behind next_unwrap(): on a value it starts the continuation and passes
+/// the outcome of the future that continuation returns on to \p result; on a failure it passes
+/// the exception on. A continuation that throws fails \p result as well.
+template <class t_next_async_task, class T>
+struct unwrap_func {
+    unwrap_func(t_next_async_task task, const future_shared_state_ptr& result)
+        : task_(std::move(task)), result_(result) {}
+
+    void operator()(const state* by_state) noexcept {
+        if (by_state->id() == state_id::failed) {
+            result_->set_exception(by_state);
+            return;
+        }
+
+        try {
+            future_accessor::checked_state_of(start(by_state))
+                ->when_resolved(forward_outcome_func(result_));
+        } catch (...) {
+            result_->set_exception();
+        }
+    }
+
+private:
+    decltype(auto) start(const state* by_state) {
+        if constexpr (std::is_void_v<T>) {
+            return std::invoke(task_);
+        } else {
+            return std::invoke(task_, resolved_state<T>::from(by_state)->value());
+        }
+    }
+
+    t_next_async_task task_;
+    future_shared_state_ptr result_;
+};
+
 /// Satisfied by future<T> for any T. It is what tells a pack of futures apart from a container
 /// of them, so the when_all_* forms taking either can coexist as plain overloads.
 template <class T>
@@ -313,9 +348,8 @@ public:
 
         future_shared_state_ptr ticket = core::make_refcounted<future_shared_state>();
 
-        when_succeeded(
-            detail::next_async_task<t_task, T>(std::forward<t_next_async_task>(task), ticket));
-        when_failed(detail::set_exception_func(ticket));
+        checked_state()->when_resolved(
+            detail::unwrap_func<t_task, T>(std::forward<t_next_async_task>(task), ticket));
 
         return future<void>(ticket.get());
     }
