@@ -1426,8 +1426,7 @@ static_assert(std::is_same_v<decltype(on_event<EventKey::Click>(std::declval<But
 // The two forms differ in one thing and say so in their result: the bare wait
 // hands back the args, the answering one hands back either the args or the
 // reason there are none. A reference cannot be the value of an expected, so
-// it travels wrapped; the error side is a nullable exception_ptr, whose empty
-// state is a null pointer and therefore costs nothing.
+// it travels wrapped; the other side is the stop reason.
 using key_wait_t = decltype(on_event<EventKey::KeyDown>(std::declval<Button const&>()));
 
 static_assert(
@@ -1435,11 +1434,16 @@ static_assert(
                    KeyRoutedEventArgs&>);
 static_assert(std::is_same_v<decltype(std::declval<key_wait_t&>().next().await_resume()),
                              std::expected<std::reference_wrapper<KeyRoutedEventArgs>,
-                                           core::nullable<std::exception_ptr>>>);
+                                           async::stop_reason>>);
 
-// And the empty error state really is free: a null exception_ptr is what
-// "cancelled, and that is all there is to say" is spelled as.
-static_assert(sizeof(core::nullable<std::exception_ptr>) == sizeof(std::exception_ptr));
+// And the reason costs no more than the error it may carry: stopped by request
+// is a null exception_ptr.
+static_assert(sizeof(async::stop_reason) == sizeof(std::exception_ptr));
+
+// A string is not a stop reason until it is asked to be one.
+static_assert(!std::is_convertible_v<char const*, async::stop_reason>);
+static_assert(!std::is_convertible_v<std::string_view, async::stop_reason>);
+static_assert(std::is_constructible_v<async::stop_reason, char const*>);
 
 // Awaiting writes down who is waiting, so the proxy has to be non-const.
 // Only the positive half is assertable: the const overload is deleted rather
@@ -1531,13 +1535,13 @@ struct probe_task {
         RoutedEventArgs& owned = co_await schema::Button::onClick(button);
         static_cast<void>(owned);
 
-        // The answering form, for a body that must let nothing escape. An
-        // empty error side is a plain cancellation; a full one carries what
-        // went wrong, so nothing is lost by not throwing.
+        // The answering form, for a body that must let nothing escape. Stopped
+        // by request is the plain end; stopped by an error carries what went
+        // wrong, so nothing is lost by not throwing.
         if (auto const got = co_await on_event<EventKey::KeyUp>(button).next()) {
             got->get().handled(true);
-        } else if (got.error()) {
-            std::rethrow_exception(*got.error());
+        } else if (got.error().stopped_due_to_error()) {
+            std::rethrow_exception(got.error().error());
         }
     }
 }

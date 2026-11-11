@@ -131,12 +131,11 @@ public:
     using args_ref_t = EventArgsRef<args_t>;
 
     // What the answering form hands back. A reference cannot be the value of
-    // an expected, so it travels wrapped; the error side is a nullable
-    // exception_ptr, whose empty state is a null pointer and therefore free --
-    // empty means "cancelled, and that is all there is to say", a value means
-    // "this went wrong, and here it is".
+    // an expected, so it travels wrapped; the other side is the reason the
+    // event will not come -- stopped by request, or stopped by an error, which
+    // it carries. One exception_ptr, as wide as the pointer.
     using args_value_t = std::reference_wrapper<std::remove_reference_t<args_ref_t>>;
-    using next_result_t = std::expected<args_value_t, core::nullable<std::exception_ptr>>;
+    using next_result_t = std::expected<args_value_t, async::stop_reason>;
 
     explicit event_awaitable(Source source) : source_{std::move(source)} {
         // The element is held by value, which is a reference count: the
@@ -260,7 +259,7 @@ public:
 
                 return static_cast<args_ref_t>(*event_->args_);
             } else {
-                if (over()) return result_t{std::unexpect, event_->error()};
+                if (over()) return result_t{std::unexpect, event_->reason()};
 
                 return result_t{args_value_t{*event_->args_}};
             }
@@ -279,8 +278,8 @@ public:
             }
         }
 
-        // What the answering form answers when its token was cancelled: an
-        // empty error, a plain cancellation.
+        // What the answering form answers when its token was cancelled: a
+        // reason without an error, stopped by request.
         result_t await_canceled() noexcept
             requires(!Throwing)
         {

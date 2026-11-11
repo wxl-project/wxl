@@ -120,14 +120,14 @@ task<> takes_keys(event_state& event, cancellation_token token, int& taken, std:
     }
 }
 
-/// The same with the answering form: nothing escapes, and a cancellation is an empty error.
+/// The same with the answering form: nothing escapes, and a cancellation is a stop by request.
 task<> answers_keys(event_state& event, cancellation_token token, std::vector<std::string>& log) {
     keys_under_token keys{fake_event{&event}, std::move(token)};
 
     while (true) {
         auto const got = co_await keys.next();
         if (!got) {
-            log.push_back(got.error() ? "failed" : "cancelled");
+            log.push_back(got.error().stopped_due_to_error() ? "failed" : "cancelled");
             co_return;
         }
 
