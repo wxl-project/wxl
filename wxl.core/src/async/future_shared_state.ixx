@@ -22,7 +22,7 @@ class future;
 future<void> make_ready_future();
 
 template <typename T>
-future<void> make_ready_future(const T& value);
+future<T> make_ready_future(const T& value);
 
 /// State of a \c Future object (similar to std::future_status, @see
 /// http://en.cppreference.com/w/cpp/thread/future_status ).

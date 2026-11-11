@@ -113,10 +113,35 @@ public:
     }
 };
 
+/// A when_resolved callback that resolves \p result the way the state it is handed was resolved,
+/// value included: forward_outcome_func for a future<U> that has a value to carry. The value is
+/// copied -- the state it lies in belongs to another future and may have other holders -- and a
+/// copy that throws fails \p result with that exception.
+template <class U>
+struct forward_value_func {
+    explicit forward_value_func(const future_shared_state_ptr& result) noexcept
+        : result_(result) {}
+
+    void operator()(const state* by_state) noexcept {
+        if (by_state->id() == state_id::failed) {
+            result_->set_exception(by_state);
+            return;
+        }
+
+        try {
+            result_->set_value(resolved_state<U>::from(by_state)->value());
+        } catch (...) {
+            result_->set_exception();
+        }
+    }
+
+    future_shared_state_ptr result_;
+};
+
 /// The single subscription behind next_unwrap(): on a value it starts the continuation and passes
-/// the outcome of the future that continuation returns on to \p result; on a failure it passes
-/// the exception on. A continuation that throws fails \p result as well.
-template <class t_next_async_task, class T>
+/// the outcome of the future<U> that continuation returns on to \p result, the value with it; on a
+/// failure it passes the exception on. A continuation that throws fails \p result as well.
+template <class t_next_async_task, class T, class U>
 struct unwrap_func {
     unwrap_func(t_next_async_task task, const future_shared_state_ptr& result)
         : task_(std::move(task)), result_(result) {}
@@ -127,9 +152,12 @@ struct unwrap_func {
             return;
         }
 
+        // A future<void> has no value to carry, and its forwarding is the one compiled once.
+        using t_forward = std::conditional_t<std::is_void_v<U>, forward_outcome_func,
+                                             forward_value_func<U>>;
+
         try {
-            future_accessor::checked_state_of(start(by_state))
-                ->when_resolved(forward_outcome_func(result_));
+            future_accessor::checked_state_of(start(by_state))->when_resolved(t_forward(result_));
         } catch (...) {
             result_->set_exception();
         }
@@ -174,6 +202,25 @@ struct future_get_return<T&> {
 template <typename T, class t_task>
 using result_of_t = typename std::conditional_t<std::is_void_v<T>, std::invoke_result<t_task>,
                                                 std::invoke_result<t_task, T>>::type;
+
+/// The value type U of a future<U>. Nothing else has one, which is what tells a continuation that
+/// returns a future apart from one that returns a plain value.
+template <class t_future>
+struct future_value {};
+
+template <class U>
+struct future_value<future<U>> {
+    using type = U;
+};
+
+/// Value type of the future next_unwrap() returns: U of the future<U> the continuation hands back.
+template <typename T, class t_task>
+using unwrap_result_t = typename future_value<std::remove_cvref_t<result_of_t<T, t_task>>>::type;
+
+/// Satisfied by a continuation of a future<T> that returns a future of its own -- the kind
+/// next_unwrap() takes.
+template <class t_task, typename T>
+concept async_continuation = requires { typename unwrap_result_t<T, t_task>; };
 
 }  // namespace detail
 
@@ -334,24 +381,26 @@ public:
     /// The continuation will be invoked when this future completes successfully and will receive
     /// the value returned by this future.
     ///
-    /// The callback is `future<void>(const T&)`, or `future<void>()` when T is void: it starts its
-    /// own operation and hands back the future for it.
+    /// The callback is `future<U>(const T&)`, or `future<U>()` when T is void: it starts its own
+    /// operation and hands back the future for it. The returned future is a future<U> and
+    /// resolves the way that one does, with a copy of its value.
     ///
     /// \param task Operation to be started when this future has a value.
     ///
     /// \return The future the continuation's own result will appear in.
-    ///
-    /// \note Only a `future<void>` continuation result is supported.
     template <class t_next_async_task>
-    future<void> next_unwrap(t_next_async_task&& task) const {
+        requires detail::async_continuation<std::remove_cvref_t<t_next_async_task>, T>
+    future<detail::unwrap_result_t<T, std::remove_cvref_t<t_next_async_task>>> next_unwrap(
+        t_next_async_task&& task) const {
         using t_task = std::remove_cvref_t<t_next_async_task>;
+        using t_result = detail::unwrap_result_t<T, t_task>;
 
         future_shared_state_ptr ticket = core::make_refcounted<future_shared_state>();
 
-        checked_state()->when_resolved(
-            detail::unwrap_func<t_task, T>(std::forward<t_next_async_task>(task), ticket));
+        checked_state()->when_resolved(detail::unwrap_func<t_task, T, t_result>(
+            std::forward<t_next_async_task>(task), ticket));
 
-        return future<void>(ticket.get());
+        return future<t_result>(ticket.get());
     }
 
 protected:
