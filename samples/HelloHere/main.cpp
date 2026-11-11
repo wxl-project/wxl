@@ -22,8 +22,8 @@ ElementTheme themeOf(bool dark) {
 }
 
 // The button shows where it leads: the icon and the name of the other theme.
-FluentSymbol switchIcon(bool dark) {
-    return dark ? FluentSymbol::Brightness : FluentSymbol::MobQuietHours;
+SymbolIcon switchIcon(bool dark) {
+    return SymbolIcon {symbol = dark ? FluentSymbol::Brightness : FluentSymbol::MobQuietHours};
 }
 
 std::u16string switchTip(bool dark) {
@@ -63,9 +63,7 @@ Teardown wxl_launched() {
                 hAlign.right,
                 Button {
                     Margin {16, 0},
-                    content = BindOutput {darkTheme, [](bool dark) {
-                        return SymbolIcon {symbol = switchIcon(dark)};
-                    }},
+                    content = BindOutput {darkTheme, switchIcon},
                     toolTip = BindOutput {darkTheme, switchTip},
                     onClick += [&darkTheme] { darkTheme.set(!darkTheme.get()); },
                 },
