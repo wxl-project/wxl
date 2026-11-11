@@ -25,10 +25,8 @@ constexpr std::uint64_t lead4_marks(std::uint64_t word) noexcept {
     return (word >> 7) & (word >> 6) & (word >> 5) & (word >> 4) & ~(word >> 3) & low_bits;
 }
 
-constexpr std::size_t word_size = sizeof(std::uint64_t);
-
 // The same eight bytes read as four UTF-16 units.
-constexpr std::size_t wide_step = word_size / sizeof(wchar_t);
+constexpr std::size_t wide_step = impl::word_size / sizeof(wchar_t);
 
 constexpr std::uint64_t lane_ones = 0x0001000100010001ull;
 constexpr std::uint64_t lane_high = 0x8000800080008000ull;

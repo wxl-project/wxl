@@ -142,7 +142,7 @@ struct summary {
 summary summarize(std::vector<double> samples) {
     if (samples.empty()) return {0, 0};
 
-    std::sort(samples.begin(), samples.end());
+    std::ranges::sort(samples);
 
     const double sum = std::accumulate(samples.begin(), samples.end(), 0.0);
 
@@ -331,7 +331,7 @@ ping_result ping_round(ws::DispatcherQueue const& queue, int count) {
     kept.result();
 
     return {per_op, summarize(samples.out), summarize(samples.back),
-            double(g_posts.load(std::memory_order_relaxed)) / count};
+            static_cast<double>(g_posts.load(std::memory_order_relaxed)) / count};
 }
 
 struct fan_result {
@@ -358,13 +358,14 @@ fan_result fan_round(ws::DispatcherQueue const& queue, int tasks, int count) {
     pump_until([&] { return remaining == 0; });
 
     const double per_op =
-        nanoseconds(bench_clock::now() - started).count() / (double(tasks) * count);
+        nanoseconds(bench_clock::now() - started).count() / (static_cast<double>(tasks) * count);
 
     for (typename scheme::keeper& kept : running) kept.result();
 
     if (sum != expected) std::printf("  fan-out: checksum mismatch\n");
 
-    return {per_op, double(g_posts.load(std::memory_order_relaxed)) / (double(tasks) * count)};
+    return {per_op, static_cast<double>(g_posts.load(std::memory_order_relaxed)) /
+                        (static_cast<double>(tasks) * count)};
 }
 
 /// The allocation count of one round, taken with the counter on. It doubles as the
@@ -378,7 +379,7 @@ double news_per_op(auto round, double ops) {
 
     g_counting_news.store(false, std::memory_order_relaxed);
 
-    return double(g_news.load(std::memory_order_relaxed)) / ops;
+    return static_cast<double>(g_news.load(std::memory_order_relaxed)) / ops;
 }
 
 // ---------------------------------------------------------------------------------------
@@ -421,7 +422,7 @@ void ping_row(ws::DispatcherQueue const& queue, const settings& how) {
 
 template <class scheme>
 void fan_row(ws::DispatcherQueue const& queue, int tasks, const settings& how) {
-    const double ops = double(tasks) * how.fan_count;
+    const double ops = static_cast<double>(tasks) * how.fan_count;
     const double news = news_per_op([&] { fan_round<scheme>(queue, tasks, how.fan_count); }, ops);
 
     fan_result best{1e30, 0};

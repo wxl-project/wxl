@@ -430,7 +430,7 @@ struct summary {
 summary summarize(std::vector<double> samples) {
     if (samples.empty()) return {0, 0};
 
-    std::sort(samples.begin(), samples.end());
+    std::ranges::sort(samples);
 
     const double sum = std::accumulate(samples.begin(), samples.end(), 0.0);
 
@@ -543,7 +543,7 @@ double fan_out_round(loop_t& loop, int tasks, int count) {
     loop.run_until([&] { return remaining == 0; });
 
     const double per_op =
-        nanoseconds(bench_clock::now() - started).count() / (double(tasks) * count);
+        nanoseconds(bench_clock::now() - started).count() / (static_cast<double>(tasks) * count);
 
     for (task<>& t : running) t.result();
 
@@ -571,7 +571,7 @@ double fan_out_hot_round(loop_t& loop, int tasks, int count) {
         if (!loop.try_run_one()) cpu_pause();
 
     const double per_op =
-        nanoseconds(bench_clock::now() - started).count() / (double(tasks) * count);
+        nanoseconds(bench_clock::now() - started).count() / (static_cast<double>(tasks) * count);
 
     for (task<>& t : running) t.result();
 
@@ -659,14 +659,15 @@ driven_result driven_round(loop_t& loop, bool coalesced, int tasks, int count) {
     }
 
     const double per_op =
-        nanoseconds(bench_clock::now() - started).count() / (double(tasks) * count);
+        nanoseconds(bench_clock::now() - started).count() / (static_cast<double>(tasks) * count);
 
     for (task<>& t : running) t.result();
 
     // Leave the trigger the way the sleeping mode expects to find it.
     if (coalesced) loop.from_worker().disarm();
 
-    return {per_op, double(loop.from_worker().wakeup().sets()) / (double(tasks) * count)};
+    return {per_op, static_cast<double>(loop.from_worker().wakeup().sets()) /
+                        (static_cast<double>(tasks) * count)};
 }
 
 // ---------------------------------------------------------------------------------------
@@ -701,11 +702,12 @@ struct production {
 /// and a wake for every operation; less means the next one was already there.
 template <class config_t>
 std::string wakes_of(loop_t<config_t>& loop) {
-    const double ops = double(loop.executed());
+    const double ops = static_cast<double>(loop.executed());
     char text[64];
 
-    std::snprintf(text, sizeof text, "%.2f / %.2f", double(loop.to_worker().wakeup().sets()) / ops,
-                  double(loop.from_worker().wakeup().sets()) / ops);
+    std::snprintf(text, sizeof text, "%.2f / %.2f",
+                  static_cast<double>(loop.to_worker().wakeup().sets()) / ops,
+                  static_cast<double>(loop.from_worker().wakeup().sets()) / ops);
 
     return text;
 }

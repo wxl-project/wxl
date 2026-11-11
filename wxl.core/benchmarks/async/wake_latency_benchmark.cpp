@@ -80,7 +80,7 @@ struct stats {
 };
 
 stats summarize(std::vector<double> samples) {
-    std::sort(samples.begin(), samples.end());
+    std::ranges::sort(samples);
 
     const std::size_t n = samples.size();
 
