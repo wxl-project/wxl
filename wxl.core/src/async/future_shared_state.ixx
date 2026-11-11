@@ -665,7 +665,7 @@ struct next_helper {
     static void call(t_next_task& task, const state* state, future_shared_state* ticket) {
         try {
             const resolved_state<T>* by_state = resolved_state<T>::from(state);
-            ticket->set_value(std::invoke(task, by_state->value()));
+            ticket->set_value<t_result>(std::invoke(task, by_state->value()));
         } catch (...) {
             ticket->set_exception();
         }
@@ -676,7 +676,7 @@ template <typename t_result, typename t_next_task>
 struct next_helper<void, t_result, t_next_task> {
     static void call(t_next_task& task, const state*, future_shared_state* ticket) {
         try {
-            ticket->set_value(std::invoke(task));
+            ticket->set_value<t_result>(std::invoke(task));
         } catch (...) {
             ticket->set_exception();
         }

@@ -1301,6 +1301,26 @@ STRESS_TEST_CASE(future, a_promise_of_a_reference_refers_to_the_object) {
     ASSERT_EQ("changed", f.get());
 }
 
+// next() keeps the result type of its continuation the same way.
+
+STRESS_TEST_CASE(future, next_with_a_continuation_returning_a_const_value) {
+    test_promise p;
+    future<const std::string> f = p.get_future().next([]() -> const std::string { return "kept"; });
+
+    p.set_value();
+    ASSERT_EQ("kept", f.get());
+}
+
+STRESS_TEST_CASE(future, next_with_a_continuation_returning_a_reference) {
+    std::string target = "target";
+
+    promise<int> p;
+    future<std::string&> f = p.get_future().next([&](int) -> std::string& { return target; });
+
+    p.set_value(1);
+    ASSERT_EQ(&target, &f.get());
+}
+
 STRESS_TEST_CASE(future, when_all_completed_completed_by_value) {
     test_promise p1;
     test_promise p2;
