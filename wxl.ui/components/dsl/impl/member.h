@@ -14,7 +14,8 @@
 //
 // Nothing here names a property or an event: the vocabulary lives in the
 // generated Members.h. It specialises impl::enum_values below once per
-// enumeration a property has, property_setter / event_adder once per key, and
+// enumeration a property has and once per list of several enumerations a name
+// is declared with, property_setter / event_adder once per key, and
 // in namespace dsl it declares one tag per property, then the attached
 // properties -- written on the child, applied by the parent's statics,
 // `Button { row = 1, column = 2 }` inside a Grid -- then the collection tags,
@@ -347,6 +348,13 @@ struct deduced_property_tag {
     }
 };
 
+// The types of a property name that different classes declare differently:
+// `opacity` is a double on a UIElement and a float on a Visual. A tag over the
+// list takes each of them (property_tag below).
+template <typename... Values>
+struct one_of {
+};
+
 // The values of an enumeration as the syntax spells them: `orientation.horizontal`
 // instead of `orientation = Orientation::Horizontal`. Empty for every type the
 // generated Members.h does not specialise; a specialisation names each value once
@@ -356,14 +364,80 @@ template <typename E>
 struct enum_values {
 };
 
+// A list carries the values of the enumeration in it, if there is one. A list of
+// several is specialised in Members.h, which writes each value name once: where
+// the enumerations share a name it is a shared_enum_value.
+template <typename... Values>
+struct enum_values<one_of<Values...>> : enum_values<Values>... {
+};
+
+// A value name several enumerations of a list share -- `placement.top` is
+// FlyoutPlacementMode::Top on a flyout and PlacementMode::Top on a tooltip. It
+// is one value, and the setter of the object it lands on takes the enumeration
+// it converts to; an object whose enumeration has no such value refuses it there.
+template <auto... Values>
+struct shared_enum_value {
+    template <typename E>
+        requires(std::same_as<E, decltype(Values)> || ...)
+    constexpr operator E() const noexcept {
+        return std::get<E>(std::tuple{Values...});
+    }
+};
+
+// A number: arithmetic, and neither a truth value nor a character.
+template <typename T>
+concept number = std::is_arithmetic_v<T> && !std::same_as<T, bool> && !core::character<T>;
+
+// What a tag takes as one type of its property: the value of that type, which a
+// braced list can initialise and template deduction never could -- `margin =
+// {20}`.
+template <PropertyKey key, typename Value, typename Owner>
+struct typed_assignment {
+    constexpr setter_op<key, Value, Owner> operator=(Value value) const {
+        return {std::move(value)};
+    }
+};
+
+// A number is taken only as that type. The value converts at the `=` of the
+// markup, so a narrowing -- `0.4` given to a float -- is reported on that line
+// and not inside the dispatch; a widening -- `0.4f` or `2` given to a double --
+// is silent, as the language makes it. A character converts to a number too,
+// and is refused: `'a'` is never meant as one.
+template <PropertyKey key, typename Value, typename Owner>
+    requires std::is_arithmetic_v<Value>
+struct typed_assignment<key, Value, Owner> {
+    constexpr setter_op<key, Value, Owner> operator=(Value value) const {
+        return {value};
+    }
+
+    template <core::character T>
+    void operator=(T) const = delete;
+};
+
+// A solid brush written as its colour. It is still a Color, so a setter that
+// takes a colour itself -- CompositionWindow's background -- gets the colour.
+struct solid_color_brush : Color {
+    operator Brush() const;
+};
+
+// A brush is taken as a colour as well, as CSS does: `background = rgb(16, 18,
+// 21)` is a solid brush of that colour. Only the syntax says so -- Color itself
+// converts to nothing.
+template <PropertyKey key, typename Owner>
+struct typed_assignment<key, Brush, Owner> {
+    constexpr setter_op<key, Brush, Owner> operator=(Brush value) const {
+        return {std::move(value)};
+    }
+
+    constexpr setter_op<key, solid_color_brush, Owner> operator=(Color color) const {
+        return {{color}};
+    }
+};
+
 // A property tag -- the object the DSL writes on the left of the `=`.
 //
-// `Value` is the property's own type, and the reason for the extra
-// overload: `margin = {20}` initialises a parameter of a known type from a
-// braced list, which template deduction alone can never do. Where a
-// property name is declared with different types by different classes there
-// is no single such type, and the tag is generated with `void`, leaving only
-// the deduced form.
+// `Value` is the property's own type: the tag takes it (typed_assignment) and
+// anything else the property's setter accepts (deduced_property_tag).
 // A tag over an enumeration also carries the values of that enumeration as
 // members, inherited from impl::enum_values, so the flat vocabulary and the
 // schema anchors spell them alike.
@@ -371,12 +445,11 @@ struct enum_values {
 // vocabulary of namespace `dsl`; see impl::check_owner above. It is the last
 // parameter because almost nothing writes it: only the generated schema does.
 template <PropertyKey key, typename Value = void, typename Owner = void>
-struct property_tag : deduced_property_tag<key, Owner>, enum_values<Value> {
+struct property_tag : deduced_property_tag<key, Owner>,
+                      typed_assignment<key, Value, Owner>,
+                      enum_values<Value> {
     using deduced_property_tag<key, Owner>::operator=;
-
-    constexpr setter_op<key, Value, Owner> operator=(Value value) const {
-        return {std::move(value)};
-    }
+    using typed_assignment<key, Value, Owner>::operator=;
 };
 
 // The half of a number's tag that is not a number: a binding, whose field has a
@@ -390,45 +463,53 @@ struct bound_property_tag {
     }
 };
 
-// A property whose type is a number takes a number only as that type. The value
-// converts at the `=` of the markup, so a narrowing -- `0.4` given to a float --
-// is reported on that line and not inside the dispatch; a widening -- `0.4f` or
-// `2` given to a double -- is silent, as the language makes it.
+// A property whose type is a number takes a number only as that type, and a
+// binding.
 template <PropertyKey key, typename Value, typename Owner>
     requires std::is_arithmetic_v<Value>
-struct property_tag<key, Value, Owner> : bound_property_tag<key, Owner> {
+struct property_tag<key, Value, Owner> : bound_property_tag<key, Owner>,
+                                         typed_assignment<key, Value, Owner> {
     using bound_property_tag<key, Owner>::operator=;
-
-    constexpr setter_op<key, Value, Owner> operator=(Value value) const {
-        return {value};
-    }
+    using typed_assignment<key, Value, Owner>::operator=;
 };
 
+// A class that declares the name twice with different types -- SymbolIcon takes
+// a Symbol and a FluentSymbol -- leaves its schema anchor no type: only the
+// deduced form.
 template <PropertyKey key, typename Owner>
 struct property_tag<key, void, Owner> : deduced_property_tag<key, Owner> {
     using deduced_property_tag<key, Owner>::operator=;
 };
 
-// A solid brush written as its colour. It is still a Color, so a setter that
-// takes a colour itself -- CompositionWindow's background -- gets the colour.
-struct solid_color_brush : Color {
-    operator Brush() const;
-};
+// A name the classes declare with different types takes each of them, as the tag
+// of one type does. A number is the exception: one the list does not name
+// exactly is kept as it is, since the types of the list are each a conversion
+// away and none of them is the one meant -- `opacity = 1` -- and the setter of
+// the object converts it. That is also how a number reaches a class written by
+// hand, whose types the list does not know -- `size = 200.0f` on a HoverLight.
+// A character is refused here as by every number.
+//
+// Anything else goes to the setter as written, as on a tag of one type: a
+// Template stays a template until it is applied, and a setter takes what the
+// list does not name.
+template <PropertyKey key, typename... Values, typename Owner>
+struct property_tag<key, one_of<Values...>, Owner> : typed_assignment<key, Values, Owner>...,
+                                                     enum_values<one_of<Values...>> {
+    using typed_assignment<key, Values, Owner>::operator=...;
 
-// A property that takes a brush takes a colour as well, as CSS does:
-// `background = rgb(16, 18, 21)` is a solid brush of that colour. Only the
-// syntax says so -- Color itself converts to nothing.
-template <PropertyKey key, typename Owner>
-struct property_tag<key, Brush, Owner> : deduced_property_tag<key, Owner> {
-    using deduced_property_tag<key, Owner>::operator=;
-
-    constexpr setter_op<key, Brush, Owner> operator=(Brush value) const {
-        return {std::move(value)};
+    template <number T>
+    constexpr setter_op<key, T, Owner> operator=(T value) const {
+        return {value};
     }
 
-    constexpr setter_op<key, solid_color_brush, Owner> operator=(Color color) const {
-        return {{color}};
+    template <typename T>
+        requires(!std::is_arithmetic_v<std::remove_cvref_t<T>>)
+    constexpr setter_op<key, std::decay_t<T>, Owner> operator=(T&& value) const {
+        return {std::forward<T>(value)};
     }
+
+    template <core::character T>
+    void operator=(T) const = delete;
 };
 
 // An event tag, written `on` + the metadata name -- onClick, onPointerPressed
@@ -488,13 +569,6 @@ struct repeat {
 
 namespace impl {
 
-// The types whose runs are text, and therefore the only ones a terminator
-// means anything for.
-template <typename T>
-inline constexpr bool is_character =
-    std::is_same_v<T, char> || std::is_same_v<T, wchar_t> || std::is_same_v<T, char8_t> ||
-    std::is_same_v<T, char16_t> || std::is_same_v<T, char32_t>;
-
 // One argument's worth of compile-time values, and the reason a literal, an
 // array and a lone value can all be written in the same place: a string
 // literal is its characters without the terminator, an array is its elements
@@ -522,7 +596,7 @@ template <typename T, std::size_t Length>
 struct values {
     using element_t = T;
 
-    static constexpr std::size_t capacity = Length + (is_character<T> ? 1 : 0);
+    static constexpr std::size_t capacity = Length + (core::character<T> ? 1 : 0);
 
     T items[capacity]{};
     std::size_t count = Length;
@@ -535,7 +609,7 @@ struct values {
         // needs to be comparable to zero. A run that arrived without one is
         // given it in the spare slot; a run that arrived with one simply
         // does not count it.
-        if constexpr (is_character<T>) {
+        if constexpr (core::character<T>) {
             if (Length == 0 || items[Length - 1] != T{}) {
                 items[Length] = T{};
             } else {
@@ -612,7 +686,7 @@ struct iterate {
     // Text only where the elements are text: the property that takes a
     // string is the one this exists for. A string of one, with its zero.
     constexpr core::basic_zstring_view<element_t> text() const noexcept
-        requires impl::is_character<element_t>
+        requires core::character<element_t>
     {
         return core::basic_zstring_view<element_t>{
             &terminated[static_cast<std::size_t>(2 * index)]};
@@ -788,7 +862,7 @@ concept applicable_to =
 template <typename Arg>
 inline constexpr bool impl_pointer =
     std::is_pointer_v<std::decay_t<Arg>> &&
-    !is_character<std::remove_cv_t<std::remove_pointer_t<std::decay_t<Arg>>>>;
+    !core::character<std::remove_cv_t<std::remove_pointer_t<std::decay_t<Arg>>>>;
 
 template <typename Obj, typename... Args>
 concept setter_pack =
