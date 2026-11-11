@@ -22,7 +22,7 @@ t_obj* typed_offset(void* source, std::ptrdiff_t offset) {
 template <typename t_obj>
 const t_obj* typed_offset(const void* source, std::ptrdiff_t offset) {
     const char* s = static_cast<const char*>(source);
-    return reinterpret_cast<t_obj*>(s + offset);
+    return reinterpret_cast<const t_obj*>(s + offset);
 }
 
 /// typesafe obect from field address
