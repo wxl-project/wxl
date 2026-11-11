@@ -37,6 +37,15 @@ void set_current_thread_name(const core::u16_view name) {
 /// the wait returns.
 std::atomic<size_t> s_detached_thread_counter{0};
 
+/// Takes a detached thread off the counter, and the thread that brings it to zero wakes
+/// whoever waits for detached threads. A waiter parks only on a nonzero value and waits for
+/// zero, and a change made before it parks makes WaitOnAddress return at once, so the change
+/// to zero is the only one it has to be woken for.
+void remove_detached_thread() noexcept {
+    if (s_detached_thread_counter.fetch_sub(1, std::memory_order_release) == 1)
+        ::WakeByAddressAll(&s_detached_thread_counter);
+}
+
 core::thread_id s_main_thread_id = core::current_thread_id();
 
 /// Will wait for detached threads on program's exit.
@@ -221,7 +230,7 @@ public:
                 if (group_.get())
                     group_.get()->impl_->notify_thread_exit(thread_info_);
                 else
-                    s_detached_thread_counter.fetch_sub(1, std::memory_order_release);
+                    remove_detached_thread();
             } catch (...) {
                 assert(!"Unexpected exception");
             }
@@ -349,27 +358,29 @@ size_t thread_group::detached_thread_count() noexcept {
 }
 
 void thread_group::join_detached_threads() {
-    while (0 != detached_thread_count()) {
-        std::this_thread::yield();
-    }
+    for (size_t count; 0 != (count = detached_thread_count());)
+        ::WaitOnAddress(&s_detached_thread_counter, &count, sizeof count, INFINITE);
 }
 
 bool thread_group::join_detached_threads_for(core::duration timeout) {
-    if (0 == detached_thread_count()) {
-        return true;
-    }
+    size_t count = detached_thread_count();
+
+    if (0 == count) return true;
 
     const core::timeout_timer timer(timeout);
 
-    while (timer.remaining()) {
-        if (0 == detached_thread_count()) {
-            return true;
-        }
+    while (true) {
+        const core::duration remaining = timer.remaining();
 
-        std::this_thread::yield();
+        if (!remaining) return 0 == detached_thread_count();
+
+        ::WaitOnAddress(&s_detached_thread_counter, &count, sizeof count,
+                        core::to_os_timeout_ms(remaining));
+
+        count = detached_thread_count();
+
+        if (0 == count) return true;
     }
-
-    return 0 == detached_thread_count();
 }
 
 core::thread_id thread_group::main_thread_id() { return s_main_thread_id; }
@@ -555,7 +566,7 @@ void thread_starter::start_thread() {
     struct detached_thread_error_guard {
         bool ok;
         ~detached_thread_error_guard() {
-            if (!ok) s_detached_thread_counter.fetch_sub(1, std::memory_order_relaxed);
+            if (!ok) remove_detached_thread();
         }
     } detached_thread_error_guard = {false};
 
