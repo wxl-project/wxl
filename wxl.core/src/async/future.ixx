@@ -116,7 +116,7 @@ public:
 };
 
 /// A when_resolved callback that resolves \p result the way the state it is handed was resolved,
-/// value included: forward_outcome_func for a future<U> that has a value to carry. The value is
+/// value included: forward_outcome_func for a `future<U>` that has a value to carry. The value is
 /// copied -- the state it lies in belongs to another future and may have other holders -- and a
 /// copy that throws fails \p result with that exception.
 template <class U>
@@ -141,7 +141,7 @@ struct forward_value_func {
 };
 
 /// The single subscription behind next_unwrap(): on a value it starts the continuation and passes
-/// the outcome of the future<U> that continuation returns on to \p result, the value with it; on a
+/// the outcome of the `future<U>` that continuation returns on to \p result, the value with it; on a
 /// failure it passes the exception on. A continuation that throws fails \p result as well.
 template <class t_next_async_task, class T, class U>
 struct unwrap_func {
@@ -205,7 +205,7 @@ template <typename T, class t_task>
 using result_of_t = std::conditional_t<std::is_void_v<T>, std::invoke_result<t_task>,
                                                 std::invoke_result<t_task, T>>::type;
 
-/// The value type U of a future<U>. Nothing else has one, which is what tells a continuation that
+/// The value type U of a `future<U>`. Nothing else has one, which is what tells a continuation that
 /// returns a future apart from one that returns a plain value.
 template <class t_future>
 struct future_value {};
@@ -215,7 +215,7 @@ struct future_value<future<U>> {
     using type = U;
 };
 
-/// Value type of the future next_unwrap() returns: U of the future<U> the continuation hands back.
+/// Value type of the future next_unwrap() returns: U of the `future<U>` the continuation hands back.
 template <typename T, class t_task>
 using unwrap_result_t = typename future_value<std::remove_cvref_t<result_of_t<T, t_task>>>::type;
 
@@ -384,7 +384,7 @@ public:
     /// the value returned by this future.
     ///
     /// The callback is `future<U>(const T&)`, or `future<U>()` when T is void: it starts its own
-    /// operation and hands back the future for it. The returned future is a future<U> and
+    /// operation and hands back the future for it. The returned future is a `future<U>` and
     /// resolves the way that one does, with a copy of its value.
     ///
     /// \param task Operation to be started when this future has a value.
