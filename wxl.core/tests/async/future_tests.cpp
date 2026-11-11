@@ -1277,6 +1277,30 @@ STRESS_TEST_CASE(future, next_unwrap_to_a_value_completed_later_whose_copy_throw
     ASSERT_THROW(result.get(), specific_exception);
 }
 
+// A promise<const X> and a promise<X&> store the value as the type their future reads it back
+// as: a const X, and a reference to the very object handed in rather than a copy of it.
+
+STRESS_TEST_CASE(future, a_promise_of_a_const_value_keeps_it) {
+    promise<const std::string> p;
+    future<const std::string> f = p.get_future();
+
+    ASSERT_TRUE(p.set_value("kept"));
+    ASSERT_EQ("kept", f.get());
+}
+
+STRESS_TEST_CASE(future, a_promise_of_a_reference_refers_to_the_object) {
+    std::string target = "target";
+
+    promise<std::string&> p;
+    future<std::string&> f = p.get_future();
+
+    ASSERT_TRUE(p.set_value(target));
+    ASSERT_EQ(&target, &f.get());
+
+    target = "changed";
+    ASSERT_EQ("changed", f.get());
+}
+
 STRESS_TEST_CASE(future, when_all_completed_completed_by_value) {
     test_promise p1;
     test_promise p2;

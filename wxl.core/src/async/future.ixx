@@ -743,9 +743,13 @@ public:
     future<T> get_future() const { return future<T>(checked_state()); }
 
     /// Sets the result to the given value.
+    ///
+    /// The value is stored as a T -- named, not deduced from the argument, which would drop the
+    /// const of a `promise<const X>` and the reference of a `promise<X&>` -- since that is the
+    /// type `future<T>::get()` reads it back as.
     /// \return true if this call resolved the state; false if it was already resolved by
     ///         another concurrent set_value()/set_exception() call. May be ignored.
-    bool set_value(const T& value) { return checked_state()->set_value(value); }
+    bool set_value(const T& value) { return checked_state()->set_value<T>(value); }
 
     /// Returns a promise without a shared state.
     static promise<T> invalid_promise() { return promise(nullptr); }
