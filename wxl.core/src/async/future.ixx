@@ -129,7 +129,7 @@ struct forward_value_func {
         }
 
         try {
-            result_->set_value(resolved_state<U>::from(by_state)->value());
+            result_->set_value<U>(resolved_state<U>::from(by_state)->value());
         } catch (...) {
             result_->set_exception();
         }
