@@ -122,6 +122,8 @@ public:
 
     /// \param where The part of the program the message is about; its name goes
     ///              into the line and its level joins the filter.
+    /// \param form The format string of the message.
+    /// \param args The values the format string refers to.
     template <severity Level, typename... Args>
     void log(const facility& where, fmt::format_string<Args...> form, Args&&... args) {
         if constexpr (is_compiled(Level)) {
@@ -237,7 +239,7 @@ protected:
 private:
     /// Writes the fixed part of a line: timestamp, level, facility, and the
     /// space the message starts after.
-    void start_line(log_entry& entry, severity level, const facility* where) const;
+    static void start_line(log_entry& entry, severity level, const facility* where);
 
     /// The whole of a logged message, once it is known that it will be logged.
     /// A throw from formatting leaves the entry uncommitted and the line

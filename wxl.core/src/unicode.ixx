@@ -43,6 +43,12 @@ import std;
 
 namespace wxl::core {
 
+/// Well-formed Unicode text, in whichever string type holds it.
+///
+/// Only the two shapes below exist -- a view of text somebody else owns, and a
+/// string that owns its own -- because those are the two shapes text travels
+/// in. The primary template is left undefined so that basic_text of anything
+/// else fails to compile rather than quietly meaning something.
 export template <typename T>
 class basic_text;
 
@@ -368,7 +374,7 @@ namespace impl {
 
 template <typename String>
 void push_utf8(String& out, const char32_t code_point) {
-    using unit = typename String::value_type;
+    using unit = String::value_type;
 
     if (code_point < 0x80) {
         out.push_back(static_cast<unit>(code_point));
@@ -389,7 +395,7 @@ void push_utf8(String& out, const char32_t code_point) {
 
 template <typename String>
 void push_utf16(String& out, const char32_t code_point) {
-    using unit = typename String::value_type;
+    using unit = String::value_type;
 
     if (code_point < 0x10000) {
         out.push_back(static_cast<unit>(code_point));
@@ -405,15 +411,6 @@ void push_utf16(String& out, const char32_t code_point) {
 // ---- The type ----------------------------------------------------------------------
 
 export {
-/// Well-formed Unicode text, in whichever string type holds it.
-///
-/// Only the two shapes below exist -- a view of text somebody else owns, and a
-/// string that owns its own -- because those are the two shapes text travels
-/// in. The primary template is left undefined so that basic_text of anything
-/// else fails to compile rather than quietly meaning something.
-template <typename T>
-class basic_text;
-
 /// UTF-8, the encoding this tree keeps text in.
 using u8_view = basic_text<std::u8string_view>;
 /// The type that holds well-formed UTF-8 text in a string of its own.
@@ -1111,7 +1108,7 @@ class code_points
 {
 public:
     /// The type of the underlying view, which carries no guarantee of well-formedness.
-    using plain_type = typename View::plain_type;
+    using plain_type = View::plain_type;
 
     /// Constructs a view of the code points of \p text. The text is referenced, not copied.
     constexpr explicit code_points(const View text) noexcept : text_(text.plain()) {}

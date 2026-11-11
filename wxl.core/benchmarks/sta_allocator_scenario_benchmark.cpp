@@ -90,13 +90,13 @@ String make_string(rng& r, unsigned lo, unsigned hi) {
 }
 
 template <typename Model>
-typename Model::attribute make_attribute(rng& r) {
+Model::attribute make_attribute(rng& r) {
     return {make_string<typename Model::string>(r, 16, 32),
             make_string<typename Model::string>(r, 16, 64)};
 }
 
 template <typename Model>
-typename Model::leaf make_leaf(rng& r, const shape& s) {
+Model::leaf make_leaf(rng& r, const shape& s) {
     typename Model::leaf result{make_string<typename Model::string>(r, 24, 200), {}};
     for (unsigned i = 0; i < s.attributes / 2; ++i)
         result.attributes.push_back(make_attribute<Model>(r));
@@ -104,7 +104,7 @@ typename Model::leaf make_leaf(rng& r, const shape& s) {
 }
 
 template <typename Model>
-typename Model::element make_element(rng& r, const shape& s) {
+Model::element make_element(rng& r, const shape& s) {
     typename Model::element result{make_string<typename Model::string>(r, 16, 40), {}, {}};
     for (unsigned i = 0; i < s.attributes; ++i)
         result.attributes.push_back(make_attribute<Model>(r));
@@ -113,7 +113,7 @@ typename Model::element make_element(rng& r, const shape& s) {
 }
 
 template <typename Model>
-typename Model::document build(rng& r, const shape& s) {
+Model::document build(rng& r, const shape& s) {
     typename Model::document doc{make_string<typename Model::string>(r, 16, 48), {}};
     doc.elements.reserve(s.elements);
     for (unsigned i = 0; i < s.elements; ++i) doc.elements.push_back(make_element<Model>(r, s));

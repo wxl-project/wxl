@@ -19,7 +19,7 @@ export namespace wxl::core {
 /// (__isa_available) before lzcnt, and does not fold even a constant through that test; the
 /// intrinsic is the one instruction, which every processor this library runs on has.
 constexpr uint32_t leading_zeros(uint32_t value) noexcept {
-    if (std::is_constant_evaluated()) return std::countl_zero(value);
+    if consteval { return std::countl_zero(value); }
 #if defined(_MSC_VER) && !defined(__clang__)
     return __lzcnt(value);
 #else
