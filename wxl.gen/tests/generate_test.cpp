@@ -117,3 +117,31 @@ TEST_F(stale_files, binding_pairs_are_those_of_the_classes_the_run_generates) {
     auto const surface = read_file(dir_ / L"parts" / L"schema_surface.cpp");
     EXPECT_NE(surface.find("ToggleSwitch_isOn_paired_bool"), std::string::npos);
 }
+
+// A double property binds as a nullable double as well: Slider's Value, a pair of the base
+// profile, declares a bind() for that field beside double and float, reads the control as it is
+// -- a NaN converts to empty -- and writes an empty field to it as NaN. The surface test binds
+// the field through the anchor.
+TEST_F(stale_files, a_double_property_binds_a_nullable_double) {
+    auto const profiles = resolve_profiles({profiles_dir / "base.winxl-profile"},
+                                           load_restored_packages(restored_packages_file),
+                                           {.directories = {components_dir}});
+    auto const types = load_type_map(profiles_dir / "types.json");
+    run(profiles, types, {}, out(), nullptr);
+
+    auto const header = read_file(dir_ / L"BindingPairs.h");
+    EXPECT_NE(header.find("static void bind(Slider const& control, "
+                          "core::observable<core::nullable<double>>& field,"),
+              std::string::npos);
+
+    std::string parts;
+    for (auto&& name : {L"wrapper-00.cpp", L"wrapper-01.cpp"}) {
+        parts += read_file(dir_ / L"parts" / name);
+    }
+    EXPECT_NE(parts.find("-> core::nullable<double> { return c.value(); }"), std::string::npos);
+    EXPECT_NE(parts.find("c.value(value.value_or(std::numeric_limits<double>::quiet_NaN()))"),
+              std::string::npos);
+
+    auto const surface = read_file(dir_ / L"parts" / L"schema_surface.cpp");
+    EXPECT_NE(surface.find("Slider_value_paired_core__nullable_double_"), std::string::npos);
+}

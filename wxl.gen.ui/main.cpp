@@ -220,9 +220,11 @@ wxl::Teardown wxl_launched() {
     // Значок строки — перед первым словом сведений, как в дереве. Разметка
     // разбирается под кегль блока, поэтому новый кегль разбирает её заново.
     // Наблюдатели настроек и сведений держат редактор и настройки простыми
-    // указателями: живут они столько же, сколько окно, — до Teardown.
+    // указателями: живут они столько же, сколько окно, — до Teardown. Пока поле
+    // кегля пусто, сведения строятся под кегль, который у блока уже есть.
     auto const showInfo = [details, preferences = settings.get()](Description const& info) {
-        double const size = preferences->detailsFontSize.get();
+        auto const chosen = preferences->detailsFontSize.get();
+        double const size = chosen ? *chosen : details.fontSize();
         details.fontSize(size);
         details.lineHeight(std::round(size * 22.0 / 16.0));
         if (!info.icon) {
@@ -266,7 +268,10 @@ wxl::Teardown wxl_launched() {
         editor->englishDocumentation(english);
         saveSettings(*raw);
     });
-    settings->detailsFontSize.on_change([raw = settings.get(), editor = document.get(), showInfo](double) noexcept {
+    // Опустевшее поле кегля не меняет ничего: ни сведений, ни реестра.
+    settings->detailsFontSize.on_change([raw = settings.get(), editor = document.get(), showInfo](
+                                            core::nullable<double> const& size) noexcept {
+        if (!size) return;
         showInfo(editor->info.get());
         saveSettings(*raw);
     });
