@@ -6,7 +6,7 @@
 //     auto const zoom = ZoomEffect {};
 //     CompositionWindow {
 //         zoom,
-//         titleBar = {rightHeader = Button {
+//         titleBar = TitleBar {rightHeader = Button {
 //             onClick += [zoom] { zoom.model().zoomIn(); },
 //             isEnabled = BindOutput {zoom.model().canZoomIn()},
 //         }},

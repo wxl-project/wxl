@@ -210,18 +210,19 @@ using namespace wxl::dsl;
 }
 
 // A method written as a tag: Window.SetTitleBar takes one argument and hands
-// nothing back, and the profile narrows it to the TitleBar control -- so the
-// tag takes one built, builds one from braces, and a lone TitleBar inside the
-// window's braces is routed to it by type. The button colours are nullable:
-// empty hands the colour back to the system.
-[[maybe_unused]] void window_title_bar(Window const& window, TitleBar const& built) {
+// nothing back, so the tag takes what the method takes -- any element, a
+// TitleBar control built in place or a plain Grid alike. The button colours
+// are nullable: empty hands the colour back to the system.
+[[maybe_unused]] void window_title_bar(Window const& window, TitleBar const& built,
+                                       Grid const& grid) {
     Window assigned{extendsContentIntoTitleBar = true, titleBar = built};
-    Window braced{
+    Window inPlace{
         extendsContentIntoTitleBar = true,
-        titleBar = {leftHeader = TextBlock{L"App"}, rightHeader = Button{L"Sign in"}},
+        titleBar = TitleBar{leftHeader = TextBlock{L"App"}, rightHeader = Button{L"Sign in"}},
     };
-    Window routed{built};
+    Window gridded{titleBar = grid};
     window.titleBar(built);
+    window.titleBar(grid);
 
     AppWindowTitleBar const bar = window.appWindow().titleBar();
     bar.preferredHeightOption(TitleBarHeightOption::Tall);

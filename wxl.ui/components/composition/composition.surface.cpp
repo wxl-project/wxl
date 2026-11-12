@@ -35,7 +35,8 @@ using namespace wxl::dsl;
 
 // wxl's own window written the same way: a handle, so every member is const
 // and the tags apply to it; its title bar is placed by the window itself, so
-// it is built right in the braces; its own events take the same tags, and a
+// it is built right in the braces -- any element, as on Window, and a lone
+// TitleBar is routed to it by type; its own events take the same tags, and a
 // copy captured by a lambda is the same window.
 [[maybe_unused]] void composition_window(TitleBar const& built, Grid const& page,
                                          async::cancellation_token token) {
@@ -43,7 +44,7 @@ using namespace wxl::dsl;
         title = L"App",
         minSize = {820, 560},
         extendsContentIntoTitleBar = true,
-        titleBar = {leftHeader = TextBlock{L"App"}, rightHeader = Button{L"Sign in"}},
+        titleBar = TitleBar{leftHeader = TextBlock{L"App"}, rightHeader = Button{L"Sign in"}},
         zoomFactor = 1.25,
         onClosing +=
         [](Object const&, WindowClosingEventArgs& args) { args.cancel(!args.cancel()); },
@@ -54,6 +55,7 @@ using namespace wxl::dsl;
         page,
     };
     CompositionWindow routed{built, page};
+    CompositionWindow const gridded{titleBar = page};
     CompositionWindow const legacy{L"App", SizeInt32{820, 560}};
 
     // The scene's background is a tag as well: a colour, or a picture with the

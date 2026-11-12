@@ -1,5 +1,5 @@
-// Compile-time check of the declarative surface of the custom layouts, with
-// the lines of their schema entries (custom_layouts.schema.h). Built into the
+// Compile-time check of the declarative surface of the custom layouts where it
+// does not follow from their descriptions (component.json). Built into the
 // surface test of every profile that selects the component; nothing here runs.
 
 #include "Bind.h"
@@ -21,15 +21,7 @@ using namespace wxl::dsl;
     LayoutPanel{layout = custom};
 }
 
-// AvailableSizeLayout -- written by hand, so its schema lines are too. The two properties are reported, never taken:
-// BindInput is the one form they accept.
-[[maybe_unused]] void AvailableSizeLayout_availableWidth_bound(
-    ::wxl::AvailableSizeLayout const& object, ::wxl::core::observable<double>& field) {
-    ::wxl::impl::apply_argument(
-        object, ::wxl::dsl::schema::AvailableSizeLayout::availableWidth = ::wxl::BindInput{field});
-    ::wxl::impl::apply_argument(
-        object, ::wxl::dsl::schema::AvailableSizeLayout::availableHeight = ::wxl::BindInput{field});
-}
+// The two properties are reported, never taken: BindInput is the one form they accept.
 [[maybe_unused]] void AvailableSizeLayout_in_braces(::wxl::core::observable<double>& width,
                                                     ::wxl::core::observable<double>& height) {
     using namespace ::wxl;

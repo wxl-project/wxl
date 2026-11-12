@@ -52,7 +52,7 @@
 //         title = L"Пример",
 //         minSize = {820, 560},
 //         extendsContentIntoTitleBar = true,
-//         titleBar = {leftHeader = ..., content = ..., rightHeader = ...},
+//         titleBar = TitleBar {leftHeader = ..., content = ..., rightHeader = ...},
 //         onClosed += [] { ... },
 //         page,
 //     };
@@ -250,7 +250,8 @@ public:
     UIElement content() const;
 
     /// Безымянный элемент в скобках окна -- его содержимое; безымянный
-    /// TitleBar -- его заголовок, как у генерируемого Window.
+    /// TitleBar -- его заголовок: заголовок это окно ставит на место само, и в
+    /// содержимом TitleBar не стоит.
     void setPositional(UIElement const& value) const { content(value); }
     void setPositional(TitleBar const& value) const { titleBar(value); }
 
@@ -283,7 +284,7 @@ public:
     // окно. В отличие от Window, элемент ставит на место само окно -- строкой
     // над содержимым, -- поэтому он и пишется прямо в скобках окна:
     //
-    //     titleBar = {leftHeader = ..., content = ..., rightHeader = ...}
+    //     titleBar = TitleBar {leftHeader = ..., content = ..., rightHeader = ...}
     //
     // Кнопки окна рядом с ним рисует тоже окно, в XAML: встроенным стилем
     // WindowCaptionButton, высотой полосы заголовка и с её масштабом --

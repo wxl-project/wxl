@@ -147,51 +147,9 @@
         }
     ],
 
-    // The vocabulary of the classes wxl writes by hand, where no metadata
-    // declares it. A tag dispatches through a template on the object, so a
-    // key and a tag are all a member of such a class needs to be written in
-    // braces; the class itself declares the member. CompositionWindow is the
-    // one so far: how much its whole content is enlarged, the client size it
-    // took (physical pixels and the scale they are divided by, straight from
-    // WM_SIZE), the moment its place changed, and the request to close it,
-    // which a handler may refuse. Closing is AppWindow's in the profiles that
-    // list AppWindow; named here, it is there in every profile, and the key
-    // and the tag are one either way.
+    // The members of generated classes that wxl writes by hand. The classes
+    // wxl writes whole are described by their components (component.json).
     "handWrittenMembers": {
-        "properties": [
-            { "property": "ZoomFactor", "value": "double" },
-            { "property": "AvailableWidth", "value": "double" },
-            { "property": "AvailableHeight", "value": "double" },
-            { "property": "Emboss", "value": "double" },
-            { "property": "Rim", "value": "double" },
-            { "property": "Slope", "value": "double" },
-            { "property": "Rounded", "value": "bool" },
-            { "property": "Smooth", "value": "double" },
-            { "property": "Rise", "value": "double" },
-            { "property": "Travel", "value": "double" },
-            { "property": "HoleShadow", "value": "double" },
-            { "property": "HoleSoftness", "value": "double" },
-            { "property": "CastBlur", "value": "float" },
-            { "property": "LampColor", "value": "Color" },
-            { "property": "AmbientColor", "value": "Color" },
-            { "property": "PressDivesLamp", "value": "bool" },
-            { "property": "PressFlashes", "value": "bool" },
-            { "property": "PressMovesLabel", "value": "bool" },
-            { "property": "PressShades", "value": "bool" },
-            { "property": "DiveDepth", "value": "float" },
-            { "property": "DiveGain", "value": "float" },
-            { "property": "ShadeAmount", "value": "float" },
-            { "property": "LabelShade", "value": "double" },
-            { "property": "FullSize", "value": "float" },
-            { "property": "Gamma", "value": "float" },
-            { "property": "HeaderIcon", "value": "IconElement" },
-            { "property": "ActionIcon", "value": "IconElement" },
-            { "property": "IsActionIconVisible", "value": "bool" },
-            { "property": "IsClickEnabled", "value": "bool" },
-            { "property": "ContentAlignment", "value": "SettingsCardContentAlignment", "include": "../SettingsCardContentAlignment.h" }
-        ],
-        "events": ["ClientSizeChanged", "Closing", "GeometryChanged"],
-
         // A property a generated class has as a binding target alone: no
         // metadata declares it and no setter writes it -- the hand-written
         // function named here binds it, `function(control, field, direction)`,

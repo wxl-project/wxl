@@ -1,5 +1,5 @@
-// Compile-time check of the declarative surface of the hand-written controls,
-// with the lines of their schema entries (controls.schema.h).
+// Compile-time check of the declarative surface of the hand-written controls
+// where it does not follow from their descriptions (component.json).
 // Built into the surface test of every profile that selects the component;
 // nothing here runs.
 
@@ -59,36 +59,6 @@ using namespace wxl::dsl;
         [](OverlayCard const& self, Object const&) { self.padding({8}); });
 }
 
-// SettingsCard -- written by hand, so its schema lines are too.
-[[maybe_unused]] void SettingsCard_header_assigned(::wxl::SettingsCard const& object,
-                                                   ::wxl::Object const& value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsCard::header = value);
-}
-[[maybe_unused]] void SettingsCard_description_assigned(::wxl::SettingsCard const& object,
-                                                        ::wxl::hstring const& value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsCard::description = value);
-}
-[[maybe_unused]] void SettingsCard_headerIcon_assigned(::wxl::SettingsCard const& object,
-                                                       ::wxl::IconElement const& value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsCard::headerIcon = value);
-}
-[[maybe_unused]] void SettingsCard_actionIcon_assigned(::wxl::SettingsCard const& object,
-                                                       ::wxl::IconElement const& value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsCard::actionIcon = value);
-}
-[[maybe_unused]] void SettingsCard_isClickEnabled_assigned(::wxl::SettingsCard const& object,
-                                                           bool value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsCard::isClickEnabled = value);
-}
-[[maybe_unused]] void SettingsCard_isActionIconVisible_assigned(::wxl::SettingsCard const& object,
-                                                                bool value) {
-    ::wxl::impl::apply_argument(object,
-                                ::wxl::dsl::schema::SettingsCard::isActionIconVisible = value);
-}
-[[maybe_unused]] void SettingsCard_contentAlignment_assigned(
-    ::wxl::SettingsCard const& object, ::wxl::SettingsCardContentAlignment value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsCard::contentAlignment = value);
-}
 // The braces as the settings page writes them: the named members, the setting as the unnamed child, a click.
 [[maybe_unused]] void SettingsCard_in_braces() {
     using namespace ::wxl;
@@ -102,23 +72,6 @@ using namespace wxl::dsl;
                  Button{u"Setting"}};
 }
 
-// SettingsExpander -- written by hand, so its schema lines are too.
-[[maybe_unused]] void SettingsExpander_header_assigned(::wxl::SettingsExpander const& object,
-                                                       ::wxl::Object const& value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsExpander::header = value);
-}
-[[maybe_unused]] void SettingsExpander_description_assigned(::wxl::SettingsExpander const& object,
-                                                            ::wxl::hstring const& value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsExpander::description = value);
-}
-[[maybe_unused]] void SettingsExpander_headerIcon_assigned(::wxl::SettingsExpander const& object,
-                                                           ::wxl::IconElement const& value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsExpander::headerIcon = value);
-}
-[[maybe_unused]] void SettingsExpander_isExpanded_assigned(::wxl::SettingsExpander const& object,
-                                                           bool value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsExpander::isExpanded = value);
-}
 // The braces as the settings page writes them: the head, its setting as the unnamed child, the cards of the list.
 [[maybe_unused]] void SettingsExpander_in_braces() {
     using namespace ::wxl;
@@ -131,11 +84,6 @@ using namespace wxl::dsl;
                      items[SettingsCard{header = TextBlock{u"Spatial audio"}}]};
 }
 
-// HeaderedContentControl -- written by hand, so its schema line is too.
-[[maybe_unused]] void HeaderedContentControl_header_assigned(
-    ::wxl::HeaderedContentControl const& object, ::wxl::Object const& value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HeaderedContentControl::header = value);
-}
 [[maybe_unused]] void HeaderedContentControl_in_braces() {
     using namespace ::wxl;
     using namespace ::wxl::dsl;

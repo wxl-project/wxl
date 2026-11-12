@@ -20,5 +20,37 @@
   ],
   "surface": "composition.surface.cpp",
   "libraries": [],
-  "description": "Composition window, drawing surface, texture cache, theme brush and the window shade drawn on a surface."
+  "description": "Composition window, drawing surface, texture cache, theme brush and the window shade drawn on a surface.",
+  "classes": {
+    "CompositionWindow": {
+      "header": "CompositionWindow.h",
+      "properties": {
+        "Background": "Windows.UI.Color",
+        "Content": "Microsoft.UI.Xaml.UIElement",
+        "ZoomFactor": "Double",
+        "ExtendsContentIntoTitleBar": "Boolean",
+        "TitleBar": "Microsoft.UI.Xaml.UIElement",
+        "SystemBackdrop": "Microsoft.UI.Xaml.Media.SystemBackdrop",
+        "Title": "String",
+        "MinSize": "Windows.Graphics.SizeInt32",
+        "Placement": "String",
+        "FullScreen": "Boolean",
+        "RequestedTheme": "Microsoft.UI.Xaml.ElementTheme",
+        "DarkFrame": "Boolean"
+      },
+      "events": {
+        "Closing": "WindowClosingEventArgs",
+        "Closed": "Object",
+        "GeometryChanged": "Object",
+        "ClientSizeChanged": "ClientSize",
+        "KeyDown": "Windows.System.VirtualKey",
+        "PointerPressed": "Microsoft.UI.Input.PointerPoint",
+        "PointerMoved": "Microsoft.UI.Input.PointerPoint",
+        "PointerReleased": "Microsoft.UI.Input.PointerPoint",
+        "PointerWheelChanged": "Microsoft.UI.Input.PointerPoint"
+      }
+    },
+    "ClientSize": { "header": "CompositionWindow.h" },
+    "WindowClosingEventArgs": { "header": "CompositionWindow.h" }
+  }
 }

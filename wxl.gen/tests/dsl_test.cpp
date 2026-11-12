@@ -75,15 +75,15 @@ TEST_F(members, a_colour_beside_a_brush_leaves_the_list) {
               std::string::npos);
 }
 
-// A braced tag needs one type; a list of them is an ordinary list tag.
-TEST_F(members, a_braced_tag_has_one_type) {
+// A name valued with a class is a tag like any other: the class where every
+// declaration agrees on it, the list where they do not.
+TEST_F(members, a_class_valued_name_takes_its_class_or_the_list) {
     gen::dsl d;
-    d.property_value_types["TitleBar"] = {"TitleBar"};
+    d.property_value_types["TitleBar"] = {"UIElement"};
     d.property_value_types["Header"] = {"TitleBar", "Object"};
-    d.braced = {"TitleBar", "Header"};
 
     auto const text = write(d);
-    EXPECT_NE(text.find("impl::braced_property_tag<PropertyKey::TitleBar, TitleBar> titleBar;"),
+    EXPECT_NE(text.find("impl::property_tag<PropertyKey::TitleBar, UIElement> titleBar;"),
               std::string::npos);
     EXPECT_NE(text.find("impl::property_tag<PropertyKey::Header, impl::one_of<Object, TitleBar>> header;"),
               std::string::npos);

@@ -109,7 +109,6 @@ add_library(wxl.ui.common STATIC
     src/DateTime.h
     src/Color.h
     src/Relief.h
-    src/SettingsCardContentAlignment.h
     src/Thickness.h
     src/CornerRadius.h
     src/TaggedValue.h

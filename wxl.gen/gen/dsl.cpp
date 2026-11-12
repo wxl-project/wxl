@@ -244,15 +244,6 @@ void write_property_tag(std::ostream& file, dsl const& d, std::string const& nam
         return;
     }
 
-    // A class the tag builds from braces as well as takes built:
-    // `titleBar = { leftHeader = ..., content = ... }`. Only with a
-    // definite type -- a disagreement leaves nothing to build.
-    if (d.braced.count(name) && types.size() == 1) {
-        std::print(file, "inline constexpr impl::braced_property_tag<PropertyKey::{}, {}> {};\n", name,
-                   value, member_name(name));
-        return;
-    }
-
     // A property whose declarations disagree on the type takes each of them,
     // impl::one_of over the list. An enum-typed property is written the same
     // way: the values it accepts come with its type (impl::enum_values), so

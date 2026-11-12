@@ -898,43 +898,6 @@ void apply_argument(Obj const& object, Arg&& argument) {
     }
 }
 
-// The value of a braced tag: an object of the class, either handed over built
-// or built right here from the braces the tag was assigned.
-//
-// A class of its own because the braces cannot reach the class's constructor
-// directly. `titleBar = { leftHeader = ... }` copy-list-initialises the
-// parameter, and the constructor taking setters is explicit -- which it has to
-// stay, or every function taking a wrapper would accept braces too. This type's
-// constructors are not explicit and exist only as a tag's parameter. It adds
-// no data, so it is the object itself, and the setter it reaches takes it as
-// one.
-template <typename T>
-struct braced : T {
-    braced(T const& built) : T{built} {}
-
-    template <typename... Setters>
-        requires(sizeof...(Setters) > 0) && setter_pack<T, Setters...>
-    braced(Setters&&... setters) : T{std::forward<Setters>(setters)...} {}
-};
-
-// A property tag whose value is a class it can also build from braces:
-//
-//     Window { titleBar = { leftHeader = back, content = path } }
-//
-// says what `titleBar = TitleBar { leftHeader = back, content = path }` says,
-// the class being known from the property. Only a property declared with such a
-// class gets this tag -- a profile narrows a setter method to one (see
-// wxl.gen.common/profile.h). A built object, or anything that converts to one, still
-// goes through the deduced assignment every tag has.
-template <PropertyKey key, typename Value, typename Owner = void>
-struct braced_property_tag : deduced_property_tag<key, Owner> {
-    using deduced_property_tag<key, Owner>::operator=;
-
-    setter_op<key, braced<Value>, Owner> operator=(braced<Value> value) const {
-        return {std::move(value)};
-    }
-};
-
 }  // namespace impl
 
 // A preset: the constructor arguments themselves, kept in a variable and worn
@@ -1177,8 +1140,6 @@ template <EventKey key, typename Fn, typename Owner>
 inline constexpr bool describes<add_event_op_into<key, Fn, Owner>> = true;
 template <PropertyKey key, typename Value, typename Owner>
 inline constexpr bool describes<property_tag<key, Value, Owner>> = true;
-template <PropertyKey key, typename Value, typename Owner>
-inline constexpr bool describes<braced_property_tag<key, Value, Owner>> = true;
 template <EventKey key, typename Owner>
 inline constexpr bool describes<event_tag<key, Owner>> = true;
 template <typename... Setters>
