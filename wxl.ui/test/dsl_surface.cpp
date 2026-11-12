@@ -210,18 +210,19 @@ using namespace wxl::dsl;
 }
 
 // A method written as a tag: Window.SetTitleBar takes one argument and hands
-// nothing back, and the profile narrows it to the TitleBar control -- so the
-// tag takes one built, builds one from braces, and a lone TitleBar inside the
-// window's braces is routed to it by type. The button colours are nullable:
-// empty hands the colour back to the system.
-[[maybe_unused]] void window_title_bar(Window const& window, TitleBar const& built) {
+// nothing back, so the tag takes what the method takes -- any element, a
+// TitleBar control built in place or a plain Grid alike. The button colours
+// are nullable: empty hands the colour back to the system.
+[[maybe_unused]] void window_title_bar(Window const& window, TitleBar const& built,
+                                       Grid const& grid) {
     Window assigned{extendsContentIntoTitleBar = true, titleBar = built};
-    Window braced{
+    Window inPlace{
         extendsContentIntoTitleBar = true,
-        titleBar = {leftHeader = TextBlock{L"App"}, rightHeader = Button{L"Sign in"}},
+        titleBar = TitleBar{leftHeader = TextBlock{L"App"}, rightHeader = Button{L"Sign in"}},
     };
-    Window routed{built};
+    Window gridded{titleBar = grid};
     window.titleBar(built);
+    window.titleBar(grid);
 
     AppWindowTitleBar const bar = window.appWindow().titleBar();
     bar.preferredHeightOption(TitleBarHeightOption::Tall);
@@ -556,6 +557,110 @@ struct BoundModel : core::sta_refcounted {
     ScrollViewer{verticalOffset = Bind{model->amount}};
     ScrollViewer{verticalOffset = BindInput{model->amount}};
     ScrollViewer{schema::ScrollViewer::verticalOffset = Bind{model->amount}};
+}
+
+// A number is taken as the property's own type, converted at the `=`: a float
+// property takes a float and an int literal, a double one widens both, and a
+// binding keeps its field's type. A narrowing -- `rotation = 0.4` -- is a
+// warning on the line that writes it, which no assertion here can see.
+[[maybe_unused]] void numbers_take_the_property_type() {
+    auto const model = core::make_refcounted<BoundModel>();
+
+    Border{rotation = 0.4f};
+    Border{rotation = 2};
+    TextBlock{fontSize = 0.4f};
+    TextBlock{fontSize = 2};
+    Border{rotation = BindOutput{model->level}};
+    TextBlock{fontSize = BindOutput{model->level}};
+
+    static_assert(std::same_as<decltype(rotation = 2), impl::setter_op<PropertyKey::Rotation, float>>);
+    static_assert(
+        std::same_as<decltype(fontSize = 0.4f), impl::setter_op<PropertyKey::FontSize, double>>);
+}
+
+template <typename Tag, typename Value>
+concept assignable = requires(Tag const& tag, Value value) { tag = value; };
+
+// A character converts to a number, and is never meant as one: a tag of a number
+// refuses it.
+static_assert(!assignable<decltype(fontSize), char>);
+static_assert(!assignable<decltype(rotation), char16_t>);
+
+// A name the classes declare with different types takes each of them: opacity
+// is a double on a UIElement and a float on a Visual. A number written as one
+// of them is taken as that one; an integer is a conversion away from both, so
+// it is kept as it is and the setter of the object converts it. A truth value
+// is refused, a conversion away from both alike, and so is a character.
+[[maybe_unused]] void numbers_on_a_name_of_several_types() {
+    auto const model = core::make_refcounted<BoundModel>();
+    float const level = 0.5f;
+    double const amount = 0.5;
+
+    Border{opacity = 1};
+    Border{opacity = 0.5};
+    Border{opacity = 0.5f};
+    Border{opacity = level};
+    Border{opacity = amount};
+    Border{opacity = BindOutput{model->amount}};
+
+    constexpr PropertyKey key = PropertyKey::Opacity;
+    static_assert(std::same_as<decltype(opacity = 1), impl::setter_op<key, int>>);
+    static_assert(std::same_as<decltype(opacity = 0.5), impl::setter_op<key, double>>);
+    static_assert(std::same_as<decltype(opacity = 0.5f), impl::setter_op<key, float>>);
+    static_assert(std::same_as<decltype(opacity = level), impl::setter_op<key, float>>);
+    static_assert(std::same_as<decltype(opacity = amount), impl::setter_op<key, double>>);
+    static_assert(std::same_as<decltype(opacity = BindOutput{model->level}),
+                               impl::setter_op<key, BindOutput<float>>>);
+    static_assert(!assignable<decltype(opacity), bool>);
+    static_assert(!assignable<decltype(opacity), char>);
+    static_assert(!assignable<decltype(opacity), char16_t>);
+}
+
+// What is not a number goes to the setter as written. Content is an Object on a
+// ContentControl and a UIElement on a Flyout, and a template given to it is still
+// the template in the op: the object is built where the op is applied, not at
+// the `=`.
+[[maybe_unused]] void objects_on_a_name_of_several_types() {
+    Button{content = Template<Border>{}};
+    Flyout{content = Template<Border>{}};
+
+    static_assert(std::same_as<decltype(content = Template<Border>{}),
+                               impl::setter_op<PropertyKey::Content, Template<Border>>>);
+}
+
+// A list with a brush in it takes a colour as the tag of a brush does. No name of
+// the profiles is such a list, so the tag is written here.
+inline constexpr impl::property_tag<PropertyKey::Background, impl::one_of<Brush, double>>
+    brushOrNumber{};
+
+[[maybe_unused]] void colours_on_a_list_with_a_brush() {
+    Border{brushOrNumber = rgb(16, 18, 21)};
+
+    static_assert(std::same_as<decltype(brushOrNumber = rgb(16, 18, 21)),
+                               impl::setter_op<PropertyKey::Background, impl::solid_color_brush>>);
+}
+
+template <typename Obj, typename Value>
+concept placement_takes = requires(Obj const& object, Value const& value) {
+    impl::property_setter<PropertyKey::Placement>::set(object, value);
+};
+
+// Placement is a FlyoutPlacementMode on a flyout and a PlacementMode on a
+// tooltip, and its values are written once: a name both have is one value the
+// setter of either takes as its own, a name one of them has is that one's. The
+// other refuses it.
+[[maybe_unused]] void values_on_a_name_of_several_enumerations() {
+    MenuFlyout{placement = placement.bottom};
+    ToolTip{placement = placement.bottom};
+    MenuFlyout{placement = placement.full};
+    ToolTip{placement = placement.mouse};
+
+    static_assert(static_cast<FlyoutPlacementMode>(placement.bottom) == FlyoutPlacementMode::Bottom);
+    static_assert(static_cast<PlacementMode>(placement.bottom) == PlacementMode::Bottom);
+    static_assert(placement.full == FlyoutPlacementMode::Full);
+    static_assert(placement.mouse == PlacementMode::Mouse);
+    static_assert(placement_takes<ToolTip, std::remove_cvref_t<decltype(placement.bottom)>>);
+    static_assert(!placement_takes<ToolTip, std::remove_cvref_t<decltype(placement.full)>>);
 }
 
 // Copy construction must not be hijacked by the variadic constructor -- the
@@ -1017,10 +1122,10 @@ concept declares_snaps_to_tag = requires { typename T::SnapsToTag; };
 [[maybe_unused]] void the_schema_names_the_class(LinearGradientBrush const& brush) {
     namespace x = dsl::schema;
 
-    // Two classes declare StartPoint with different types, so the flat tag
-    // has none and `startPoint = {0, 0}` cannot compile through it: a braced
-    // list initialises a parameter of a known type, and template deduction
-    // never gives it one. Through the class the type is known again.
+    // Two classes declare StartPoint with different types, Point and Vector2,
+    // so the flat tag takes both and `startPoint = {0, 0}` cannot compile
+    // through it: the braced list fits either. Through the class the type is
+    // one again.
     impl::apply_argument(brush, x::LinearGradientBrush::startPoint = {0.0f, 0.0f});
     impl::apply_argument(brush, x::LinearGradientBrush::endPoint = Point{1.0f, 1.0f});
 

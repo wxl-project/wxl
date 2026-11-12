@@ -110,7 +110,7 @@ public:
     bool remove_change(event_token& token) { return changed_.remove(token); }
 
     /// The same for a watch built into its subscriber, by its node: a change_watch.
-    bool remove_change(typename changed_event::func_t& node) { return changed_.remove(node); }
+    bool remove_change(changed_event::func_t& node) { return changed_.remove(node); }
 
     /// Watches for changes on behalf of a binding -- a view mirroring the list -- the list
     /// keeping the watch, as observable::watch_for_binding does, and a binding_scope open

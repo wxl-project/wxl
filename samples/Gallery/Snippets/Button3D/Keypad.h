@@ -16,7 +16,8 @@ struct Model {
     core::observable<bool> rounded {false};
     core::observable<double> rise {3.0}, travel {5.0};
     // Постоянный свет и тени.
-    core::observable<double> shadow {0.7}, azimuth {120.0}, elevation {50.0};
+    core::observable<double> shadow {0.7};
+    core::observable<float> azimuth {120.0f}, elevation {50.0f};
     core::observable<double> holeShadow {1.0}, holeSoftness {1.0};
     core::observable<float> castBlur {1.0f};
     // Нажатие.

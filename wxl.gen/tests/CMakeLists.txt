@@ -2,6 +2,7 @@ wxl_add_gtest(wxl.gen.tests
     SRC
         doc_language_test.cpp
         documentation_ids_test.cpp
+        dsl_test.cpp
         emit_test.cpp
         generate_test.cpp
         group_namespaces_test.cpp

@@ -121,7 +121,7 @@ __declspec(noinline) task<long long> cancelable_loop_links(std::coroutine_handle
 class handed_op : public async_op_t<int>
 {
 public:
-    explicit handed_op(int value) { set_value(int(value)); }
+    explicit handed_op(int value) { set_value(std::move(value)); }
 
 protected:
     bool execute() override { return true; }

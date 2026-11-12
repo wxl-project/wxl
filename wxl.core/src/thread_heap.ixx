@@ -33,7 +33,7 @@ public:
     void init(size_t heap_size = InitialHeapSize) noexcept;
 
     /// Tests whether the Windows heap exists.
-    inline bool initialized() noexcept { return heap_ != nullptr; }
+    inline bool initialized() const noexcept { return heap_ != nullptr; }
 
     /// Allocates \p size bytes from the heap; a failure aborts the process.
     void* alloc(size_t size) noexcept;

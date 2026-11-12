@@ -370,6 +370,10 @@ public:
         using t_task = std::remove_cvref_t<t_next_task>;
         using t_result = detail::result_of_t<T, t_task>;
 
+        static_assert(!std::is_rvalue_reference_v<t_result>,
+                      "next(): a continuation returning X&& has nothing a future could hold -- "
+                      "return X by value, or X& to refer to an object that outlives the future");
+
         future_shared_state_ptr ticket = core::make_refcounted<future_shared_state>();
 
         checked_state()->next<T, t_result>(std::forward<t_next_task>(task), ticket.get());
@@ -650,7 +654,7 @@ protected:
     /// Move constructor.
     inline promise_base(promise_base&& other) noexcept : base(std::move(other)) {}
 
-    /// Copy assignmnet.
+    /// Copy assignment.
     inline promise_base& operator=(const promise_base& other) {
         future_shared_state* const my_state = state();
         future_shared_state* const other_state = other.state();
@@ -666,7 +670,7 @@ protected:
         return *this;
     }
 
-    /// Move assignmnet.
+    /// Move assignment.
     inline promise_base& operator=(promise_base&& other) noexcept {
         if (future_shared_state* const my_state = state())
             my_state->checked_decrement_promise_count();
@@ -743,9 +747,22 @@ public:
     future<T> get_future() const { return future<T>(checked_state()); }
 
     /// Sets the result to the given value.
+    ///
+    /// The value is stored as a T -- named, not deduced from the argument, which would drop the
+    /// const of a `promise<const X>` and the reference of a `promise<X&>` -- since that is the
+    /// type `future<T>::get()` reads it back as.
     /// \return true if this call resolved the state; false if it was already resolved by
     ///         another concurrent set_value()/set_exception() call. May be ignored.
-    bool set_value(const T& value) { return checked_state()->set_value(value); }
+    bool set_value(const T& value) { return checked_state()->set_value<T>(value); }
+
+    /// Sets the result to the given value, moving it into the shared state.
+    /// \return true if this call resolved the state; false if it was already resolved by
+    ///         another concurrent set_value()/set_exception() call. May be ignored.
+    bool set_value(T&& value)
+        requires(!std::is_reference_v<T>)
+    {
+        return checked_state()->set_value<T>(std::move(value));
+    }
 
     /// Returns a promise without a shared state.
     static promise<T> invalid_promise() { return promise(nullptr); }

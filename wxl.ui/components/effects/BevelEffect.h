@@ -84,7 +84,7 @@ public:
         for (auto const& ring : rings) setPositional(ring);
     }
 
-    void strokeThickness(float value) const;
+    void strokeThickness(double value) const;
     void blurRadius(float value) const;
     void offset(float value) const;
     void margin(Thickness value) const;

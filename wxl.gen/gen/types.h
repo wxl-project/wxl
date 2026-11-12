@@ -117,9 +117,10 @@ type_use map_type(md::TypeSig const& sig, type_index const& index);
 type_use map_type(md::TypeDef const& type, type_index const& index);
 
 // A type metadata carries as a signature element rather than as a TypeDef of
-// its own, named the way the metadata spells it: "String". A synthetic member
-// is the only thing that has to name one, since nothing resolves a TypeDef
-// for it.
+// its own, named the way the metadata spells it: "String", "Double", "Object"
+// (element_type_name, profile.h). A synthetic member and the description of a
+// class a component writes by hand name one so, since nothing resolves a
+// TypeDef for it.
 type_use map_element_type(std::string_view metadata_name);
 
 // Whether `type` is a class wxl represents as a wxl::Collection rather than

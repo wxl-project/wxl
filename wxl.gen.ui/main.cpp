@@ -377,7 +377,7 @@ wxl::Teardown wxl_launched() {
     // Левая часть — по ширине дерева: самая широкая строка, рамка и поле.
     // Граница перетаскивается и дальше, до следующей подгонки.
     left->wantedWidth.on_change([editorView](double width) noexcept {
-        editorView.openPaneLength(static_cast<float>(std::clamp(std::ceil(width) + 14.0, 240.0, 900.0)));
+        editorView.openPaneLength(std::clamp(std::ceil(width) + 14.0, 240.0, 900.0));
     });
 
     // Настройки — страницей, на месте редактора, как у NavigationView принято.
@@ -583,7 +583,7 @@ wxl::Teardown wxl_launched() {
         // Mica, как у Gallery: заголовок и панель навигации прозрачны, сквозь
         // них виден материал.
         systemBackdrop = MicaBackdrop {},
-        titleBar = {
+        titleBar = TitleBar {
             title = BindOutput {document->title},
             // Стрелка на месте всегда, как в Gallery; возвращаться некуда — она
             // неактивна.

@@ -73,7 +73,7 @@ double pure_pop(unsigned depth, unsigned rounds) {
         total += std::chrono::steady_clock::now() - t0;
     }
 
-    return ns_per(total, uint64_t(depth) * rounds);
+    return ns_per(total, static_cast<uint64_t>(depth) * rounds);
 }
 
 // The one live block travels through here, so that what the free is handed is a value the

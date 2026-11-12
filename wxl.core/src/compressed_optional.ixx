@@ -60,7 +60,7 @@ struct optional_selector {
 
 /// The type that represents an optional `T`, as selected by `wxl::core::optional_selector`.
 template <typename T>
-using nullable = typename optional_selector<T>::nullable;
+using nullable = optional_selector<T>::nullable;
 
 /// Represents an optional value whose empty state is a sentinel value of `T`, named by
 /// `TSentinel`, so the object is the size of `T`.

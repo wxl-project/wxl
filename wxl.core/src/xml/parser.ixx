@@ -80,6 +80,7 @@ public:
     ///        in a test arrives as a literal.
     /// \param into where the tree is built. Outlives the parser, being what
     ///        holds the tree afterwards.
+    /// \param opts which kinds of node the tree keeps.
     /// \param file_name what a parsing_exception names. A view, so it outlives
     ///        this too.
     parser(std::string_view source, arena& into, const options& opts = {},

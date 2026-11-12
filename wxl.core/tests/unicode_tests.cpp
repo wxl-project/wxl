@@ -448,3 +448,11 @@ TEST(unicode, repairing_utf8_marks_each_maximal_subpart) {
 static_assert(sizeof(wchar_t) == sizeof(char16_t),
               "UTF-16 text is handed to Windows as wchar_t; this tree is Windows only");
 static_assert(alignof(wchar_t) == alignof(char16_t));
+
+// The five types a character is held in, and nothing that merely converts to one.
+static_assert(wxl::core::character<char> && wxl::core::character<wchar_t> &&
+              wxl::core::character<char8_t> && wxl::core::character<char16_t> &&
+              wxl::core::character<char32_t>);
+static_assert(!wxl::core::character<signed char> && !wxl::core::character<unsigned char> &&
+              !wxl::core::character<int> && !wxl::core::character<bool> &&
+              !wxl::core::character<char const>);

@@ -174,17 +174,9 @@ struct closure {
     // and the DSL exactly like the real ones; only the body differs.
     std::map<winmd::reader::TypeDef, std::vector<synthetic_t>> synthetic;
 
-    // A method a profile writes as a tag (see profile.h), with the class it
-    // narrows the value to resolved -- empty when it keeps the parameter's own
-    // type. The narrowed class is pulled into the closure the way a synthetic
-    // member's type is.
-    struct setter {
-        setter_method declaration;
-        winmd::reader::TypeDef type;
-    };
-
-    // Per class: the methods written as tags on it.
-    std::map<winmd::reader::TypeDef, std::vector<setter>> setter_methods;
+    // Per class: the methods a profile writes as tags on it (see profile.h), by
+    // the method's name.
+    std::map<winmd::reader::TypeDef, std::set<std::string>> setter_methods;
 
     // Per class: the attached properties its statics declare. In metadata an
     // attached property is nothing but a Set<X>(element, value) / Get<X>
@@ -192,6 +184,11 @@ struct closure {
     // name is what the builder syntax writes on the *child*, so it takes part
     // in the key enum like any other property name.
     std::map<winmd::reader::TypeDef, std::vector<std::string>> attached;
+
+    // The types of the metadata the descriptions of the selected components name -- a base, a
+    // property's value, an element, an event's args -- by the full name they are written with.
+    // Each is a root of the walk with the members a discovered type has.
+    std::map<std::string, winmd::reader::TypeDef> described_types;
 
     std::set<std::string> property_names;
     std::set<std::string> event_names;

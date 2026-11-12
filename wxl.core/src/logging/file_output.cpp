@@ -40,7 +40,7 @@ void shift_history(const std::filesystem::path& path, const std::size_t history_
 
 }  // namespace
 
-file_output::file_output(const std::filesystem::path& path, const file_options options)
+file_output::file_output(const std::filesystem::path& path, const file_options& options)
     : directory_(path.parent_path()),
       stem_(path.stem()),
       extension_(path.extension()),

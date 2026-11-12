@@ -54,8 +54,8 @@ public:
     UIElement content() const;
 
     /// Размер pane по оси панели; его же меняет перетаскивание границы.
-    void openPaneLength(float value) const;
-    float openPaneLength() const;
+    void openPaneLength(double value) const;
+    double openPaneLength() const;
 
     /// Horizontal -- части рядом, vertical -- одна над другой.
     void orientation(Orientation value) const;
@@ -66,8 +66,8 @@ public:
     SplitViewPanePlacement panePlacement() const;
 
     /// Ширина зазора -- он же поле, за которое тянут.
-    void spacing(float value) const;
-    float spacing() const;
+    void spacing(double value) const;
+    double spacing() const;
 
     /// Безымянный элемент -- pane, если её ещё нет, иначе content.
     using base_t::setPositional;

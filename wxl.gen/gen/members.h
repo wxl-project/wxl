@@ -102,10 +102,6 @@ struct member_info {
     // this method of the projection, `SetTitleBar`.
     std::string method_call;
 
-    // Its value is a class narrower than the method's parameter, named by
-    // the profile -- which is what lets the tag build one from braces.
-    bool braced = false;
-
     // The form with a token of an asynchronous method: its last parameter, the token, is wxl's and
     // not the projection's -- the call is made without it, and the operation stands under it
     // (result.from_winrt is the operation's from_winrt_cancelable).

@@ -6,4 +6,5 @@
 #include "HtmlBlock.h"
 #include "Panels.h"
 #include "launch.h"
+#include "WindowNative.h"
 #include <wxl/brushes.h>
