@@ -29,6 +29,7 @@
         "Content": "Microsoft.UI.Xaml.UIElement",
         "ZoomFactor": "Double",
         "ExtendsContentIntoTitleBar": "Boolean",
+        "TitleBar": "Microsoft.UI.Xaml.UIElement",
         "SystemBackdrop": "Microsoft.UI.Xaml.Media.SystemBackdrop",
         "Title": "String",
         "MinSize": "Windows.Graphics.SizeInt32",

@@ -174,17 +174,9 @@ struct closure {
     // and the DSL exactly like the real ones; only the body differs.
     std::map<winmd::reader::TypeDef, std::vector<synthetic_t>> synthetic;
 
-    // A method a profile writes as a tag (see profile.h), with the class it
-    // narrows the value to resolved -- empty when it keeps the parameter's own
-    // type. The narrowed class is pulled into the closure the way a synthetic
-    // member's type is.
-    struct setter {
-        setter_method declaration;
-        winmd::reader::TypeDef type;
-    };
-
-    // Per class: the methods written as tags on it.
-    std::map<winmd::reader::TypeDef, std::vector<setter>> setter_methods;
+    // Per class: the methods a profile writes as tags on it (see profile.h), by
+    // the method's name.
+    std::map<winmd::reader::TypeDef, std::set<std::string>> setter_methods;
 
     // Per class: the attached properties its statics declare. In metadata an
     // attached property is nothing but a Set<X>(element, value) / Get<X>

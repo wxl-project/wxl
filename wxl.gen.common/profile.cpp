@@ -234,46 +234,23 @@ std::vector<synthetic_member> read_synthetic_members(value const& entry,
     return members;
 }
 
-// The methods a profile writes as tags. Keyed by the method's own name, each
-// an object that may narrow the value to a more specific class of the
-// metadata. Whether the method exists, takes one argument and returns nothing
-// is the class writer's to check: only it has read the signatures.
-std::vector<setter_method> read_setter_methods(value const& entry,
-                                               std::filesystem::path const& source,
-                                               std::string_view type_name) {
+// The methods a profile writes as tags, by the method's own name. Whether the
+// method exists, takes one argument and returns nothing is the class writer's
+// to check: only it has read the signatures.
+std::set<std::string> read_setter_methods(value const& entry, std::filesystem::path const& source,
+                                          std::string_view type_name) {
     value const* const listed = entry.find("setterMethods");
     if (!listed) {
         return {};
     }
-    if (!listed->is_object()) {
-        fail(source, std::format("type '{}': 'setterMethods' must be an object keyed by method "
-                                 "name",
-                                 type_name));
-    }
-
-    std::vector<setter_method> methods;
-    for (value const& definition : listed->members()) {
-        std::string const name{definition.name().chars()};
-        if (!definition.is_object()) {
-            fail(source, std::format("type '{}': setter method '{}' must be an object", type_name,
-                                     name));
-        }
+    auto methods = read_string_set(*listed, source, "setterMethods");
+    for (auto&& name : methods) {
         if (!name.starts_with("Set") || name.size() == 3) {
             fail(source, std::format("type '{}': setter method '{}' has no name after 'Set' to "
                                      "give its tag",
                                      type_name, name));
         }
-        setter_method method{name, {}};
-        if (value const* const type = definition.find("type")) {
-            if (!type->is_string()) {
-                fail(source, std::format("type '{}': setter method '{}': 'type' must be a string",
-                                         type_name, name));
-            }
-            method.type = text(*type);
-        }
-        methods.push_back(std::move(method));
     }
-    std::ranges::sort(methods, {}, &setter_method::method);
     return methods;
 }
 
@@ -1069,14 +1046,14 @@ struct profile_loader {
                 known[method] = call;
             }
         }
-        // Setter methods compose the same way, by the method's name.
+        // Setter methods compose the same way, by the method's name -- which is all
+        // there is to one, so a repetition never differs.
         for (auto&& [name, setters] : prof.setter_methods) {
             auto& known = result.setter_methods[name];
             for (auto&& setter : setters) {
-                auto const existing = std::ranges::find(known, setter.method, &setter_method::method);
-                if (define(by, std::format("setter method {}.{}", name, setter.method),
-                           existing != known.end() && *existing != setter, existing == known.end())) {
-                    known.push_back(setter);
+                if (define(by, std::format("setter method {}.{}", name, setter), false,
+                           !known.contains(setter))) {
+                    known.insert(setter);
                 }
             }
         }

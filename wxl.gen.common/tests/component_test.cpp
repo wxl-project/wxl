@@ -490,9 +490,6 @@ TEST(component, a_definition_other_than_the_profiles_is_refused) {
              {"replaced call Microsoft.UI.Xaml.Window.Close",
               R"("replacedCalls": {"Close": {"function": "f", "include": "../a.h"}})",
               R"("replacedCalls": {"Close": {"function": "f", "include": "../b.h"}})"},
-             {"setter method Microsoft.UI.Xaml.Window.SetTitleBar",
-              R"("setterMethods": {"SetTitleBar": {}})",
-              R"("setterMethods": {"SetTitleBar": {"type": "Microsoft.UI.Xaml.Controls.TitleBar"}})"},
          }) {
         auto const type = [](std::string_view entry) {
             return std::string{R"("types": {"Microsoft.UI.Xaml.Window": {)"} + std::string{entry} +

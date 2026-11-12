@@ -583,7 +583,7 @@ wxl::Teardown wxl_launched() {
         // Mica, как у Gallery: заголовок и панель навигации прозрачны, сквозь
         // них виден материал.
         systemBackdrop = MicaBackdrop {},
-        titleBar = {
+        titleBar = TitleBar {
             title = BindOutput {document->title},
             // Стрелка на месте всегда, как в Gallery; возвращаться некуда — она
             // неактивна.

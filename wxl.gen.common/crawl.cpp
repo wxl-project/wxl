@@ -463,14 +463,9 @@ struct crawler {
         if (auto const setters = profiles.setter_methods.find(full_name(type));
             setters != profiles.setter_methods.end()) {
             for (auto&& setter : setters->second) {
-                because(dependency_reason::kind_t::Added, setter.method);
-                TypeDef const value_type = setter.type.empty() ? TypeDef{} : db.find(setter.type);
-                if (value_type) {
-                    depend(type, value_type);
-                    enqueue(value_type);
-                }
-                result.setter_methods[type].push_back({setter, value_type});
-                result.property_names.insert(setter.method.substr(3));
+                because(dependency_reason::kind_t::Added, setter);
+                result.setter_methods[type].insert(setter);
+                result.property_names.insert(setter.substr(3));
             }
         }
     }

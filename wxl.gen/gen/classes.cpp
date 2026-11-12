@@ -426,11 +426,6 @@ public_header_needs public_needs(std::string_view ns, std::vector<class_info> co
                                  std::set<std::string> const& dropped) {
     public_header_needs needs{file_includes(ns, classes, group_of, /*impl_side=*/false), {}};
     auto& includes = needs.includes;
-    // The classes a narrowed setter names are announced rather than included.
-    // Such a class is routinely built on this very group -- Window.titleBar
-    // takes a TitleBar, whose header includes this one for FrameworkElement --
-    // and a declaration taking a reference needs the name alone.
-    //
     // Every wrapped class a member names is announced as well as included:
     // namespaces refer to each other through members (Input's XamlUICommand
     // holds a Controls IconSource, while Controls reaches Input through
@@ -457,10 +452,11 @@ public_header_needs public_needs(std::string_view ns, std::vector<class_info> co
                                 member.result.public_includes.end());
             }
             // A property a profile wrote by hand over a wrapped class (a tip
-            // that is a ToolTip) is announced like a narrowed setter: its
-            // class is routinely on the far side of a circle of includes.
-            if (member.braced ||
-                (!member.synthetic_call.empty() && member.params.front().type.is_wrapper)) {
+            // that is a ToolTip) is announced rather than included: its class
+            // is routinely built on this very group, on the far side of a
+            // circle of includes, and a declaration taking a reference needs
+            // the name alone.
+            if (!member.synthetic_call.empty() && member.params.front().type.is_wrapper) {
                 needs.announced.insert(member.params.front().type.value_type);
                 continue;
             }
@@ -1519,52 +1515,36 @@ void add_synthetic_members(class_source& source, closure const& cl, type_index c
 // beside the method it calls, and only a method that is a setter in
 // all but name qualifies: one argument, nothing handed back, an
 // instance to call it on.
-void add_setter_methods(class_source& source, closure const& cl, type_index const& index,
+void add_setter_methods(class_source& source, closure const& cl,
                        std::vector<skipped_member>& skipped) {
     auto& info = source.info;
     if (auto const setters = cl.setter_methods.find(source.type);
         setters != cl.setter_methods.end()) {
-        for (auto&& [declaration, value_type] : setters->second) {
+        for (auto&& declared : setters->second) {
             auto const method =
                 std::find_if(info.members.begin(), info.members.end(), [&](auto&& member) {
                     return member.kind == member_info::kind_t::Forward &&
-                           member.winrt_name == declaration.method;
+                           member.winrt_name == declared;
                 });
             if (method == info.members.end()) {
-                skipped.push_back({declaration.method,
+                skipped.push_back({declared,
                                    "setter method: the class declares no such method, or "
                                    "the profile filtered it out"});
                 continue;
             }
             if (method->is_static || !method->returns_void || method->params.size() != 1 ||
                 method->is_property_setter) {
-                skipped.push_back({declaration.method,
+                skipped.push_back({declared,
                                    "setter method: not a method taking one argument and "
                                    "returning nothing"});
                 continue;
             }
 
             member_info setter = *method;
-            setter.winrt_name = declaration.method.substr(3);
+            setter.winrt_name = declared.substr(3);
             setter.name = member_name(setter.winrt_name);
-            setter.method_call = declaration.method;
+            setter.method_call = declared;
             setter.is_property_setter = true;
-            if (!declaration.type.empty()) {
-                auto use = value_type ? map_type(value_type, index)
-                                      : type_use{.reason = std::format(
-                                                    "no type {} in the metadata",
-                                                    declaration.type)};
-                if (!use.supported || !use.is_wrapper) {
-                    skipped.push_back(
-                        {declaration.method,
-                         std::format("setter method: {}",
-                                     use.supported ? declaration.type + " is not a class"
-                                                   : use.reason)});
-                    continue;
-                }
-                setter.params.front().type = std::move(use);
-                setter.braced = true;
-            }
             info.members.push_back(std::move(setter));
         }
     }
@@ -1630,7 +1610,7 @@ void collect_members(class_source& source, closure const& cl, type_index const& 
     add_static_members(source, cl, index, skipped);
     add_constructors(source, cl, index, skipped);
     add_synthetic_members(source, cl, index, skipped);
-    add_setter_methods(source, cl, index, skipped);
+    add_setter_methods(source, cl, skipped);
     add_replaced_calls(source, m, skipped);
     drop_redeclared(source.info.members);
 }
@@ -1848,11 +1828,7 @@ private:
         } else {
             klass_.members.push_back({schema::member::kind_t::Property, member.winrt_name,
                                       member.name, value.value_type});
-            klass_.members.back().braced = member.braced;
             klass_.members.back().positional = member.positional;
-        }
-        if (member.braced) {
-            d.braced.insert(member.winrt_name);
         }
 
         // A property whose type belongs to it alone is unambiguous as an

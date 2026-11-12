@@ -258,11 +258,6 @@ struct dsl {
     std::map<std::string, std::set<std::string>> property_value_types;
     std::set<std::string> events;
 
-    // Properties whose value is a class the tag can also build from braces:
-    // `titleBar = { leftHeader = ..., content = ... }`. A setter method with a
-    // narrowed type is the one kind so far (see profile.h).
-    std::set<std::string> braced;
-
     // Collection-valued property name -> the wxl type of its elements. These
     // get a subscript tag (`children[a, b, c]`) rather than an assignable
     // one, and a collection_setter that receives the whole run at once.
@@ -363,9 +358,6 @@ struct schema {
         // `type` stays the first of them,
         // because the test still has to hand it something it accepts.
         bool single_type = true;
-
-        // The tag builds its value from braces too (see dsl::braced).
-        bool braced = false;
 
         // A synthetic property whose value is written unnamed (the profile's "positional") and
         // is not assigned to the tag: the test line hands it to the class's positional route.

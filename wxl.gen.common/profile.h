@@ -91,24 +91,6 @@ struct synthetic_member {
     friend bool operator==(synthetic_member const&, synthetic_member const&) = default;
 };
 
-// A method WinRT declares that is a setter in all but name: one argument, no
-// result -- Window.SetTitleBar(UIElement). Only a property gets a tag, so such a
-// method can be called and never written in braces; a profile that names it
-// here gives it one, under the name without "Set" (`titleBar = ...`), whose
-// setter calls the method. The method itself stays as it is.
-//
-// `type` narrows the value to a class of the metadata more specific than the
-// parameter -- TitleBar where the method takes any UIElement -- and with a
-// definite class to build, the tag also takes the braces that build one:
-// `titleBar = { leftHeader = ..., content = ... }`. Empty keeps the parameter's
-// own type and the ordinary assignment.
-struct setter_method {
-    std::string method;  // "SetTitleBar", spelled as metadata spells it
-    std::string type;    // "Microsoft.UI.Xaml.Controls.TitleBar", or empty
-
-    friend bool operator==(setter_method const&, setter_method const&) = default;
-};
-
 // A wrapped class that a string builds: the abstract Geometry, which is made from
 // the path language of XAML by a converter and by nothing else. The class gets an
 // implicit constructor from text, defined with the function named here -- one that
@@ -185,8 +167,13 @@ struct profile {
     std::vector<package_ref> packages;
     std::map<std::string, member_filter> types;  // "Microsoft.UI.Xaml.Controls.Button" -> filter
     std::map<std::string, std::vector<synthetic_member>> synthetic;  // by the same type name
-    std::map<std::string, std::vector<setter_method>> setter_methods;  // by the same type name
-    std::map<std::string, from_text_t> from_text;                      // by the same type name
+    // Methods WinRT declares that are setters in all but name: one argument, no result --
+    // Window.SetTitleBar(UIElement). Only a property gets a tag, so such a method can be called
+    // and never written in braces; a profile that names it ("setterMethods", spelled as metadata
+    // spells it) gives it one, under the name without "Set" (`titleBar = ...`), taking what the
+    // method takes, whose setter calls the method. The method itself stays as it is.
+    std::map<std::string, std::set<std::string>> setter_methods;  // by the same type name
+    std::map<std::string, from_text_t> from_text;                 // by the same type name
     std::map<std::string, std::map<std::string, replaced_call>> replaced_calls;  // type name -> method name
 
     // The named styles of a listed type, by dictionary key: "styles": [...]
@@ -363,8 +350,8 @@ struct profile_set {
     std::vector<std::filesystem::path> resources;  // XAML dictionaries to read
     std::map<std::string, member_filter> types;     // roots of the walk
     std::map<std::string, std::vector<synthetic_member>> synthetic;  // properties wxl adds
-    std::map<std::string, std::vector<setter_method>> setter_methods;  // methods written as tags
-    std::map<std::string, from_text_t> from_text;                      // classes a string builds
+    std::map<std::string, std::set<std::string>> setter_methods;  // methods written as tags
+    std::map<std::string, from_text_t> from_text;                 // classes a string builds
     std::map<std::string, std::map<std::string, replaced_call>> replaced_calls;  // type name -> method name
 
     // Merged the way members are, as a union: a profile that lists a type

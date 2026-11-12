@@ -175,11 +175,6 @@ std::string declare(schema::class_t const& owner, schema::member const& member,
         return property_anchor(member.key, {}, owner.name);
     }
 
-    if (member.braced) {
-        return std::format("::wxl::impl::braced_property_tag<::wxl::PropertyKey::{}, {}, ::wxl::{}>",
-                           member.key, qualified(member.type), owner.name);
-    }
-
     return property_anchor(member.key, member.type, owner.name);
 }
 
