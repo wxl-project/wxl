@@ -243,6 +243,91 @@ std::string test_value(schema::class_t const& owner, schema::member const& membe
     return "value";
 }
 
+// The checks of the descriptions the components give of the classes they write by hand
+// (schema::check), each a static_assert naming the class and the member. What is asked of the
+// code is held in a concept over the class, so that a member that is not there makes the
+// concept false and the assertion says which -- a requirement written on the class itself would
+// be an error of its own, deep in the expression, instead.
+void write_description_checks(std::ostream& file, schema const& sch, std::size_t& lines) {
+    if (sch.checks.empty()) {
+        return;
+    }
+    // A number of exactly one type: it converts to T and to nothing else, so a setter that takes
+    // another number does not take it.
+    std::print(file, R"(// The classes the components describe, held to their descriptions (component.json).
+template <class T>
+struct exactly {{
+    template <class U>
+        requires std::same_as<U, T>
+    operator U() const;
+}};
+
+)");
+    using kind_t = schema::check::kind_t;
+    for (auto&& check : sch.checks) {
+        // An event is named as its tag is, so a property and an event of one name differ.
+        std::string const concept_name = std::format(
+            "{}_{}{}_described", check.owner, check.kind == kind_t::Event ? "on" : "",
+            check.member.empty() ? "base" : check.member);
+        std::string const said = std::format("wxl: the description of {}{}{} in its component.json",
+                                             check.owner, check.member.empty() ? "" : ".",
+                                             check.member);
+        switch (check.kind) {
+            case kind_t::Setter:
+                std::print(file, R"(template <class C>
+concept {0} = requires(C const& object, {1} value) {{ object.{2}(value); }};
+static_assert({0}<::wxl::{3}>, "{4} says {5}, and the setter does not take it");
+)",
+                           concept_name,
+                           check.arithmetic ? std::format("exactly<{}>", check.type)
+                                            : std::format("{} const&", qualified(check.type)),
+                           member_name(check.member), check.owner, said, check.word);
+                break;
+            case kind_t::Bound:
+                std::print(file, R"(template <class C>
+concept {0} = requires(C const& object, ::wxl::core::observable<{1}>& field) {{
+    ::wxl::impl::property_binder<::wxl::PropertyKey::{2}, C>::bind(object, field, ::wxl::impl::bind_direction::input);
+}};
+static_assert({0}<::wxl::{3}>, "{4} says {5} bound, and no binder of the class binds a field of it");
+)",
+                           concept_name, qualified(check.type), check.member, check.owner, said,
+                           check.word);
+                break;
+            case kind_t::Collection:
+                std::print(file, R"(template <class C>
+concept {0} = requires(C const& object, {1} const& item) {{ object.{2}().append(item); }};
+static_assert({0}<::wxl::{3}>, "{4} says a collection of {5}, and the class has none");
+)",
+                           concept_name, qualified(check.type), member_name(check.member),
+                           check.owner, said, check.word);
+                break;
+            case kind_t::Event:
+                std::print(file, R"(template <class C>
+concept {0} = std::same_as<::wxl::impl::event_args_of_t<decltype(&C::add_on{1})>, {2}>;
+static_assert({0}<::wxl::{3}>, "{4} says the event hands over {5}, and it does not");
+)",
+                           concept_name, check.member, qualified(check.type), check.owner, said,
+                           check.word);
+                break;
+            case kind_t::Base:
+                std::print(file,
+                           "static_assert(std::derived_from<::wxl::{0}, {1}>, \"{2} says the base "
+                           "{3}, and the class does not derive from it\");\n",
+                           check.owner, qualified(check.type), said, check.word);
+                break;
+            case kind_t::Value:
+                std::print(file, R"(template <class E>
+concept {0} = requires {{ E::{1}; }};
+static_assert({0}<::wxl::{2}>, "{3} names a value the enumeration does not have");
+)",
+                           concept_name, check.member, check.owner, said);
+                break;
+        }
+        ++lines;
+    }
+    std::print(file, "\n");
+}
+
 void write_schema_test(std::filesystem::path const& path, schema const& sch, dsl const& d,
                        std::size_t& lines) {
     auto file = open_output(path);
@@ -251,7 +336,11 @@ void write_schema_test(std::filesystem::path const& path, schema const& sch, dsl
     std::print(file, "{}", banner);
     write_include(file, "../Bind.h", "../");
     write_include(file, "schema.h", "../");
+    for (auto&& include : sch.includes) {
+        write_include(file, include, "../");
+    }
     std::print(file, "\nnamespace {{\n\n");
+    write_description_checks(file, sch, lines);
 
     for (auto&& klass : sch.classes) {
         if (klass.members.empty()) {

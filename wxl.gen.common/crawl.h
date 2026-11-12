@@ -193,6 +193,11 @@ struct closure {
     // in the key enum like any other property name.
     std::map<winmd::reader::TypeDef, std::vector<std::string>> attached;
 
+    // The types of the metadata the descriptions of the selected components name -- a base, a
+    // property's value, an element, an event's args -- by the full name they are written with.
+    // Each is a root of the walk with the members a discovered type has.
+    std::map<std::string, winmd::reader::TypeDef> described_types;
+
     std::set<std::string> property_names;
     std::set<std::string> event_names;
 

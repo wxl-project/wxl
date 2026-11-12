@@ -205,11 +205,49 @@ struct profile {
     bool windows_metadata = false;
 };
 
+// The C++ type, under namespace wxl, of a type word of a description that metadata carries as a
+// signature element rather than as a type of its own, spelled as WinRT spells it: "Double" is
+// double, "String" hstring, "Object" Object. Null for any other word, which is a type of the
+// metadata by its full name (a dot in it) or a type a component describes.
+char const* element_type_name(std::string_view word);
+
+// One member of a class a component describes: its name as metadata would spell it, and the
+// type of its value, its element or its event's args as a type word (element_type_names()).
+struct described_member {
+    std::string name;  // "HeaderIcon"
+    std::string type;  // "Microsoft.UI.Xaml.Controls.IconElement"
+    // "set": "bind" -- a property the class has as a binding target alone: no setter, a
+    // property_binder of the class binds it.
+    bool bound = false;
+};
+
+// A class wxl writes by hand, as its component describes it ("classes"): the vocabulary it
+// takes in braces. A profile that selects the component gets the keys and tags of its members,
+// its schema entry and the checks of the description against the code, as for a class of the
+// metadata.
+struct described_class {
+    std::string name;    // "SettingsCard", under namespace wxl
+    std::string header;  // declares it, relative to the component's directory
+    std::string base;    // a type word, or empty
+    std::vector<described_member> properties;
+    std::vector<described_member> collections;  // the type is the element's
+    std::vector<described_member> events;       // the type is the args'
+};
+
+// An enumeration wxl writes by hand, as its component describes it ("enums"): a property of its
+// type takes its values by name, `contentAlignment.vertical`.
+struct described_enum {
+    std::string name;    // "SettingsCardContentAlignment", under namespace wxl
+    std::string header;  // declares it, relative to the component's directory
+    std::vector<std::string> values;
+};
+
 // A component: a directory holding component.json, the hand-written code of wxl.ui that
 // calls a part of the projection, and what that code asks the projection for. `imports`
 // is read with the keys a profile has for it (types, packages, windowsMetadata) and joins the
 // roots of the walk like one more profile of the chain, so a type it lists is generated
-// whoever else lists it. The other keys describe the component to the build.
+// whoever else lists it. `classes` and `enums` describe what the component declares. The other
+// keys describe the component to the build.
 struct component {
     std::string name;  // equals the name of its directory
     std::filesystem::path source;     // the component.json
@@ -221,14 +259,16 @@ struct component {
     std::vector<std::string> dependencies;  // other components, by name
     std::vector<std::string> sources;       // files of the component, relative to its directory
     std::vector<std::string> libraries;     // targets the component links
-    std::string schema;                     // fragment of schema.h, relative to the directory
     std::string surface;                    // its compile-only test, relative to the directory
     std::string description;
+    std::vector<described_class> classes;   // in the order the manifest lists them
+    std::vector<described_enum> enums;
 };
 
 // Reads one component.json. Throws std::runtime_error naming the file on malformed JSON, on a
-// key the manifest or its `imports` does not have, and on a name that is not the name of
-// the directory the file is in.
+// key the manifest, its `imports` or a description does not have, on a name that is not the
+// name of the directory the file is in, and on a description whose header is no file of the
+// component.
 component load_component(std::filesystem::path const& manifest);
 
 // What wxl implements on its own side of the boundary: the base types it
@@ -257,16 +297,6 @@ struct type_map {
         std::string name;           // "Margin", the tag type under namespace wxl
         std::string value_type;     // "Thickness" -- what the tag is a tag over
         std::string include;        // header defining that value type
-    };
-
-    // A property of a class wxl writes by hand -- CompositionWindow's zoom --
-    // which no metadata declares and which the builder syntax is still to
-    // write in braces. The dispatch behind a tag is a template on the object,
-    // so the key and the tag are all it takes; the class declares the member.
-    struct hand_written_property {
-        std::string name;        // "Zoom", as metadata would spell it
-        std::string value_type;  // "double" -- the braced form's type, under namespace wxl
-        std::string include;     // header defining that type, or empty
     };
 
     // A property a generated class has as a binding target alone -- NumberBox's
@@ -300,11 +330,6 @@ struct type_map {
     std::set<std::string> implicit_roots;
     std::vector<projection> projections;
     std::vector<tag> tags;
-
-    // The same for events -- CompositionWindow's ClientSizeChanged: a key, an
-    // `on...` tag, and an event_adder calling the class's add_on.../remove_on....
-    std::vector<hand_written_property> hand_written_properties;
-    std::set<std::string> hand_written_events;
     std::vector<bound_member> bound_members;
     std::vector<binding_pair> binding_pairs;
 };

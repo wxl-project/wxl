@@ -1080,6 +1080,42 @@ closure crawl(profile_set const& raw_profiles, type_map const& types, cache cons
         cr.enqueue(type, cr.listed_filter(type));
     }
 
+    // A type of the metadata a description names is reached as the walk reaches one through a
+    // signature: a class with none of its members, an enumeration with all of its values. A word
+    // without a dot is an element of a signature or a type a component describes
+    // (resolve_profiles holds those to the components).
+    std::string undeclared;
+    for (auto&& comp : profiles.components) {
+        for (auto&& klass : comp.classes) {
+            auto const take = [&](std::string const& member, std::string const& word) {
+                if (!word.contains('.')) {
+                    return;
+                }
+                auto const type = db.find(word);
+                if (!type) {
+                    undeclared += std::format("\n  {}.{}: {} (component '{}', {})", klass.name,
+                                              member, word, comp.name,
+                                              wxl::core::unicode::to_utf8(comp.source).chars());
+                    return;
+                }
+                cr.because(dependency_reason::kind_t::Added, member);
+                cr.enqueue(type);
+                cr.result.described_types.emplace(word, type);
+            };
+            take("(base)", klass.base);
+            for (auto const* members : {&klass.properties, &klass.collections, &klass.events}) {
+                for (auto&& member : *members) {
+                    take(member.name, member.type);
+                }
+            }
+        }
+    }
+    if (!undeclared.empty()) {
+        throw std::runtime_error(std::format(
+            "the descriptions of the components name types the metadata read does not declare:{}",
+            undeclared));
+    }
+
     cr.run();
 
     for (auto&& [type, filter] : cr.result.surface) {
@@ -1092,16 +1128,24 @@ closure crawl(profile_set const& raw_profiles, type_map const& types, cache cons
     cr.collect_attached();
     cr.order();
 
-    // The keys of the members wxl's hand-written classes add to the vocabulary
-    // (types.json): the walk meets none of them, and the key enums are flat.
-    for (auto&& property : types.hand_written_properties) {
-        cr.result.property_names.insert(property.name);
+    // The keys of the members of the classes the selected components describe, and of the
+    // bound members of the type map: the walk meets none of them, and the key enums are flat.
+    for (auto&& comp : profiles.components) {
+        for (auto&& klass : comp.classes) {
+            for (auto&& member : klass.properties) {
+                cr.result.property_names.insert(member.name);
+            }
+            for (auto&& member : klass.collections) {
+                cr.result.property_names.insert(member.name);
+            }
+            for (auto&& member : klass.events) {
+                cr.result.event_names.insert(member.name);
+            }
+        }
     }
     for (auto&& member : types.bound_members) {
         cr.result.property_names.insert(member.name);
     }
-    cr.result.event_names.insert(types.hand_written_events.begin(),
-                                 types.hand_written_events.end());
 
     return std::move(cr.result);
 }

@@ -392,6 +392,30 @@ struct schema {
     // Base before derived, the order the classes are written in, so a schema
     // struct can simply name its base.
     std::vector<class_t> classes;
+
+    // One line of a description a component gives of a class or an enumeration
+    // it writes by hand (component.json), held to the code by the surface test:
+    // a setter takes the value of the type described -- a number of exactly
+    // that type --, a binder binds a field of it, a collection takes its
+    // element, an event hands over its args, a class derives from its base, an
+    // enumeration has its value. A member the description leaves out is not
+    // seen; it has no tag either.
+    struct check {
+        enum class kind_t { Setter, Bound, Collection, Event, Base, Value };
+
+        kind_t kind = kind_t::Setter;
+        std::string owner;   // the class or the enumeration: "SettingsCard"
+        std::string member;  // as the description names it: "HeaderIcon"; a Value's value
+        std::string type;    // the C++ type described: "IconElement"; empty for a Value
+        std::string word;    // as the description spells it: "Microsoft.UI.Xaml.Controls.IconElement"
+        bool arithmetic = false;
+    };
+    std::vector<check> checks;
+
+    // The headers of the described classes and enumerations, as the emitter
+    // spells them ("../SettingsCard.h"): the checks name a class the schema
+    // may have no struct of. The types they name come with Members.h.
+    std::set<std::string> includes;
 };
 
 // ---- <Namespace>.EventArgs.h / .cpp ----
@@ -526,10 +550,13 @@ void analyze_tags(type_map const& types, model& m);
 void analyze_enums_and_structs(type_kinds const& kinds, closure const& cl, type_map const& types,
                                documentation_source* docs, model& m);
 // Classes, and with them the builder syntax's vocabulary and the schema --
-// only the class analysis has read the signatures. Hands back where every
-// wrapped type is declared, which the args views' signatures need.
+// only the class analysis has read the signatures. The classes the selected
+// `components` describe join the vocabulary and the schema as the generated
+// ones do. Hands back where every wrapped type is declared, which the args
+// views' signatures need.
 type_index analyze_classes(type_kinds const& kinds, closure const& cl, type_map const& types,
-                           documentation_source* docs, model& m);
+                           std::vector<component> const& components, documentation_source* docs,
+                           model& m);
 void analyze_event_args(type_kinds const& kinds, closure const& cl, type_index const& index,
                         documentation_source* docs, model& m);
 

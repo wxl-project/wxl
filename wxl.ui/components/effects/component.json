@@ -27,8 +27,121 @@
     "ZoomEffect.cpp",
     "ZoomEffect.h"
   ],
-  "schema": "effects.schema.h",
   "surface": "effects.surface.cpp",
   "libraries": [],
-  "description": "All the effects and the relief of a key, in one component until the effects are cut apart."
+  "description": "All the effects and the relief of a key, in one component until the effects are cut apart.",
+  "classes": {
+    "HaloEffect": {
+      "header": "HaloEffect.h",
+      "properties": {
+        "Color": "Windows.UI.Color",
+        "BlurRadius": "Single",
+        "Opacity": "Single",
+        "Offset": "Windows.Foundation.Numerics.Vector3",
+        "ZIndex": "Int32"
+      }
+    },
+    "GaussianBlurEffect": {
+      "header": "GaussianBlurEffect.h",
+      "properties": {
+        "Color": "Windows.UI.Color",
+        "BlurRadius": "Single",
+        "Opacity": "Single",
+        "Gamma": "Single",
+        "ZIndex": "Int32"
+      }
+    },
+    "GlassEffect": {
+      "header": "GlassEffect.h",
+      "properties": {
+        "Color": "Windows.UI.Color",
+        "BlurRadius": "Single",
+        "Opacity": "Single"
+      }
+    },
+    "Button3DEffect": {
+      "header": "Button3DEffect.h",
+      "properties": {
+        "Foreground": "Windows.UI.Color",
+        "Background": "Windows.UI.Color",
+        "SpecularAmount": "Single",
+        "SpecularShine": "Single",
+        "Emboss": "Double",
+        "Rim": "Double",
+        "Slope": "Double",
+        "Rounded": "Boolean",
+        "Smooth": "Double",
+        "Rise": "Double",
+        "Travel": "Double",
+        "Shadow": "Double",
+        "Azimuth": "Single",
+        "Elevation": "Single",
+        "LampColor": "Windows.UI.Color",
+        "AmbientColor": "Windows.UI.Color",
+        "CastBlur": "Single",
+        "HoleShadow": "Double",
+        "HoleSoftness": "Double",
+        "PressDivesLamp": "Boolean",
+        "PressFlashes": "Boolean",
+        "PressMovesLabel": "Boolean",
+        "PressShades": "Boolean",
+        "DiveDepth": "Single",
+        "DiveGain": "Single",
+        "ShadeAmount": "Single",
+        "LabelShade": "Double"
+      }
+    },
+    "BevelEffect": {
+      "header": "BevelEffect.h",
+      "properties": {
+        "StrokeThickness": "Double",
+        "BlurRadius": "Single",
+        "Offset": "Single",
+        "Margin": "Microsoft.UI.Xaml.Thickness",
+        "CornerRadius": "Microsoft.UI.Xaml.CornerRadius"
+      }
+    },
+    "MagnifyEffect": {
+      "header": "MagnifyEffect.h",
+      "properties": {
+        "Scale": "Windows.Foundation.Size",
+        "Maximum": "Double",
+        "Minimum": "Double",
+        "Duration": "Windows.Foundation.TimeSpan",
+        "DelayTime": "Windows.Foundation.TimeSpan"
+      }
+    },
+    "HoverLight": {
+      "header": "RevealEffect.h",
+      "properties": {
+        "Size": "Single",
+        "FullSize": "Single",
+        "Height": "Single",
+        "Intensity": "Single",
+        "DiffuseAmount": "Single",
+        "Color": "Windows.UI.Color",
+        "ConstantAttenuation": "Single",
+        "LinearAttenuation": "Single"
+      }
+    },
+    "BorderLight": {
+      "header": "RevealEffect.h",
+      "properties": {
+        "Size": "Single",
+        "FullSize": "Single",
+        "Height": "Single",
+        "Intensity": "Single",
+        "DiffuseAmount": "Single",
+        "Color": "Windows.UI.Color",
+        "ConstantAttenuation": "Single",
+        "LinearAttenuation": "Single",
+        "StrokeThickness": "Double",
+        "CornerRadius": "Microsoft.UI.Xaml.CornerRadius"
+      }
+    },
+    "RevealEffect": {
+      "header": "RevealEffect.h",
+      "properties": { "ZIndex": "Int32" }
+    }
+  }
 }

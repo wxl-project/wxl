@@ -2007,30 +2007,225 @@ void add_enumerators(type_kinds const& kinds, closure const& cl, dsl& d) {
     }
 }
 
-// The vocabulary of the classes wxl writes by hand (types.json): no
-// metadata declares it, and the dispatch behind a tag is a template on the
-// object, so a key and a tag are all such a member needs. A generated class
-// that declares the same name with another type adds its type to the list.
-void add_hand_written_vocabulary(type_map const& types, dsl& d) {
-    auto const add = [&d](auto const& member) {
-        d.property_value_types[member.name].insert(member.value_type);
-        if (!member.include.empty()) {
-            d.includes.insert(member.include);
-        }
-    };
-    for (auto&& property : types.hand_written_properties) {
-        add(property);
-    }
-    d.events.insert(types.hand_written_events.begin(), types.hand_written_events.end());
-
-    // A bound-only member needs the same key and tag; the setter the tag
-    // dispatches to is constrained on the member's existence, so on a class
-    // that has none the assignment is refused rather than compiled. Its
-    // include is its function's, which BindingPairs.h needs and Members.h
-    // does not.
+// A bound-only member of the type map needs a key and a tag; the setter the
+// tag dispatches to is constrained on the member's existence, so on a class
+// that has none the assignment is refused rather than compiled. Its include
+// is its function's, which BindingPairs.h needs and Members.h does not.
+void add_bound_vocabulary(type_map const& types, dsl& d) {
     for (auto&& member : types.bound_members) {
         d.property_value_types[member.name].insert(member.value_type);
     }
+}
+
+// What a type word of a description stands for in C++, under namespace wxl.
+struct described_type {
+    std::string cpp;                 // "IconElement", "double", "SettingsCardContentAlignment"
+    std::set<std::string> includes;  // as the emitter spells them
+    bool arithmetic = false;         // a number or a truth value, checked as exactly that type
+};
+
+// The classes wxl writes by hand, as the components the profiles select describe them
+// (component.json): members of the vocabulary exactly as a generated class's are -- a name's
+// types join its list, whoever declares them -- with a schema entry and the checks that hold the
+// description to the code (schema::checks).
+class described_vocabulary {
+public:
+    described_vocabulary(std::vector<component> const& components, closure const& cl,
+                         type_index const& index, model& m)
+        : components_(components), cl_(cl), index_(index), m_(m) {}
+
+    void add() {
+        std::set<std::string> generated;
+        for (auto&& [type, name] : index_.names) {
+            generated.insert(name);
+        }
+        for (auto&& comp : components_) {
+            auto const declare = [&](std::string const& name, std::string const& header) {
+                if (generated.contains(name)) {
+                    fail(comp, std::format("{} is described here and generated from the "
+                                           "metadata as well, both under namespace wxl",
+                                           name));
+                }
+                auto const [at, added] = hand_written_.try_emplace(name, "../" + header, &comp);
+                if (!added) {
+                    fail(comp, std::format("{} is described here and by component '{}' ({}), "
+                                           "both under namespace wxl",
+                                           name, at->second.owner->name,
+                                           wxl::core::unicode::to_utf8(at->second.owner->source)
+                                               .chars()));
+                }
+                m_.schema.includes.insert("../" + header);
+            };
+            for (auto&& klass : comp.classes) {
+                declare(klass.name, klass.header);
+            }
+            for (auto&& described : comp.enums) {
+                declare(described.name, described.header);
+            }
+        }
+
+        for (auto&& comp : components_) {
+            for (auto&& described : comp.enums) {
+                add_enum(described);
+            }
+            for (auto&& klass : comp.classes) {
+                add_class(comp, klass);
+            }
+        }
+    }
+
+private:
+    [[noreturn]] static void fail(component const& comp, std::string_view message) {
+        throw std::runtime_error(std::format(
+            "{}: {}", wxl::core::unicode::to_utf8(comp.source).chars(), message));
+    }
+
+    // A value type, an element type or a base: what the metadata maps it onto, as a member's
+    // signature would be mapped. Args are named as an event of the metadata names them.
+    described_type resolve(component const& comp, std::string_view where, std::string const& word,
+                           bool args = false) const {
+        if (auto const hand_written = hand_written_.find(word); hand_written != hand_written_.end()) {
+            // A component stands on its own dependencies, never on what else a profile selects.
+            if (!depends_on(comp, *hand_written->second.owner)) {
+                fail(comp, std::format("{}: the type '{}' is described by component '{}', which "
+                                       "is not among the dependencies of component '{}'",
+                                       where, word, hand_written->second.owner->name, comp.name));
+            }
+            return {word, {hand_written->second.include}, false};
+        }
+        type_use use;
+        if (element_type_name(word)) {
+            use = map_element_type(word);
+        } else if (auto const type = cl_.described_types.find(word);
+                   type != cl_.described_types.end()) {
+            // Args are named as an event of the metadata names them: an args class by its view,
+            // which map_type refuses as a value.
+            if (args) {
+                auto const name = index_.names.find(type->second);
+                auto const header = index_.headers.find(type->second);
+                if (name != index_.names.end() && header != index_.headers.end()) {
+                    return {name->second, {header->second}, false};
+                }
+            }
+            use = map_type(type->second, index_);
+        } else {
+            fail(comp, std::format("{}: '{}' is no type of the metadata read, nor one a selected "
+                                   "component describes",
+                                   where, word));
+        }
+        if (!use.supported) {
+            fail(comp, std::format("{}: {}", where, use.reason));
+        }
+        return {use.value_type, use.public_includes,
+                element_type_name(word) && word != "String" && word != "Object"};
+    }
+
+    void add_enum(described_enum const& described) {
+        auto& values = m_.dsl.enumerators[described.name];
+        for (auto&& value : described.values) {
+            values.emplace_back(member_name(value), value);
+            m_.schema.checks.push_back(
+                {schema::check::kind_t::Value, described.name, value, {}, {}, false});
+        }
+    }
+
+    void add_class(component const& comp, described_class const& klass) {
+        auto& d = m_.dsl;
+        using check = schema::check;
+        auto const where = [&](std::string const& member) {
+            return std::format("{}.{}", klass.name, member);
+        };
+        auto const value_of = [&](described_member const& member) {
+            auto type = resolve(comp, where(member.name), member.type);
+            d.includes.insert(type.includes.begin(), type.includes.end());
+            return type;
+        };
+
+        schema::class_t entry{klass.name, {}, "../" + klass.header, {}};
+        if (!klass.base.empty()) {
+            auto const base = resolve(comp, where("(base)"), klass.base);
+            entry.base = base.cpp;
+            m_.schema.checks.push_back(
+                {check::kind_t::Base, klass.name, {}, base.cpp, klass.base, false});
+        }
+
+        for (auto&& member : klass.properties) {
+            auto const type = value_of(member);
+            // An attached property's tag is the object's own where the object has the member
+            // (write_dispatch): zIndex on an effect. Its tag has the one type of the attached
+            // setter, so a member of another type has no tag to be written with.
+            if (auto const attached = d.attached.find(member.name); attached != d.attached.end()) {
+                if (attached->second.front().value_type != type.cpp) {
+                    fail(comp, std::format("{}: {} is the name of an attached property of {}, "
+                                           "whose tag takes {}",
+                                           where(member.name), member.name,
+                                           attached->second.front().owner,
+                                           attached->second.front().value_type));
+                }
+            } else {
+                d.property_value_types[member.name].insert(type.cpp);
+            }
+            schema::member described{member.bound ? schema::member::kind_t::Bound
+                                                  : schema::member::kind_t::Property,
+                                     member.name, member_name(member.name), type.cpp};
+            // The form every pair takes, whichever direction it binds.
+            if (member.bound) {
+                described.direction = "input";
+            }
+            entry.members.push_back(std::move(described));
+            m_.schema.checks.push_back({member.bound ? check::kind_t::Bound : check::kind_t::Setter,
+                                        klass.name, member.name, type.cpp, member.type,
+                                        type.arithmetic});
+        }
+        for (auto&& member : klass.collections) {
+            auto const type = value_of(member);
+            d.collection_element.emplace(member.name, type.cpp);
+            entry.members.push_back({schema::member::kind_t::Collection, member.name,
+                                     member_name(member.name), type.cpp});
+            m_.schema.checks.push_back(
+                {check::kind_t::Collection, klass.name, member.name, type.cpp, member.type, false});
+        }
+        for (auto&& member : klass.events) {
+            auto const type = resolve(comp, where(member.name), member.type, /*args=*/true);
+            d.events.insert(member.name);
+            entry.members.push_back(
+                {schema::member::kind_t::Event, member.name, "on" + member.name});
+            m_.schema.checks.push_back(
+                {check::kind_t::Event, klass.name, member.name, type.cpp, member.type, false});
+        }
+        m_.schema.classes.push_back(std::move(entry));
+    }
+
+    // Whether `comp` is `on` or reaches it through "dependencies". Every component of the
+    // closure is selected, so each name is found.
+    bool depends_on(component const& comp, component const& on) const {
+        if (comp.name == on.name) {
+            return true;
+        }
+        for (auto&& name : comp.dependencies) {
+            auto const dependency = std::ranges::find(components_, name, &component::name);
+            if (dependency != components_.end() && depends_on(*dependency, on)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    struct hand_written {
+        std::string include;  // its header, as the emitter spells it
+        component const* owner;
+    };
+
+    std::vector<component> const& components_;
+    closure const& cl_;
+    type_index const& index_;
+    model& m_;
+    std::map<std::string, hand_written> hand_written_;
+};
+
+void add_described_classes(std::vector<component> const& components, closure const& cl,
+                           type_index const& index, model& m) {
+    described_vocabulary{components, cl, index, m}.add();
 }
 
 // The fields a property binds to, by the property's type: one rule per type,
@@ -2235,7 +2430,8 @@ void finish_schema(std::vector<std::pair<std::string, schema::member>>& attached
 }  // namespace
 
 type_index analyze_classes(type_kinds const& kinds, closure const& cl, type_map const& types,
-                           documentation_source* docs, model& m) {
+                           std::vector<component> const& components, documentation_source* docs,
+                           model& m) {
     auto const wrapped = wrapped_types_of(kinds, types);
     auto sources = read_classes(wrapped, cl, types, m);
 
@@ -2274,8 +2470,9 @@ type_index analyze_classes(type_kinds const& kinds, closure const& cl, type_map 
 
     add_binding_pairs(sources, base_of, types, m);
     group_classes(sources, m);
+    add_described_classes(components, cl, index, m);
+    add_bound_vocabulary(types, m.dsl);
     add_enumerators(kinds, cl, m.dsl);
-    add_hand_written_vocabulary(types, m.dsl);
     finish_schema(attached_elsewhere, m);
     return index;
 }

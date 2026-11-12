@@ -667,7 +667,129 @@ std::vector<std::string> read_names(value const& entry, std::filesystem::path co
     return names;
 }
 
+// Whether `file`, once normalised, lies inside `directory`: a path that climbs out of it with
+// ".." does not.
+bool inside(std::filesystem::path const& directory, std::filesystem::path const& file) {
+    auto const relative = file.lexically_normal().lexically_relative(directory.lexically_normal());
+    return !relative.empty() && *relative.begin() != std::filesystem::path{".."};
+}
+
+// A type word of a description: not empty, the one thing that has no meaning as a type.
+std::string type_word(value const& field, std::filesystem::path const& source, std::string_view where) {
+    if (!field.is_string() || field.as_string().chars().empty()) {
+        fail(source, std::format("{}: the type must be a type word, a non-empty string", where));
+    }
+    return text(field);
+}
+
+// The members of one kind a description lists, "Name": "Type", in the order the file has them. A
+// property may say instead {"type": "Double", "set": "bind"}: a binding target alone.
+std::vector<described_member> read_described_members(value const& entry,
+                                                     std::filesystem::path const& source,
+                                                     std::string_view where, std::string_view key,
+                                                     bool bindable) {
+    value const* const members = entry.find(key);
+    if (!members) {
+        return {};
+    }
+    if (!members->is_object()) {
+        fail(source, std::format("{}: '{}' must be an object of member names", where, key));
+    }
+    std::vector<described_member> read;
+    for (value const& member : members->members()) {
+        std::string const name{member.name().chars()};
+        std::string const at = std::format("{}.{}", where, name);
+        if (bindable && member.is_object()) {
+            refuse_other_keys(member, source, at, {"type", "set"});
+            if (required_string(member, source, "set", at) != "bind") {
+                fail(source, std::format("{}: 'set' says how the property is set, and the one "
+                                         "word it takes is \"bind\"",
+                                         at));
+            }
+            read.push_back({name, type_word(member["type"], source, at), true});
+        } else {
+            read.push_back({name, type_word(member, source, at), false});
+        }
+    }
+    return read;
+}
+
+// The header a description names: a file of the component, the one that declares the type.
+std::string described_header(value const& entry, component const& comp, std::string_view where) {
+    auto header = required_string(entry, comp.source, "header", where);
+    auto const file = (comp.directory / path_of(header)).lexically_normal();
+    if (!inside(comp.directory, file) || !std::filesystem::is_regular_file(file)) {
+        fail(comp.source, std::format("{}: 'header' \"{}\" is no file of the component", where,
+                                      header));
+    }
+    return header;
+}
+
+void read_descriptions(value const& document, component& comp) {
+    if (value const* const classes = document.find("classes")) {
+        if (!classes->is_object()) {
+            fail(comp.source, "'classes' must be an object keyed by class name");
+        }
+        for (value const& entry : classes->members()) {
+            described_class klass;
+            klass.name = std::string{entry.name().chars()};
+            std::string const where = std::format("class {}", klass.name);
+            if (!entry.is_object()) {
+                fail(comp.source, std::format("{}: a description must be an object", where));
+            }
+            refuse_other_keys(entry, comp.source, where,
+                              {"header", "base", "properties", "collections", "events"});
+            klass.header = described_header(entry, comp, where);
+            if (value const* const base = entry.find("base")) {
+                klass.base = type_word(*base, comp.source, std::format("{}: 'base'", where));
+            }
+            klass.properties =
+                read_described_members(entry, comp.source, where, "properties", true);
+            klass.collections =
+                read_described_members(entry, comp.source, where, "collections", false);
+            klass.events = read_described_members(entry, comp.source, where, "events", false);
+            comp.classes.push_back(std::move(klass));
+        }
+    }
+    if (value const* const enums = document.find("enums")) {
+        if (!enums->is_object()) {
+            fail(comp.source, "'enums' must be an object keyed by enumeration name");
+        }
+        for (value const& entry : enums->members()) {
+            described_enum described;
+            described.name = std::string{entry.name().chars()};
+            std::string const where = std::format("enumeration {}", described.name);
+            if (!entry.is_object()) {
+                fail(comp.source, std::format("{}: a description must be an object", where));
+            }
+            refuse_other_keys(entry, comp.source, where, {"header", "values"});
+            described.header = described_header(entry, comp, where);
+            described.values = read_names(entry, comp.source, "values");
+            if (described.values.empty()) {
+                fail(comp.source, std::format("{}: 'values' names no value", where));
+            }
+            comp.enums.push_back(std::move(described));
+        }
+    }
+}
+
 }  // namespace
+
+char const* element_type_name(std::string_view word) {
+    static constexpr std::pair<std::string_view, char const*> names[] = {
+        {"Boolean", "bool"},     {"Char16", "char16_t"}, {"Int8", "int8_t"},
+        {"UInt8", "uint8_t"},    {"Int16", "int16_t"},   {"UInt16", "uint16_t"},
+        {"Int32", "int32_t"},    {"UInt32", "uint32_t"}, {"Int64", "int64_t"},
+        {"UInt64", "uint64_t"},  {"Single", "float"},    {"Double", "double"},
+        {"String", "hstring"},   {"Object", "Object"},
+    };
+    for (auto&& [name, cpp] : names) {
+        if (name == word) {
+            return cpp;
+        }
+    }
+    return nullptr;
+}
 
 component load_component(std::filesystem::path const& manifest) {
     wxl::json::document file;
@@ -677,8 +799,8 @@ component load_component(std::filesystem::path const& manifest) {
     comp.source = manifest;
     comp.directory = manifest.parent_path();
     refuse_other_keys(document, manifest, "component",
-                      {"name", "imports", "dependencies", "sources", "schema", "surface",
-                       "libraries", "description"});
+                      {"name", "imports", "dependencies", "sources", "surface", "libraries",
+                       "description", "classes", "enums"});
     comp.name = required_string(document, manifest, "name", "component");
 
     auto const directory_name = wxl::core::unicode::to_utf8(comp.directory.filename());
@@ -691,9 +813,9 @@ component load_component(std::filesystem::path const& manifest) {
     comp.dependencies = read_names(document, manifest, "dependencies");
     comp.sources = read_names(document, manifest, "sources");
     comp.libraries = read_names(document, manifest, "libraries");
-    comp.schema = string_or(document, manifest, "schema", {});
     comp.surface = string_or(document, manifest, "surface", {});
     comp.description = string_or(document, manifest, "description", {});
+    read_descriptions(document, comp);
 
     // Read as a profile of the chain is, so the merge and the checks of packages and
     // versions treat it as one and name the manifest.
@@ -975,13 +1097,6 @@ namespace {
 std::string list_of(std::vector<std::string> names) {
     std::ranges::sort(names);
     return names.empty() ? std::string{"(none)"} : wxl::core::join(names, ", ");
-}
-
-// Whether `file`, once normalised, lies inside `directory`: a path that climbs out of it with
-// ".." does not.
-bool inside(std::filesystem::path const& directory, std::filesystem::path const& file) {
-    auto const relative = file.lexically_normal().lexically_relative(directory.lexically_normal());
-    return !relative.empty() && *relative.begin() != std::filesystem::path{".."};
 }
 
 // Every header the generated code includes for a profile or a component, held to where it can
@@ -1323,23 +1438,7 @@ type_map load_type_map(std::filesystem::path const& path) {
         if (!members->is_object()) {
             fail(path, "'handWrittenMembers' must be an object");
         }
-        if (value const* const array = members->find("properties")) {
-            if (!array->is_array()) {
-                fail(path, "'handWrittenMembers.properties' must be an array");
-            }
-            for (value const& entry : array->elements()) {
-                if (!entry.is_object()) {
-                    fail(path, "every hand-written property must be an object");
-                }
-                map.hand_written_properties.push_back(
-                    {required_string(entry, path, "property", "hand-written property"),
-                     required_string(entry, path, "value", "hand-written property"),
-                     string_or(entry, path, "include", {})});
-            }
-        }
-        if (value const* const events = members->find("events")) {
-            map.hand_written_events = read_string_set(*events, path, "handWrittenMembers.events");
-        }
+        refuse_other_keys(*members, path, "'handWrittenMembers'", {"boundMembers"});
         if (value const* const array = members->find("boundMembers")) {
             if (!array->is_array()) {
                 fail(path, "'handWrittenMembers.boundMembers' must be an array");

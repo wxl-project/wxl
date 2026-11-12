@@ -299,6 +299,84 @@ TEST(component, no_list_of_the_build_is_an_empty_one) {
     std::filesystem::remove_all(directory);
 }
 
+// A component describes the classes and the enumerations it writes by hand: members by kind,
+// each with its type word, a property bound alone in the object form.
+TEST(component, its_descriptions_are_read_in_the_order_of_the_file) {
+    auto const directory = scratch(L"descriptions");
+    write(directory / L"controls" / L"Card.h", "");
+    write(directory / L"controls" / L"Alignment.h", "");
+    auto const manifest = write_component(directory, "controls", R"(
+        "classes": {
+            "Card": {
+                "header": "Card.h",
+                "base": "Microsoft.UI.Xaml.Controls.ContentControl",
+                "properties": {"Header": "Object", "Width": {"type": "Double", "set": "bind"}},
+                "collections": {"Items": "Microsoft.UI.Xaml.UIElement"},
+                "events": {"Click": "Microsoft.UI.Xaml.RoutedEventArgs"}
+            },
+            "CardArgs": {"header": "Card.h"}
+        },
+        "enums": {"Alignment": {"header": "Alignment.h", "values": ["Right", "Left"]}})");
+
+    auto const comp = load_component(manifest);
+    ASSERT_EQ(comp.classes.size(), 2u);
+    auto const& card = comp.classes.front();
+    EXPECT_EQ(card.name, "Card");
+    EXPECT_EQ(card.header, "Card.h");
+    EXPECT_EQ(card.base, "Microsoft.UI.Xaml.Controls.ContentControl");
+    ASSERT_EQ(card.properties.size(), 2u);
+    EXPECT_EQ(card.properties[0].name, "Header");
+    EXPECT_EQ(card.properties[0].type, "Object");
+    EXPECT_FALSE(card.properties[0].bound);
+    EXPECT_EQ(card.properties[1].name, "Width");
+    EXPECT_EQ(card.properties[1].type, "Double");
+    EXPECT_TRUE(card.properties[1].bound);
+    ASSERT_EQ(card.collections.size(), 1u);
+    EXPECT_EQ(card.collections[0].type, "Microsoft.UI.Xaml.UIElement");
+    ASSERT_EQ(card.events.size(), 1u);
+    EXPECT_EQ(card.events[0].name, "Click");
+    EXPECT_TRUE(comp.classes[1].base.empty());
+    EXPECT_TRUE(comp.classes[1].properties.empty());
+    ASSERT_EQ(comp.enums.size(), 1u);
+    EXPECT_EQ(comp.enums[0].values, (std::vector<std::string>{"Right", "Left"}));
+
+    std::filesystem::remove_all(directory);
+}
+
+TEST(component, a_description_it_cannot_read_stops_the_run) {
+    auto const directory = scratch(L"descriptions_refused");
+    write(directory / L"controls" / L"Card.h", "");
+    struct refusal {
+        std::string keys;
+        std::string says;
+    };
+    std::vector<refusal> const refusals{
+        {R"("classes": {"Card": {"header": "Card.h", "events2": {}}})",
+         "class Card: 'events2' is not a key of this entry"},
+        {R"("classes": {"Card": {"header": "Missing.h"}})",
+         "class Card: 'header' \"Missing.h\" is no file of the component"},
+        {R"("classes": {"Card": {"header": "../Card.h"}})", "is no file of the component"},
+        {R"("classes": {"Card": {"base": "Object"}})", "every class Card needs a string 'header'"},
+        {R"("classes": {"Card": {"header": "Card.h", "properties": {"Header": ""}}})",
+         "Card.Header: the type must be a type word"},
+        {R"("classes": {"Card": {"header": "Card.h", "properties": {"W": {"type": "Double", "set": "always"}}}})",
+         "Card.W: 'set' says how the property is set"},
+        {R"("classes": {"Card": {"header": "Card.h", "events": {"Click": {"type": "Object", "set": "bind"}}}})",
+         "Card.Click: the type must be a type word"},
+        {R"("enums": {"Alignment": {"header": "Card.h", "values": []}})",
+         "enumeration Alignment: 'values' names no value"},
+        {R"("enums": {"Alignment": {"header": "Card.h", "values": ["A", "A"]}})",
+         "'values' names \"A\" twice"},
+    };
+    for (auto&& [keys, message] : refusals) {
+        auto const manifest = write_component(directory, "controls", keys);
+        EXPECT_TRUE(says(stops_with([&] { load_component(manifest); }), {utf8(manifest), message}))
+            << keys;
+    }
+
+    std::filesystem::remove_all(directory);
+}
+
 namespace {
 
 // A profile one of whose types has a synthetic member declared in `include`.
