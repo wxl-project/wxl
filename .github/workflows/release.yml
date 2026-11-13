@@ -52,7 +52,7 @@ jobs:
       # on a lock file that does not match the pins (see ci.yml).
       RestoreLockedMode: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # The same installation as ci.yml's: MSVC 14.53 and the WinUI build tools.
       - name: Install MSVC 14.53 and the WinUI build tools
@@ -118,7 +118,7 @@ jobs:
           Get-ChildItem $out -Recurse -File | ForEach-Object { $_.FullName.Substring($out.FullName.Length + 1) }
 
       - name: Upload the tools
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wxl-tools-x64
           path: artifact/wxl-tools-x64/
