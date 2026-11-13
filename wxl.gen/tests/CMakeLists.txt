@@ -131,8 +131,8 @@ endforeach()
 # A command line the run cannot carry out stops it with a message that says what is
 # wrong, and the run fails: an option it does not know, an option without its value,
 # a language of the documentation without the documentation, no output directory, a
-# metadata file that is not there, and profiles that leave nothing to read or nothing
-# to walk.
+# metadata file or a table of symbols named and not there, and profiles that leave
+# nothing to read or nothing to walk.
 function(_wxl_gen_refusal name message)
     add_test(NAME winui-srcgen.${name}.message COMMAND winui-srcgen ${ARGN})
     set_tests_properties(winui-srcgen.${name}.message PROPERTIES
@@ -153,6 +153,9 @@ _wxl_gen_refusal(no-output-directory "no output directory: pass --out <dir>"
 _wxl_gen_refusal(missing-winmd "no such metadata file: .*no-such\\.winmd"
     ${_wxl_gen_base} ${_wxl_gen_run} ${_wxl_gen_component_args}
     --winmd "${CMAKE_CURRENT_BINARY_DIR}/no-such.winmd")
+_wxl_gen_refusal(missing-symbols "cannot open: .*no-such-symbols\\.json"
+    ${_wxl_gen_base} ${_wxl_gen_run}
+    --symbols "${CMAKE_CURRENT_BINARY_DIR}/no-such-symbols.json")
 _wxl_gen_refusal(nothing-to-read "no metadata to read: the profiles name no packages"
     --profile "${CMAKE_CURRENT_SOURCE_DIR}/profiles/nothing-to-read.winxl-profile" ${_wxl_gen_run})
 _wxl_gen_refusal(nothing-to-walk "no roots to walk: the profiles list no types"
