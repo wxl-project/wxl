@@ -286,6 +286,17 @@ if(WXL_UI)
     add_subdirectory(wxl.gen.ui)
 endif()
 
+# Install and export rules, for find_package(wxl CONFIG) against an installed
+# prefix (cmake/wxl_install.cmake): wxl.core with the fmt module it imports, and
+# wxl.ui.common when WXL_UI builds it. After the directories that make those
+# targets. Off by default: a consumer's `cmake --install` should not start
+# dropping wxl's archives and module sources into its prefix unless it asks for
+# it.
+option(WXL_INSTALL "Generate install and export rules for wxl." OFF)
+if(WXL_INSTALL)
+    include(cmake/wxl_install.cmake)
+endif()
+
 if(WXL_SAMPLES)
     add_subdirectory(samples)
 endif()

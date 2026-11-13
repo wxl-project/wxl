@@ -262,25 +262,47 @@ if(NOT TARGET fmt::module)
     # (FMT_ATTACH_TO_GLOBAL_MODULE: extern "C++" around the headers), which is
     # what a plain translation unit defines. FMT_OS=0: the file and pipe
     # wrappers of fmt/os.h have no caller here.
+    #
+    # The definitions and the include directory of the module unit are the
+    # target's own, PRIVATE: a consumer that imports fmt::module from an
+    # installed wxl builds the module's BMI with exactly those
+    # (IMPORTED_CXX_MODULES_*), and a source property does not travel with an
+    # export. FMT_IMPORT_STD would take the standard headers away from
+    # format.cc, so format.cc is compiled by an object library of its own,
+    # whose objects go into the archive of fmt.module.
     set(_fmt_module_dir "${CMAKE_CURRENT_BINARY_DIR}/fmt-module")
     configure_file("${fmt_SOURCE_DIR}/src/fmt.cc" "${_fmt_module_dir}/fmt.cc" COPYONLY)
+
+    # A plain translation unit: it includes the standard headers and imports
+    # nothing, so it asks for no std module and is not scanned.
+    add_library(fmt.format OBJECT "${fmt_SOURCE_DIR}/src/format.cc")
+    target_include_directories(fmt.format PRIVATE ${fmt_SOURCE_DIR}/include)
+    target_compile_features(fmt.format PRIVATE cxx_std_23)
+    set_target_properties(fmt.format PROPERTIES
+        CXX_MODULE_STD OFF
+        CXX_SCAN_FOR_MODULES OFF
+    )
+    wxl_set_target_folders(fmt.format)
+
     target_sources(fmt.module
         PUBLIC
             FILE_SET fmt TYPE CXX_MODULES
             BASE_DIRS "${_fmt_module_dir}"
             FILES "${_fmt_module_dir}/fmt.cc"
         PRIVATE
-            "${fmt_SOURCE_DIR}/src/format.cc"
+            $<TARGET_OBJECTS:fmt.format>
     )
-    set_source_files_properties("${_fmt_module_dir}/fmt.cc" PROPERTIES
-        COMPILE_DEFINITIONS "FMT_IMPORT_STD;FMT_ATTACH_TO_GLOBAL_MODULE"
-    )
-    target_include_directories(fmt.module PRIVATE ${fmt_SOURCE_DIR}/include)
-    target_compile_definitions(fmt.module PRIVATE FMT_OS=0)
+    # The install half of the include directory, $<INSTALL_INTERFACE>, is set
+    # where the headers are installed (cmake/wxl_install.cmake).
+    target_include_directories(fmt.module PRIVATE $<BUILD_INTERFACE:${fmt_SOURCE_DIR}/include>)
+    target_compile_definitions(fmt.module PRIVATE FMT_IMPORT_STD FMT_ATTACH_TO_GLOBAL_MODULE FMT_OS=0)
     target_compile_features(fmt.module PUBLIC cxx_std_23)
     set_target_properties(fmt.module PROPERTIES
         CXX_MODULE_STD ON
         CXX_SCAN_FOR_MODULES ON
+        # The same rule as wxl_add_module_library's: Debug and Release land in
+        # the same install prefix, so the archives must not share a file name.
+        DEBUG_POSTFIX d
     )
     wxl_set_target_folders(fmt.module)
 endif()
@@ -375,31 +397,6 @@ target_compile_features(wxl.core PUBLIC cxx_std_23)
 # consumer building wxl's targets in its own tree has to get the flag with
 # them, or its Release differs from the one this tree checks.
 target_compile_options(wxl.core PUBLIC $<$<CONFIG:Release>:/Gw>)
-
-if(WXL_INSTALL)
-    # One export set per package component, so that a consumer can ask for just
-    # the part it needs: find_package(wxl CONFIG REQUIRED COMPONENTS core).
-    # The code generator wants core alone; an application wants winui, which
-    # will pull core in transitively.
-    install(TARGETS wxl.core
-        EXPORT wxl-core-targets
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT core
-        FILE_SET modules DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wxl COMPONENT core
-        FILE_SET headers DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wxl COMPONENT core
-    )
-
-    # wxl.core links fmt::module PUBLIC, so an export of wxl.core has to carry
-    # it: the fmt.module made above travels in the same export set, its module
-    # source beside wxl's. A fmt::module the project brought itself is the
-    # project's to export.
-    if(TARGET fmt.module)
-        install(TARGETS fmt.module
-            EXPORT wxl-core-targets
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT core
-            FILE_SET fmt DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wxl/fmt COMPONENT core
-        )
-    endif()
-endif()
 
 # Beyond the `std` module, wxl.core depends on fmt alone, taken as a module above
 # for the text buffer, the builder and format(). The last Boost use,
