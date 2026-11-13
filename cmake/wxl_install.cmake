@@ -61,14 +61,49 @@ endif()
 # The export names what wxl.ui.common links over the NuGet packages -- the
 # targets Microsoft::CppWinRT and wxl.winappsdk.bootstrap -- and does not carry
 # them, nor the properties WXL_RUNTIME_FILES and WXL_UI_PROFILE_*: all of them
-# are made over the packages the configure of the tree restores, with paths into
-# that restore. The installed configuration does not make them, so an
-# application that links wxl::ui.common from the prefix has to have them first.
+# are made over the packages the configure restores, with paths into that
+# restore. The installed configuration restores the packages the tree was built
+# against -- the pins of share/wxl/packages.json, each at the version the restore
+# of this build resolved (wxl_write_restored_pins) -- and makes them anew
+# (cmake/wxl_ui_packages.cmake), before an application links wxl::ui.common.
+#
+# With it comes what wxl_add_ui_library needs to make the library of a profile
+# in the application's build: the generator, exported as wxl::winui-srcgen, the
+# generator's profiles and tables in share/wxl/profiles, the components --
+# manifests, sources, headers -- in share/wxl/components, and the scripts of
+# the profile path among the helpers. The configuration names the directories
+# on the imported targets, where the tree names its own.
+set(WXL_INSTALL_UI FALSE)
+set(WXL_INSTALL_DATA_DIR "${CMAKE_INSTALL_DATADIR}/wxl")
 if(TARGET wxl.ui.common)
+    set(WXL_INSTALL_UI TRUE)
     install(TARGETS wxl.ui.common
         EXPORT wxl-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         FILE_SET headers DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wxl/ui
+    )
+    install(TARGETS winui-srcgen
+        EXPORT wxl-targets
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+    get_target_property(_wxl_profiles winui-srcgen WXL_PROFILES_DIR)
+    get_target_property(_wxl_components wxl.ui.common WXL_UI_COMPONENTS_DIR)
+    install(DIRECTORY "${_wxl_profiles}/" DESTINATION "${WXL_INSTALL_DATA_DIR}/profiles")
+    install(DIRECTORY "${_wxl_components}/" DESTINATION "${WXL_INSTALL_DATA_DIR}/components")
+
+    wxl_write_restored_pins("${CMAKE_CURRENT_BINARY_DIR}/wxl-config/packages.json")
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/wxl-config/packages.json"
+        DESTINATION "${WXL_INSTALL_DATA_DIR}")
+
+    install(FILES
+            "${CMAKE_CURRENT_LIST_DIR}/wxl_packages.cmake"
+            "${CMAKE_CURRENT_LIST_DIR}/wxl_packages.vcxproj.in"
+            "${CMAKE_CURRENT_LIST_DIR}/wxl_nuget_version.cmake"
+            "${CMAKE_CURRENT_LIST_DIR}/wxl_restored_packages.cmake"
+            "${CMAKE_CURRENT_LIST_DIR}/wxl_ui_packages.cmake"
+            "${CMAKE_CURRENT_LIST_DIR}/wxl_ui_profile.cmake"
+            "${CMAKE_CURRENT_LIST_DIR}/Read-ProfileComponents.ps1"
+        DESTINATION "${WXL_CMAKE_DIR}/${WXL_HELPERS_RELATIVE_DIR}"
     )
 endif()
 
@@ -101,6 +136,7 @@ configure_package_config_file(
     "${CMAKE_CURRENT_LIST_DIR}/wxl-config.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/wxl-config/wxl-config.cmake"
     INSTALL_DESTINATION "${WXL_CMAKE_DIR}"
+    PATH_VARS WXL_INSTALL_DATA_DIR
 )
 
 # ExactVersion while the library is pre-1.0: nothing here is stable enough
@@ -140,20 +176,54 @@ write_basic_package_version_file(
 # The tree installed into a directory of the test's own, and a project outside
 # the tree built against it (cmake/wxl_install_test.cmake), in the
 # configuration ctest tests: the build has the archives of that configuration
-# alone. The consumer gets the compiler, the make program and the runtime
-# library of the tree -- the last evaluated for that configuration -- since an
-# archive and its importer have to agree on them.
-if(WXL_TESTS)
-    add_test(NAME install-core
+# alone. The consumer gets the compiler, the make program, the resource
+# compiler, the manifest tool and the runtime library of the tree -- the last
+# evaluated for that configuration -- since an archive and its importer have to
+# agree on them.
+#
+#   install-core   tests/install-consumer: wxl.core and fmt built from the
+#                  installed interfaces, the program run and printing the
+#                  version of the package and the length of the text it
+#                  formatted.
+#   install-ui     tests/install-ui-consumer, with a copy of the tree's profile
+#                  base beside it: wxl_add_ui_library of the package restores
+#                  the packages, runs the installed generator and builds
+#                  wxl::ui.base from the installed components, and an
+#                  application links it. Linked, not run: a window needs the
+#                  Windows App Runtime and a desktop.
+function(_wxl_install_test name consumer)
+    add_test(NAME ${name}
         COMMAND "${CMAKE_COMMAND}"
-                "-DWXL_TEST_DIR=${CMAKE_CURRENT_BINARY_DIR}/install-core-test"
+                "-DWXL_TEST_NAME=${name}"
+                "-DWXL_TEST_DIR=${CMAKE_CURRENT_BINARY_DIR}/${name}-test"
                 "-DWXL_TEST_BUILD=${CMAKE_CURRENT_BINARY_DIR}"
                 "-DWXL_TEST_CONFIG=$<CONFIG>"
-                "-DWXL_TEST_CONSUMER=${PROJECT_SOURCE_DIR}/tests/install-consumer"
+                "-DWXL_TEST_CONSUMER=${PROJECT_SOURCE_DIR}/tests/${consumer}"
                 "-DWXL_TEST_COMPILER=${CMAKE_CXX_COMPILER}"
                 "-DWXL_TEST_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
+                "-DWXL_TEST_RC_COMPILER=${CMAKE_RC_COMPILER}"
+                "-DWXL_TEST_MT=${CMAKE_MT}"
                 "-DWXL_TEST_RUNTIME_LIBRARY=${CMAKE_MSVC_RUNTIME_LIBRARY}"
                 "-DWXL_TEST_IMPORT_STD_UUID=${WXL_IMPORT_STD_UUID}"
-                "-DWXL_TEST_VERSION=${PROJECT_VERSION}"
+                ${ARGN}
                 -P "${CMAKE_CURRENT_LIST_DIR}/wxl_install_test.cmake")
+endfunction()
+
+if(WXL_TESTS)
+    _wxl_install_test(install-core install-consumer
+        "-DWXL_TEST_PROGRAM=install-consumer.exe"
+        "-DWXL_TEST_EXPECTED=wxl ${PROJECT_VERSION}: 9 code units")
+    if(WXL_INSTALL_UI)
+        get_target_property(_wxl_profiles winui-srcgen WXL_PROFILES_DIR)
+        _wxl_install_test(install-ui install-ui-consumer
+            "-DWXL_TEST_PROFILE=${_wxl_profiles}/base.winxl-profile")
+        # The consumer generates and compiles a library of a profile, which takes
+        # longer than the timeout CI gives a test. The install copies
+        # winui-srcgen, which a build under ctest -j may link anew while it does
+        # (docs.language): the lock the tests that run it take
+        # (wxl.gen/tests/CMakeLists.txt).
+        set_tests_properties(install-ui PROPERTIES
+            TIMEOUT 1800
+            RESOURCE_LOCK winui-srcgen)
+    endif()
 endif()

@@ -125,7 +125,9 @@ jobs:
       # The rows that start a sample build winxl as well (WXL_WINXL), which
       # installs the runtime the sample needs; the .NET SDK 10 that publishes
       # it is the runner image's. The same rows install wxl (WXL_INSTALL), so
-      # that the install-core test builds a consumer from the installed tree.
+      # that the install-core and install-ui tests build consumers from the
+      # installed tree: install-ui sets a timeout of its own, above the default
+      # the Test step gives, which does not override it.
       - name: Configure
         shell: cmd
         run: |

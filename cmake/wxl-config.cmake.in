@@ -38,10 +38,47 @@ if(CMAKE_GENERATOR MATCHES "Visual Studio")
     )
 endif()
 
+set(_wxl_helpers "${CMAKE_CURRENT_LIST_DIR}/@WXL_HELPERS_RELATIVE_DIR@")
+
+# With the WinUI layer the package is built against NuGet packages, which the
+# project restores before the targets come: the pins the package was installed
+# with, each at the version the archives were built against, and the C++/WinRT
+# projection over them, Microsoft::CppWinRT, in the project's build directory
+# (cmake/wxl_packages.cmake). The configure then needs what the restore of the
+# wxl tree needs: the developer environment of a Visual Studio installation with
+# the C++ WinUI tools.
+set(_wxl_ui @WXL_INSTALL_UI@)
+if(_wxl_ui)
+    set(_WXL_PACKAGES_INSTALLED_PINS "@PACKAGE_WXL_INSTALL_DATA_DIR@/packages.json")
+    include("${_wxl_helpers}/wxl_packages.cmake")
+    unset(_WXL_PACKAGES_INSTALLED_PINS)
+endif()
+
 include("${CMAKE_CURRENT_LIST_DIR}/wxl-targets.cmake")
 
 # The helpers travel with the package and are made available right away, so a
 # consumer can describe its own module targets in the same style wxl does.
-include("${CMAKE_CURRENT_LIST_DIR}/@WXL_HELPERS_RELATIVE_DIR@/wxl_helpers.cmake")
+include("${_wxl_helpers}/wxl_helpers.cmake")
+
+# What wxl::ui.common stands on in the restore -- the bootstrapper, the DLLs an
+# application gets beside it, what a library of a profile links -- made anew
+# over the project's restore, and what wxl_add_ui_library reads from the
+# targets: the file of the generator the steps run, the directory of its
+# profiles and tables, the directory of the components
+# (cmake/wxl_ui_profile.cmake).
+if(_wxl_ui)
+    include("${_wxl_helpers}/wxl_ui_packages.cmake")
+    include("${_wxl_helpers}/wxl_ui_profile.cmake")
+    wxl_ui_packages(wxl::ui.common)
+    set_target_properties(wxl::ui.common PROPERTIES
+        WXL_UI_COMPONENTS_DIR "@PACKAGE_WXL_INSTALL_DATA_DIR@/components")
+    get_target_property(_wxl_generator wxl::winui-srcgen LOCATION)
+    set_target_properties(wxl::winui-srcgen PROPERTIES
+        WXL_SHARED_FILE "${_wxl_generator}"
+        WXL_PROFILES_DIR "@PACKAGE_WXL_INSTALL_DATA_DIR@/profiles")
+    unset(_wxl_generator)
+endif()
+unset(_wxl_ui)
+unset(_wxl_helpers)
 
 check_required_components(wxl)
