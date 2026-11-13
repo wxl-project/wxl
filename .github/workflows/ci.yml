@@ -100,7 +100,7 @@ jobs:
       # cmake/wxl_packages.cmake stops a locked configure without one.
       RestoreLockedMode: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # 3010 is "installed, a reboot is pending": the compiler is usable as is.
       # One installation for the toolset and the WinUI build tools, so that
@@ -179,7 +179,7 @@ jobs:
 
       - name: Test logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ctest-logs-${{ matrix.strict && 'Strict' || matrix.config }}
           path: |
@@ -277,7 +277,7 @@ jobs:
       # The whole history of every branch: the range starts at the base and
       # at main, which a shallow clone of the pull request's merge ref does
       # not reach. The job pushes nothing, so no token stays in .git.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           persist-credentials: false

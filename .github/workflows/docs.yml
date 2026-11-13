@@ -41,7 +41,7 @@ jobs:
     if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # Doxygen 1.18.0 and the theme are fetched by the configure step itself
       # (cmake/wxl_doxygen.cmake), pinned by hash and by commit.
@@ -93,7 +93,7 @@ jobs:
 
       # The whole history and the tags: the manifest's commit is checked
       # against them. The job pushes nothing, so no token stays in .git.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -170,9 +170,9 @@ jobs:
           fi
 
       - name: Upload the site
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: ${{ runner.temp }}/site/html
 
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
