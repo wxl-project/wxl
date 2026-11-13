@@ -1,0 +1,31 @@
+{
+    "name": "editor",
+    "description": "The profile of the WinXL profile editor (wxl.gen.ui).",
+
+    "extends": [
+        "rich"
+    ],
+
+    "components": [
+        "composition",
+        "controls",
+        "effects"
+    ],
+
+    "types": {
+        "Microsoft.UI.Xaml.Controls.NavigationView": {
+            "comment": "The editor uses FooterMenuItems, IsPaneToggleButtonVisible, OpenPaneLength; rich has all the rest.",
+            "members": [
+                "FooterMenuItems",
+                "IsPaneToggleButtonVisible",
+                "OpenPaneLength"
+            ]
+        },
+        "Microsoft.UI.Xaml.UIElement": {
+            "comment": "The editor measures the size of text by calling Measure on a TextBlock.",
+            "members": [
+                "Measure"
+            ]
+        }
+    }
+}

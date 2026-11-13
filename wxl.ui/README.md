@@ -4,7 +4,7 @@
 синтаксис, окна, привязки данных, визуальные эффекты и точка входа
 `wxl_launched()`. Подключается заголовками (`ui.h` и соседние), цели сборки:
 `wxl::ui.common` (код, которому не нужны обёртки) и библиотека профиля,
-например `wxl::ui.full` и `wxl::ui.extended`; обёртки (`<wxl/X.h>`) в репозиторий не входят: их пишет генератор
+например `wxl::ui.full`, `wxl::ui.extended` и `wxl::ui.editor` редактора профилей; обёртки (`<wxl/X.h>`) в репозиторий не входят: их пишет генератор
 `winui-srcgen` шагом сборки в `<сборка>/wxl.ui/<профиль>/wxl`
 (`cmake/wxl_ui_profile.cmake`). Устройство — [docs/wrappers.md](../docs/wrappers.md),
 [docs/dsl.md](../docs/dsl.md), [docs/events.md](../docs/events.md),

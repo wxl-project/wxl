@@ -1,9 +1,10 @@
-# Визуальный редактор профилей генератора проекции (wxl.gen/profiles). Как
-# любое приложение на wxl, стоит на wxl::ui.full; WIN32 делает точкой входа
-# wWinMain самой wxl.
+# Визуальный редактор профилей генератора проекции (wxl.gen/profiles). Стоит
+# на библиотеке своего профиля, wxl::ui.editor (wxl.gen/profiles/
+# editor.winxl-profile): rich, окно композиции, эффекты и карточки — и ничего
+# сверх того, что зовёт его окно. WIN32 делает точкой входа wWinMain самой wxl.
 
 wxl_add_executable(wxl.gen.ui
-    UI wxl::ui.full
+    UI wxl::ui.editor
     main.cpp
     Editor.h
     Editor.cpp
