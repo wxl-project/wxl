@@ -69,7 +69,7 @@ public:
     bool remove_change(event_token& token) { return changed_.remove(token); }
 
     /// The same for a watch built into its subscriber, by its node: a change_watch.
-    bool remove_change(typename changed_event::func_t& node) { return changed_.remove(node); }
+    bool remove_change(changed_event::func_t& node) { return changed_.remove(node); }
 
     /// Watches for changes on behalf of a binding, the field keeping the watch
     /// rather than handing a token back. This is not a convenience over
@@ -188,7 +188,7 @@ public:
     /// from the fields beside it:
     ///
     ///     struct Equation : sta_refcounted {
-    ///         observable<double> a{blank}, b{blank}, c{blank};
+    ///         observable<nullable<double>> a, b, c;
     ///         observable<Answer> answer{a, b, c, solve};
     ///     };
     ///
@@ -357,10 +357,10 @@ concept change_listener = requires(Owner& owner, Argument change) {
 template <class Observed, auto Listener>
 class change_watch final : public Observed::changed_event::func_t
 {
-    using event_t = typename Observed::changed_event;
-    using func_t = typename event_t::func_t;
-    using argument_t = typename impl::change_argument<func_t>::type;
-    using owner_t = typename impl::member_owner<decltype(Listener)>::type;
+    using event_t = Observed::changed_event;
+    using func_t = event_t::func_t;
+    using argument_t = impl::change_argument<func_t>::type;
+    using owner_t = impl::member_owner<decltype(Listener)>::type;
 
 public:
     /// A watch on `field`, calling the listener on `owner` at each change. The node is put on

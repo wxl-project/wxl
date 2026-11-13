@@ -22,6 +22,7 @@
 #include "Color.h"
 #include "core.h"
 #include "hstring_param.h"
+#include <wxl/Microsoft.UI.Xaml.Enums.h>
 
 struct HWND__;
 
@@ -32,6 +33,7 @@ class Window;
 namespace impl {
 
 struct window_placement_setter;
+struct window_theme_setter;
 
 }  // namespace impl
 
@@ -54,6 +56,11 @@ public:
     /// window returns to, and a window told to cover the display has been told nothing about
     /// where that is.
     static hstring placement(Window const& window);
+
+    /// The theme the window shows, Light or Dark: what the root of its island shows -- the theme
+    /// `Window { requestedTheme = ... }` asked for, or the application's where it asked for
+    /// none. Content that asks for a theme of its own shows that one, and is asked itself.
+    static ElementTheme actualTheme(Window const& window);
 
     /// Paints what shows where the XAML island has not drawn yet with one solid color. The
     /// island repaints on its own schedule: WM_SIZE starts a layout pass, and the frame at the new
@@ -89,13 +96,16 @@ public:
 
 private:
     friend struct impl::window_placement_setter;
+    friend struct impl::window_theme_setter;
 
     /// What wxl keeps of one window -- the rectangle it returns to, its backdrop, the handler of
-    /// its dropped files -- and the one subclass procedure that answers its messages. Both speak
-    /// Win32, so both are defined in WindowNative.cpp. Only what keeps something of its own or
-    /// catches a message makes an entry; reading never does.
+    /// its dropped files, its theme -- the one subclass procedure that answers its messages, and
+    /// the way the theme reaches the root of the window's island. All speak Win32 or WinRT, so
+    /// all are defined in WindowNative.cpp. Only what keeps something of its own or catches a
+    /// message makes an entry; reading never does.
     struct native_state;
     struct subclass;
+    struct island;
 
     /// The window's entry in the store, made on first ask together with the subclass that takes
     /// it away when the window goes; null for no handle, or a subclass that could not be put on.

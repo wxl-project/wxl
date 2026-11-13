@@ -155,6 +155,10 @@ struct CompositionWindow::Impl : core::refcounted, core::intrusive_list_node<Imp
 
     // Настройки окна -- то, что приложение ставит, когда хочет.
     xaml::Media::SystemBackdrop system_backdrop{nullptr};  // материал острова, если задан до него
+    // Тема окна (requestedTheme) -- если её просили: только тогда рамка следует за островом, а
+    // без неё рамку красит darkFrame приложения. Заданная раньше острова ждёт его.
+    ElementTheme theme{ElementTheme::Default};
+    bool theme_requested{false};
     std::function<void(std::filesystem::path)> on_file_drop;
     SizeInt32 min_size{};               // нижний предел клиента (WM_GETMINMAXINFO)
     WINDOWPLACEMENT saved_placement{};  // место до полноэкранного -- куда вернуться
@@ -466,6 +470,9 @@ struct CompositionWindow::Impl : core::refcounted, core::intrusive_list_node<Imp
             root.Background(
                 xaml::Media::SolidColorBrush{winrt::Microsoft::UI::Colors::Transparent()});
             root.Loaded([&state](auto&&, auto&&) { state.on_root_loaded(); });
+            // Тема окна -- на корне: его наследует всё, что показывает остров, -- заголовок,
+            // кнопки окна, содержимое, -- кроме содержимого со своей темой.
+            if (state.theme_requested) follow_theme(state);
             chrome.Content(root);
             chrome.TakeFocusRequested(
                 [&state](
@@ -495,9 +502,18 @@ struct CompositionWindow::Impl : core::refcounted, core::intrusive_list_node<Imp
             chrome.Close();
         }
 
+        // Корень берёт тему окна, а рамка с этих пор следует за тем, что он показывает. Раз на
+        // остров: обработчик держит только хэндл окна, корень уходит с островом.
+        void follow_theme(Impl& state) {
+            root.RequestedTheme(static_cast<xaml::ElementTheme>(state.theme));
+            impl::frame_follows(state.window.get(), root);
+            theme_followed = true;
+        }
+
         xaml::Hosting::DesktopWindowXamlSource const chrome;
         controls::Grid const root;
         xaml::UIElement page{nullptr};  // содержимое приложения
+        bool theme_followed{false};     // рамка следует за темой корня (follow_theme)
 
         // Фокус клавиатуры -- как у Microsoft.UI.Xaml.Window (DesktopWindowImpl в
         // исходниках WinUI). Пока остров показан, WM_ACTIVATE не доходит до
@@ -2022,6 +2038,26 @@ void CompositionWindow::fullScreen(bool on) const {
 }
 
 void CompositionWindow::darkFrame(bool on) const { impl::frame_dark(impl_->window.get(), on); }
+
+void CompositionWindow::requestedTheme(ElementTheme value) const {
+    impl_->theme = value;
+    impl_->theme_requested = true;
+    if (!impl_->island) {
+        // Острова нет: рамка верна с первого кадра, а корень возьмёт тему, когда остров заведут.
+        impl::frame_dark(impl_->window.get(), impl::shown_theme(value) == ElementTheme::Dark);
+        return;
+    }
+    if (!impl_->island->theme_followed) {
+        impl_->island->follow_theme(*impl_);
+        return;
+    }
+    impl::request_island_theme(impl_->island->root, value);
+}
+
+ElementTheme CompositionWindow::actualTheme() const {
+    if (impl_->island) return static_cast<ElementTheme>(impl_->island->root.ActualTheme());
+    return impl::shown_theme(impl_->theme);
+}
 
 void CompositionWindow::captionColor(Color caption, Color text) const {
     // DWM берёт COLORREF -- 0x00BBGGRR, без альфы.

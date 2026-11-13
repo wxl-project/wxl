@@ -85,8 +85,8 @@ public:
     }
 
     void strokeThickness(double value) const;
-    void blurRadius(double value) const;
-    void offset(double value) const;
+    void blurRadius(float value) const;
+    void offset(float value) const;
     void margin(Thickness value) const;
     void cornerRadius(CornerRadius value) const;
 

@@ -235,6 +235,8 @@ UIElement SplitPanel::content() const {
     return Object::Impl::wrap<UIElement>(xaml::UIElement{Impl::of(impl()).content_});
 }
 
+// The public type is SplitView's, double; the value is kept as the float layout
+// measures in, as Windows.Foundation.Rect keeps its doubles.
 void SplitPanel::openPaneLength(double value) const {
     SplitPanelCore& object = Impl::of(impl());
     object.length_ = static_cast<float>(value);
@@ -265,6 +267,7 @@ SplitViewPanePlacement SplitPanel::panePlacement() const {
                                       : SplitViewPanePlacement::Left;
 }
 
+// The public type is StackPanel's, double; kept as float, as openPaneLength is.
 void SplitPanel::spacing(double value) const {
     SplitPanelCore& object = Impl::of(impl());
     object.spacing_ = static_cast<float>(value);

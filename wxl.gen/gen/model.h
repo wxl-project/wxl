@@ -251,16 +251,12 @@ struct class_group {
 // What the builder syntax needs to know about the members that were
 // generated, and about the members of the classes wxl writes by hand.
 struct dsl {
-    // Property name -> the wxl type of its value, empty when different
-    // classes declare that name with different types (the braced form
-    // `margin = {20}` needs one definite type; the deduced form does not).
-    std::map<std::string, std::string> property_value_type;
+    // Property name -> the wxl types of its value, one where every class
+    // declaring the name agrees and several where they do not: `opacity` is a
+    // double on a UIElement and a float on a Visual. The tag takes each of them;
+    // the braced form `margin = {20}` needs one definite type.
+    std::map<std::string, std::set<std::string>> property_value_types;
     std::set<std::string> events;
-
-    // Properties whose value is a class the tag can also build from braces:
-    // `titleBar = { leftHeader = ..., content = ... }`. A setter method with a
-    // narrowed type is the one kind so far (see profile.h).
-    std::set<std::string> braced;
 
     // Collection-valued property name -> the wxl type of its elements. These
     // get a subscript tag (`children[a, b, c]`) rather than an assignable
@@ -299,8 +295,8 @@ struct dsl {
 // crosses: `get` reads the control `c` as that type, `set` writes the field's
 // `value` into it.
 struct binding_field {
-    std::string type;  // "int"
-    std::string get;   // "static_cast<int>(c.value())"
+    std::string type;  // "float"
+    std::string get;   // "static_cast<float>(c.value())"
     std::string set;   // "c.value(value)"
 };
 
@@ -332,8 +328,8 @@ struct binding_pair_info {
 // things follow from being generated per class rather than per member: the
 // anchor knows its owner, so writing one class's member on another is
 // refused by name instead of deep inside a template, and it knows the type
-// that class declares the property with -- which the flat vocabulary has to
-// give up wherever two classes disagree.
+// that class declares the property with -- where two classes disagree, the
+// flat vocabulary knows only the list of them.
 struct schema {
     struct member {
         // Bound: a property that exists on this class as a binding target
@@ -358,13 +354,10 @@ struct schema {
 
         // False where the class declares the same property with more than
         // one type -- SymbolIcon takes both a Symbol and a FluentSymbol. The
-        // anchor then carries no type, exactly as the flat tag does, and
-        // keeps only the deduced assignment; `type` stays the first of them,
+        // anchor then carries no type and keeps only the deduced assignment;
+        // `type` stays the first of them,
         // because the test still has to hand it something it accepts.
         bool single_type = true;
-
-        // The tag builds its value from braces too (see dsl::braced).
-        bool braced = false;
 
         // A synthetic property whose value is written unnamed (the profile's "positional") and
         // is not assigned to the tag: the test line hands it to the class's positional route.
@@ -391,6 +384,30 @@ struct schema {
     // Base before derived, the order the classes are written in, so a schema
     // struct can simply name its base.
     std::vector<class_t> classes;
+
+    // One line of a description a component gives of a class or an enumeration
+    // it writes by hand (component.json), held to the code by the surface test:
+    // a setter takes the value of the type described -- a number of exactly
+    // that type --, a binder binds a field of it, a collection takes its
+    // element, an event hands over its args, a class derives from its base, an
+    // enumeration has its value. A member the description leaves out is not
+    // seen; it has no tag either.
+    struct check {
+        enum class kind_t { Setter, Bound, Collection, Event, Base, Value };
+
+        kind_t kind = kind_t::Setter;
+        std::string owner;   // the class or the enumeration: "SettingsCard"
+        std::string member;  // as the description names it: "HeaderIcon"; a Value's value
+        std::string type;    // the C++ type described: "IconElement"; empty for a Value
+        std::string word;    // as the description spells it: "Microsoft.UI.Xaml.Controls.IconElement"
+        bool arithmetic = false;
+    };
+    std::vector<check> checks;
+
+    // The headers of the described classes and enumerations, as the emitter
+    // spells them ("../SettingsCard.h"): the checks name a class the schema
+    // may have no struct of. The types they name come with Members.h.
+    std::set<std::string> includes;
 };
 
 // ---- <Namespace>.EventArgs.h / .cpp ----
@@ -525,10 +542,13 @@ void analyze_tags(type_map const& types, model& m);
 void analyze_enums_and_structs(type_kinds const& kinds, closure const& cl, type_map const& types,
                                documentation_source* docs, model& m);
 // Classes, and with them the builder syntax's vocabulary and the schema --
-// only the class analysis has read the signatures. Hands back where every
-// wrapped type is declared, which the args views' signatures need.
+// only the class analysis has read the signatures. The classes the selected
+// `components` describe join the vocabulary and the schema as the generated
+// ones do. Hands back where every wrapped type is declared, which the args
+// views' signatures need.
 type_index analyze_classes(type_kinds const& kinds, closure const& cl, type_map const& types,
-                           documentation_source* docs, model& m);
+                           std::vector<component> const& components, documentation_source* docs,
+                           model& m);
 void analyze_event_args(type_kinds const& kinds, closure const& cl, type_index const& index,
                         documentation_source* docs, model& m);
 

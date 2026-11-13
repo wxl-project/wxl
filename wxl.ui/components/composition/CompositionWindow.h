@@ -52,7 +52,7 @@
 //         title = L"Пример",
 //         minSize = {820, 560},
 //         extendsContentIntoTitleBar = true,
-//         titleBar = {leftHeader = ..., content = ..., rightHeader = ...},
+//         titleBar = TitleBar {leftHeader = ..., content = ..., rightHeader = ...},
 //         onClosed += [] { ... },
 //         page,
 //     };
@@ -250,7 +250,8 @@ public:
     UIElement content() const;
 
     /// Безымянный элемент в скобках окна -- его содержимое; безымянный
-    /// TitleBar -- его заголовок, как у генерируемого Window.
+    /// TitleBar -- его заголовок: заголовок это окно ставит на место само, и в
+    /// содержимом TitleBar не стоит.
     void setPositional(UIElement const& value) const { content(value); }
     void setPositional(TitleBar const& value) const { titleBar(value); }
 
@@ -283,7 +284,7 @@ public:
     // окно. В отличие от Window, элемент ставит на место само окно -- строкой
     // над содержимым, -- поэтому он и пишется прямо в скобках окна:
     //
-    //     titleBar = {leftHeader = ..., content = ..., rightHeader = ...}
+    //     titleBar = TitleBar {leftHeader = ..., content = ..., rightHeader = ...}
     //
     // Кнопки окна рядом с ним рисует тоже окно, в XAML: встроенным стилем
     // WindowCaptionButton, высотой полосы заголовка и с её масштабом --
@@ -379,8 +380,19 @@ public:
     bool fullScreen() const;
     void fullScreen(bool on) const;
 
+    /// Тема всего, что показывает окно, -- одна на окно, как тег requestedTheme у Window:
+    /// её берёт корень острова, и её наследуют заголовок, кнопки окна и содержимое, кроме
+    /// содержимого со своей темой; замена содержимого её не сбрасывает. Рамка окна следует за
+    /// ней сама, в том числе за темой системы под Default. Заданная до острова ждёт его.
+    void requestedTheme(ElementTheme value) const;
+
+    /// Тема, которую окно показывает, Light или Dark: тема корня острова -- просьба
+    /// requestedTheme или, без неё, тема приложения.
+    ElementTheme actualTheme() const;
+
     /// Тёмная рамка: заголовок и его кнопки. Рамку красит DWM, о теме острова
-    /// он не знает, и приложение, сменившее тему, говорит ему отдельно.
+    /// он не знает. Для окна без requestedTheme: с ним рамка следует за темой сама,
+    /// и следующая смена темы перекрасит её снова.
     void darkFrame(bool on) const;
 
     /// Цвет заголовка и текста в нём. Есть с Windows 11; там, где DWM его не

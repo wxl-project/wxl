@@ -377,7 +377,7 @@ public:
             return false;
         }
 
-        typename contender_t::reader reader_;
+        contender_t::reader reader_;
         waiting_first* contender_;
     };
 
@@ -475,7 +475,7 @@ struct distribution {
 };
 
 distribution describe(std::vector<double> values) {
-    std::sort(values.begin(), values.end());
+    std::ranges::sort(values);
 
     const std::size_t n = values.size();
     const auto at = [&](const double quantile) {
@@ -540,7 +540,7 @@ public:
         job_done_.acquire();
 
         std::vector<std::uint64_t> taken = arrived_;
-        std::sort(taken.begin(), taken.end());
+        std::ranges::sort(taken);
 
         return static_cast<double>(taken[taken.size() / 2]) / ticks_per_ns_;
     }
@@ -723,7 +723,7 @@ struct latency_rounds {
 
         for (const latency_result& r : taken) values.push_back(figure(r));
 
-        std::sort(values.begin(), values.end());
+        std::ranges::sort(values);
         return values[values.size() / 2];
     }
 };
@@ -795,8 +795,8 @@ struct throughput_rounds {
 };
 
 void throughput_row(const char* name, throughput_rounds rounds) {
-    std::sort(rounds.total.begin(), rounds.total.end());
-    std::sort(rounds.writer.begin(), rounds.writer.end());
+    std::ranges::sort(rounds.total);
+    std::ranges::sort(rounds.writer);
 
     const double best = rounds.total.front();
     const double median = rounds.total[rounds.total.size() / 2];

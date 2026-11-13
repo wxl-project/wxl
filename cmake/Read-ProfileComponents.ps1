@@ -1,6 +1,6 @@
 # Reads a profile chain and its component manifests, printing one line per item
-# CMake needs: chain component names, and for each selected component after needs
-# closure, its directory, sources, schema and surface fragments and libraries.
+# CMake needs: chain component names, and for each selected component after the closure
+# over dependencies, its directory, sources, surface fragment and libraries.
 #
 # Usage: Read-ProfileComponents.ps1 -Profile <path> [-ComponentDir <dir>] ...
 #        powershell.exe -NoProfile -File Read-ProfileComponents.ps1 -Profile ...
@@ -8,11 +8,10 @@
 # Compatible with Windows PowerShell 5.1: no `?.`, `??`, ternary, `&&`.
 # Output format: <type>:<value>, one per line. CMake parses it with regex.
 #   profile:<path>     - a profile of the chain, the given one last
-#   chain:<name>       - a component from the profile's own list (before needs)
-#   component:<name>   - a selected component (after needs closure)
+#   chain:<name>       - a component from the profile's own list (before dependencies)
+#   component:<name>   - a selected component (after the closure over dependencies)
 #   dir:<path>         - the component directory for the preceding component
 #   source:<path>      - a source file (relative to component dir)
-#   schema:<path>      - the component's schema fragment (relative to component dir)
 #   surface:<path>     - the component's surface test fragment (relative to component dir)
 #   library:<target>   - a CMake library target
 
@@ -145,19 +144,19 @@ if ($ComponentDir.Count -eq 0) {
     exit 0
 }
 
-# Load and close components by needs, each after those it needs; components that need
-# each other in a cycle stop the script.
+# Load and close components over their dependencies, each after its dependencies; components
+# that depend on each other in a cycle stop the script.
 $loaded = @{}
 $loading = @{}
 $selected = @()
 function Import-Component([string]$Name) {
     if ($loaded.ContainsKey($Name)) { return }
-    if ($loading.ContainsKey($Name)) { throw "Components need each other in a cycle at $Name" }
+    if ($loading.ContainsKey($Name)) { throw "Components depend on each other in a cycle at $Name" }
     $loading[$Name] = $true
     $manifest = Find-ComponentManifest $Name $ComponentDir
     $comp = Read-JsonWithComments $manifest
-    if ($comp.needs) {
-        foreach ($dep in $comp.needs) {
+    if ($comp.dependencies) {
+        foreach ($dep in $comp.dependencies) {
             Import-Component $dep
         }
     }
@@ -182,9 +181,6 @@ foreach ($name in $selected) {
         foreach ($src in $comp.sources) {
             Write-Output "source:$src"
         }
-    }
-    if ($comp.schema) {
-        Write-Output "schema:$($comp.schema)"
     }
     if ($comp.surface) {
         Write-Output "surface:$($comp.surface)"

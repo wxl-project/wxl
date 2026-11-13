@@ -192,6 +192,27 @@ TEST(Observable, works_for_nullable_bool) {
     EXPECT_FALSE(seen.has_value());
 }
 
+// An empty NumberBox's NaN, written into a nullable double, is empty, and empty over
+// empty says nothing: the echo of an emptied box ends at the field, where NaN over NaN,
+// equal to nothing, would notify again.
+TEST(Observable, ends_the_echo_of_an_empty_nullable_double) {
+    observable<nullable<double>> entry{2.0};
+    int calls = 0;
+    entry.on_change([&](nullable<double> const&) noexcept { ++calls; });
+
+    entry.set(std::numeric_limits<double>::quiet_NaN());
+    EXPECT_EQ(calls, 1);
+    EXPECT_FALSE(entry.get().has_value());
+
+    entry.set(std::numeric_limits<double>::quiet_NaN());
+    entry.set(nullable<double>{});
+    EXPECT_EQ(calls, 1);
+
+    entry.set(3.0);
+    EXPECT_EQ(calls, 2);
+    EXPECT_EQ(entry.get(), 3.0);
+}
+
 // A model that sets a field itself and hands out only its read-only observable.
 struct Counter {
     observable<int const>& value() { return value_; }

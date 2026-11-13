@@ -1,13 +1,13 @@
 {
   "name": "shapes",
-  "needs": [],
+  "dependencies": [],
   "sources": [
     "impl/shape_helpers.cpp",
     "impl/shape_helpers.h"
   ],
   "libraries": [],
-  "comment": "Geometry from text and polygon points.",
-  "requires": {
+  "description": "Geometry from text and polygon points.",
+  "imports": {
     "types": {
       "Microsoft.UI.Xaml.Media.Geometry": {
         "members": [],

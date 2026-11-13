@@ -220,9 +220,11 @@ wxl::Teardown wxl_launched() {
     // Значок строки — перед первым словом сведений, как в дереве. Разметка
     // разбирается под кегль блока, поэтому новый кегль разбирает её заново.
     // Наблюдатели настроек и сведений держат редактор и настройки простыми
-    // указателями: живут они столько же, сколько окно, — до Teardown.
+    // указателями: живут они столько же, сколько окно, — до Teardown. Пока поле
+    // кегля пусто, сведения строятся под кегль, который у блока уже есть.
     auto const showInfo = [details, preferences = settings.get()](Description const& info) {
-        double const size = preferences->detailsFontSize.get();
+        auto const chosen = preferences->detailsFontSize.get();
+        double const size = chosen ? *chosen : details.fontSize();
         details.fontSize(size);
         details.lineHeight(std::round(size * 22.0 / 16.0));
         if (!info.icon) {
@@ -266,7 +268,10 @@ wxl::Teardown wxl_launched() {
         editor->englishDocumentation(english);
         saveSettings(*raw);
     });
-    settings->detailsFontSize.on_change([raw = settings.get(), editor = document.get(), showInfo](int) noexcept {
+    // Опустевшее поле кегля не меняет ничего: ни сведений, ни реестра.
+    settings->detailsFontSize.on_change([raw = settings.get(), editor = document.get(), showInfo](
+                                            core::nullable<double> const& size) noexcept {
+        if (!size) return;
         showInfo(editor->info.get());
         saveSettings(*raw);
     });
@@ -309,7 +314,7 @@ wxl::Teardown wxl_launched() {
     // эффект, и анимации у всех кнопок общие. Кнопка ловит указатель всей
     // площадью, а растёт её знак: у кнопки, которая растёт сама, XAML
     // закрывает подсказку через миг после того, как показал.
-    auto const pop = MagnifyEffect {1.2, MagnifyTarget::Content, maximum = 1.35, minimum = 0.95};
+    auto const pop = MagnifyEffect {1.2f, MagnifyTarget::Content, maximum = 1.35f, minimum = 0.95f};
 
     auto const toolButton = Preset {
         styles.Button.CommandBarFlyoutEllipsis,
@@ -345,8 +350,8 @@ wxl::Teardown wxl_launched() {
     // под ними, меньше, сведения о выбранном — как у просмотрщиков библиотек
     // типов.
     auto const editorView = SplitPanel {
-        openPaneLength = 520.0,
-        spacing = 8.0,
+        openPaneLength = 520.0f,
+        spacing = 8.0f,
         // Дерево — на сплошном фоне, белом в светлой теме.
         pane = Border {
             framed,
@@ -356,8 +361,8 @@ wxl::Teardown wxl_launched() {
         content = SplitPanel {
             orientation.vertical,
             panePlacement.right,
-            openPaneLength = 180.0,
-            spacing = 8.0,
+            openPaneLength = 180.0f,
+            spacing = 8.0f,
             content = Border {
                 framed,
                 background = brushes.SolidBackgroundFillColor.Quarternary,
@@ -583,7 +588,7 @@ wxl::Teardown wxl_launched() {
         // Mica, как у Gallery: заголовок и панель навигации прозрачны, сквозь
         // них виден материал.
         systemBackdrop = MicaBackdrop {},
-        titleBar = {
+        titleBar = TitleBar {
             title = BindOutput {document->title},
             // Стрелка на месте всегда, как в Gallery; возвращаться некуда — она
             // неактивна.

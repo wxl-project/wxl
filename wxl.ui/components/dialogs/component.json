@@ -1,6 +1,6 @@
 {
   "name": "dialogs",
-  "needs": [
+  "dependencies": [
     "schema"
   ],
   "sources": [
@@ -12,5 +12,5 @@
   ],
   "surface": "dialogs.surface.cpp",
   "libraries": [],
-  "comment": "Content dialogs and screen reader announcements."
+  "description": "Content dialogs and screen reader announcements."
 }

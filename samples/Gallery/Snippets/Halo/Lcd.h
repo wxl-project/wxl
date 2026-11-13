@@ -3,8 +3,8 @@ Border {
     CornerRadius {8},
     Padding {18, 12},
     background = RadialGradientBrush {
-        center = Point {0.33, 0.33},
-        gradientOrigin = {0.33, 0.33},
+        center = Point {0.33f, 0.33f},
+        gradientOrigin = {0.33f, 0.33f},
         radiusX = 1.3,
         radiusY = 1.3,
         GradientStop {rgb(220, 232, 180), offset = 0.0},

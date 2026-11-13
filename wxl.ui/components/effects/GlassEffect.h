@@ -54,8 +54,8 @@ public:
     void setPositional(Color value) const { color(value); }
 
     void color(Color value) const;
-    void blurRadius(double value) const;
-    void opacity(double value) const;
+    void blurRadius(float value) const;
+    void opacity(float value) const;
 
     template <std::derived_from<FrameworkElement> Obj>
     void operator()(Obj const& element) const {

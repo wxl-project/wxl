@@ -173,7 +173,7 @@ consteval GridLength grid_lengths_parse_entry(Char const* first, Char const* las
 // initializer -- it reports a read of an uninitialized symbol.
 template <values Text>
 consteval std::array<GridLength, grid_lengths_count<Text>()> grid_lengths_parse() {
-    if (!is_character<grid_lengths_char<Text>> || std::size(Text.items) != Text.count + 2) {
+    if (!core::character<grid_lengths_char<Text>> || std::size(Text.items) != Text.count + 2) {
         grid_lengths_text_is_not_a_string_literal();
     }
     std::array<GridLength, grid_lengths_count<Text>()> lengths{};

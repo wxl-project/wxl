@@ -1,6 +1,6 @@
 {
   "name": "window",
-  "needs": [],
+  "dependencies": [],
   "sources": [
     "impl/window_frame.cpp",
     "impl/window_helpers.cpp",
@@ -12,8 +12,8 @@
     "WindowNative.h"
   ],
   "libraries": [],
-  "comment": "The window: native handle, frame, size and tray icon.",
-  "requires": {
+  "description": "The window: native handle, frame, size and tray icon.",
+  "imports": {
     "types": {
       "Microsoft.UI.Windowing.AppWindow": {
         "comment": "WindowNative::makeModal keeps a dialog out of the switcher and gives it its presenter; the tray icon's window and flyout are hidden, sized and placed through it.",
@@ -50,6 +50,12 @@
             "cppType": "SizeToContent",
             "cppInclude": "../SizeToContent.h",
             "function": "impl::set_size_to_content",
+            "include": "../impl/window_helpers.h"
+          },
+          "RequestedTheme": {
+            "comment": "The theme of everything the window shows, said once for the window rather than on whatever its content happens to be. WinUI has nowhere to say it: Window has no RequestedTheme, Application.RequestedTheme is fixed once there is content, and the content's own is lost when the content is replaced. The theme is put on the root of the window's island -- the topmost element above the content, which outlives every content the window is given -- as soon as the content has been laid out; content asking for a theme of its own keeps it. The frame follows what the island shows. Reading it back is wxl::WindowNative::actualTheme().",
+            "type": "Microsoft.UI.Xaml.ElementTheme",
+            "function": "impl::window_theme_setter::set",
             "include": "../impl/window_helpers.h"
           },
           "Placement": {

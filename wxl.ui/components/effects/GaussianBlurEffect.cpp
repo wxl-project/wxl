@@ -44,15 +44,11 @@ GaussianBlurEffect& GaussianBlurEffect::operator=(GaussianBlurEffect const& othe
 GaussianBlurEffect::~GaussianBlurEffect() = default;
 
 void GaussianBlurEffect::color(Color value) const { impl_->color = value; }
-void GaussianBlurEffect::blurRadius(double value) const {
-    impl_->blurRadius = static_cast<float>(value);
+void GaussianBlurEffect::blurRadius(float value) const { impl_->blurRadius = value; }
+void GaussianBlurEffect::opacity(float value) const {
+    impl_->opacity = std::clamp(value, 0.0f, 1.0f);
 }
-void GaussianBlurEffect::opacity(double value) const {
-    impl_->opacity = static_cast<float>(std::clamp(value, 0.0, 1.0));
-}
-void GaussianBlurEffect::gamma(double value) const {
-    impl_->gamma = static_cast<float>(std::max(value, 0.01));
-}
+void GaussianBlurEffect::gamma(float value) const { impl_->gamma = std::max(value, 0.01f); }
 void GaussianBlurEffect::zIndex(int32_t value) const { impl_->z = value; }
 
 void GaussianBlurEffect::attach(UIElement const& wrapper,

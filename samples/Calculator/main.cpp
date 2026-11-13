@@ -36,8 +36,8 @@ namespace {
     // Шаблон фона панели: кисть строится при применении
     Template<RadialGradientBrush> backgroundTemplate(Glow const& tones) {
         return {
-            center = Point {0.33, 0.33},
-            gradientOrigin = {0.33, 0.33},
+            center = Point {0.33f, 0.33f},
+            gradientOrigin = {0.33f, 0.33f},
             radiusX = glowRadius,
             radiusY = glowRadius,
             Template<GradientStop> {tones.centre, offset = 0.0},
@@ -139,7 +139,7 @@ wxl::Teardown wxl_launched() {
         // Корпус — сама сетка клавиш: фон, кант и фокус надеты прямо на неё.
         content = Grid {
             requestedTheme = ElementTheme::Dark,
-            BevelEffect {rimLight, rimShade, strokeThickness = 2},
+            BevelEffect {rimLight, rimShade, strokeThickness = 2.0f},
             isTabStop = true,
             background = SolidColorBrush {color = panel},
             CornerRadius {6},

@@ -96,7 +96,7 @@ struct sig<true, R, T...> {
 };
 
 template <bool NX, class R, class... T>
-using sig_t = typename sig<NX, R, T...>::type;
+using sig_t = sig<NX, R, T...>::type;
 
 template <class Signature, template <class> class Base = Dummy>
 class func_body;

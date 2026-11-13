@@ -36,6 +36,7 @@ public:
     constexpr intrusive_ptr(std::nullptr_t) noexcept {}
 
     /// Implicit by design -- `return new foo();` into an `intrusive_ptr<foo>` has to work.
+    /// \param p the object to point at, or nullptr.
     /// \param add_ref false adopts a reference the caller already owns instead of taking
     ///                a new one (objects deriving from refcounted start at a count of 1).
     intrusive_ptr(T* p, bool add_ref = true) noexcept : ptr_(p) {
@@ -106,6 +107,7 @@ public:
     }
 
     /// Takes ownership of `p`, releasing whatever was held before.
+    /// \param p the object to point at, or nullptr to leave the pointer empty.
     /// \param add_ref see the constructor.
     void reset(T* p = nullptr, bool add_ref = true) noexcept {
         intrusive_ptr(p, add_ref).swap(*this);

@@ -1,6 +1,6 @@
 {
   "name": "backdrops",
-  "needs": [
+  "dependencies": [
     "window"
   ],
   "sources": [
@@ -8,8 +8,8 @@
     "impl/backdrop_helpers.h"
   ],
   "libraries": [],
-  "comment": "Mica, acrylic and the drag region, which need the system backdrop types.",
-  "requires": {
+  "description": "Mica, acrylic and the drag region, which need the system backdrop types.",
+  "imports": {
     "types": {
       "Microsoft.UI.Xaml.Window": {
         "members": [],

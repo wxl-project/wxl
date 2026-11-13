@@ -1,6 +1,6 @@
 {
   "name": "bb",
-  "needs": [
+  "dependencies": [
     "schema",
     "markup"
   ],
@@ -13,5 +13,5 @@
   "libraries": [
     "wxl::bb"
   ],
-  "comment": "The BB-code block."
+  "description": "The BB-code block."
 }

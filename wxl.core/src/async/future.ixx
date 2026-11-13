@@ -13,6 +13,8 @@ export namespace wxl::async {
 
 namespace detail {
 
+class future_accessor;
+
 /// Base untyped future.
 class future_base : public shared_state_holder<const future_shared_state>
 {
@@ -113,6 +115,69 @@ public:
     }
 };
 
+/// A when_resolved callback that resolves \p result the way the state it is handed was resolved,
+/// value included: forward_outcome_func for a `future<U>` that has a value to carry. The value is
+/// copied -- the state it lies in belongs to another future and may have other holders -- and a
+/// copy that throws fails \p result with that exception.
+template <class U>
+struct forward_value_func {
+    explicit forward_value_func(const future_shared_state_ptr& result) noexcept
+        : result_(result) {}
+
+    void operator()(const state* by_state) noexcept {
+        if (by_state->id() == state_id::failed) {
+            result_->set_exception(by_state);
+            return;
+        }
+
+        try {
+            result_->set_value<U>(resolved_state<U>::from(by_state)->value());
+        } catch (...) {
+            result_->set_exception();
+        }
+    }
+
+    future_shared_state_ptr result_;
+};
+
+/// The single subscription behind next_unwrap(): on a value it starts the continuation and passes
+/// the outcome of the `future<U>` that continuation returns on to \p result, the value with it; on a
+/// failure it passes the exception on. A continuation that throws fails \p result as well.
+template <class t_next_async_task, class T, class U>
+struct unwrap_func {
+    unwrap_func(t_next_async_task task, const future_shared_state_ptr& result)
+        : task_(std::move(task)), result_(result) {}
+
+    void operator()(const state* by_state) noexcept {
+        if (by_state->id() == state_id::failed) {
+            result_->set_exception(by_state);
+            return;
+        }
+
+        // A future<void> has no value to carry, and its forwarding is the one compiled once.
+        using t_forward = std::conditional_t<std::is_void_v<U>, forward_outcome_func,
+                                             forward_value_func<U>>;
+
+        try {
+            future_accessor::checked_state_of(start(by_state))->when_resolved(t_forward(result_));
+        } catch (...) {
+            result_->set_exception();
+        }
+    }
+
+private:
+    decltype(auto) start(const state* by_state) {
+        if constexpr (std::is_void_v<T>) {
+            return std::invoke(task_);
+        } else {
+            return std::invoke(task_, resolved_state<T>::from(by_state)->value());
+        }
+    }
+
+    t_next_async_task task_;
+    future_shared_state_ptr result_;
+};
+
 /// Satisfied by future<T> for any T. It is what tells a pack of futures apart from a container
 /// of them, so the when_all_* forms taking either can coexist as plain overloads.
 template <class T>
@@ -137,8 +202,27 @@ struct future_get_return<T&> {
 /// with no argument at all when T is void. Naming the two invoke_result specializations rather
 /// than their ::type is what keeps the unused branch from being instantiated.
 template <typename T, class t_task>
-using result_of_t = typename std::conditional_t<std::is_void_v<T>, std::invoke_result<t_task>,
+using result_of_t = std::conditional_t<std::is_void_v<T>, std::invoke_result<t_task>,
                                                 std::invoke_result<t_task, T>>::type;
+
+/// The value type U of a `future<U>`. Nothing else has one, which is what tells a continuation that
+/// returns a future apart from one that returns a plain value.
+template <class t_future>
+struct future_value {};
+
+template <class U>
+struct future_value<future<U>> {
+    using type = U;
+};
+
+/// Value type of the future next_unwrap() returns: U of the `future<U>` the continuation hands back.
+template <typename T, class t_task>
+using unwrap_result_t = typename future_value<std::remove_cvref_t<result_of_t<T, t_task>>>::type;
+
+/// Satisfied by a continuation of a future<T> that returns a future of its own -- the kind
+/// next_unwrap() takes.
+template <class t_task, typename T>
+concept async_continuation = requires { typename unwrap_result_t<T, t_task>; };
 
 }  // namespace detail
 
@@ -202,7 +286,7 @@ public:
     ///
     /// \exception If an exception was stored in the shared state referenced by this future (e.g.
     /// via a call to promise::set_exception()) then that exception will be thrown.
-    typename detail::future_get_return<T>::type get() const {
+    detail::future_get_return<T>::type get() const {
         const detail::state* state = checked_state()->get();
         return detail::resolved_state<T>::from(state)->value();
     }
@@ -253,7 +337,7 @@ public:
     template <class t_when_ready>
         requires detail::nothrow_callback<std::remove_cvref_t<t_when_ready>, future<T>>
     const future<T>& when_ready(t_when_ready&& when_ready_callback) const {
-        checked_state()->template when_ready1<T>(std::forward<t_when_ready>(when_ready_callback));
+        checked_state()->when_ready1<T>(std::forward<t_when_ready>(when_ready_callback));
         return *this;
     }
 
@@ -286,9 +370,13 @@ public:
         using t_task = std::remove_cvref_t<t_next_task>;
         using t_result = detail::result_of_t<T, t_task>;
 
+        static_assert(!std::is_rvalue_reference_v<t_result>,
+                      "next(): a continuation returning X&& has nothing a future could hold -- "
+                      "return X by value, or X& to refer to an object that outlives the future");
+
         future_shared_state_ptr ticket = core::make_refcounted<future_shared_state>();
 
-        checked_state()->template next<T, t_result>(std::forward<t_next_task>(task), ticket.get());
+        checked_state()->next<T, t_result>(std::forward<t_next_task>(task), ticket.get());
 
         return future<t_result>(ticket.get());
     }
@@ -299,25 +387,26 @@ public:
     /// The continuation will be invoked when this future completes successfully and will receive
     /// the value returned by this future.
     ///
-    /// The callback is `future<void>(const T&)`, or `future<void>()` when T is void: it starts its
-    /// own operation and hands back the future for it.
+    /// The callback is `future<U>(const T&)`, or `future<U>()` when T is void: it starts its own
+    /// operation and hands back the future for it. The returned future is a `future<U>` and
+    /// resolves the way that one does, with a copy of its value.
     ///
     /// \param task Operation to be started when this future has a value.
     ///
     /// \return The future the continuation's own result will appear in.
-    ///
-    /// \note Only a `future<void>` continuation result is supported.
     template <class t_next_async_task>
-    future<void> next_unwrap(t_next_async_task&& task) const {
+        requires detail::async_continuation<std::remove_cvref_t<t_next_async_task>, T>
+    future<detail::unwrap_result_t<T, std::remove_cvref_t<t_next_async_task>>> next_unwrap(
+        t_next_async_task&& task) const {
         using t_task = std::remove_cvref_t<t_next_async_task>;
+        using t_result = detail::unwrap_result_t<T, t_task>;
 
         future_shared_state_ptr ticket = core::make_refcounted<future_shared_state>();
 
-        when_succeeded(
-            detail::next_async_task<t_task, T>(std::forward<t_next_async_task>(task), ticket));
-        when_failed(detail::set_exception_func(ticket));
+        checked_state()->when_resolved(detail::unwrap_func<t_task, T, t_result>(
+            std::forward<t_next_async_task>(task), ticket));
 
-        return future<void>(ticket.get());
+        return future<t_result>(ticket.get());
     }
 
 protected:
@@ -565,7 +654,7 @@ protected:
     /// Move constructor.
     inline promise_base(promise_base&& other) noexcept : base(std::move(other)) {}
 
-    /// Copy assignmnet.
+    /// Copy assignment.
     inline promise_base& operator=(const promise_base& other) {
         future_shared_state* const my_state = state();
         future_shared_state* const other_state = other.state();
@@ -581,11 +670,10 @@ protected:
         return *this;
     }
 
-    /// Move assignmnet.
+    /// Move assignment.
     inline promise_base& operator=(promise_base&& other) noexcept {
-        future_shared_state* const my_state = state();
-
-        if (my_state) my_state->checked_decrement_promise_count();
+        if (future_shared_state* const my_state = state())
+            my_state->checked_decrement_promise_count();
 
         base::operator=(std::move(other));
         return *this;
@@ -659,9 +747,22 @@ public:
     future<T> get_future() const { return future<T>(checked_state()); }
 
     /// Sets the result to the given value.
+    ///
+    /// The value is stored as a T -- named, not deduced from the argument, which would drop the
+    /// const of a `promise<const X>` and the reference of a `promise<X&>` -- since that is the
+    /// type `future<T>::get()` reads it back as.
     /// \return true if this call resolved the state; false if it was already resolved by
     ///         another concurrent set_value()/set_exception() call. May be ignored.
-    bool set_value(const T& value) { return checked_state()->set_value(value); }
+    bool set_value(const T& value) { return checked_state()->set_value<T>(value); }
+
+    /// Sets the result to the given value, moving it into the shared state.
+    /// \return true if this call resolved the state; false if it was already resolved by
+    ///         another concurrent set_value()/set_exception() call. May be ignored.
+    bool set_value(T&& value)
+        requires(!std::is_reference_v<T>)
+    {
+        return checked_state()->set_value<T>(std::move(value));
+    }
 
     /// Returns a promise without a shared state.
     static promise<T> invalid_promise() { return promise(nullptr); }
@@ -713,7 +814,7 @@ public:
     inline future<void> get_future() const { return future<void>(checked_state()); }
 
     /// Exchanges the shared states of this promise and \p other.
-    inline void swap(promise<void>& other) { promise_base::swap(other); }
+    inline void swap(promise<void>& other) noexcept { promise_base::swap(other); }
 
     /// Returns a promise without a shared state.
     inline static promise<void> invalid_promise() { return promise(nullptr); }

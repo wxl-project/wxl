@@ -29,6 +29,11 @@
 // any element already on screen -- instead of the root makes that impossible
 // to forget.
 //
+// The theme is lent on the way in as well. A dialog hangs in the island's popup layer, outside
+// the visual tree, and inherits no theme from what it is raised over: over a window asked for
+// Dark it would come up in the application's Light. A dialog with no theme of its own shows the
+// one `host` shows, until it closes; one that asks for its own keeps it.
+//
 // The element overload is the one a CompositionWindow uses: its XAML lives in
 // an island the window hands out as content(), and there is no wxl::Window to
 // name. It is also what a caller reaches for when the dialog belongs over one

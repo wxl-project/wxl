@@ -52,10 +52,10 @@ constexpr char16_t const* shapings[] = {
 struct Material {
     // Материал.
     core::observable<int> recipe {0};
-    core::observable<double> ambientAmount {0.6};
-    core::observable<double> diffuseAmount {1.0};
-    core::observable<double> specularAmount {0.5};
-    core::observable<double> specularShine {40.0};
+    core::observable<float> ambientAmount {0.6f};
+    core::observable<float> diffuseAmount {1.0f};
+    core::observable<float> specularAmount {0.5f};
+    core::observable<float> specularShine {40.0f};
     core::observable<int> reflectance {0};
     core::observable<bool> animated {false};
     core::observable<Color> keyColor {rgb(68, 72, 79)};
@@ -78,20 +78,20 @@ struct Material {
     core::observable<int> lightKind {0};
     core::observable<int> motion {0};
     core::observable<Color> lightColor {rgb(255, 246, 232)};
-    core::observable<double> intensity {1.0};
-    core::observable<double> height {140.0};
-    core::observable<double> constantAttenuation {1.0};
-    core::observable<double> linearAttenuation {0.0};
-    core::observable<double> quadraticAttenuation {0.0};
-    core::observable<double> innerCone {20.0};
-    core::observable<double> outerCone {45.0};
+    core::observable<float> intensity {1.0f};
+    core::observable<float> height {140.0f};
+    core::observable<float> constantAttenuation {1.0f};
+    core::observable<float> linearAttenuation {0.0f};
+    core::observable<float> quadraticAttenuation {0.0f};
+    core::observable<float> innerCone {20.0f};
+    core::observable<float> outerCone {45.0f};
     core::observable<double> azimuth {120.0};
     core::observable<double> elevation {50.0};
 
     // Свет со всех сторон.
     core::observable<bool> ambientOn {true};
     core::observable<Color> ambientColor {rgb(140, 146, 168)};
-    core::observable<double> ambientIntensity {1.0};
+    core::observable<float> ambientIntensity {1.0f};
 
     core::observable<hstring> brushStatus;
     core::observable<hstring> lightStatus;
@@ -240,10 +240,10 @@ struct Material {
     void paint() noexcept {
         lab::attempt(brushStatus, recipes[std::clamp(recipe.get(), 0, 10)], [this] {
             bool const viaProperties = animated.get();
-            float const ambientShare = static_cast<float>(ambientAmount.get());
-            float const diffuseShare = static_cast<float>(diffuseAmount.get());
-            float const specularShare = static_cast<float>(specularAmount.get());
-            float const shine = static_cast<float>(specularShine.get());
+            float const ambientShare = ambientAmount.get();
+            float const diffuseShare = diffuseAmount.get();
+            float const specularShare = specularAmount.get();
+            float const shine = specularShine.get();
 
             std::vector<hstring> animatedNames;
             std::vector<std::pair<hstring, float>> animatedValues;
@@ -295,7 +295,7 @@ struct Material {
             // нормалей. Вид: 0 -- точечная, 1 -- далёкая, 2 -- прожектор.
             auto const lamp = [&](int kind, bool glossy) -> Object {
                 float const middle = lab::keySide / 2.0f;
-                Vector3 const above {middle, middle, static_cast<float>(height.get())};
+                Vector3 const above {middle, middle, height.get()};
                 Color const color = lightColor.get();
                 float const turn = static_cast<float>(azimuth.get() * 3.14159265358979 / 180.0);
                 float const lift = static_cast<float>(elevation.get() * 3.14159265358979 / 180.0);
@@ -466,21 +466,21 @@ struct Material {
             }
 
             ambient.color(ambientColor.get());
-            ambient.intensity(static_cast<float>(ambientIntensity.get()));
+            ambient.intensity(ambientIntensity.get());
             if (ambientOn.get()) {
                 ambient.targets().add(root);
             }
 
             Color const color = lightColor.get();
-            float const power = static_cast<float>(intensity.get());
+            float const power = intensity.get();
 
             switch (lightKind.get()) {
             case 0:
                 point.color(color);
                 point.intensity(power);
-                point.constantAttenuation(static_cast<float>(constantAttenuation.get()));
-                point.linearAttenuation(static_cast<float>(linearAttenuation.get()));
-                point.quadraticAttenuation(static_cast<float>(quadraticAttenuation.get()));
+                point.constantAttenuation(constantAttenuation.get());
+                point.linearAttenuation(linearAttenuation.get());
+                point.quadraticAttenuation(quadraticAttenuation.get());
                 move(point);
                 point.targets().add(root);
                 break;
@@ -489,11 +489,11 @@ struct Material {
                 spot.outerConeColor(color);
                 spot.innerConeIntensity(power);
                 spot.outerConeIntensity(power);
-                spot.innerConeAngleInDegrees(static_cast<float>(innerCone.get()));
-                spot.outerConeAngleInDegrees(static_cast<float>(std::max(outerCone.get(), innerCone.get())));
-                spot.constantAttenuation(static_cast<float>(constantAttenuation.get()));
-                spot.linearAttenuation(static_cast<float>(linearAttenuation.get()));
-                spot.quadraticAttenuation(static_cast<float>(quadraticAttenuation.get()));
+                spot.innerConeAngleInDegrees(innerCone.get());
+                spot.outerConeAngleInDegrees(std::max(outerCone.get(), innerCone.get()));
+                spot.constantAttenuation(constantAttenuation.get());
+                spot.linearAttenuation(linearAttenuation.get());
+                spot.quadraticAttenuation(quadraticAttenuation.get());
                 move(spot);
                 spot.targets().add(root);
                 break;
@@ -516,7 +516,7 @@ struct Material {
     template <class Light>
     void move(Light const& lamp) {
         lamp.stopAnimation(u"Offset");
-        float const z = static_cast<float>(height.get());
+        float const z = height.get();
         float const centreX = lab::stageWidth / 2.0f, centreY = lab::stageHeight / 2.0f;
 
         if (motion.get() == 0 && pointer) {

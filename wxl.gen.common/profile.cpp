@@ -132,6 +132,23 @@ std::set<std::string> read_string_set(value const& array, std::filesystem::path 
     return {strings.begin(), strings.end()};
 }
 
+// The names a key lists, in the order the file lists them, or none when the key is not there.
+// A name listed twice is a mistake rather than a repetition to fold.
+std::vector<std::string> read_names(value const& entry, std::filesystem::path const& source,
+                                    std::string_view key) {
+    value const* const field = entry.find(key);
+    if (!field) {
+        return {};
+    }
+    auto names = read_strings(*field, source, key);
+    for (auto at = names.begin(); at != names.end(); ++at) {
+        if (std::ranges::find(names.begin(), at, *at) != at) {
+            fail(source, std::format("'{}' names \"{}\" twice", key, *at));
+        }
+    }
+    return names;
+}
+
 member_filter read_member_filter(value const& entry, std::filesystem::path const& source,
                                  std::string_view type_name) {
     if (!entry.is_object()) {
@@ -234,46 +251,20 @@ std::vector<synthetic_member> read_synthetic_members(value const& entry,
     return members;
 }
 
-// The methods a profile writes as tags. Keyed by the method's own name, each
-// an object that may narrow the value to a more specific class of the
-// metadata. Whether the method exists, takes one argument and returns nothing
-// is the class writer's to check: only it has read the signatures.
-std::vector<setter_method> read_setter_methods(value const& entry,
-                                               std::filesystem::path const& source,
-                                               std::string_view type_name) {
-    value const* const listed = entry.find("setterMethods");
-    if (!listed) {
-        return {};
-    }
-    if (!listed->is_object()) {
-        fail(source, std::format("type '{}': 'setterMethods' must be an object keyed by method "
-                                 "name",
-                                 type_name));
-    }
-
-    std::vector<setter_method> methods;
-    for (value const& definition : listed->members()) {
-        std::string const name{definition.name().chars()};
-        if (!definition.is_object()) {
-            fail(source, std::format("type '{}': setter method '{}' must be an object", type_name,
-                                     name));
-        }
+// The methods a profile writes as tags, by the method's own name, each once.
+// Whether the method exists, takes one argument and returns nothing is the
+// class writer's to check: only it has read the signatures.
+std::set<std::string> read_setter_methods(value const& entry, std::filesystem::path const& source,
+                                          std::string_view type_name) {
+    auto const listed = read_names(entry, source, "setterMethods");
+    std::set<std::string> methods{listed.begin(), listed.end()};
+    for (auto&& name : methods) {
         if (!name.starts_with("Set") || name.size() == 3) {
             fail(source, std::format("type '{}': setter method '{}' has no name after 'Set' to "
                                      "give its tag",
                                      type_name, name));
         }
-        setter_method method{name, {}};
-        if (value const* const type = definition.find("type")) {
-            if (!type->is_string()) {
-                fail(source, std::format("type '{}': setter method '{}': 'type' must be a string",
-                                         type_name, name));
-            }
-            method.type = text(*type);
-        }
-        methods.push_back(std::move(method));
     }
-    std::ranges::sort(methods, {}, &setter_method::method);
     return methods;
 }
 
@@ -599,7 +590,7 @@ void member_filter::merge(member_filter const& other) {
 namespace {
 
 // What the walk is asked to start from -- the packages, the listed types with everything
-// written under them, and the Windows metadata: the keys a profile and the `requires` of a
+// written under them, and the Windows metadata: the keys a profile and the `imports` of a
 // component share. A type listed without "styles" asks for all of its styles when
 // `all_styles_by_default`, and for none otherwise.
 void read_requirements(value const& document, std::filesystem::path const& path, profile& prof,
@@ -650,24 +641,129 @@ void read_requirements(value const& document, std::filesystem::path const& path,
     prof.windows_metadata = bool_or(document, path, "windowsMetadata", false);
 }
 
-// The names a key lists, in the order the file lists them, or none when the key is not there.
-// A name listed twice is a mistake rather than a repetition to fold.
-std::vector<std::string> read_names(value const& entry, std::filesystem::path const& source,
-                                    std::string_view key) {
-    value const* const field = entry.find(key);
-    if (!field) {
+// Whether `file`, once normalised, lies inside `directory`: a path that climbs out of it with
+// ".." does not.
+bool inside(std::filesystem::path const& directory, std::filesystem::path const& file) {
+    auto const relative = file.lexically_normal().lexically_relative(directory.lexically_normal());
+    return !relative.empty() && *relative.begin() != std::filesystem::path{".."};
+}
+
+// A type word of a description: not empty, the one thing that has no meaning as a type.
+std::string type_word(value const& field, std::filesystem::path const& source, std::string_view where) {
+    if (!field.is_string() || field.as_string().chars().empty()) {
+        fail(source, std::format("{}: the type must be a type word, a non-empty string", where));
+    }
+    return text(field);
+}
+
+// The members of one kind a description lists, "Name": "Type", in the order the file has them. A
+// property may say instead {"type": "Double", "set": "bind"}: a binding target alone.
+std::vector<described_member> read_described_members(value const& entry,
+                                                     std::filesystem::path const& source,
+                                                     std::string_view where, std::string_view key,
+                                                     bool bindable) {
+    value const* const members = entry.find(key);
+    if (!members) {
         return {};
     }
-    auto names = read_strings(*field, source, key);
-    for (auto at = names.begin(); at != names.end(); ++at) {
-        if (std::ranges::find(names.begin(), at, *at) != at) {
-            fail(source, std::format("'{}' names \"{}\" twice", key, *at));
+    if (!members->is_object()) {
+        fail(source, std::format("{}: '{}' must be an object of member names", where, key));
+    }
+    std::vector<described_member> read;
+    for (value const& member : members->members()) {
+        std::string const name{member.name().chars()};
+        std::string const at = std::format("{}.{}", where, name);
+        if (bindable && member.is_object()) {
+            refuse_other_keys(member, source, at, {"type", "set"});
+            if (required_string(member, source, "set", at) != "bind") {
+                fail(source, std::format("{}: 'set' says how the property is set, and the one "
+                                         "word it takes is \"bind\"",
+                                         at));
+            }
+            read.push_back({name, type_word(member["type"], source, at), true});
+        } else {
+            read.push_back({name, type_word(member, source, at), false});
         }
     }
-    return names;
+    return read;
+}
+
+// The header a description names: a file of the component, the one that declares the type.
+std::string described_header(value const& entry, component const& comp, std::string_view where) {
+    auto header = required_string(entry, comp.source, "header", where);
+    auto const file = (comp.directory / path_of(header)).lexically_normal();
+    if (!inside(comp.directory, file) || !std::filesystem::is_regular_file(file)) {
+        fail(comp.source, std::format("{}: 'header' \"{}\" is no file of the component", where,
+                                      header));
+    }
+    return header;
+}
+
+void read_descriptions(value const& document, component& comp) {
+    if (value const* const classes = document.find("classes")) {
+        if (!classes->is_object()) {
+            fail(comp.source, "'classes' must be an object keyed by class name");
+        }
+        for (value const& entry : classes->members()) {
+            described_class klass;
+            klass.name = std::string{entry.name().chars()};
+            std::string const where = std::format("class {}", klass.name);
+            if (!entry.is_object()) {
+                fail(comp.source, std::format("{}: a description must be an object", where));
+            }
+            refuse_other_keys(entry, comp.source, where,
+                              {"header", "base", "properties", "collections", "events"});
+            klass.header = described_header(entry, comp, where);
+            if (value const* const base = entry.find("base")) {
+                klass.base = type_word(*base, comp.source, std::format("{}: 'base'", where));
+            }
+            klass.properties =
+                read_described_members(entry, comp.source, where, "properties", true);
+            klass.collections =
+                read_described_members(entry, comp.source, where, "collections", false);
+            klass.events = read_described_members(entry, comp.source, where, "events", false);
+            comp.classes.push_back(std::move(klass));
+        }
+    }
+    if (value const* const enums = document.find("enums")) {
+        if (!enums->is_object()) {
+            fail(comp.source, "'enums' must be an object keyed by enumeration name");
+        }
+        for (value const& entry : enums->members()) {
+            described_enum described;
+            described.name = std::string{entry.name().chars()};
+            std::string const where = std::format("enumeration {}", described.name);
+            if (!entry.is_object()) {
+                fail(comp.source, std::format("{}: a description must be an object", where));
+            }
+            refuse_other_keys(entry, comp.source, where, {"header", "values"});
+            described.header = described_header(entry, comp, where);
+            described.values = read_names(entry, comp.source, "values");
+            if (described.values.empty()) {
+                fail(comp.source, std::format("{}: 'values' names no value", where));
+            }
+            comp.enums.push_back(std::move(described));
+        }
+    }
 }
 
 }  // namespace
+
+char const* element_type_name(std::string_view word) {
+    static constexpr std::pair<std::string_view, char const*> names[] = {
+        {"Boolean", "bool"},     {"Char16", "char16_t"}, {"Int8", "int8_t"},
+        {"UInt8", "uint8_t"},    {"Int16", "int16_t"},   {"UInt16", "uint16_t"},
+        {"Int32", "int32_t"},    {"UInt32", "uint32_t"}, {"Int64", "int64_t"},
+        {"UInt64", "uint64_t"},  {"Single", "float"},    {"Double", "double"},
+        {"String", "hstring"},   {"Object", "Object"},
+    };
+    for (auto&& [name, cpp] : names) {
+        if (name == word) {
+            return cpp;
+        }
+    }
+    return nullptr;
+}
 
 component load_component(std::filesystem::path const& manifest) {
     wxl::json::document file;
@@ -677,8 +773,8 @@ component load_component(std::filesystem::path const& manifest) {
     comp.source = manifest;
     comp.directory = manifest.parent_path();
     refuse_other_keys(document, manifest, "component",
-                      {"name", "requires", "needs", "sources", "schema", "surface", "libraries",
-                       "comment"});
+                      {"name", "imports", "dependencies", "sources", "surface", "libraries",
+                       "description", "classes", "enums"});
     comp.name = required_string(document, manifest, "name", "component");
 
     auto const directory_name = wxl::core::unicode::to_utf8(comp.directory.filename());
@@ -688,28 +784,28 @@ component load_component(std::filesystem::path const& manifest) {
                                    comp.name, directory_name.chars()));
     }
 
-    comp.needs = read_names(document, manifest, "needs");
+    comp.dependencies = read_names(document, manifest, "dependencies");
     comp.sources = read_names(document, manifest, "sources");
     comp.libraries = read_names(document, manifest, "libraries");
-    comp.schema = string_or(document, manifest, "schema", {});
     comp.surface = string_or(document, manifest, "surface", {});
-    comp.comment = string_or(document, manifest, "comment", {});
+    comp.description = string_or(document, manifest, "description", {});
+    read_descriptions(document, comp);
 
     // Read as a profile of the chain is, so the merge and the checks of packages and
     // versions treat it as one and name the manifest.
     // A component asks for no brushes, and a type it lists without "styles" for none of its
     // styles: a profile's default of all of them would widen whatever the profiles narrowed. A
     // type only a component lists has no styles entry, and so keeps all of its styles.
-    comp.requirements.name = comp.name;
-    comp.requirements.source = manifest;
-    comp.requirements.brushes = member_filter::none();
-    if (value const* const required = document.find("requires")) {
-        if (!required->is_object()) {
-            fail(manifest, "'requires' must be an object");
+    comp.imports.name = comp.name;
+    comp.imports.source = manifest;
+    comp.imports.brushes = member_filter::none();
+    if (value const* const imports = document.find("imports")) {
+        if (!imports->is_object()) {
+            fail(manifest, "'imports' must be an object");
         }
-        refuse_other_keys(*required, manifest, "'requires'",
+        refuse_other_keys(*imports, manifest, "'imports'",
                           {"types", "packages", "windowsMetadata"});
-        read_requirements(*required, manifest, comp.requirements, false);
+        read_requirements(*imports, manifest, comp.imports, false);
     }
     return comp;
 }
@@ -772,11 +868,11 @@ std::filesystem::path canonical_path(std::filesystem::path const& path) {
 
 namespace {
 
-// The components selected: those named, closed over `needs`, each after those it needs.
+// The components selected: those named, closed over `dependencies`, each after its dependencies.
 struct component_resolver {
     component_search const& search;
     std::vector<component>& selected;
-    std::vector<std::string> following;  // the chain of `needs` being followed, for a cycle
+    std::vector<std::string> following;  // the chain of `dependencies` being followed, for a cycle
 
     void select(std::string const& name, std::filesystem::path const& wanted_by) {
         if (std::ranges::any_of(selected, [&](component const& comp) { return comp.name == name; })) {
@@ -785,7 +881,7 @@ struct component_resolver {
         if (auto const at = std::ranges::find(following, name); at != following.end()) {
             std::vector<std::string> cycle(at, following.end());
             cycle.push_back(name);
-            fail(wanted_by, std::format("the components need each other in a cycle: {}",
+            fail(wanted_by, std::format("the components depend on each other in a cycle: {}",
                                         wxl::core::join(cycle, " -> ")));
         }
         auto comp = load_component(find(name, wanted_by));
@@ -796,8 +892,8 @@ struct component_resolver {
                                         wxl::core::unicode::to_utf8(comp.source).chars()));
         }
         following.push_back(name);
-        for (auto&& need : comp.needs) {
-            select(need, comp.source);
+        for (auto&& dependency : comp.dependencies) {
+            select(dependency, comp.source);
         }
         following.pop_back();
         selected.push_back(std::move(comp));
@@ -892,7 +988,7 @@ struct profile_loader {
         result.loaded.push_back(prof.name);
     }
 
-    // The components named in the chain, each after those it needs, merged after the
+    // The components named in the chain, each after its dependencies, merged after the
     // profiles: a type both list is reported against the profile.
     void load_components(component_search const& search) {
         component_resolver resolver{search, result.components};
@@ -900,11 +996,11 @@ struct profile_loader {
             resolver.select(name, by);
         }
         for (auto&& comp : result.components) {
-            merge(comp.requirements, {comp.source, comp.name});
+            merge(comp.imports, {comp.source, comp.name});
         }
     }
 
-    // A profile, or the `requires` of a component, joined to the set.
+    // A profile, or the `imports` of a component, joined to the set.
     void merge(profile const& prof, listing const& by) {
         // Versions and packages wait for the second pass: the release the set
         // needs is the highest minimum of all its profiles, and the check of
@@ -947,14 +1043,14 @@ struct profile_loader {
                 known[method] = call;
             }
         }
-        // Setter methods compose the same way, by the method's name.
+        // Setter methods compose the same way, by the method's name -- which is all
+        // there is to one, so a repetition never differs.
         for (auto&& [name, setters] : prof.setter_methods) {
             auto& known = result.setter_methods[name];
             for (auto&& setter : setters) {
-                auto const existing = std::ranges::find(known, setter.method, &setter_method::method);
-                if (define(by, std::format("setter method {}.{}", name, setter.method),
-                           existing != known.end() && *existing != setter, existing == known.end())) {
-                    known.push_back(setter);
+                if (define(by, std::format("setter method {}.{}", name, setter), false,
+                           !known.contains(setter))) {
+                    known.insert(setter);
                 }
             }
         }
@@ -975,13 +1071,6 @@ namespace {
 std::string list_of(std::vector<std::string> names) {
     std::ranges::sort(names);
     return names.empty() ? std::string{"(none)"} : wxl::core::join(names, ", ");
-}
-
-// Whether `file`, once normalised, lies inside `directory`: a path that climbs out of it with
-// ".." does not.
-bool inside(std::filesystem::path const& directory, std::filesystem::path const& file) {
-    auto const relative = file.lexically_normal().lexically_relative(directory.lexically_normal());
-    return !relative.empty() && *relative.begin() != std::filesystem::path{".."};
 }
 
 // Every header the generated code includes for a profile or a component, held to where it can
@@ -1323,23 +1412,7 @@ type_map load_type_map(std::filesystem::path const& path) {
         if (!members->is_object()) {
             fail(path, "'handWrittenMembers' must be an object");
         }
-        if (value const* const array = members->find("properties")) {
-            if (!array->is_array()) {
-                fail(path, "'handWrittenMembers.properties' must be an array");
-            }
-            for (value const& entry : array->elements()) {
-                if (!entry.is_object()) {
-                    fail(path, "every hand-written property must be an object");
-                }
-                map.hand_written_properties.push_back(
-                    {required_string(entry, path, "property", "hand-written property"),
-                     required_string(entry, path, "value", "hand-written property"),
-                     string_or(entry, path, "include", {})});
-            }
-        }
-        if (value const* const events = members->find("events")) {
-            map.hand_written_events = read_string_set(*events, path, "handWrittenMembers.events");
-        }
+        refuse_other_keys(*members, path, "'handWrittenMembers'", {"boundMembers"});
         if (value const* const array = members->find("boundMembers")) {
             if (!array->is_array()) {
                 fail(path, "'handWrittenMembers.boundMembers' must be an array");

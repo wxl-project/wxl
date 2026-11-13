@@ -127,7 +127,7 @@ FUTURE_T_TEST_CASE(set_value_from_another_thread) {
     promise<T> p;
     future<T> f = p.get_future();
 
-    joining_thread thread(&promise<T>::set_value, &p, get_test_value<T>());
+    joining_thread thread([&p] { p.set_value(get_test_value<T>()); });
 
     ASSERT_EQ(f.get(), get_test_value<T>());
     ASSERT_TRUE(f.has_value());
@@ -480,7 +480,7 @@ FUTURE_T_TEST_CASE(then_completed_by_value_async) {
     ASSERT_TRUE(f1.wait_for(duration::from_ms(1)) == future_status::timeout);
     tester.assert_nothing();
 
-    joining_thread thread(&promise<T>::set_value, &p1, get_test_value<T>());
+    joining_thread thread([&p1] { p1.set_value(get_test_value<T>()); });
 
     ASSERT_TRUE(f1.wait_for(big_timeout) == future_status::ready);
     f1.get();

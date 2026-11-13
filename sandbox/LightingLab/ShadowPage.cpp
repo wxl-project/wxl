@@ -26,18 +26,18 @@ struct Shadows {
     // система отвечает «Unsupported light type».
     core::observable<int> lightKind {2};
     core::observable<bool> follow {true};
-    core::observable<double> height {220.0};
+    core::observable<float> height {220.0f};
     core::observable<double> azimuth {120.0};
     core::observable<double> elevation {50.0};
     core::observable<Color> lightColor {rgb(255, 246, 232)};
     core::observable<bool> lit {true};
     core::observable<bool> ambientOn {true};
 
-    core::observable<double> lift {24.0};
-    core::observable<double> blurMultiplier {1.0};
-    core::observable<double> minBlur {0.0};
-    core::observable<double> maxBlur {40.0};
-    core::observable<double> corner {22.0};
+    core::observable<float> lift {24.0f};
+    core::observable<float> blurMultiplier {1.0f};
+    core::observable<float> minBlur {0.0f};
+    core::observable<float> maxBlur {40.0f};
+    core::observable<float> corner {22.0f};
     // Сколько клавиш на сцене и по тени ли на каждую.
     core::observable<double> count {6.0};
     core::observable<bool> shadowPerKey {false};
@@ -123,13 +123,13 @@ struct Shadows {
         float const side = columns == lab::keyColumns
                                ? lab::keySide
                                : (lab::stageWidth - lab::keyGap * static_cast<float>(columns + 1)) / columns;
-        float const radius = static_cast<float>(corner.get()) * side / lab::keySide;
+        float const radius = corner.get() * side / lab::keySide;
         for (int index = 0; index < static_cast<int>(keys.size()); ++index) {
             keys[index].isVisible(index < total);
             keys[index].size({side, side});
             keys[index].offset({lab::keyGap + static_cast<float>(index % columns) * (side + lab::keyGap),
                                 lab::keyGap + static_cast<float>(index / columns) * (side + lab::keyGap),
-                                static_cast<float>(lift.get())});
+                                lift.get()});
             outlines[index].size({side, side});
             outlines[index].cornerRadius({radius, radius});
         }
@@ -170,9 +170,9 @@ struct Shadows {
     void tune() noexcept {
         lab::attempt(lightStatus, u"CompositionProjectedShadow", [this] {
             for (auto const& shadow : shadows) {
-                shadow.blurRadiusMultiplier(static_cast<float>(blurMultiplier.get()));
-                shadow.minBlurRadius(static_cast<float>(minBlur.get()));
-                shadow.maxBlurRadius(static_cast<float>(std::max(maxBlur.get(), minBlur.get())));
+                shadow.blurRadiusMultiplier(blurMultiplier.get());
+                shadow.minBlurRadius(minBlur.get());
+                shadow.maxBlurRadius(std::max(maxBlur.get(), minBlur.get()));
             }
         });
     }
@@ -226,7 +226,7 @@ struct Shadows {
     template <class Light>
     void move(Light const& lamp) {
         lamp.stopAnimation(u"Offset");
-        float const z = static_cast<float>(height.get());
+        float const z = height.get();
         if (follow.get() && pointer) {
             auto const track = compositor.createExpressionAnimation(u"pointer.Position + Vector3(0, 0, z)");
             track.setReferenceParameter(u"pointer", *pointer);

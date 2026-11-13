@@ -6,8 +6,8 @@
 // to light:
 //
 //     RevealEffect reveal {
-//         HoverLight {size = 140, diffuseAmount = 0.69},
-//         BorderLight {size = 340, strokeThickness = 1.5},
+//         HoverLight {size = 140, diffuseAmount = 0.69f},
+//         BorderLight {size = 340, strokeThickness = 1.5f},
 //     };
 //
 //     Button {u"7", reveal}
@@ -87,14 +87,14 @@ public:
     HoverLight& operator=(HoverLight const& other) noexcept;
     ~HoverLight();
 
-    void size(double value) const;
-    void fullSize(double value) const;
-    void height(double value) const;
-    void intensity(double value) const;
-    void diffuseAmount(double value) const;
+    void size(float value) const;
+    void fullSize(float value) const;
+    void height(float value) const;
+    void intensity(float value) const;
+    void diffuseAmount(float value) const;
     void color(Color value) const;
-    void constantAttenuation(double value) const;
-    void linearAttenuation(double value) const;
+    void constantAttenuation(float value) const;
+    void linearAttenuation(float value) const;
 
 private:
     friend class RevealEffect;
@@ -131,14 +131,14 @@ public:
     /// A bare CornerRadius is the rounding of the edge.
     void setPositional(CornerRadius value) const { cornerRadius(value); }
 
-    void size(double value) const;
-    void fullSize(double value) const;
-    void height(double value) const;
-    void intensity(double value) const;
-    void diffuseAmount(double value) const;
+    void size(float value) const;
+    void fullSize(float value) const;
+    void height(float value) const;
+    void intensity(float value) const;
+    void diffuseAmount(float value) const;
     void color(Color value) const;
-    void constantAttenuation(double value) const;
-    void linearAttenuation(double value) const;
+    void constantAttenuation(float value) const;
+    void linearAttenuation(float value) const;
     void strokeThickness(double value) const;
     void cornerRadius(CornerRadius value) const;
 

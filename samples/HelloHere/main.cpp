@@ -8,49 +8,37 @@ using namespace wxl;
 using namespace wxl::core;
 using namespace wxl::dsl;
 
+namespace {
+
 // Presets are their arguments, and these are constants: laid out by the
 // compiler, with nothing to run for them at start-up.
 namespace presets {
-    inline constexpr Preset centeredAndWrapped{hAlign.center, textWrapping.wrap};
-    inline constexpr Preset allCentered{hAlign.center, vAlign.center};
+    constexpr Preset centeredAndWrapped{hAlign.center, textWrapping.wrap};
+    constexpr Preset allCentered{hAlign.center, vAlign.center};
 }
 
-ElementTheme nextTheme(ElementTheme value) {
-    constexpr int themeCount = 3;
-    return ElementTheme {(int(value) + 1) % themeCount};
+ElementTheme themeOf(bool dark) {
+    return dark ? ElementTheme::Dark : ElementTheme::Light;
 }
 
-FluentSymbol themeIcon(ElementTheme value)
-{
-    switch(value) {
-    case ElementTheme::Light:
-        return FluentSymbol::Brightness;
-    case ElementTheme::Dark:
-        return FluentSymbol::MobQuietHours;
-    default:
-        return FluentSymbol::Settings;
-    }
+// The button shows where it leads: the icon and the name of the other theme.
+SymbolIcon switchIcon(bool dark) {
+    return SymbolIcon {symbol = dark ? FluentSymbol::Brightness : FluentSymbol::MobQuietHours};
 }
 
-std::u16string themeName(ElementTheme value)
-{
-    switch(value) {
-    case ElementTheme::Light:
-        return u"Light";
-    case ElementTheme::Dark:
-        return u"Dark";
-    default:
-        return u"Default System";
-    }
+std::u16string switchTip(bool dark) {
+    return dark ? u"Switch theme to Light" : u"Switch theme to Dark";
 }
+
+}  // namespace
 
 Teardown wxl_launched() {
-    // The theme the root requests. It starts at Default, so the window follows the
-    // system until the button asks for Light or Dark. Its bindings own the controls
-    // they drive, so the Teardown keeps it as long as the window lives, and a handler
-    // on those controls refers to it without owning it.
-    auto const themeOwner = make_refcounted<observable<ElementTheme>>(ElementTheme::Default);
-    observable<ElementTheme>& theme = *themeOwner;
+    // Whether the window is dark. It takes the system's theme before the window shows,
+    // and the button flips it. Its bindings own what they drive, so the Teardown keeps
+    // it as long as the window lives, and a handler on those controls refers to it
+    // without owning it.
+    auto const darkOwner = make_refcounted<observable<bool>>();
+    observable<bool>& darkTheme = *darkOwner;
 
     auto topBar = Card {
         row = 0,
@@ -75,13 +63,9 @@ Teardown wxl_launched() {
                 hAlign.right,
                 Button {
                     Margin {16, 0},
-                    content = BindOutput {theme, [](ElementTheme value) {
-                        return SymbolIcon {symbol = themeIcon(nextTheme(value))};
-                    }},
-                    toolTip = BindOutput {theme, [](ElementTheme value) {
-                        return u"Switch theme to " + themeName(nextTheme(value));
-                    }},
-                    onClick += [&theme] { theme.set(nextTheme(theme.get())); },
+                    content = BindOutput {darkTheme, switchIcon},
+                    toolTip = BindOutput {darkTheme, switchTip},
+                    onClick += [&darkTheme] { darkTheme.set(!darkTheme.get()); },
                 },
                 HyperlinkButton {
                     content = u" Github Project Repository ",
@@ -155,15 +139,19 @@ Teardown wxl_launched() {
         Grid {
             RowDefinitions<u"auto,*,auto">,
             background = brushes.SolidBackgroundFillColor.Base,
-            requestedTheme = BindOutput {theme},
             topBar,
             card,
         },
     };
 
+    // The window opens in the system's theme, and from then on shows the field. On the
+    // window, not on its content: the frame follows it too.
+    darkTheme.set(WindowNative::actualTheme(window) == ElementTheme::Dark);
+    Apply {window, requestedTheme = BindOutput {darkTheme, themeOf}};
+
     auto appWindow = window.appWindow();
     appWindow.resize({800, 600});
     window.activate();
 
-    return [themeOwner](TeardownReason) {};
+    return [darkOwner](TeardownReason) {};
 }

@@ -3,6 +3,7 @@
 // Built into the surface test of every profile that selects the component;
 // nothing here runs.
 
+#include "Bind.h"
 #include "CompositionWindow.h"
 #include "DrawingSurface.h"
 #include "TextureCache.h"
@@ -23,17 +24,29 @@ using namespace wxl::dsl;
     window.systemBackdrop(MicaBackdrop{});
 }
 
+// The theme of everything the window shows, said on the window as on Window, and read back.
+[[maybe_unused]] void composition_window_theme(core::observable<ElementTheme>& theme) {
+    CompositionWindow const window{requestedTheme = ElementTheme::Dark};
+    CompositionWindow const bound{requestedTheme = BindOutput{theme}};
+    window.requestedTheme(ElementTheme::Default);
+    ElementTheme const shown = bound.actualTheme();
+    (void)shown;
+}
+
 // wxl's own window written the same way: a handle, so every member is const
 // and the tags apply to it; its title bar is placed by the window itself, so
-// it is built right in the braces; its own events take the same tags, and a
-// copy captured by a lambda is the same window.
+// it is built right in the braces -- `titleBar =` takes any element, as on
+// Window. A lone TitleBar written unnamed goes to the title bar here, by its
+// type, where on Window it is the content like any other element. Its own
+// events take the same tags, and a copy captured by a lambda is the same
+// window.
 [[maybe_unused]] void composition_window(TitleBar const& built, Grid const& page,
                                          async::cancellation_token token) {
     CompositionWindow window{
         title = L"App",
         minSize = {820, 560},
         extendsContentIntoTitleBar = true,
-        titleBar = {leftHeader = TextBlock{L"App"}, rightHeader = Button{L"Sign in"}},
+        titleBar = TitleBar{leftHeader = TextBlock{L"App"}, rightHeader = Button{L"Sign in"}},
         zoomFactor = 1.25,
         onClosing +=
         [](Object const&, WindowClosingEventArgs& args) { args.cancel(!args.cancel()); },
@@ -44,6 +57,7 @@ using namespace wxl::dsl;
         page,
     };
     CompositionWindow routed{built, page};
+    CompositionWindow const gridded{titleBar = page};
     CompositionWindow const legacy{L"App", SizeInt32{820, 560}};
 
     // The scene's background is a tag as well: a colour, or a picture with the

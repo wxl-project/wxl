@@ -1,6 +1,6 @@
 {
   "name": "dsl",
-  "needs": [],
+  "dependencies": [],
   "sources": [
     "aliases.h",
     "Bind.h",
@@ -12,5 +12,5 @@
     "resource_lookup.h"
   ],
   "libraries": [],
-  "comment": "The machinery every profile stands on: member tags, bindings, event awaits, resource lookup."
+  "description": "The machinery every profile stands on: member tags, bindings, event awaits, resource lookup."
 }

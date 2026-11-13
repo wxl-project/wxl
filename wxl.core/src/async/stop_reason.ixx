@@ -13,7 +13,7 @@ public:
     inline static stop_reason stop_requested() { return stop_reason(); }
 
     /// \return A stop_reason holding a cached operation_canceled_exception.
-    static const stop_reason abort();
+    static stop_reason abort();
 
     /// Constructs a stop reason with the error \p error. An empty \p error means stopped by
     /// request.
@@ -22,12 +22,13 @@ public:
 
     /// Constructs a stop reason whose error is a `std::runtime_error` with the message
     /// \p reason.
-    inline stop_reason(std::string_view reason)
+    /// Explicit: a string does not become an error by passing it where a reason is taken.
+    inline explicit stop_reason(std::string_view reason)
         : error_(std::make_exception_ptr(std::runtime_error(std::string(reason)))) {}
 
     /// Constructs a stop reason whose error is a `std::runtime_error` with the message
-    /// \p reason.
-    inline stop_reason(const char* reason)
+    /// \p reason. Explicit, as the form above.
+    inline explicit stop_reason(const char* reason)
         : error_(std::make_exception_ptr(std::runtime_error(reason))) {}
 
     /// Gets the error; empty when stopped by request.

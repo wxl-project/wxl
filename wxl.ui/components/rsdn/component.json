@@ -1,6 +1,6 @@
 {
   "name": "rsdn",
-  "needs": [
+  "dependencies": [
     "schema",
     "markup"
   ],
@@ -13,5 +13,5 @@
   "libraries": [
     "wxl::rsdn"
   ],
-  "comment": "The RSDN markup block."
+  "description": "The RSDN markup block."
 }

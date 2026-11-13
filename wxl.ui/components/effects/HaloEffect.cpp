@@ -36,8 +36,8 @@ HaloEffect& HaloEffect::operator=(HaloEffect const& other) noexcept = default;
 HaloEffect::~HaloEffect() = default;
 
 void HaloEffect::color(Color value) const { impl_->color = value; }
-void HaloEffect::blurRadius(double value) const { impl_->blurRadius = static_cast<float>(value); }
-void HaloEffect::opacity(double value) const { impl_->opacity = static_cast<float>(value); }
+void HaloEffect::blurRadius(float value) const { impl_->blurRadius = value; }
+void HaloEffect::opacity(float value) const { impl_->opacity = value; }
 void HaloEffect::offset(Vector3 value) const { impl_->offset = value; }
 void HaloEffect::zIndex(int32_t value) const { impl_->z = value; }
 

@@ -97,7 +97,9 @@ struct handler_revoker {
 // No re-entry guard: writing the control raises its change event, which
 // writes the same value back, and observable::set says nothing when nothing
 // changed. NaN, a NumberBox's word for empty, equals nothing, so set cannot end
-// that echo; the box raises no ValueChanged for NaN over NaN, which does.
+// that echo for a field of double; the box raises no ValueChanged for NaN over
+// NaN, which does. A field of core::nullable<double> reads NaN as empty, and
+// empty equals empty, so set ends it there as for any other value.
 template <EventKey... keys, class Control, class T, class Get, class Set>
 void bind_pair(Control const& control, core::observable<T>& field, bind_direction direction,
                Get get, Set set) {

@@ -21,7 +21,7 @@ one_shot_event::handle one_shot_event::create_event() {
 
 void one_shot_event::destroy_event(handle event_obj) { ::CloseHandle(event_obj); }
 
-void one_shot_event::set_event(handle event_obj) const noexcept { ::SetEvent(event_obj); }
+void one_shot_event::set_event(handle event_obj) noexcept { ::SetEvent(event_obj); }
 
 void one_shot_event::wait_event() const {
     ::WaitForSingleObject(event_obj_.load(std::memory_order_acquire), INFINITE);

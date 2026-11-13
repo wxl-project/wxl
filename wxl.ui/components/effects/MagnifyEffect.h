@@ -5,7 +5,7 @@
 //
 //     Button {
 //         u"Play",
-//         MagnifyEffect {1.2},
+//         MagnifyEffect {1.2f},
 //     }
 //
 // It goes to its scale on PointerEntered and back to 1 on PointerExited, over
@@ -14,14 +14,14 @@
 // the size stepped between them, and it left the element standing still at
 // in-between scales, where glyphs cannot be crisp (see below).
 //
-// **The number and the tags.** `MagnifyEffect {1.2}` is the scale; below 1
+// **The number and the tags.** `MagnifyEffect {1.2f}` is the scale; below 1
 // the element shrinks under the pointer instead. Everything else is written
 // with the tags the rest of the vocabulary already has, as on any wrapper:
 //
 //     MagnifyEffect {
-//         1.2,                   // or scale = 1.2, or scale = Size{1.3, 1.1}
-//         maximum = 1.35,        // where the way in turns back
-//         minimum = 0.95,        // where the way out turns back
+//         1.2f,                  // or scale = 1.2f, or scale = Size{1.3f, 1.1f}
+//         maximum = 1.35f,       // where the way in turns back
+//         minimum = 0.95f,       // where the way out turns back
 //         duration = 250ms,      // the first phase of each motion
 //         delayTime = 80ms,      // before growing: a pointer passing over
 //     }                          // does not jerk the element
@@ -29,7 +29,7 @@
 // maximum and minimum are the far points each motion swings to before
 // settling: maximum past the scale on the way in, minimum past 1 on the way
 // out. For a shrinking effect they lie the other way round --
-// `MagnifyEffect {0.8, maximum = 0.7, minimum = 1.2}` dips to 0.7 and settles
+// `MagnifyEffect {0.8f, maximum = 0.7f, minimum = 1.2f}` dips to 0.7 and settles
 // at 0.8, then springs to 1.2 and settles at 1. Unset, or on the wrong side,
 // there is no swing.
 //
@@ -39,9 +39,17 @@
 // with the amplitude found from the far point. `duration` sets the whole
 // motion either way.
 //
-// maximum and minimum are measured on the axis that moves further from 1. The braced `scale = {1.3, 1.1}` needs the typed
-// anchor, schema::MagnifyEffect::scale in schema.h: the bare `scale` names a
-// property two classes declare with two types, so on its own it only deduces.
+// The scale is a float, as the composition that shows it keeps it. A double
+// literal narrows, and the warning names the place of the narrowing: the line
+// itself for `MagnifyEffect {1.2}`, the float constructor; the dispatch inside
+// for `MagnifyEffect {1.2, maximum = 1.35}`, whose braces hand the value on as
+// written, and for `scale = 1.2`, a name of several types that keeps the
+// number for the setter. A float literal, `1.2f`, narrows nothing.
+//
+// maximum and minimum are measured on the axis that moves further from 1. The
+// braced `scale = {1.3f, 1.1f}` needs the typed anchor,
+// schema::MagnifyEffect::scale in schema.h: the bare `scale` names a property
+// two classes declare with two types, so on its own it only deduces.
 //
 // **One effect, many elements.** The object is a handle, like every wrapper:
 // copies share one state, and an effect built once can be attached to a whole
@@ -81,7 +89,7 @@
 //
 //     Button {
 //         toolTip = u"Open",
-//         MagnifyEffect {1.2, MagnifyTarget::Content},
+//         MagnifyEffect {1.2f, MagnifyTarget::Content},
 //         content = FontIcon {glyph = ...},
 //     }
 //
@@ -112,9 +120,8 @@ public:
     /// Growing to 1.2, no swing.
     MagnifyEffect();
 
-    /// The scale alone. double, like every measurement WinUI takes -- a
-    /// caller writes 1.2, not 1.2f.
-    explicit MagnifyEffect(double scale);
+    /// The scale alone.
+    explicit MagnifyEffect(float scale);
 
     /// The tag form: a bare number among the tags is the scale. Numbers alone
     /// are not a tag pack -- one is the constructor above, more do not compile.
@@ -132,10 +139,8 @@ public:
 
     /// The scale grown to, per axis.
     void scale(Size value) const;
-    void scale(double value) const {
-        scale(Size{static_cast<float>(value), static_cast<float>(value)});
-    }
-    void setPositional(double value) const { scale(value); }
+    void scale(float value) const { scale(Size{value, value}); }
+    void setPositional(float value) const { scale(value); }
 
     /// The far points the way in and the way out swing to, as scales on the
     /// axis that moves further. Unset, the motion does not swing.
@@ -150,7 +155,7 @@ public:
     void delayTime(core::duration value) const;
 
     /// What grows; the element unless told otherwise. Positional:
-    /// `MagnifyEffect {1.2, MagnifyTarget::Content}`.
+    /// `MagnifyEffect {1.2f, MagnifyTarget::Content}`.
     void target(MagnifyTarget value) const;
     void setPositional(MagnifyTarget value) const { target(value); }
 

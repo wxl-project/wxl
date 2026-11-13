@@ -52,11 +52,13 @@ void BevelEffect::setPositional(Relief::Edges ring) const {
     impl_->rings.emplace_back(ring.nearLamp, ring.farFromLamp);
 }
 
+// The public type is Shape's, double; the value is kept as the float the
+// composition draws with, as Windows.Foundation.Rect keeps its doubles.
 void BevelEffect::strokeThickness(double value) const {
     impl_->thickness = static_cast<float>(value);
 }
-void BevelEffect::blurRadius(double value) const { impl_->softness = static_cast<float>(value); }
-void BevelEffect::offset(double value) const { impl_->past = static_cast<float>(value); }
+void BevelEffect::blurRadius(float value) const { impl_->softness = value; }
+void BevelEffect::offset(float value) const { impl_->past = value; }
 void BevelEffect::margin(Thickness value) const { impl_->margin = value; }
 void BevelEffect::cornerRadius(CornerRadius value) const {
     impl_->corner = static_cast<float>(value.topLeft);

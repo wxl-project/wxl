@@ -53,7 +53,7 @@ public:
     {
     public:
         /// The type of the allocated element.
-        using element_type = typename base_allocator::element_type;
+        using element_type = base_allocator::element_type;
 
         /// Constructs the allocator for the shared state \p shared_state from a copy of the
         /// underlying allocator \p alloc.

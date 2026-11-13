@@ -1,6 +1,6 @@
 {
   "name": "controls",
-  "needs": [
+  "dependencies": [
     "schema",
     "elements"
   ],
@@ -12,11 +12,51 @@
     "impl/SettingsCardCore.h",
     "SettingsCard.cpp",
     "SettingsCard.h",
+    "SettingsCardContentAlignment.h",
     "SettingsExpander.cpp",
     "SettingsExpander.h"
   ],
-  "schema": "controls.schema.h",
   "surface": "controls.surface.cpp",
   "libraries": [],
-  "comment": "Card, settings card, settings expander and the headered content control."
+  "description": "Card, settings card, settings expander and the headered content control.",
+  "classes": {
+    "SettingsCard": {
+      "header": "SettingsCard.h",
+      "base": "Microsoft.UI.Xaml.Controls.ContentControl",
+      "properties": {
+        "Header": "Object",
+        "Description": "String",
+        "HeaderIcon": "Microsoft.UI.Xaml.Controls.IconElement",
+        "ActionIcon": "Microsoft.UI.Xaml.Controls.IconElement",
+        "IsClickEnabled": "Boolean",
+        "IsActionIconVisible": "Boolean",
+        "ContentAlignment": "SettingsCardContentAlignment"
+      },
+      "events": { "Click": "Microsoft.UI.Xaml.RoutedEventArgs" }
+    },
+    "SettingsExpander": {
+      "header": "SettingsExpander.h",
+      "base": "Microsoft.UI.Xaml.Controls.ContentControl",
+      "properties": {
+        "Content": "Object",
+        "Header": "Object",
+        "Description": "String",
+        "HeaderIcon": "Microsoft.UI.Xaml.Controls.IconElement",
+        "IsExpanded": "Boolean"
+      },
+      "collections": { "Items": "Microsoft.UI.Xaml.UIElement" },
+      "events": { "Expanding": "Object", "Collapsed": "Object" }
+    },
+    "HeaderedContentControl": {
+      "header": "HeaderedContentControl.h",
+      "base": "Microsoft.UI.Xaml.Controls.ContentControl",
+      "properties": { "Header": "Object" }
+    }
+  },
+  "enums": {
+    "SettingsCardContentAlignment": {
+      "header": "SettingsCardContentAlignment.h",
+      "values": ["Right", "Left", "Vertical"]
+    }
+  }
 }

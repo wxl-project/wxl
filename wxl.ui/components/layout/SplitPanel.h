@@ -4,8 +4,8 @@
 // тянут мышью:
 //
 //     SplitPanel {
-//         openPaneLength = 520.0,
-//         spacing = 8.0,
+//         openPaneLength = 520.0f,
+//         spacing = 8.0f,
 //         pane = types,       // левая часть
 //         content = members,  // правая
 //     }

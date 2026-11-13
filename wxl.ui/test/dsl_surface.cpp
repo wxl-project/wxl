@@ -210,18 +210,19 @@ using namespace wxl::dsl;
 }
 
 // A method written as a tag: Window.SetTitleBar takes one argument and hands
-// nothing back, and the profile narrows it to the TitleBar control -- so the
-// tag takes one built, builds one from braces, and a lone TitleBar inside the
-// window's braces is routed to it by type. The button colours are nullable:
-// empty hands the colour back to the system.
-[[maybe_unused]] void window_title_bar(Window const& window, TitleBar const& built) {
+// nothing back, so the tag takes what the method takes -- any element, a
+// TitleBar control built in place or a plain Grid alike. The button colours
+// are nullable: empty hands the colour back to the system.
+[[maybe_unused]] void window_title_bar(Window const& window, TitleBar const& built,
+                                       Grid const& grid) {
     Window assigned{extendsContentIntoTitleBar = true, titleBar = built};
-    Window braced{
+    Window inPlace{
         extendsContentIntoTitleBar = true,
-        titleBar = {leftHeader = TextBlock{L"App"}, rightHeader = Button{L"Sign in"}},
+        titleBar = TitleBar{leftHeader = TextBlock{L"App"}, rightHeader = Button{L"Sign in"}},
     };
-    Window routed{built};
+    Window gridded{titleBar = grid};
     window.titleBar(built);
+    window.titleBar(grid);
 
     AppWindowTitleBar const bar = window.appWindow().titleBar();
     bar.preferredHeightOption(TitleBarHeightOption::Tall);
@@ -351,15 +352,15 @@ static_assert(impl::iterating<decltype([](repeat<3>) noexcept { return Button{};
 // the one carrying a template is a constant object whose template is made
 // at start-up, in the pool that stands from before main().
 namespace library_presets {
-inline constexpr Preset shape{CornerRadius{12}, translation = {0, 0, 32}};
+constexpr Preset shape{CornerRadius{12}, translation = {0, 0, 32}};
 
-inline Preset const card{
+Preset const card{
     shape,
     background = brushes.Card.BackgroundFillColor.Default,
     shadow = Template<ThemeShadow>{},
 };
 
-inline Preset const stamp{
+Preset const stamp{
     Template<Button>{content = L"fresh per application"},
 };
 }
@@ -396,8 +397,8 @@ inline Preset const stamp{
 // object a property asks for is a template's to build.
 [[maybe_unused]] void own_preset() {
     constexpr Preset glow{
-        center = Point{0.33, 0.33},
-        gradientOrigin = {0.33, 0.33},
+        center = Point{0.33f, 0.33f},
+        gradientOrigin = {0.33f, 0.33f},
         radiusX = 1.1,
         radiusY = 1.3,
     };
@@ -419,8 +420,8 @@ inline Preset const stamp{
 // the same way it would be written inside the object's.
 [[maybe_unused]] void templates_of_presets() {
     constexpr Preset shape{
-        center = Point{0.33, 0.33},
-        gradientOrigin = {0.33, 0.33},
+        center = Point{0.33f, 0.33f},
+        gradientOrigin = {0.33f, 0.33f},
         radiusX = 1.1,
         radiusY = 1.3,
     };
@@ -485,6 +486,8 @@ struct BoundModel : core::sta_refcounted {
     core::observable<Color> tint;
     core::observable<int> row;
     core::observable<double> amount;
+    core::observable<float> level;
+    core::observable<core::nullable<double>> entry;
     core::observable<Reading> reading;
 };
 }  // namespace
@@ -497,12 +500,16 @@ struct BoundModel : core::sta_refcounted {
     ToggleSwitch{isOn = Bind{model->busy}};
     ComboBox{selectedIndex = Bind{model->row}};  // Selector's pair
     NumberBox{value = Bind{model->amount}};
-    NumberBox{value = Bind{model->row}};  // a double property binds an int as well
+    NumberBox{value = Bind{model->level}};  // a double property binds a float as well
+    NumberBox{value = Bind{model->entry}};  // and a nullable double: an empty box is empty
+    Slider{value = Bind{model->entry}};
     CheckBox{isChecked = Bind{model->busy}};  // ToggleButton's pair
     ToggleButton{isChecked = Bind{model->busy}};
     RadioButtons{selectedIndex = Bind{model->row}};
     Slider{value = Bind{model->amount}};
+    Slider{value = Bind{model->level}};
     RatingControl{value = Bind{model->amount}};
+    RatingControl{value = Bind{model->level}};
     ColorPicker{color = Bind{model->tint}};
     ToggleMenuFlyoutItem{isChecked = Bind{model->busy}};
     RadioMenuFlyoutItem{isChecked = Bind{model->busy}};
@@ -520,7 +527,8 @@ struct BoundModel : core::sta_refcounted {
     TextBox{text = BindInput{model->name}};
     ToggleSwitch{isOn = BindInput{model->busy}};
     ComboBox{selectedIndex = BindInput{model->row}};
-    NumberBox{intermediateValue = BindInput{model->amount}};  // input alone: the number as typed
+    NumberBox{value = BindInput{model->entry}};
+    NumberBox{intermediateValue = BindInput{model->entry}};  // input alone: the number as typed
     CheckBox{isChecked = BindInput{model->busy}};
     CheckBox{isChecked = BindOutput{model->busy}};
 
@@ -553,6 +561,121 @@ struct BoundModel : core::sta_refcounted {
     ScrollViewer{verticalOffset = Bind{model->amount}};
     ScrollViewer{verticalOffset = BindInput{model->amount}};
     ScrollViewer{schema::ScrollViewer::verticalOffset = Bind{model->amount}};
+}
+
+// A number is taken as the property's own type, converted at the `=`: a float
+// property takes a float and an int literal, a double one widens both, and a
+// binding keeps its field's type. A narrowing -- `rotation = 0.4` -- is a
+// warning on the line that writes it, which no assertion here can see.
+[[maybe_unused]] void numbers_take_the_property_type() {
+    auto const model = core::make_refcounted<BoundModel>();
+
+    Border{rotation = 0.4f};
+    Border{rotation = 2};
+    TextBlock{fontSize = 0.4f};
+    TextBlock{fontSize = 2};
+    Border{rotation = BindOutput{model->level}};
+    TextBlock{fontSize = BindOutput{model->level}};
+
+    static_assert(std::same_as<decltype(rotation = 2), impl::setter_op<PropertyKey::Rotation, float>>);
+    static_assert(
+        std::same_as<decltype(fontSize = 0.4f), impl::setter_op<PropertyKey::FontSize, double>>);
+}
+
+template <typename Tag, typename Value>
+concept assignable = requires(Tag const& tag, Value value) { tag = value; };
+
+// A character and a truth value convert to a number, and are never meant as one:
+// a tag of a number refuses both.
+static_assert(!assignable<decltype(fontSize), char>);
+static_assert(!assignable<decltype(rotation), char16_t>);
+static_assert(!assignable<decltype(fontSize), bool>);
+static_assert(!assignable<decltype(rotation), bool>);
+
+// A tag of a truth value takes a truth value alone: a number, a character and a
+// pointer each convert to one, and none of them is meant as one.
+static_assert(assignable<decltype(isEnabled), bool>);
+static_assert(std::same_as<decltype(isEnabled = true), impl::setter_op<PropertyKey::IsEnabled, bool>>);
+static_assert(!assignable<decltype(isEnabled), double>);
+static_assert(!assignable<decltype(isEnabled), int>);
+static_assert(!assignable<decltype(isEnabled), char>);
+static_assert(!assignable<decltype(isEnabled), char16_t const*>);
+
+// A name the classes declare with different types takes each of them: opacity
+// is a double on a UIElement and a float on a Visual. A number written as one
+// of them is taken as that one; an integer is a conversion away from both, so
+// it is kept as it is and the setter of the object converts it. A truth value
+// is refused, a conversion away from both alike, and so is a character.
+[[maybe_unused]] void numbers_on_a_name_of_several_types() {
+    auto const model = core::make_refcounted<BoundModel>();
+    float const level = 0.5f;
+    double const amount = 0.5;
+
+    Border{opacity = 1};
+    Border{opacity = 0.5};
+    Border{opacity = 0.5f};
+    Border{opacity = level};
+    Border{opacity = amount};
+    Border{opacity = BindOutput{model->amount}};
+
+    constexpr PropertyKey key = PropertyKey::Opacity;
+    static_assert(std::same_as<decltype(opacity = 1), impl::setter_op<key, int>>);
+    static_assert(std::same_as<decltype(opacity = 0.5), impl::setter_op<key, double>>);
+    static_assert(std::same_as<decltype(opacity = 0.5f), impl::setter_op<key, float>>);
+    static_assert(std::same_as<decltype(opacity = level), impl::setter_op<key, float>>);
+    static_assert(std::same_as<decltype(opacity = amount), impl::setter_op<key, double>>);
+    static_assert(std::same_as<decltype(opacity = BindOutput{model->level}),
+                               impl::setter_op<key, BindOutput<float>>>);
+    static_assert(!assignable<decltype(opacity), bool>);
+    static_assert(!assignable<decltype(opacity), char>);
+    static_assert(!assignable<decltype(opacity), char16_t>);
+}
+
+// What is not a number goes to the setter as written. Content is an Object on a
+// ContentControl and a UIElement on a Flyout, and a template given to it is still
+// the template in the op: the object is built where the op is applied, not at
+// the `=`.
+[[maybe_unused]] void objects_on_a_name_of_several_types() {
+    Button{content = Template<Border>{}};
+    Flyout{content = Template<Border>{}};
+
+    static_assert(std::same_as<decltype(content = Template<Border>{}),
+                               impl::setter_op<PropertyKey::Content, Template<Border>>>);
+}
+
+// A list with a brush in it takes a colour as the tag of a brush does. No name of
+// the profiles is such a list, so the tag is written here.
+inline constexpr impl::property_tag<PropertyKey::Background, impl::one_of<Brush, double>>
+    brushOrNumber{};
+
+[[maybe_unused]] void colours_on_a_list_with_a_brush() {
+    Border{brushOrNumber = rgb(16, 18, 21)};
+
+    static_assert(std::same_as<decltype(brushOrNumber = rgb(16, 18, 21)),
+                               impl::setter_op<PropertyKey::Background, impl::solid_color_brush>>);
+}
+
+template <typename Obj, typename Value>
+concept placement_takes = requires(Obj const& object, Value const& value) {
+    impl::property_setter<PropertyKey::Placement>::set(object, value);
+};
+
+// Placement is a FlyoutPlacementMode on a flyout and a PlacementMode on a
+// tooltip, and its values are written once: a name both have is one value the
+// setter of either takes as its own, a name one of them has is that one's. The
+// other refuses it.
+[[maybe_unused]] void values_on_a_name_of_several_enumerations() {
+    MenuFlyout{placement = placement.bottom};
+    ToolTip{placement = placement.bottom};
+    MenuFlyout{placement = placement.full};
+    ToolTip{placement = placement.mouse};
+
+    static_assert(static_cast<FlyoutPlacementMode>(placement.bottom) == FlyoutPlacementMode::Bottom);
+    static_assert(static_cast<PlacementMode>(placement.bottom) == PlacementMode::Bottom);
+    static_assert(placement.full == FlyoutPlacementMode::Full);
+    static_assert(placement.mouse == PlacementMode::Mouse);
+    static_assert(placement_takes<ToolTip, std::remove_cvref_t<decltype(placement.bottom)>>);
+    static_assert(!placement_takes<ToolTip, std::remove_cvref_t<decltype(placement.full)>>);
 }
 
 // Copy construction must not be hijacked by the variadic constructor -- the
@@ -898,7 +1021,7 @@ static_assert(!std::is_default_constructible_v<ElementCompositionPreview>,
 
 // A colour written for a brush is a solid brush of that colour -- in the
 // syntax only: the setter itself still takes a brush and nothing else.
-inline constexpr Preset tinted{background = colors.white, borderBrush = Color{255, 0, 0, 0}};
+constexpr Preset tinted{background = colors.white, borderBrush = Color{255, 0, 0, 0}};
 
 [[maybe_unused]] void colours_for_brushes() {
     Border scrim{background = rgba(224, 224, 208, 0.627), tinted};
@@ -1014,10 +1137,10 @@ concept declares_snaps_to_tag = requires { typename T::SnapsToTag; };
 [[maybe_unused]] void the_schema_names_the_class(LinearGradientBrush const& brush) {
     namespace x = dsl::schema;
 
-    // Two classes declare StartPoint with different types, so the flat tag
-    // has none and `startPoint = {0, 0}` cannot compile through it: a braced
-    // list initialises a parameter of a known type, and template deduction
-    // never gives it one. Through the class the type is known again.
+    // Two classes declare StartPoint with different types, Point and Vector2,
+    // so the flat tag takes both and `startPoint = {0, 0}` cannot compile
+    // through it: the braced list fits either. Through the class the type is
+    // one again.
     impl::apply_argument(brush, x::LinearGradientBrush::startPoint = {0.0f, 0.0f});
     impl::apply_argument(brush, x::LinearGradientBrush::endPoint = Point{1.0f, 1.0f});
 
@@ -1423,8 +1546,7 @@ static_assert(std::is_same_v<decltype(on_event<EventKey::Click>(std::declval<But
 // The two forms differ in one thing and say so in their result: the bare wait
 // hands back the args, the answering one hands back either the args or the
 // reason there are none. A reference cannot be the value of an expected, so
-// it travels wrapped; the error side is a nullable exception_ptr, whose empty
-// state is a null pointer and therefore costs nothing.
+// it travels wrapped; the other side is the stop reason.
 using key_wait_t = decltype(on_event<EventKey::KeyDown>(std::declval<Button const&>()));
 
 static_assert(
@@ -1432,11 +1554,16 @@ static_assert(
                    KeyRoutedEventArgs&>);
 static_assert(std::is_same_v<decltype(std::declval<key_wait_t&>().next().await_resume()),
                              std::expected<std::reference_wrapper<KeyRoutedEventArgs>,
-                                           core::nullable<std::exception_ptr>>>);
+                                           async::stop_reason>>);
 
-// And the empty error state really is free: a null exception_ptr is what
-// "cancelled, and that is all there is to say" is spelled as.
-static_assert(sizeof(core::nullable<std::exception_ptr>) == sizeof(std::exception_ptr));
+// And the reason costs no more than the error it may carry: stopped by request
+// is a null exception_ptr.
+static_assert(sizeof(async::stop_reason) == sizeof(std::exception_ptr));
+
+// A string is not a stop reason until it is asked to be one.
+static_assert(!std::is_convertible_v<char const*, async::stop_reason>);
+static_assert(!std::is_convertible_v<std::string_view, async::stop_reason>);
+static_assert(std::is_constructible_v<async::stop_reason, char const*>);
 
 // Awaiting writes down who is waiting, so the proxy has to be non-const.
 // Only the positive half is assertable: the const overload is deleted rather
@@ -1528,13 +1655,13 @@ struct probe_task {
         RoutedEventArgs& owned = co_await schema::Button::onClick(button);
         static_cast<void>(owned);
 
-        // The answering form, for a body that must let nothing escape. An
-        // empty error side is a plain cancellation; a full one carries what
-        // went wrong, so nothing is lost by not throwing.
+        // The answering form, for a body that must let nothing escape. Stopped
+        // by request is the plain end; stopped by an error carries what went
+        // wrong, so nothing is lost by not throwing.
         if (auto const got = co_await on_event<EventKey::KeyUp>(button).next()) {
             got->get().handled(true);
-        } else if (got.error()) {
-            std::rethrow_exception(*got.error());
+        } else if (got.error().stopped_due_to_error()) {
+            std::rethrow_exception(got.error().error());
         }
     }
 }

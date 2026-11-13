@@ -5,7 +5,7 @@ import std;
 namespace wxl::logging {
 
 void base_logger::start_line(log_entry& entry, const severity level,
-                             const facility* const where) const {
+                             const facility* const where) {
     entry.time = log_clock::now();
     entry.level = level;
 
