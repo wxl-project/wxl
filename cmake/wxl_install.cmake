@@ -33,24 +33,28 @@ install(TARGETS wxl.core
 )
 
 # wxl.core links fmt::module PUBLIC, so an export of wxl.core has to carry it:
-# the fmt.module wxl.core/src makes travels in the same export set, its module
-# source, fmt's headers and fmt's license beside wxl's. The include directory
-# of the module unit has its install half here, next to the rule that puts the
-# headers there; a consumer builds the BMI of fmt with it. A fmt::module the
-# project brought itself is the project's to export.
+# the fmt.module wxl.core/src makes travels in the same export set, and its
+# module source, fmt's headers and fmt's license go into include/wxl/fmt,
+# beside wxl's own fmt interfaces. <fmt/...> then resolves through include/wxl,
+# the directory a consumer already has from wxl::core. The module unit is not
+# compiled against wxl::core, so the same directory is the install half of its
+# own include directory, set here next to the rule that puts the headers
+# there; a consumer builds the BMI of fmt with it. A fmt::module the project
+# brought itself is the project's to export.
 if(TARGET fmt.module)
     include(FetchContent)
     FetchContent_GetProperties(fmt)
-    set(_wxl_fmt_dir "${CMAKE_INSTALL_INCLUDEDIR}/wxl/fmt")
+    set(_wxl_include_dir "${CMAKE_INSTALL_INCLUDEDIR}/wxl")
+    set(_wxl_fmt_dir "${_wxl_include_dir}/fmt")
 
-    target_include_directories(fmt.module PRIVATE $<INSTALL_INTERFACE:${_wxl_fmt_dir}/include>)
+    target_include_directories(fmt.module PRIVATE $<INSTALL_INTERFACE:${_wxl_include_dir}>)
 
     install(TARGETS fmt.module
         EXPORT wxl-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         FILE_SET fmt DESTINATION ${_wxl_fmt_dir}
     )
-    install(DIRECTORY "${fmt_SOURCE_DIR}/include/fmt" DESTINATION "${_wxl_fmt_dir}/include")
+    install(DIRECTORY "${fmt_SOURCE_DIR}/include/fmt/" DESTINATION "${_wxl_fmt_dir}")
     install(FILES "${fmt_SOURCE_DIR}/LICENSE" DESTINATION "${_wxl_fmt_dir}")
 endif()
 
