@@ -1995,10 +1995,19 @@ void add_bound_vocabulary(type_map const& types, dsl& d) {
 
 // What a type word of a description stands for in C++, under namespace wxl.
 struct described_type {
-    std::string cpp;                 // "IconElement", "double", "SettingsCardContentAlignment"
+    std::string cpp;                 // "IconElement", "double", "hstring"
+    std::string taken;               // a setter's parameter, without its const&: "hstring_param"
     std::set<std::string> includes;  // as the emitter spells them
-    bool arithmetic = false;         // a number or a truth value, checked as exactly that type
 };
+
+// The type a parameter of `use` has, without the const& it may be passed by.
+std::string taken_type(type_use const& use) {
+    std::string_view param = use.param_type;
+    if (constexpr std::string_view by_reference = " const&"; param.ends_with(by_reference)) {
+        param.remove_suffix(by_reference.size());
+    }
+    return std::string{param};
+}
 
 // The classes wxl writes by hand, as the components the profiles select describe them
 // (component.json): members of the vocabulary exactly as a generated class's are -- a name's
@@ -2067,7 +2076,7 @@ private:
                                        "is not among the dependencies of component '{}'",
                                        where, word, hand_written->second.owner->name, comp.name));
             }
-            return {word, {hand_written->second.include}, false};
+            return {word, word, {hand_written->second.include}};
         }
         type_use use;
         if (element_type_name(word)) {
@@ -2080,7 +2089,7 @@ private:
                 auto const name = index_.names.find(type->second);
                 auto const header = index_.headers.find(type->second);
                 if (name != index_.names.end() && header != index_.headers.end()) {
-                    return {name->second, {header->second}, false};
+                    return {name->second, name->second, {header->second}};
                 }
             }
             use = map_type(type->second, index_);
@@ -2092,8 +2101,7 @@ private:
         if (!use.supported) {
             fail(comp, std::format("{}: {}", where, use.reason));
         }
-        return {use.value_type, use.public_includes,
-                element_type_name(word) && word != "String" && word != "Object"};
+        return {use.value_type, taken_type(use), use.public_includes};
     }
 
     void add_enum(described_enum const& described) {
@@ -2101,7 +2109,7 @@ private:
         for (auto&& value : described.values) {
             values.emplace_back(member_name(value), value);
             m_.schema.checks.push_back(
-                {schema::check::kind_t::Value, described.name, value, {}, {}, false});
+                {schema::check::kind_t::Value, described.name, value, {}, {}});
         }
     }
 
@@ -2122,7 +2130,7 @@ private:
             auto const base = resolve(comp, where("(base)"), klass.base);
             entry.base = base.cpp;
             m_.schema.checks.push_back(
-                {check::kind_t::Base, klass.name, {}, base.cpp, klass.base, false});
+                {check::kind_t::Base, klass.name, {}, base.cpp, klass.base});
         }
 
         for (auto&& member : klass.properties) {
@@ -2149,9 +2157,14 @@ private:
                 described.direction = "input";
             }
             entry.members.push_back(std::move(described));
-            m_.schema.checks.push_back({member.bound ? check::kind_t::Bound : check::kind_t::Setter,
-                                        klass.name, member.name, type.cpp, member.type,
-                                        type.arithmetic});
+            // A setter is held to the type its parameter has, a binder to the field's.
+            if (member.bound) {
+                m_.schema.checks.push_back(
+                    {check::kind_t::Bound, klass.name, member.name, type.cpp, member.type});
+            } else {
+                m_.schema.checks.push_back(
+                    {check::kind_t::Setter, klass.name, member.name, type.taken, member.type});
+            }
         }
         for (auto&& member : klass.collections) {
             auto const type = value_of(member);
@@ -2159,7 +2172,7 @@ private:
             entry.members.push_back({schema::member::kind_t::Collection, member.name,
                                      member_name(member.name), type.cpp});
             m_.schema.checks.push_back(
-                {check::kind_t::Collection, klass.name, member.name, type.cpp, member.type, false});
+                {check::kind_t::Collection, klass.name, member.name, type.cpp, member.type});
         }
         for (auto&& member : klass.events) {
             auto const type = resolve(comp, where(member.name), member.type, /*args=*/true);
@@ -2167,7 +2180,7 @@ private:
             entry.members.push_back(
                 {schema::member::kind_t::Event, member.name, "on" + member.name});
             m_.schema.checks.push_back(
-                {check::kind_t::Event, klass.name, member.name, type.cpp, member.type, false});
+                {check::kind_t::Event, klass.name, member.name, type.cpp, member.type});
         }
         m_.schema.classes.push_back(std::move(entry));
     }

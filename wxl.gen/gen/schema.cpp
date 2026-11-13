@@ -247,8 +247,10 @@ void write_description_checks(std::ostream& file, schema const& sch, std::size_t
     if (sch.checks.empty()) {
         return;
     }
-    // A number of exactly one type: it converts to T and to nothing else, so a setter that takes
-    // another number does not take it.
+    // A value of exactly one type: U is deduced from the parameter the value initializes, without
+    // its reference and its const, and any U but T is refused -- a base T derives from, another
+    // number -- so a setter is called only when its parameter is T, by value or by const
+    // reference, and of several overloads only the one whose parameter is.
     std::print(file, R"(// The classes the components describe, held to their descriptions (component.json).
 template <class T>
 struct exactly {{
@@ -270,13 +272,11 @@ struct exactly {{
         switch (check.kind) {
             case kind_t::Setter:
                 std::print(file, R"(template <class C>
-concept {0} = requires(C const& object, {1} value) {{ object.{2}(value); }};
-static_assert({0}<::wxl::{3}>, "{4} says {5}, and the setter does not take it");
+concept {0} = requires(C const& object, exactly<{1}> value) {{ object.{2}(value); }};
+static_assert({0}<::wxl::{3}>, "{4} says {5}, and no setter takes exactly that type");
 )",
-                           concept_name,
-                           check.arithmetic ? std::format("exactly<{}>", check.type)
-                                            : std::format("{} const&", qualified(check.type)),
-                           member_name(check.member), check.owner, said, check.word);
+                           concept_name, qualified(check.type), member_name(check.member),
+                           check.owner, said, check.word);
                 break;
             case kind_t::Bound:
                 std::print(file, R"(template <class C>

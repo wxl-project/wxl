@@ -387,8 +387,8 @@ struct schema {
 
     // One line of a description a component gives of a class or an enumeration
     // it writes by hand (component.json), held to the code by the surface test:
-    // a setter takes the value of the type described -- a number of exactly
-    // that type --, a binder binds a field of it, a collection takes its
+    // a setter takes exactly the type described, as a generated setter of it
+    // would take it, a binder binds a field of it, a collection takes its
     // element, an event hands over its args, a class derives from its base, an
     // enumeration has its value. A member the description leaves out is not
     // seen; it has no tag either.
@@ -398,9 +398,10 @@ struct schema {
         kind_t kind = kind_t::Setter;
         std::string owner;   // the class or the enumeration: "SettingsCard"
         std::string member;  // as the description names it: "HeaderIcon"; a Value's value
-        std::string type;    // the C++ type described: "IconElement"; empty for a Value
+        // The C++ type described: "IconElement"; for a Setter the type its parameter has,
+        // "hstring_param" for a String; empty for a Value.
+        std::string type;
         std::string word;    // as the description spells it: "Microsoft.UI.Xaml.Controls.IconElement"
-        bool arithmetic = false;
     };
     std::vector<check> checks;
 
