@@ -21,6 +21,14 @@
   "surface": "composition.surface.cpp",
   "libraries": [],
   "description": "Composition window, drawing surface, texture cache, theme brush and the window shade drawn on a surface.",
+  "imports": {
+    "types": {
+      "Microsoft.UI.Xaml.Media.MicaBackdrop": {
+        "comment": "The surface gives CompositionWindow.systemBackdrop the window's material under the island, as Window takes it.",
+        "members": []
+      }
+    }
+  },
   "classes": {
     "CompositionWindow": {
       "header": "CompositionWindow.h",
