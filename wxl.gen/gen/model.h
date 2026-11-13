@@ -388,8 +388,8 @@ struct schema {
     // One line of a description a component gives of a class or an enumeration
     // it writes by hand (component.json), held to the code by the surface test:
     // a setter takes exactly the type described, as a generated setter of it
-    // would take it, a binder binds a field of it, a collection takes its
-    // element, an event hands over its args, a class derives from its base, an
+    // would take it, a binder binds a field of it, a collection takes exactly
+    // its element, an event hands over its args, a class derives from its base, an
     // enumeration has its value. A member the description leaves out is not
     // seen; it has no tag either.
     struct check {

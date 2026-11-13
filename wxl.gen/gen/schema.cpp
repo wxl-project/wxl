@@ -249,8 +249,8 @@ void write_description_checks(std::ostream& file, schema const& sch, std::size_t
     }
     // A value of exactly one type: U is deduced from the parameter the value initializes, without
     // its reference and its const, and any U but T is refused -- a base T derives from, another
-    // number -- so a setter is called only when its parameter is T, by value or by const
-    // reference, and of several overloads only the one whose parameter is.
+    // number -- so a setter, or a collection's append, is called only when its parameter is T,
+    // by value or by const reference, and of several overloads only the one whose parameter is.
     std::print(file, R"(// The classes the components describe, held to their descriptions (component.json).
 template <class T>
 struct exactly {{
@@ -290,8 +290,8 @@ static_assert({0}<::wxl::{3}>, "{4} says {5} bound, and no binder of the class b
                 break;
             case kind_t::Collection:
                 std::print(file, R"(template <class C>
-concept {0} = requires(C const& object, {1} const& item) {{ object.{2}().append(item); }};
-static_assert({0}<::wxl::{3}>, "{4} says a collection of {5}, and the class has none");
+concept {0} = requires(C const& object, exactly<{1}> item) {{ object.{2}().append(item); }};
+static_assert({0}<::wxl::{3}>, "{4} says a collection of {5}, and the class has no collection of exactly that type");
 )",
                            concept_name, qualified(check.type), member_name(check.member),
                            check.owner, said, check.word);
