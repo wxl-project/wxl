@@ -232,6 +232,48 @@ TEST(component, a_key_a_manifest_does_not_have_is_refused) {
     std::filesystem::remove_all(directory);
 }
 
+// A manifest that is not there, does not parse, is not an object, or has a key of another
+// shape than the key says stops the read with the file named.
+TEST(component, a_manifest_it_cannot_read_stops_the_run) {
+    auto const directory = scratch(L"unreadable");
+
+    auto const gone = directory / L"gone" / L"component.json";
+    EXPECT_TRUE(says(stops_with([&] { load_component(gone); }), {"cannot open: " + utf8(gone)}));
+
+    auto const broken = directory / L"broken" / L"component.json";
+    write(broken, R"({"name": "broken",)");
+    EXPECT_TRUE(says(stops_with([&] { load_component(broken); }), {utf8(broken)}));
+
+    auto const array = directory / L"array" / L"component.json";
+    write(array, "[]");
+    EXPECT_TRUE(says(stops_with([&] { load_component(array); }),
+                     {utf8(array), "a component manifest must be a JSON object"}));
+
+    auto const unnamed = directory / L"unnamed" / L"component.json";
+    write(unnamed, R"({"name": 1})");
+    EXPECT_TRUE(says(stops_with([&] { load_component(unnamed); }),
+                     {utf8(unnamed), "every component needs a string 'name'"}));
+
+    struct refusal {
+        std::string keys;
+        std::string says;
+    };
+    std::vector<refusal> const refusals{
+        {R"("surface": 1)", "'surface' must be a string"},
+        {R"("description": ["Grid"])", "'description' must be a string"},
+        {R"("dependencies": "core")", "'dependencies' must be an array of strings"},
+        {R"("sources": ["a.cpp", 1])", "'sources' must contain strings only"},
+        {R"("imports": [])", "'imports' must be an object"},
+    };
+    for (auto&& [keys, message] : refusals) {
+        auto const manifest = write_component(directory, "window", keys);
+        EXPECT_TRUE(says(stops_with([&] { load_component(manifest); }), {utf8(manifest), message}))
+            << keys;
+    }
+
+    std::filesystem::remove_all(directory);
+}
+
 // The build's own list of the chain's components is held to the chain's, as sets and before
 // `dependencies` adds to them.
 TEST(component, the_list_of_the_build_must_match_the_profiles) {
@@ -373,6 +415,19 @@ TEST(component, a_description_it_cannot_read_stops_the_run) {
          "enumeration Alignment: 'values' names no value"},
         {R"("enums": {"Alignment": {"header": "Card.h", "values": ["A", "A"]}})",
          "'values' names \"A\" twice"},
+        {R"("classes": [])", "'classes' must be an object keyed by class name"},
+        {R"("classes": {"Card": "Card.h"})", "class Card: a description must be an object"},
+        {R"("classes": {"Card": {"header": "Card.h", "properties": ["Header"]}})",
+         "class Card: 'properties' must be an object of member names"},
+        {R"("classes": {"Card": {"header": "Card.h", "events": "Click"}})",
+         "class Card: 'events' must be an object of member names"},
+        {R"("classes": {"Card": {"header": "Card.h", "properties": {"W": {"type": "Double", "set": "bind", "get": "x"}}}})",
+         "Card.W: 'get' is not a key of this entry"},
+        {R"("enums": [])", "'enums' must be an object keyed by enumeration name"},
+        {R"("enums": {"Alignment": {"header": "Card.h", "values": ["A"], "names": []}})",
+         "enumeration Alignment: 'names' is not a key of this entry"},
+        {R"("enums": {"Alignment": ["Right"]})",
+         "enumeration Alignment: a description must be an object"},
     };
     for (auto&& [keys, message] : refusals) {
         auto const manifest = write_component(directory, "controls", keys);

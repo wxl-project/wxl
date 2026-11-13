@@ -1,0 +1,4 @@
+// A profile that names no package and asks for no Windows metadata: the run has
+// nothing to read, and says so before it opens anything.
+{
+}

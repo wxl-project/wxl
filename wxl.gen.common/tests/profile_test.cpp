@@ -436,3 +436,261 @@ TEST(type_map, a_malformed_binding_pair_names_the_file_and_the_entry) {
 
     std::filesystem::remove_all(directory);
 }
+
+// A type map that is not there, or of another shape than its keys say, stops the read with the
+// file named: the map itself, a list of names, the projected types, the tagged properties, the
+// hand-written members and an entry of the binding pairs.
+TEST(type_map, a_type_map_it_cannot_read_names_the_file) {
+    auto const directory = scratch(L"type_map_unreadable");
+    auto const file = directory / L"types.json";
+    EXPECT_TRUE(says(stops_with([&] { load_type_map(file); }), {"cannot open: " + utf8(file)}));
+
+    struct refusal {
+        std::string text;
+        std::string says;
+    };
+    std::vector<refusal> const refusals{
+        {"[]", "a type map must be a JSON object"},
+        {R"({"predefined": "Microsoft.UI.Xaml.Application"})",
+         "'predefined' must be an array of strings"},
+        {R"({"implicitRoots": [1]})", "'implicitRoots' must contain strings only"},
+        {R"({"projectedTypes": {}})", "'projectedTypes' must be an array"},
+        {R"({"projectedTypes": ["A.B"]})", "every projected type must be an object"},
+        {R"({"projectedTypes": [{"type": "A.B", "include": "../b.h"}]})",
+         "every projected type needs a string 'wxl'"},
+        {R"({"projectedTypes": [{"type": "A.B", "wxl": "B", "include": "../b.h", "fromString": "yes"}]})",
+         "'fromString' must be true or false"},
+        {R"({"taggedProperties": {}})", "'taggedProperties' must be an array"},
+        {R"({"taggedProperties": ["Row"]})", "every tagged property must be an object"},
+        {R"({"taggedProperties": [{"property": "Row", "wxl": "row"}]})",
+         "every tagged property needs a string 'value'"},
+        {R"({"taggedProperties": [{"property": "Row", "wxl": "row", "value": "int32_t", "include": 1}]})",
+         "'include' must be a string"},
+        {R"({"handWrittenMembers": []})", "'handWrittenMembers' must be an object"},
+        {R"({"handWrittenMembers": {"pairs": []}})",
+         "'handWrittenMembers': 'pairs' is not a key of this entry"},
+        {R"({"handWrittenMembers": {"boundMembers": {}}})",
+         "'handWrittenMembers.boundMembers' must be an array"},
+        {R"({"handWrittenMembers": {"boundMembers": ["IsFocused"]}})",
+         "every bound member must be an object"},
+        {R"({"bindingPairs": ["IsOn"]})", "every binding pair must be an object"},
+    };
+    for (auto&& [text, message] : refusals) {
+        write(file, text);
+        EXPECT_TRUE(says(stops_with([&] { load_type_map(file); }), {utf8(file), message})) << text;
+    }
+
+    std::filesystem::remove_all(directory);
+}
+
+// The names of the icon font are read by code point, each name and each code point once, every
+// code point four hex digits; a table of another shape stops the read with the file and the
+// symbol named.
+TEST(symbol_names, a_table_it_cannot_read_names_the_file_and_the_symbol) {
+    auto const directory = scratch(L"symbols");
+    auto const file = directory / L"fluent-symbols.json";
+    write(file, R"({"symbols": {"Back": "E72B", "Add": "E710"}})");
+    auto const names = load_symbol_names(file);
+    ASSERT_EQ(names.size(), 2u);
+    EXPECT_EQ(names[0].name, "Add");
+
+    struct refusal {
+        std::string text;
+        std::string says;
+    };
+    std::vector<refusal> const refusals{
+        {"[]", "a symbol table must be a JSON object"},
+        {"{}", "'symbols' must be an object of name -> code point"},
+        {R"({"symbols": []})", "'symbols' must be an object of name -> code point"},
+        {R"({"symbols": {"Add": 59152}})", "'Add': a code point must be a string"},
+        {R"({"symbols": {"Add": "E71"}})", "'Add': 'E71' is not four hex digits"},
+        {R"({"symbols": {"Add": "E7100"}})", "'Add': 'E7100' is not four hex digits"},
+        {R"({"symbols": {"Add": "E7G0"}})", "'Add': 'E7G0' is not four hex digits"},
+        {R"({"symbols": {"Add": "E710", "Add": "E711"}})", "'Add' is named twice"},
+        {R"({"symbols": {"Add": "E710", "Plus": "E710"}})",
+         "'Plus': code point E710 is used twice"},
+    };
+    for (auto&& [text, message] : refusals) {
+        write(file, text);
+        EXPECT_TRUE(says(stops_with([&] { load_symbol_names(file); }), {utf8(file), message}))
+            << text;
+    }
+
+    std::filesystem::remove_all(directory);
+}
+
+// A profile that is not there, does not parse, is not an object, or has a key of another shape
+// than the key says stops the read with the file named, and with the type for what is written
+// under one.
+TEST(profile, a_profile_it_cannot_read_stops_the_run) {
+    auto const directory = scratch(L"unreadable");
+
+    auto const gone = directory / L"gone.winxl-profile";
+    EXPECT_TRUE(says(stops_with([&] { load_profile(gone); }), {"cannot open: " + utf8(gone)}));
+
+    auto const broken = directory / L"broken.winxl-profile";
+    write(broken, R"({"types": )");
+    EXPECT_TRUE(says(stops_with([&] { load_profile(broken); }), {utf8(broken)}));
+
+    auto const array = directory / L"array.winxl-profile";
+    write(array, "[]");
+    EXPECT_TRUE(says(stops_with([&] { load_profile(array); }),
+                     {utf8(array), "a profile must be a JSON object"}));
+
+    // Under the type A.B.
+    auto const type = [](std::string_view entry) {
+        return std::string{R"({"types": {"A.B": )"} + std::string{entry} + "}}";
+    };
+    auto const synthetic = [&](std::string_view member) {
+        return type(std::string{R"({"syntheticMembers": {"M": )"} + std::string{member} + "}}");
+    };
+    struct refusal {
+        std::string text;
+        std::string says;
+    };
+    std::vector<refusal> const refusals{
+        {R"({"name": 1})", "'name' must be a string"},
+        {R"({"windowsMetadata": "yes"})", "'windowsMetadata' must be true or false"},
+        {R"({"extends": "base"})", "'extends' must be an array of strings"},
+        {R"({"brushes": ["X", 1]})", "'brushes' must contain strings only"},
+        {R"({"discoveredTypes": "some"})",
+         "'discoveredTypes' must be \"none\" or \"all\", got \"some\""},
+        {R"({"sauce": []})", "profile: 'sauce' is not a key of this entry"},
+        {R"({"packages": {}})", "'packages' must be an array"},
+        {R"({"packages": ["Test.Package"]})",
+         "every 'packages' entry must be an object with an 'id'"},
+        {R"({"packages": [{"id": 1}]})", "every package needs a string 'id'"},
+        {R"({"types": []})", "'types' must be an object keyed by metadata type name"},
+        {type("[]"), "type 'A.B' must map to an object"},
+        {type(R"({"members": [], "excludeMembers": []})"),
+         "type 'A.B' has both 'members' and 'excludeMembers'"},
+        {type(R"({"styles": "AccentButtonStyle"})"), "'styles' must be an array of strings"},
+        {type(R"({"syntheticMembers": []})"),
+         "type 'A.B': 'syntheticMembers' must be an object keyed by property name"},
+        {synthetic("1"), "type 'A.B': synthetic member 'M' must be an object"},
+        {synthetic(R"({"function": "f", "include": "../f.h"})"),
+         "type 'A.B': synthetic member 'M' needs exactly one of 'type' and 'cppType'"},
+        {synthetic(R"({"type": "Double", "cppType": "double", "function": "f", "include": "../f.h"})"),
+         "type 'A.B': synthetic member 'M' needs exactly one of 'type' and 'cppType'"},
+        {synthetic(R"({"cppType": "RowLengths", "function": "f", "include": "../f.h"})"),
+         "type 'A.B': synthetic member 'M' has 'cppType' and so needs 'cppInclude'"},
+        {synthetic(R"({"type": "Double", "include": "../f.h"})"),
+         "type 'A.B': synthetic member 'M' needs a string 'function'"},
+        {synthetic(R"({"type": "Double", "function": "f", "include": "../f.h", "positional": 1})"),
+         "'positional' must be true or false"},
+        {type(R"({"setterMethods": ["Set"]})"),
+         "type 'A.B': setter method 'Set' has no name after 'Set' to give its tag"},
+        {type(R"({"setterMethods": ["Close"]})"),
+         "type 'A.B': setter method 'Close' has no name after 'Set' to give its tag"},
+        {type(R"({"replacedCalls": []})"),
+         "type 'A.B': 'replacedCalls' must be an object keyed by method name"},
+        {type(R"({"replacedCalls": {"Close": {"function": "f"}}})"),
+         "type 'A.B': replaced call 'Close' must be an object with a string 'function' and a "
+         "string 'include'"},
+        {type(R"({"fromText": "f"})"),
+         "type 'A.B': 'fromText' must be an object with 'function' and 'include'"},
+    };
+    auto const file = directory / L"p.winxl-profile";
+    for (auto&& [text, message] : refusals) {
+        write(file, text);
+        EXPECT_TRUE(says(stops_with([&] { load_profile(file); }), {utf8(file), message})) << text;
+    }
+
+    std::filesystem::remove_all(directory);
+}
+
+// Profiles that extend each other in a circle stop the load at the profile met a second time.
+TEST(profile, a_cycle_of_extends_is_refused) {
+    auto const directory = scratch(L"extends_cycle");
+    auto const a = directory / L"a.winxl-profile";
+    write(a, R"({"extends": ["b"]})");
+    write(directory / L"b.winxl-profile", R"({"extends": ["a"]})");
+
+    EXPECT_TRUE(says(stops_with([&] {
+                         resolve_profiles({a}, load_restored_packages(write_list(directory, {})));
+                     }),
+                     {"profile reference cycle at " + utf8(std::filesystem::canonical(a))}));
+
+    std::filesystem::remove_all(directory);
+}
+
+// The files a profile asks of a package are looked for in the directory the restore names, and
+// one that is not there stops the run with the package, its version and the place named: no
+// metadata directory, no .winmd file in it, a metadata or a resource file named and missing.
+TEST(profile, a_file_of_a_package_that_is_not_there_is_named) {
+    auto const directory = scratch(L"package_files");
+    auto const bare = directory / L"bare";
+    std::filesystem::create_directories(bare);
+    auto const empty = directory / L"empty";
+    write(empty / L"metadata" / L"readme.txt", "");
+    auto const package = write_package(directory / L"package");
+    auto const restored = load_restored_packages(
+        write_list(directory, {listed("Bare.Package", "1.0.0", bare),
+                               listed("Empty.Package", "1.1.0", empty),
+                               listed("Test.Package", "1.2.0", package)}));
+
+    struct refusal {
+        std::string text;
+        std::vector<std::string> says;
+    };
+    // The directory as the list spells it starts the place the message names.
+    std::vector<refusal> const refusals{
+        {R"({"packages": [{"id": "Bare.Package"}]})",
+         {"package 'Bare.Package' 1.0.0: no metadata directory at " + json_path(bare)}},
+        {R"({"packages": [{"id": "Empty.Package"}]})",
+         {"package 'Empty.Package' 1.1.0: no .winmd files in " + json_path(empty)}},
+        {R"({"packages": [{"id": "Test.Package", "metadata": ["Missing.winmd"]}]})",
+         {"package 'Test.Package' 1.2.0: no such metadata file: " + json_path(package),
+          "Missing.winmd"}},
+        {R"({"packages": [{"id": "Test.Package", "resources": ["Themes/generic.xaml"]}]})",
+         {"package 'Test.Package' 1.2.0: no such resource file: " + json_path(package),
+          "generic.xaml"}},
+    };
+    auto const profile = directory / L"p.winxl-profile";
+    for (auto&& [text, message] : refusals) {
+        write(profile, text);
+        auto parts = message;
+        parts.push_back(utf8(profile));
+        EXPECT_TRUE(says(stops_with([&] { resolve_profiles({profile}, restored); }), parts))
+            << text;
+    }
+
+    std::filesystem::remove_all(directory);
+}
+
+// A list of the restore of another shape than the configure writes stops the read with the file
+// named.
+TEST(profile, a_list_it_cannot_read_is_refused) {
+    auto const directory = scratch(L"list_unreadable");
+    auto const winmd =
+        json_path(directory / L"sdk" / L"Windows.Foundation.FoundationContract.winmd");
+    std::string const sdk = R"("windowsSdk": {"version": "10.0.26100.0", "metadata": [")" + winmd +
+                            R"("]})";
+    struct refusal {
+        std::string text;
+        std::string says;
+    };
+    std::vector<refusal> const refusals{
+        {"[]", "a list of the restored packages must be a JSON object"},
+        {R"({"packages": {}, )" + sdk + "}", "'packages' must be an array"},
+        {R"({"packages": ["Test.Package"], )" + sdk + "}",
+         "every 'packages' entry must be an object"},
+        {R"({"packages": [{"id": "Test.Package", "directory": "x"}], )" + sdk + "}",
+         "every package needs a string 'version'"},
+        {"{\"packages\": [" + listed("Test.Package", "latest", directory) + "], " + sdk + "}",
+         "package 'Test.Package': \"latest\" is not a NuGet version"},
+        {R"({"packages": []})", "'windowsSdk' must be an object with a string 'version'"},
+        {R"({"packages": [], "windowsSdk": {"version": "10.0.26100.0", "metadata": []}})",
+         "'windowsSdk' must be an object with a string 'version'"},
+        {R"({"packages": [], "windowsSdk": {"version": "10.0.26100.0", "metadata": [1]}})",
+         "'windowsSdk.metadata' must contain strings only"},
+    };
+    auto const list = directory / L"restored-packages.json";
+    for (auto&& [text, message] : refusals) {
+        write(list, text);
+        EXPECT_TRUE(says(stops_with([&] { load_restored_packages(list); }), {utf8(list), message}))
+            << text;
+    }
+
+    std::filesystem::remove_all(directory);
+}
