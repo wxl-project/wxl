@@ -186,6 +186,15 @@ add_library(wxl.ui.common STATIC
 )
 add_library(wxl::ui.common ALIAS wxl.ui.common)
 
+set_target_properties(wxl.ui.common PROPERTIES
+    # Exported as wxl::ui.common, the name the alias gives it in the tree, so a
+    # consumer never has to know which of the two it got.
+    EXPORT_NAME ui.common
+    # Debug and Release land in the same install prefix, so the archives must
+    # not share a file name.
+    DEBUG_POSTFIX d
+)
+
 target_compile_features(wxl.ui.common PUBLIC cxx_std_23)
 
 # wxl owns the entry point, and it lives in this library rather than in the
@@ -199,9 +208,15 @@ target_link_options(wxl.ui.common INTERFACE "/ENTRY:wWinMainCRTStartup")
 # src/: the hand-written headers of both layers, named by their path under it by
 # consumers and by the generated wrappers alike (Object.h, impl/conversions.h).
 # The include root of the generated ones, <wxl/X.h>, is a library of a profile's
-# (wxl_add_ui_library).
-target_include_directories(wxl.ui.common PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
+# (wxl_add_ui_library). The headers of the list above are a file set, which
+# carries the include directory -- src/ while building, the install destination
+# afterwards (cmake/wxl_install.cmake).
+get_target_property(_wxl_common_headers wxl.ui.common SOURCES)
+list(FILTER _wxl_common_headers INCLUDE REGEX "\\.h$")
+target_sources(wxl.ui.common PUBLIC
+    FILE_SET headers TYPE HEADERS
+    BASE_DIRS src
+    FILES ${_wxl_common_headers}
 )
 
 # The projection (Microsoft::CppWinRT, linked below) and these headers are
