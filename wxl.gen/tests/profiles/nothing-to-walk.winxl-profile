@@ -1,0 +1,5 @@
+// A profile that reads the Windows metadata and lists no type: the run has
+// nothing to start the walk from, and says so before it walks.
+{
+    "windowsMetadata": true
+}
