@@ -1,0 +1,31 @@
+{
+    "name": "editor",
+    "description": "The profile of the profile editor (wxl.gen.ui): rich plus the composition window, the effects and the card it is built from, and the few members its window calls beyond rich.",
+
+    "extends": [
+        "rich"
+    ],
+
+    "components": [
+        "composition",
+        "controls",
+        "effects"
+    ],
+
+    "types": {
+        "Microsoft.UI.Xaml.Controls.NavigationView": {
+            "comment": "The editor's window (wxl.gen.ui/main.cpp) keeps its own settings item in FooterMenuItems, leaves the pane toggle to the title bar (IsPaneToggleButtonVisible), and widens the open pane to its longest item with OpenPaneLength; base names the rest it uses.",
+            "members": [
+                "FooterMenuItems",
+                "IsPaneToggleButtonVisible",
+                "OpenPaneLength"
+            ]
+        },
+        "Microsoft.UI.Xaml.UIElement": {
+            "comment": "The editor's window (wxl.gen.ui/main.cpp) measures each pane item's TextBlock with Measure to size the open pane.",
+            "members": [
+                "Measure"
+            ]
+        }
+    }
+}

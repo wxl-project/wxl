@@ -99,8 +99,8 @@ build\x64-dynamic\samples\Quadratic\Debug\sample.quadratic.exe
   (`Microsoft.WindowsAppRuntime.2-experimentalF`), загрузчик **wxl** берёт из
   заголовка `WindowsAppSDK-VersionInfo.h` того же пакета.
 - **Обёртки — шаг сборки:** сборка собирает генератор `winui-srcgen`,
-  запускает его с профилями `full` и `extended` из `wxl.gen/profiles` и
-  компилирует то, что он написал, в `wxl.ui.full` и `wxl.ui.extended`. Обёртки лежат в каталоге сборки,
+  запускает его с профилями `full`, `extended` и `editor` из `wxl.gen/profiles` и
+  компилирует то, что он написал, в `wxl.ui.full`, `wxl.ui.extended` и `wxl.ui.editor`. Обёртки лежат в каталоге сборки,
   `build/x64-dynamic/wxl.ui/<профиль>/wxl`: заголовки подключаются как `<wxl/X.h>`, а тела
   собраны в восемь единиц трансляции `parts/wrapper-00.cpp` …
   `wrapper-07.cpp` (функция `wxl_add_ui_library`,
@@ -555,8 +555,8 @@ ctest --preset x64-dynamic-debug -R docs  # сайт документации к
   `find_package(GTest)` находит именно эту сборку.
 - **Статическая верификация синтаксиса:** у каждого профиля дерева есть цель
   `wxl.ui.<профиль>.surface-test` — `wxl.ui.base.surface-test`,
-  `wxl.ui.extended.surface-test`, `wxl.ui.rich.surface-test` и
-  `wxl.ui.full.surface-test`. Цель компилирует декларативный словарь профиля без
+  `wxl.ui.extended.surface-test`, `wxl.ui.rich.surface-test`,
+  `wxl.ui.full.surface-test` и `wxl.ui.editor.surface-test`. Цель компилирует декларативный словарь профиля без
   запуска кода и собирается только с открытым интерфейсом профиля —
   сгенерированными заголовками, каталогами выбранных компонентов и
   `wxl::ui.common`, — без путей к проекции cppwinrt. Благодаря этому любое имя
@@ -568,8 +568,8 @@ ctest --preset x64-dynamic-debug -R docs  # сайт документации к
   компилирует ещё рукописный тест `wxl.ui/test/dsl_surface.cpp` — проверку
   синтаксиса на словаре `full` с проверками того, что не отнесено к
   компоненту; многие его классы генерирует только `full`, поэтому другим
-  профилям он не нужен. Библиотеку дерево собирает для `full` и `extended`
-  (`wxl_add_ui_library`); обёртки `base` и `rich` сборка генерирует
+  профилям он не нужен. Библиотеку дерево собирает для `full`, `extended` и
+  `editor` (`wxl_add_ui_library`); обёртки `base` и `rich` сборка генерирует
   так же, как для библиотеки, но для них компилируется только тест
   (`wxl_add_ui_surface_test`, при `WXL_TESTS`): ни исходники компонентов, ни
   части обёрток. Так профили, которые не собирает ни одна программа дерева,
@@ -761,7 +761,7 @@ wxl_target_assets(myapp Assets)
 После подключения проекту доступны цели модулей `wxl::core` — ядро, один
 модуль `wxl.core` со всеми его областями (`fmt`, `async`, `logging`, `xml`,
 `json`, `html`; подключение — `import wxl.core;`), — `wxl::highlight`,
-`wxl::bb`, `wxl::rsdn`; при `WXL_UI` — `wxl::ui.common` и библиотеки профилей `wxl::ui.full` и `wxl::ui.extended`; при
+`wxl::bb`, `wxl::rsdn`; при `WXL_UI` — `wxl::ui.common` и библиотеки профилей `wxl::ui.full`, `wxl::ui.extended` и `wxl::ui.editor`; при
 `WXL_TOOLS` — `Microsoft::CppWinRT`, проекция C++/WinRT для приложения, которое
 само к ней обращается (`target_link_libraries(<цель> PRIVATE
 Microsoft::CppWinRT)`, как в `sandbox/LightingLab/CMakeLists.txt`). Для тестов — `wxl::test`, заголовки
@@ -792,7 +792,7 @@ wxl_target_assets(sample.quadratic Assets)
 - **`wxl_add_executable(<цель> UI <библиотека> <исходники>…)`:** объявляет
   оконный exe с точкой входа из `wxl::ui.common` и вызывает
   `wxl_target_manifest` и `wxl_target_runtime`. Профиль выбирается в одном
-  месте, именем библиотеки в `UI`: `wxl::ui.extended` у HtmlView, `wxl::ui.full` у остальных примеров, проб и `wxl.gen.ui`; без `UI`
+  месте, именем библиотеки в `UI`: `wxl::ui.extended` у HtmlView, `wxl::ui.editor` у `wxl.gen.ui`, `wxl::ui.full` у остальных примеров и проб; без `UI`
   настройка останавливается.
 - **`wxl_target_manifest(<цель>)`:** добавляет к цели манифест из
   `cmake/wxl_app.manifest.in` с её именем: проверенную версию Windows,

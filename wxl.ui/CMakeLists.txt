@@ -347,11 +347,14 @@ wxl_set_target_folders(wxl.ui.common)
 # and its surface test wxl.ui.<profile>.surface-test (cmake/wxl_ui_profile.cmake).
 # Without documentation whatever the site does: the site generates its own.
 # full is for what needs all of WinUI; extended for the samples its vocabulary
-# covers.
+# covers; editor for the profile editor (wxl.gen.ui), which is built wherever
+# this directory is.
 wxl_add_ui_library(full
     PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/full.winxl-profile")
 wxl_add_ui_library(extended
     PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/extended.winxl-profile")
+wxl_add_ui_library(editor
+    PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/editor.winxl-profile")
 
 # The syntax test over full's vocabulary: many of the classes it writes only
 # full generates, so it is full's alone. The IDE layout is read from the
