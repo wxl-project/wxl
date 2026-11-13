@@ -132,6 +132,23 @@ std::set<std::string> read_string_set(value const& array, std::filesystem::path 
     return {strings.begin(), strings.end()};
 }
 
+// The names a key lists, in the order the file lists them, or none when the key is not there.
+// A name listed twice is a mistake rather than a repetition to fold.
+std::vector<std::string> read_names(value const& entry, std::filesystem::path const& source,
+                                    std::string_view key) {
+    value const* const field = entry.find(key);
+    if (!field) {
+        return {};
+    }
+    auto names = read_strings(*field, source, key);
+    for (auto at = names.begin(); at != names.end(); ++at) {
+        if (std::ranges::find(names.begin(), at, *at) != at) {
+            fail(source, std::format("'{}' names \"{}\" twice", key, *at));
+        }
+    }
+    return names;
+}
+
 member_filter read_member_filter(value const& entry, std::filesystem::path const& source,
                                  std::string_view type_name) {
     if (!entry.is_object()) {
@@ -234,16 +251,13 @@ std::vector<synthetic_member> read_synthetic_members(value const& entry,
     return members;
 }
 
-// The methods a profile writes as tags, by the method's own name. Whether the
-// method exists, takes one argument and returns nothing is the class writer's
-// to check: only it has read the signatures.
+// The methods a profile writes as tags, by the method's own name, each once.
+// Whether the method exists, takes one argument and returns nothing is the
+// class writer's to check: only it has read the signatures.
 std::set<std::string> read_setter_methods(value const& entry, std::filesystem::path const& source,
                                           std::string_view type_name) {
-    value const* const listed = entry.find("setterMethods");
-    if (!listed) {
-        return {};
-    }
-    auto methods = read_string_set(*listed, source, "setterMethods");
+    auto const listed = read_names(entry, source, "setterMethods");
+    std::set<std::string> methods{listed.begin(), listed.end()};
     for (auto&& name : methods) {
         if (!name.starts_with("Set") || name.size() == 3) {
             fail(source, std::format("type '{}': setter method '{}' has no name after 'Set' to "
@@ -625,23 +639,6 @@ void read_requirements(value const& document, std::filesystem::path const& path,
     }
 
     prof.windows_metadata = bool_or(document, path, "windowsMetadata", false);
-}
-
-// The names a key lists, in the order the file lists them, or none when the key is not there.
-// A name listed twice is a mistake rather than a repetition to fold.
-std::vector<std::string> read_names(value const& entry, std::filesystem::path const& source,
-                                    std::string_view key) {
-    value const* const field = entry.find(key);
-    if (!field) {
-        return {};
-    }
-    auto names = read_strings(*field, source, key);
-    for (auto at = names.begin(); at != names.end(); ++at) {
-        if (std::ranges::find(names.begin(), at, *at) != at) {
-            fail(source, std::format("'{}' names \"{}\" twice", key, *at));
-        }
-    }
-    return names;
 }
 
 // Whether `file`, once normalised, lies inside `directory`: a path that climbs out of it with

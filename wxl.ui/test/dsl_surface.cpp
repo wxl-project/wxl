@@ -487,6 +487,7 @@ struct BoundModel : core::sta_refcounted {
     core::observable<int> row;
     core::observable<double> amount;
     core::observable<float> level;
+    core::observable<core::nullable<double>> entry;
     core::observable<Reading> reading;
 };
 }  // namespace
@@ -500,6 +501,8 @@ struct BoundModel : core::sta_refcounted {
     ComboBox{selectedIndex = Bind{model->row}};  // Selector's pair
     NumberBox{value = Bind{model->amount}};
     NumberBox{value = Bind{model->level}};  // a double property binds a float as well
+    NumberBox{value = Bind{model->entry}};  // and a nullable double: an empty box is empty
+    Slider{value = Bind{model->entry}};
     CheckBox{isChecked = Bind{model->busy}};  // ToggleButton's pair
     ToggleButton{isChecked = Bind{model->busy}};
     RadioButtons{selectedIndex = Bind{model->row}};
@@ -524,7 +527,8 @@ struct BoundModel : core::sta_refcounted {
     TextBox{text = BindInput{model->name}};
     ToggleSwitch{isOn = BindInput{model->busy}};
     ComboBox{selectedIndex = BindInput{model->row}};
-    NumberBox{intermediateValue = BindInput{model->amount}};  // input alone: the number as typed
+    NumberBox{value = BindInput{model->entry}};
+    NumberBox{intermediateValue = BindInput{model->entry}};  // input alone: the number as typed
     CheckBox{isChecked = BindInput{model->busy}};
     CheckBox{isChecked = BindOutput{model->busy}};
 
@@ -581,10 +585,21 @@ struct BoundModel : core::sta_refcounted {
 template <typename Tag, typename Value>
 concept assignable = requires(Tag const& tag, Value value) { tag = value; };
 
-// A character converts to a number, and is never meant as one: a tag of a number
-// refuses it.
+// A character and a truth value convert to a number, and are never meant as one:
+// a tag of a number refuses both.
 static_assert(!assignable<decltype(fontSize), char>);
 static_assert(!assignable<decltype(rotation), char16_t>);
+static_assert(!assignable<decltype(fontSize), bool>);
+static_assert(!assignable<decltype(rotation), bool>);
+
+// A tag of a truth value takes a truth value alone: a number, a character and a
+// pointer each convert to one, and none of them is meant as one.
+static_assert(assignable<decltype(isEnabled), bool>);
+static_assert(std::same_as<decltype(isEnabled = true), impl::setter_op<PropertyKey::IsEnabled, bool>>);
+static_assert(!assignable<decltype(isEnabled), double>);
+static_assert(!assignable<decltype(isEnabled), int>);
+static_assert(!assignable<decltype(isEnabled), char>);
+static_assert(!assignable<decltype(isEnabled), char16_t const*>);
 
 // A name the classes declare with different types takes each of them: opacity
 // is a double on a UIElement and a float on a Visual. A number written as one

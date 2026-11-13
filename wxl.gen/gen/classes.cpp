@@ -2210,7 +2210,11 @@ void add_described_classes(std::vector<component> const& components, closure con
 // property as the wrapper spells it.
 //
 // A double binds as it is and as a float, narrowed on the way in: the float
-// field asks for that precision, and an empty NumberBox's NaN stays NaN. A nullable
+// field asks for that precision, and an empty NumberBox's NaN stays NaN. It
+// binds as a core::nullable<double> too, whose every NaN is empty: the empty
+// box arrives as empty, and an empty field goes to the control as NaN, an
+// empty box. Two empty values are equal, so observable::set ends the echo of
+// an emptied box, which NaN, equal to nothing, cannot. A nullable
 // bool -- IsChecked, whose third state a three-state box has -- binds as a
 // bool, empty reading false. A string binds as core::u16_text: the control
 // hands back units nothing guaranteed -- a paste is whatever the clipboard
@@ -2228,6 +2232,10 @@ std::vector<binding_field> binding_fields(std::string_view type, std::string_vie
         if (type == "double") {
             fields.push_back({"float", std::format("static_cast<float>(c.{}())", name),
                               std::format("c.{}(value)", name)});
+            fields.push_back(
+                {"core::nullable<double>", std::format("c.{}()", name),
+                 std::format("c.{}(value.value_or(std::numeric_limits<double>::quiet_NaN()))",
+                             name)});
         }
         return fields;
     }

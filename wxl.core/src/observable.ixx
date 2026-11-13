@@ -188,7 +188,7 @@ public:
     /// from the fields beside it:
     ///
     ///     struct Equation : sta_refcounted {
-    ///         observable<double> a{blank}, b{blank}, c{blank};
+    ///         observable<nullable<double>> a, b, c;
     ///         observable<Answer> answer{a, b, c, solve};
     ///     };
     ///

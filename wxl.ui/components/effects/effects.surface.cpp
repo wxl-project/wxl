@@ -96,8 +96,8 @@ using namespace wxl::dsl;
     (void)button;
 }
 
-// The braces as they are written: the generic tags on each light, whole
-// numbers where the setter takes a float, a corner radius by its own type,
+// The braces as they are written: the generic tags on each light, float
+// literals where the setter takes a float, a corner radius by its own type,
 // the lights bare in the effect and the effect attached to a Button.
 [[maybe_unused]] void RevealEffect_in_braces() {
     using namespace ::wxl;
