@@ -27,9 +27,9 @@ cmake_minimum_required(VERSION 3.28)
 # Every CMake script in this tree is shared, one level up.
 set(WXL_CMAKE_SCRIPT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../cmake")
 
-if(NOT TARGET winui-srcgen)
+if(NOT TARGET wxl::winui-srcgen)
     message(FATAL_ERROR
-        "wxl.ui is added without the root of the wxl tree: there is no target winui-srcgen, "
+        "wxl.ui is added without the root of the wxl tree: there is no target wxl::winui-srcgen, "
         "which generates its wrappers as a step of the build. Add the root of the wxl tree "
         "instead (add_subdirectory(<wxl>) or FetchContent): it builds the generator and adds "
         "wxl.ui with it.")
@@ -43,6 +43,7 @@ endif()
 # generator reads the packages from. The top level of the wxl tree includes the
 # file already.
 include("${WXL_CMAKE_SCRIPT_DIR}/wxl_packages.cmake")
+include("${WXL_CMAKE_SCRIPT_DIR}/wxl_ui_packages.cmake")
 include("${WXL_CMAKE_SCRIPT_DIR}/wxl_ui_profile.cmake")
 
 # The Windows App Runtime bootstrapper -- wxl owns its own runtime
@@ -245,112 +246,25 @@ target_link_libraries(wxl.ui.common
         runtimeobject.lib
 )
 
-# The release an application starts on is the one the restore resolved:
-# impl/bootstrap.cpp includes include/WindowsAppSDK-VersionInfo.h of the restored
-# Microsoft.WindowsAppSDK.Runtime package and hands the bootstrapper the version
-# tag and the major version that name the release's framework package
-# (WINDOWSAPPSDK_RELEASE_VERSION_TAG_W, WINDOWSAPPSDK_RELEASE_MAJORMINOR), so no
-# value of the release is kept here. The installers of that framework package
-# are in the same Runtime package, and winxl runtime install (tools/winxl)
-# installs them: the release of the tree is an experimental one
-# (tools/packages.json), and a stable runtime answers a call to WrapPanel,
-# TitleBar.RecomputeDragRegions or the Window size properties with "no such
-# interface".
-wxl_nuget_package_dir(_wxl_runtime_dir Microsoft.WindowsAppSDK.Runtime)
-if(NOT EXISTS "${_wxl_runtime_dir}/include/WindowsAppSDK-VersionInfo.h")
-    message(FATAL_ERROR
-        "No include/WindowsAppSDK-VersionInfo.h in ${_wxl_runtime_dir}, the restored "
-        "Microsoft.WindowsAppSDK.Runtime package: the bootstrapper of wxl takes the release it "
-        "starts from that header.")
-endif()
-
-# The bootstrapper as a target, not as a path to its import library: then
-# CMake knows the DLL behind it, and $<TARGET_RUNTIME_DLLS> of an application
-# names it without the application knowing where the SDK lies. GLOBAL, so the
-# name reaches the directories where applications are declared; PUBLIC,
-# because the DLL has to reach their folders and not only wxl's link line.
-if(EXISTS "${WXL_WINDOWSAPPSDK_FOUNDATION_DIR}/lib/native/x64/Microsoft.WindowsAppRuntime.Bootstrap.lib")
-    add_library(wxl.winappsdk.bootstrap SHARED IMPORTED GLOBAL)
-    set_target_properties(wxl.winappsdk.bootstrap PROPERTIES
-        IMPORTED_LOCATION
-            "${WXL_WINDOWSAPPSDK_FOUNDATION_DIR}/runtimes/win-x64/native/Microsoft.WindowsAppRuntime.Bootstrap.dll"
-        IMPORTED_IMPLIB
-            "${WXL_WINDOWSAPPSDK_FOUNDATION_DIR}/lib/native/x64/Microsoft.WindowsAppRuntime.Bootstrap.lib"
-        # Whoever compiles impl/bootstrap.cpp -- wxl.ui.common, or a sandbox that
-        # takes the file directly -- asks for the same release, the one of this header.
-        INTERFACE_INCLUDE_DIRECTORIES
-            "${_wxl_runtime_dir}/include")
-
+# The bootstrapper of the Windows App Runtime as the target
+# wxl.winappsdk.bootstrap, the DLLs nothing links (WXL_RUNTIME_FILES) and what
+# the profile layer builds against that no component owns
+# (WXL_UI_PROFILE_LIBRARIES, WXL_UI_PROFILE_INCLUDE_DIRECTORIES): paths into the
+# restore, made by the function an installed wxl calls for wxl::ui.common the
+# same way (cmake/wxl_ui_packages.cmake). The hand-written sources of the
+# profile layer are the components under components/, named by their manifests
+# (component.json) and chosen by the profile chain: wxl_add_ui_library reads
+# them at configure (cmake/Read-ProfileComponents.ps1).
+wxl_ui_packages(wxl.ui.common)
+if(TARGET wxl.winappsdk.bootstrap)
     target_link_libraries(wxl.ui.common PUBLIC wxl.winappsdk.bootstrap)
-else()
-    message(WARNING
-        "No Microsoft.WindowsAppRuntime.Bootstrap.lib at ${WXL_WINDOWSAPPSDK_FOUNDATION_DIR}; "
-        "applications built on wxl will fail to start.")
 endif()
 
-# Win2D activates by name at run time and carries no import library, so
-# nothing links it and CMake cannot learn about it on its own. wxl names it
-# here, and wxl_target_runtime() puts it beside whoever links wxl.
-if(EXISTS "${WXL_WIN2D_DIR}/runtimes/win-x64/native/Microsoft.Graphics.Canvas.dll")
-    set_property(TARGET wxl.ui.common APPEND PROPERTY WXL_RUNTIME_FILES
-        "${WXL_WIN2D_DIR}/runtimes/win-x64/native/Microsoft.Graphics.Canvas.dll")
-else()
-    message(WARNING
-        "No Microsoft.Graphics.Canvas.dll at ${WXL_WIN2D_DIR}; a CompositionWindow "
-        "will fault while building its shared CanvasDevice.")
-endif()
-
-if(EXISTS "${WXL_WEBVIEW2_DIR}/runtimes/win-x64/native/WebView2Loader.dll")
-    set_property(TARGET wxl.ui.common APPEND PROPERTY WXL_RUNTIME_FILES
-        "${WXL_WEBVIEW2_DIR}/runtimes/win-x64/native/WebView2Loader.dll")
-else()
-    message(WARNING
-        "No WebView2Loader.dll at ${WXL_WEBVIEW2_DIR}; a MapControl or a WebView2 will end the process "
-        "when it is shown.")
-endif()
-
-# ---- What the profile layer builds against ----
-# The hand-written sources of the profile layer are the components under components/,
-# named by their manifests (component.json) and chosen by the profile chain:
-# wxl_add_ui_library reads them at configure (cmake/Read-ProfileComponents.ps1).
-# What is left here is what no component owns, handed over in properties of
-# wxl.ui.common, PRIVATE to a library of a profile like the projection: an
-# application links none of it itself.
-set(_wxl_ui_profile_libraries
-    Microsoft::CppWinRT
-    runtimeobject.lib
-    # The graphics stack under a composition drawing surface: a D3D11
-    # device, the DXGI device inside it and the D2D device on top --
-    # see DrawingSurface.cpp. An application draws through the
-    # ID2D1DeviceContext it is handed and links none of this itself.
-    d3d11.lib
-    d2d1.lib
-    dxgi.lib
-    # WIC, decoding the backdrop image -- see WindowNative.cpp.
-    windowscodecs.lib
-    # The shell, twice over: files dropped on a window (DragAcceptFiles,
-    # DragQueryFileW in WindowNative.cpp, with the window subclass that
-    # catches the message they arrive in) and the notification area
-    # (Shell_NotifyIconW in TrayIcon.cpp).
-    shell32.lib
-    comctl32.lib
-    # Painting the redirection surface behind the island -- the one
-    # spot where GDI is the right tool; see WindowNative.cpp.
-    gdi32.lib
-    # CreateDispatcherQueueController, for the system compositor a
-    # WindowShade hosts on its own overlay window -- see WindowShade.cpp.
-    coremessaging.lib
-    # DwmSetWindowAttribute: the dark frame and the caption colour of a
-    # CompositionWindow follow the application's theme.
-    dwmapi.lib
-)
-
-set_target_properties(wxl.ui.common PROPERTIES
-    WXL_UI_PROFILE_LIBRARIES "${_wxl_ui_profile_libraries}"
-    # The package headers the profile layer includes, PRIVATE to it as to
-    # wxl.ui.common above.
-    WXL_UI_PROFILE_INCLUDE_DIRECTORIES
-        "${WXL_WINDOWSAPPSDK_FOUNDATION_DIR}/include;${WXL_WINDOWSAPPSDK_WINUI_DIR}/include")
+# The directory of the components, which wxl_add_ui_library hands the reader of
+# the manifests and the generator; an installed wxl names its copy of it on the
+# imported wxl::ui.common (cmake/wxl-config.cmake.in).
+set_property(TARGET wxl.ui.common PROPERTY
+    WXL_UI_COMPONENTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/components")
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src PREFIX "src" REGULAR_EXPRESSION "src/.*")
 

@@ -118,7 +118,7 @@ function(wxl_doxygen_bootstrap)
     # Generated with the default configuration on purpose: what varies between
     # sites (title, search box, tree) sits in Doxygen's own $placeholders and is
     # resolved per page at build time, so one header serves every site.
-    set(_scratch "${CMAKE_BINARY_DIR}/docs/.header")
+    set(_scratch "${PROJECT_BINARY_DIR}/docs/.header")
     file(MAKE_DIRECTORY "${_scratch}")
     execute_process(
         COMMAND "${_doxygen}" -w html header.html footer.html style.css
@@ -160,7 +160,7 @@ function(wxl_doxygen_bootstrap)
     string(APPEND _mermaid "</script>")
     string(REPLACE "$mermaidjs" "${_mermaid}" _html "${_html}")
 
-    set(_header "${CMAKE_BINARY_DIR}/docs/header.html")
+    set(_header "${PROJECT_BINARY_DIR}/docs/header.html")
     file(WRITE "${_header}" "${_html}")
 
     set(WXL_DOXYGEN_EXECUTABLE "${_doxygen}"
@@ -284,7 +284,7 @@ function(wxl_add_doxygen_site target)
     wxl_doxygen_bootstrap()
 
     if(NOT A_OUTPUT)
-        set(A_OUTPUT "${CMAKE_BINARY_DIR}/docs/${target}")
+        set(A_OUTPUT "${PROJECT_BINARY_DIR}/docs/${target}")
     endif()
     if(NOT A_LANGUAGE)
         set(A_LANGUAGE English)
@@ -317,7 +317,7 @@ function(wxl_add_doxygen_site target)
     set(DOXY_GENERATE_TAGFILE "${A_TAGFILE}")
     set(DOXY_HTML_HEADER      "${WXL_DOXYGEN_HTML_HEADER}")
     set(DOXY_MERMAID_JS_URL   "${WXL_DOXYGEN_MERMAID_JS_URL}")
-    set(DOXY_WARN_LOGFILE     "${CMAKE_BINARY_DIR}/docs/${target}.warnings.log")
+    set(DOXY_WARN_LOGFILE     "${PROJECT_BINARY_DIR}/docs/${target}.warnings.log")
 
     _wxl_doxygen_quote(DOXY_HTML_EXTRA_STYLESHEET
         "${WXL_DOXYGEN_THEME_DIR}/doxygen-awesome.css"
@@ -330,7 +330,7 @@ function(wxl_add_doxygen_site target)
     endforeach()
     _wxl_doxygen_quote(DOXY_HTML_EXTRA_FILES ${_extra_files})
 
-    set(_doxyfile "${CMAKE_BINARY_DIR}/docs/${target}.Doxyfile")
+    set(_doxyfile "${PROJECT_BINARY_DIR}/docs/${target}.Doxyfile")
     configure_file("${WXL_DOXYGEN_CMAKE_DIR}/Doxyfile.in" "${_doxyfile}" @ONLY)
 
     # No OUTPUT/DEPENDS pair: a stale site is worse than a redundant two-second

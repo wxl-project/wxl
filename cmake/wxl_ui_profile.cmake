@@ -43,13 +43,18 @@
 #                                            schema_surface.cpp, the source of
 #                                            wxl.ui.<profile>.surface-test
 #
+# <build> is the build directory of the project that calls the function
+# (PROJECT_BINARY_DIR): the wxl tree's own, which a project that adds the tree
+# has as a directory of its build, or the project's that takes an installed
+# wxl.
+#
 # In the build directory and not in the sources: what is generated belongs to
 # the build that generated it -- its packages, its generator. The
 # configurations of one build directory (Debug and Release of Ninja
 # Multi-Config) share it: they generate the same files, and they run the
-# generator under one name (the WXL_SHARED_FILE of winui-srcgen,
-# wxl.gen/CMakeLists.txt), so a build of the other configuration runs it again
-# only when that configuration's generator was linked anew. The steps are those
+# generator under one name (the WXL_SHARED_FILE of wxl::winui-srcgen), so a
+# build of the other configuration runs it again only when that
+# configuration's generator was linked anew. The steps are those
 # of the target wxl.ui.<profile>.wrappers, which the library and its surface
 # test depend on, so that every compile and every module scan of their sources
 # -- which include the generated headers -- comes after them. wxl.ui.common
@@ -92,11 +97,23 @@
 #
 # The command runs again when the generator, the list of the restore
 # (wxl_restored_packages_file(), cmake/wxl_packages.cmake) or a file of the
-# profiles changes: of the profile's own directory and of the tree's
-# wxl.gen/profiles -- the profiles, types.json, fluent-symbols.json. Every one
+# profiles changes: of the profile's own directory and of the generator's
+# profiles directory -- the profiles, types.json, fluent-symbols.json. Every one
 # of them, and not only the profile and what it extends: a profile outside the
 # tree may extend one of the tree's. With a library or a surface test of a
 # profile it also runs again when a manifest of a selected component changes.
+#
+# The generator is the target wxl::winui-srcgen: in the wxl tree the alias of
+# winui-srcgen, which the tree builds (wxl.gen/CMakeLists.txt), and in a project
+# that takes an installed wxl the executable the package installed
+# (cmake/wxl-config.cmake.in). Each carries the file the steps run,
+# WXL_SHARED_FILE, and the directory of the generator's own profiles and tables,
+# WXL_PROFILES_DIR: types.json and fluent-symbols.json are handed to every run
+# from there (--types, --symbols), so a profile outside that directory is
+# generated with the same tables. The library's include directory, which holds
+# what no component owns (--common-dir), is the directory of the file set
+# headers of wxl::ui.common, and the directory of the components is its
+# WXL_UI_COMPONENTS_DIR: the sources in the tree, the copies in the package.
 #
 # The components: wxl_add_ui_library and wxl_add_ui_surface_test run
 # cmake/Read-ProfileComponents.ps1 under Windows PowerShell 5.1 at configure --
@@ -111,14 +128,15 @@
 # DOCS writes the metadata's documentation into the headers, in that language
 # (winui-srcgen --docs --doc-language), and leaves doc_language.txt beside them.
 #
-# Refused at configure, each with its remedy: no target winui-srcgen (a
+# Refused at configure, each with its remedy: no target wxl::winui-srcgen (a
 # directory configured without the root of the wxl tree, which builds the
-# generator), no target wxl.ui.common, a profile file whose stem is not the
-# name given to the function, a directory src/wxl in wxl.ui (generated there by hand,
-# it would shadow the generated headers on the include path src/), a profile
-# that does not exist, PARTS outside 1 to 100 (the names of the parts have two
-# digits), a profile whose targets the build already has.
-# cmake/wxl_packages.cmake is included before.
+# generator, or without find_package(wxl)), no target wxl::ui.common, a profile
+# file whose stem is not the name given to the function, a directory wxl in the
+# include directory of wxl::ui.common (generated there by hand, it would shadow
+# the generated headers on that include path), a profile that does not exist,
+# PARTS outside 1 to 100 (the names of the parts have two digits), a profile
+# whose targets the build already has. cmake/wxl_packages.cmake is included
+# before.
 
 include_guard(GLOBAL)
 
@@ -132,6 +150,30 @@ if(NOT POWERSHELL_EXE)
         "Install PowerShell (powershell.exe, Windows PowerShell 5.1, on PATH).")
 endif()
 
+# _wxl_ui_generator(<caller> <out_file> <out_profiles_dir>)
+#
+# The generator every step runs, the one place that names it: the file of
+# wxl::winui-srcgen the steps run and the directory of its profiles and tables
+# (see above). The steps depend on the target itself, wxl::winui-srcgen.
+function(_wxl_ui_generator caller out_file out_profiles_dir)
+    if(NOT TARGET wxl::winui-srcgen)
+        message(FATAL_ERROR
+            "${caller}: there is no target wxl::winui-srcgen, which generates the wrappers: "
+            "${CMAKE_CURRENT_SOURCE_DIR} is configured without the wxl tree that builds it and "
+            "without an installed wxl. Configure the root of the wxl tree (tools\\build.ps1, or "
+            "cmake --preset x64-dynamic there), add it, or find_package(wxl) of an installed wxl.")
+    endif()
+    get_target_property(file wxl::winui-srcgen WXL_SHARED_FILE)
+    get_target_property(profiles_dir wxl::winui-srcgen WXL_PROFILES_DIR)
+    if(NOT file OR NOT profiles_dir)
+        message(FATAL_ERROR
+            "${caller}: wxl::winui-srcgen has no WXL_SHARED_FILE or no WXL_PROFILES_DIR "
+            "(wxl.gen/CMakeLists.txt, cmake/wxl-config.cmake.in).")
+    endif()
+    set(${out_file} "${file}" PARENT_SCOPE)
+    set(${out_profiles_dir} "${profiles_dir}" PARENT_SCOPE)
+endfunction()
+
 function(wxl_generate_wrappers name)
     cmake_parse_arguments(PARSE_ARGV 1 A "DECLARE_HEADERS"
         "DIR;PROFILE;PARTS;DOCS;OUT_PARTS;OUT_SURFACE;COMPONENT_DIR;COMMON_DIR" "COMPONENTS;MANIFESTS")
@@ -140,13 +182,7 @@ function(wxl_generate_wrappers name)
             "wxl_generate_wrappers(${name}): unknown arguments '${A_UNPARSED_ARGUMENTS}' or "
             "keywords without a value '${A_KEYWORDS_MISSING_VALUES}'.")
     endif()
-    if(NOT TARGET winui-srcgen)
-        message(FATAL_ERROR
-            "wxl_generate_wrappers(${name}): there is no target winui-srcgen, which generates "
-            "the wrappers: ${CMAKE_CURRENT_SOURCE_DIR} is configured without the wxl tree that "
-            "builds it. Configure the root of the wxl tree (tools\\build.ps1, or cmake --preset "
-            "x64-dynamic there).")
-    endif()
+    _wxl_ui_generator("wxl_generate_wrappers(${name})" _wxl_generator _wxl_gen_profiles)
     if(NOT A_DIR)
         message(FATAL_ERROR "wxl_generate_wrappers(${name}): no DIR.")
     endif()
@@ -168,17 +204,10 @@ function(wxl_generate_wrappers name)
             "wxl_generate_wrappers(${name}): no list of the restored packages; include "
             "cmake/wxl_packages.cmake before.")
     endif()
-    get_target_property(_wxl_generator winui-srcgen WXL_SHARED_FILE)
-    if(NOT _wxl_generator)
-        message(FATAL_ERROR
-            "wxl_generate_wrappers(${name}): winui-srcgen has no WXL_SHARED_FILE, the copy of "
-            "it the steps run (wxl.gen/CMakeLists.txt).")
-    endif()
 
     set(_wxl_out "${A_DIR}")
     cmake_path(GET A_PROFILE STEM LAST_ONLY _wxl_name)
     cmake_path(GET A_PROFILE PARENT_PATH _wxl_profiles_dir)
-    cmake_path(GET CMAKE_CURRENT_FUNCTION_LIST_DIR PARENT_PATH _wxl_tree)
 
     math(EXPR _wxl_last "${A_PARTS} - 1")
     set(_wxl_parts "")
@@ -192,7 +221,7 @@ function(wxl_generate_wrappers name)
     set(_wxl_stamp "${_wxl_out}/generated.stamp")
 
     set(_wxl_profile_files "")
-    foreach(_wxl_dir IN ITEMS "${_wxl_profiles_dir}" "${_wxl_tree}/wxl.gen/profiles")
+    foreach(_wxl_dir IN ITEMS "${_wxl_profiles_dir}" "${_wxl_gen_profiles}")
         file(GLOB _wxl_found CONFIGURE_DEPENDS
             "${_wxl_dir}/*.winxl-profile"
             "${_wxl_dir}/types.json"
@@ -223,11 +252,13 @@ function(wxl_generate_wrappers name)
         OUTPUT ${_wxl_parts} "${_wxl_surface}" "${_wxl_stamp}"
         COMMAND "${_wxl_generator}"
                 --profile "${A_PROFILE}" --packages "${_wxl_packages}"
+                --types "${_wxl_gen_profiles}/types.json"
+                --symbols "${_wxl_gen_profiles}/fluent-symbols.json"
                 --out "${_wxl_out}" --parts ${A_PARTS} ${_wxl_docs}
                 ${_wxl_component_args}
         COMMAND "${CMAKE_COMMAND}" -E touch "${_wxl_stamp}"
-        DEPENDS winui-srcgen "${A_PROFILE}" ${_wxl_profile_files} "${_wxl_packages}" ${A_MANIFESTS}
-        WORKING_DIRECTORY "${_wxl_tree}"
+        DEPENDS wxl::winui-srcgen "${A_PROFILE}" ${_wxl_profile_files} "${_wxl_packages}"
+                ${A_MANIFESTS}
         COMMENT "winui-srcgen: the wrappers of ${_wxl_name} -> ${_wxl_out}"
         VERBATIM)
     set(_wxl_steps "${_wxl_stamp}")
@@ -344,11 +375,11 @@ function(_wxl_ui_profile_wrappers prefix caller profile)
             "${_wxl_call}: unknown arguments '${A_UNPARSED_ARGUMENTS}' or keywords without a "
             "value '${A_KEYWORDS_MISSING_VALUES}'.")
     endif()
-    if(NOT TARGET wxl.ui.common)
+    if(NOT TARGET wxl::ui.common)
         message(FATAL_ERROR
-            "${_wxl_call}: there is no target wxl.ui.common, the layer every profile stands on "
+            "${_wxl_call}: there is no target wxl::ui.common, the layer every profile stands on "
             "and the owner of the sources of the profile layer; add the directory wxl.ui "
-            "before.")
+            "before, or find_package(wxl) of an installed wxl.")
     endif()
     if(NOT A_PROFILE)
         message(FATAL_ERROR "${_wxl_call}: no PROFILE.")
@@ -367,28 +398,36 @@ function(_wxl_ui_profile_wrappers prefix caller profile)
             "${_wxl_call}: the profile file ${A_PROFILE} is named ${_wxl_name}; the targets of "
             "a profile, and the directory of its wrappers, take the name of the profile file.")
     endif()
-    get_target_property(_wxl_common_dir wxl.ui.common SOURCE_DIR)
-    if(EXISTS "${_wxl_common_dir}/src/wxl")
+    # The include directory of wxl::ui.common, the base of its file set headers,
+    # and the directory of the components (see above).
+    get_target_property(_wxl_common_include wxl::ui.common HEADER_DIRS_headers)
+    get_target_property(_wxl_components wxl::ui.common WXL_UI_COMPONENTS_DIR)
+    if(NOT _wxl_common_include OR NOT _wxl_components)
         message(FATAL_ERROR
-            "${_wxl_call}: ${_wxl_common_dir}/src/wxl exists: wrappers generated into the "
-            "sources, which would be found on the include path ${_wxl_common_dir}/src ahead "
+            "${_wxl_call}: wxl::ui.common has no file set headers or no WXL_UI_COMPONENTS_DIR "
+            "(wxl.ui/CMakeLists.txt, cmake/wxl-config.cmake.in).")
+    endif()
+    if(EXISTS "${_wxl_common_include}/wxl")
+        message(FATAL_ERROR
+            "${_wxl_call}: ${_wxl_common_include}/wxl exists: wrappers generated into the "
+            "sources, which would be found on the include path ${_wxl_common_include} ahead "
             "of the ones this build generates. Delete the directory; the build generates the "
-            "wrappers into ${CMAKE_BINARY_DIR}/wxl.ui.")
+            "wrappers into ${PROJECT_BINARY_DIR}/wxl.ui.")
     endif()
     if(NOT DEFINED A_PARTS)
         set(A_PARTS 8)
     endif()
 
-    set(_wxl_root "${CMAKE_BINARY_DIR}/wxl.ui/${profile}")
+    set(_wxl_root "${PROJECT_BINARY_DIR}/wxl.ui/${profile}")
     set(_wxl_out "${_wxl_root}/wxl")
 
-    wxl_read_profile_components(_wxl "${A_PROFILE}" "${_wxl_common_dir}/components")
+    wxl_read_profile_components(_wxl "${A_PROFILE}" "${_wxl_components}")
 
     wxl_generate_wrappers(wxl.ui.${profile}.wrappers
         DIR "${_wxl_out}" PROFILE "${A_PROFILE}" PARTS "${A_PARTS}" DECLARE_HEADERS
-        COMPONENT_DIR "${_wxl_common_dir}/components"
+        COMPONENT_DIR "${_wxl_components}"
         COMPONENTS ${_wxl_CHAIN}
-        COMMON_DIR "${_wxl_common_dir}/src"
+        COMMON_DIR "${_wxl_common_include}"
         MANIFESTS ${_wxl_MANIFESTS}
         OUT_PARTS _wxl_parts OUT_SURFACE _wxl_surface)
 
@@ -410,6 +449,12 @@ endfunction()
 # profile takes it PUBLIC, and it is all an application gets from the library; a
 # surface test takes it PRIVATE, so it compiles against what an application
 # compiles against and nothing else.
+#
+# wxl::core is named beside wxl::ui.common, which links it already: the headers
+# of the profile import wxl.core, and with an installed wxl CMake builds the
+# module of an imported target for a target that names that target in its own
+# link libraries. Reached only through the interface of the imported
+# wxl::ui.common the module was not built, and the compiles did not find it.
 function(_wxl_ui_profile_interface target scope profile)
     cmake_parse_arguments(PARSE_ARGV 3 A "" "ROOT" "DIRS")
     add_dependencies(${target} wxl.ui.${profile}.wrappers)
@@ -418,7 +463,7 @@ function(_wxl_ui_profile_interface target scope profile)
     foreach(_wxl_dir IN LISTS A_DIRS)
         target_include_directories(${target} ${scope} "$<BUILD_INTERFACE:${_wxl_dir}>")
     endforeach()
-    target_link_libraries(${target} ${scope} wxl::ui.common)
+    target_link_libraries(${target} ${scope} wxl::core wxl::ui.common)
 endfunction()
 
 # _wxl_ui_profile_surface_test(<profile> SURFACE <file> SURFACES <file>... ROOT <dir> DIRS <dir>...)
@@ -445,8 +490,8 @@ function(wxl_add_ui_library profile)
     _wxl_ui_profile_wrappers(_wxl wxl_add_ui_library ${profile} ${ARGN})
     set(_wxl_target "wxl.ui.${profile}")
 
-    get_target_property(_wxl_libraries wxl.ui.common WXL_UI_PROFILE_LIBRARIES)
-    get_target_property(_wxl_includes wxl.ui.common WXL_UI_PROFILE_INCLUDE_DIRECTORIES)
+    get_target_property(_wxl_libraries wxl::ui.common WXL_UI_PROFILE_LIBRARIES)
+    get_target_property(_wxl_includes wxl::ui.common WXL_UI_PROFILE_INCLUDE_DIRECTORIES)
 
     add_library(${_wxl_target} STATIC ${_wxl_SOURCES} ${_wxl_PARTS})
     add_library(wxl::ui.${profile} ALIAS ${_wxl_target})
