@@ -206,38 +206,38 @@ private:
 };
 
 /// A wait of this thread under a cancellation token: the awaiter made in place, what
-/// async::detail::cancelable_wait does with it -- the wait is registered with the token's event
+/// async::detail::stoppable_wait does with it -- the wait is registered with the token's event
 /// while it is suspended, by a registration built into it. `Token` is how the token is had -- held
-/// (`async::cancellation_token`), for a wait made by a call that was handed the token, or borrowed
+/// (`async::stop_token`), for a wait made by a call that was handed the token, or borrowed
 /// as its state, for the wait of a proxy that holds the token and outlives the co_await.
 ///
 /// Neither copied nor moved, like the awaiter: it is co_awaited where it is made.
 template <typename Awaiter, typename Token>
 class [[nodiscard("a wait under a token does nothing until it is co_awaited")]]
-cancelable_event_wait : public async::detail::cancelable_wait<cancelable_event_wait<Awaiter, Token>>
+stoppable_event_wait : public async::detail::stoppable_wait<stoppable_event_wait<Awaiter, Token>>
 {
-    using base = async::detail::cancelable_wait<cancelable_event_wait>;
+    using base = async::detail::stoppable_wait<stoppable_event_wait>;
 
     friend base;
 
 public:
     template <typename... Args>
-    explicit cancelable_event_wait(Token token, Args&&... args) noexcept
+    explicit stoppable_event_wait(Token token, Args&&... args) noexcept
         : token_(std::move(token)), awaiter_(std::forward<Args>(args)...) {}
 
-    cancelable_event_wait(cancelable_event_wait const&) = delete;
-    cancelable_event_wait& operator=(cancelable_event_wait const&) = delete;
+    stoppable_event_wait(stoppable_event_wait const&) = delete;
+    stoppable_event_wait& operator=(stoppable_event_wait const&) = delete;
 
     /// A frame destroyed while it is registered takes the wait out of the token's
     /// event before the token it may hold goes.
-    ~cancelable_event_wait() { this->unregister_from_token(); }
+    ~stoppable_event_wait() { this->unregister_from_token(); }
 
 private:
     Awaiter& awaiter() noexcept { return awaiter_; }
 
-    async::detail::cancellation_state* state() const noexcept {
-        if constexpr (std::is_same_v<Token, async::cancellation_token>)
-            return async::detail::cancellation_state_of(token_);
+    async::detail::stop_state* state() const noexcept {
+        if constexpr (std::is_same_v<Token, async::stop_token>)
+            return async::detail::stop_state_of(token_);
         else
             return token_;
     }

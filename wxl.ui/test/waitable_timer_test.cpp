@@ -20,8 +20,8 @@
 namespace {
 
 using wxl::EventToken;
-using wxl::async::cancellation_source;
-using wxl::async::cancellation_token;
+using wxl::async::stop_source;
+using wxl::async::stop_token;
 using wxl::async::operation_canceled_exception;
 using wxl::async::task;
 
@@ -75,11 +75,11 @@ void tick(timer_state& state) {
 
 /// Waits on the timer over and over, counting how often it was let through, until the token
 /// says to stop -- read after the wait, as a loop that writes between waits reads it.
-task<> keeps_waiting(timer_wait& timer, cancellation_token token, int& woken) {
+task<> keeps_waiting(timer_wait& timer, stop_token token, int& woken) {
     do {
         co_await timer;
         ++woken;
-    } while (!token.is_canceled());
+    } while (!token.stop_requested());
 }
 
 /// Between two waits on the timer, waits on something else -- so that whatever the timer
@@ -143,7 +143,7 @@ TEST_F(WaitableTimerTest, ATickEndsTheWaitAndStopsTheTimer) {
     timer_wait timer{fake_timer{&state}};
     int woken = 0;
 
-    task<> work = keeps_waiting(timer, cancellation_token{}, woken);
+    task<> work = keeps_waiting(timer, stop_token{}, woken);
 
     EXPECT_EQ(state.subscribed, 1);
     EXPECT_EQ(woken, 0);
@@ -170,7 +170,7 @@ TEST_F(WaitableTimerTest, ASignalEndsTheWaitInsideTheCallAndStopsTheTimer) {
     timer_wait timer{fake_timer{&state}};
     int woken = 0;
 
-    task<> work = keeps_waiting(timer, cancellation_token{}, woken);
+    task<> work = keeps_waiting(timer, stop_token{}, woken);
 
     timer.restart();
     EXPECT_TRUE(state.running);
@@ -249,7 +249,7 @@ TEST_F(WaitableTimerTest, ARestartForgetsATickNotYetTaken) {
 // cancel() resumes nobody, the coroutine goes round once more and reads the token.
 TEST_F(WaitableTimerTest, TheTokensCancellationEndsTheWaitLikeATickOnTheQueuesTurn) {
     timer_state state;
-    cancellation_source source;
+    stop_source source;
     timer_wait timer{fake_timer{&state}, source.token()};
     int woken = 0;
 
@@ -259,7 +259,7 @@ TEST_F(WaitableTimerTest, TheTokensCancellationEndsTheWaitLikeATickOnTheQueuesTu
     tick(state);
     EXPECT_EQ(woken, 1);
 
-    source.cancel();
+    source.request_stop();
     EXPECT_FALSE(work.done()) << "cancel() resumed the coroutine itself";
     EXPECT_EQ(woken, 1);
     EXPECT_TRUE(wxl::impl::event_wait_test::canceled_posted());
@@ -275,8 +275,8 @@ TEST_F(WaitableTimerTest, TheTokensCancellationEndsTheWaitLikeATickOnTheQueuesTu
 // queue to do.
 TEST_F(WaitableTimerTest, UnderATokenCancelledAlreadyAWaitEndsAtOnce) {
     timer_state state;
-    cancellation_source source;
-    source.cancel();
+    stop_source source;
+    source.request_stop();
 
     timer_wait timer{fake_timer{&state}, source.token()};
     int woken = 0;
@@ -292,14 +292,14 @@ TEST_F(WaitableTimerTest, UnderATokenCancelledAlreadyAWaitEndsAtOnce) {
 // A tick before the turn ends a cancelled wait itself, and the turn then finds nobody.
 TEST_F(WaitableTimerTest, ATickBeforeTheTurnEndsACancelledWait) {
     timer_state state;
-    cancellation_source source;
+    stop_source source;
     timer_wait timer{fake_timer{&state}, source.token()};
     int woken = 0;
 
     task<> work = keeps_waiting(timer, source.token(), woken);
 
     timer.restart();
-    source.cancel();
+    source.request_stop();
     EXPECT_FALSE(work.done());
 
     tick(state);
@@ -358,7 +358,7 @@ TEST_F(WaitableTimerTest, AFrameDestroyedWhileWaitingLeavesTheTimer) {
         int woken = 0;
 
         {
-            task<> work = keeps_waiting(timer, cancellation_token{}, woken);
+            task<> work = keeps_waiting(timer, stop_token{}, woken);
             timer.restart();
         }
 
@@ -374,4 +374,4 @@ TEST_F(WaitableTimerTest, AFrameDestroyedWhileWaitingLeavesTheTimer) {
 
 // The wait answers a token's request as every wait of wxl does, and the timer is as narrow as
 // the wait needs: the fake, a token and a subscription token, and the latch.
-static_assert(wxl::async::detail::cancelable_awaiter<timer_wait::wait>);
+static_assert(wxl::async::detail::stoppable_awaiter<timer_wait::wait>);

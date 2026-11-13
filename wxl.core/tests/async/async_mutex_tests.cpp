@@ -23,10 +23,10 @@ namespace {
 /// the one after the unlock among them.
 task<> holds_until_signalled(async_mutex& mutex, async_semaphore& signal,
                              std::vector<std::string>& log) {
-    async_mutex::guard held = co_await mutex.lock(cancellation_token{});
+    async_mutex::guard held = co_await mutex.lock(stop_token{});
     log.push_back("first locked");
 
-    co_await signal.acquire(cancellation_token{});
+    co_await signal.acquire(stop_token{});
 
     held.unlock();
     log.push_back("first after its unlock");
@@ -34,7 +34,7 @@ task<> holds_until_signalled(async_mutex& mutex, async_semaphore& signal,
 
 /// Locks the mutex, writes down that it got there, and unlocks it as it ends.
 task<> locks(async_mutex& mutex, std::vector<std::string>& log, std::string name,
-             cancellation_token token) {
+             stop_token token) {
     const async_mutex::guard held = co_await mutex.lock(std::move(token));
     log.push_back(name + " locked");
 }
@@ -58,7 +58,7 @@ TEST_F(AsyncMutexTest, TheNextHolderIsResumedAfterTheUnlockingCodeHasRunOn) {
     std::vector<std::string> log;
 
     task<> first = holds_until_signalled(mutex, signal, log);
-    task<> second = locks(mutex, log, "second", cancellation_token{});
+    task<> second = locks(mutex, log, "second", stop_token{});
 
     EXPECT_TRUE(!first.done() && !second.done());
     EXPECT_EQ(log, std::vector<std::string>{"first locked"});
@@ -145,16 +145,16 @@ TEST_F(AsyncMutexTest, TheLockMovesWithTheGuard) {
 // its holder's, and goes to the next in line when it is unlocked.
 TEST_F(AsyncMutexTest, ALockCancelledWhileItWaitsLeavesTheMutexToTheOthers) {
     async_mutex mutex;
-    cancellation_source source;
+    stop_source source;
     std::vector<std::string> log;
 
     async_mutex::guard held = mutex.try_lock();
     ASSERT_TRUE(held.owns_lock());
 
     task<> canceled = locks(mutex, log, "cancelled", source.token());
-    task<> patient = locks(mutex, log, "patient", cancellation_token{});
+    task<> patient = locks(mutex, log, "patient", stop_token{});
 
-    source.cancel();
+    source.request_stop();
     EXPECT_THROW(sta_loop::run_until(canceled), operation_canceled_exception);
     EXPECT_FALSE(patient.done());
     EXPECT_FALSE(mutex.try_lock().owns_lock());

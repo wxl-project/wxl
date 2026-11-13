@@ -70,7 +70,7 @@ public:
     /// оборвало потерянное устройство, кончается DrawingSurface::DeviceLost:
     /// просить снова -- когда позовут RenderingDeviceWatch. Путь абсолютный.
     async::task<CompositionDrawingSurface> getAsync(std::filesystem::path const& image,
-                                                    async::cancellation_token token);
+                                                    async::stop_token token);
 
     /// Забыть всё: следующий getAsync грузит заново. Видеопамять освобождается,
     /// когда её перестают держать и кэш, и кисти на визуалах.

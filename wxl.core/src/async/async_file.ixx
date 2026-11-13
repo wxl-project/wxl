@@ -4,7 +4,7 @@ module;
 
 export module wxl.core:async.async_file;
 
-import :async.cancellation;
+import :async.stop_token;
 import :async.sta_loop;
 import :async.task;
 import :file;
@@ -47,7 +47,7 @@ export namespace wxl::async {
 /// thread's, and `sta_loop` is static from top to bottom.
 ///
 /// **Asking an operation to end.** What can be aborted has a second form, with a
-/// `cancellation_token` as its last argument, and the operation is registered with the
+/// `stop_token` as its last argument, and the operation is registered with the
 /// token while it lives. Asked, an operation not started is never started, a read or a write the
 /// kernel holds is let go by CancelIoEx, and an opening or a file by name standing in the
 /// system has the synchronous call it stands in cancelled, where the system can cancel it;
@@ -180,40 +180,40 @@ public:
     /// The operations above under a token, its last argument; see "Asking an operation
     /// to end" above. Each returns the same task as its form without a token.
     ///@{
-    static task<async_file> open_read(const core::path& path, cancellation_token token);
+    static task<async_file> open_read(const core::path& path, stop_token token);
 
     /// Creates a file for writing, emptying one that is already there; the operation can be
     /// canceled through \p token.
-    static task<async_file> create(const core::path& path, cancellation_token token);
+    static task<async_file> create(const core::path& path, stop_token token);
 
     /// Reads the whole of the file at \p path; the operation can be canceled through \p token.
     [[nodiscard]] static task<std::string> read_all(const core::path& path,
-                                                    cancellation_token token);
+                                                    stop_token token);
 
     /// Replaces a file with \p bytes, whole or not at all; the operation can be canceled
     /// through \p token.
     [[nodiscard]] static task<> write_all(const core::path& path, std::string bytes,
-                                          cancellation_token token);
+                                          stop_token token);
 
     /// Tests whether a file exists at \p path; the operation can be canceled through \p token.
-    [[nodiscard]] static task<bool> exists(const core::path& path, cancellation_token token);
+    [[nodiscard]] static task<bool> exists(const core::path& path, stop_token token);
 
     /// Reads into the caller's buffer \p into and returns the number of bytes read;
     /// the operation can be canceled through \p token.
-    [[nodiscard]] task<std::size_t> read(std::span<std::byte> into, cancellation_token token);
+    [[nodiscard]] task<std::size_t> read(std::span<std::byte> into, stop_token token);
 
     /// Reads into an array of byte-sized elements and returns the number of bytes read;
     /// the operation can be canceled through \p token.
     template <class T, std::size_t N>
         requires(sizeof(T) == 1 && std::is_trivially_copyable_v<T> && !std::is_same_v<T, bool>)
-    [[nodiscard]] task<std::size_t> read(T (&into)[N], cancellation_token token) {
+    [[nodiscard]] task<std::size_t> read(T (&into)[N], stop_token token) {
         return read(std::as_writable_bytes(std::span{into}), std::move(token));
     }
 
     /// Writes \p from at the current position and returns the number of bytes written;
     /// the operation can be canceled through \p token.
     [[nodiscard]] task<std::size_t> write(std::span<const std::byte> from,
-                                          cancellation_token token);
+                                          stop_token token);
     ///@}
 
     /// Tests whether the object holds an open file.

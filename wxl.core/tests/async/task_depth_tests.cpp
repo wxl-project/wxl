@@ -158,7 +158,7 @@ private:
 };
 
 /// The read, in the form with a token the operations of this module have.
-task<int> read(probe& p, std::span<std::byte> into, cancellation_token token) {
+task<int> read(probe& p, std::span<std::byte> into, stop_token token) {
     return sta_loop::async_run<gated_read>(std::move(token), p, into);
 }
 
@@ -173,7 +173,7 @@ task<int> read(probe& p, std::span<std::byte> into, cancellation_token token) {
 /// before the read is given up, which is what opens the read's gate.
 ///
 /// The one answered inside the call takes no token: it has nothing out to abort.
-task<int> step(int depth, cancellation_token token) {
+task<int> step(int depth, stop_token token) {
     const int kind = depth % 2 == 1 ? depth % 3 : depth % 4 == 0 ? 0 : 2;
 
     switch (kind) {
@@ -195,7 +195,7 @@ struct drop_wait {
     void await_resume() const noexcept {}
 };
 
-task<int> bottom(chain_state& c, cancellation_token token) {
+task<int> bottom(chain_state& c, stop_token token) {
     const frame_witness witness(c);
 
     if (c.bottom == bottom_kind::read) {
@@ -218,7 +218,7 @@ task<int> bottom(chain_state& c, cancellation_token token) {
 }
 
 /// Level `depth` of the chain: 1 stands on the bottom, and each above calls the one below.
-task<int> level(chain_state& c, int depth, cancellation_token token) {
+task<int> level(chain_state& c, int depth, stop_token token) {
     const frame_witness witness(c);
     int sum = 0;
 
@@ -349,13 +349,13 @@ TEST(TaskDepthTest, ARequestFromTheTopReachesTheBottom) {
         SCOPED_TRACE(std::format("depth {}", depth));
         chain_state c;
         c.bottom = bottom_kind::read;
-        cancellation_source source;
+        stop_source source;
 
         task<int> chain = level(c, depth, source.token());
         sta_loop::run_until([&] { return c.p.made == 1; });
         c.p.started.wait();
 
-        source.cancel();
+        source.request_stop();
 
         EXPECT_EQ(c.p.canceled, 1);
         EXPECT_FALSE(chain.done()) << "cancel() resumed the chain itself";
@@ -381,8 +381,8 @@ TEST(TaskDepthTest, ARequestBeforeTheStartEndsTheChainAtItsFirstWait) {
         SCOPED_TRACE(std::format("depth {}", depth));
         chain_state c;
         c.bottom = bottom_kind::read;
-        cancellation_source source;
-        source.cancel();
+        stop_source source;
+        source.request_stop();
 
         task<int> chain = level(c, depth, source.token());
         sta_loop::run_until([&] { return chain.done(); });

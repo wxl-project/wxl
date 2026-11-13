@@ -108,7 +108,7 @@ task<async_directory> async_directory::open(const core::path& pattern) {
     return sta_loop::async_call(orphanable, opening(pattern));
 }
 
-task<async_directory> async_directory::open(const core::path& pattern, cancellation_token token) {
+task<async_directory> async_directory::open(const core::path& pattern, stop_token token) {
     return detail::async_call_waiting_for_body(orphanable, opening(pattern), std::move(token));
 }
 
@@ -117,7 +117,7 @@ task<std::vector<async_directory::listed_entry>> async_directory::list(const cor
 }
 
 task<std::vector<async_directory::listed_entry>> async_directory::list(const core::path& pattern,
-                                                                       cancellation_token token) {
+                                                                       stop_token token) {
     return detail::async_call_waiting_for_body(orphanable, listing_all(pattern), std::move(token));
 }
 
@@ -127,7 +127,7 @@ task<std::optional<async_directory::entry>> async_directory::next() {
     return sta_loop::async_call(next_entry());
 }
 
-task<std::optional<async_directory::entry>> async_directory::next(cancellation_token token) {
+task<std::optional<async_directory::entry>> async_directory::next(stop_token token) {
     ensure(directory_.opened() && "async_directory: no listing was opened");
 
     return sta_loop::async_call(next_entry(), std::move(token));
@@ -143,7 +143,7 @@ task<bool> async_directory::exists(const core::path& path) {
     return sta_loop::async_call(orphanable, asking_exists(path));
 }
 
-task<bool> async_directory::exists(const core::path& path, cancellation_token token) {
+task<bool> async_directory::exists(const core::path& path, stop_token token) {
     return detail::async_call_waiting_for_body(orphanable, asking_exists(path), std::move(token));
 }
 
@@ -151,7 +151,7 @@ task<> async_directory::create_all(const core::path& p) {
     return sta_loop::async_call(orphanable, making_all(p));
 }
 
-task<> async_directory::create_all(const core::path& p, cancellation_token token) {
+task<> async_directory::create_all(const core::path& p, stop_token token) {
     return detail::async_call_waiting_for_body(orphanable, making_all(p), std::move(token));
 }
 
@@ -159,7 +159,7 @@ task<> async_directory::remove(const core::path& path) {
     return sta_loop::async_call(orphanable, removing(path));
 }
 
-task<> async_directory::remove(const core::path& path, cancellation_token token) {
+task<> async_directory::remove(const core::path& path, stop_token token) {
     return detail::async_call_waiting_for_body(orphanable, removing(path), std::move(token));
 }
 

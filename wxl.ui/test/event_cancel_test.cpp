@@ -47,8 +47,8 @@ using wxl::EventArgs;
 using wxl::EventHandler;
 using wxl::EventToken;
 using wxl::Object;
-using wxl::async::cancellation_source;
-using wxl::async::cancellation_token;
+using wxl::async::stop_source;
+using wxl::async::stop_token;
 using wxl::async::operation_canceled_exception;
 using wxl::async::task;
 
@@ -87,7 +87,7 @@ struct fake_event {
 };
 
 using plain_keys = wxl::impl::event_awaitable<fake_event>;
-using keys_under_token = wxl::impl::cancelable_event_awaitable<fake_event>;
+using keys_under_token = wxl::impl::stoppable_event_awaitable<fake_event>;
 
 /// The sender an event names: an object of its own, cppwinrt's vector, which needs no runtime.
 Object a_sender() {
@@ -106,7 +106,7 @@ bool raise(event_state& event) {
 }
 
 /// Waits for keys under a token until the wait ends, and says how it ended.
-task<> takes_keys(event_state& event, cancellation_token token, int& taken, std::string& ended) {
+task<> takes_keys(event_state& event, stop_token token, int& taken, std::string& ended) {
     keys_under_token keys{fake_event{&event}, std::move(token)};
 
     try {
@@ -121,7 +121,7 @@ task<> takes_keys(event_state& event, cancellation_token token, int& taken, std:
 }
 
 /// The same with the answering form: nothing escapes, and a cancellation is a stop by request.
-task<> answers_keys(event_state& event, cancellation_token token, std::vector<std::string>& log) {
+task<> answers_keys(event_state& event, stop_token token, std::vector<std::string>& log) {
     keys_under_token keys{fake_event{&event}, std::move(token)};
 
     while (true) {
@@ -149,14 +149,14 @@ task<> takes_keys_plainly(event_state& event, int& taken) {
 
 /// Takes one key, then cancels its own token while it runs -- nobody is registered with it then --
 /// and waits again.
-task<> cancels_between_waits(event_state& event, cancellation_source& source,
+task<> cancels_between_waits(event_state& event, stop_source& source,
                              std::vector<std::string>& log) {
     keys_under_token keys{fake_event{&event}, source.token()};
 
     co_await keys;
     log.push_back("key");
 
-    source.cancel();
+    source.request_stop();
 
     try {
         co_await keys;
@@ -192,7 +192,7 @@ protected:
 // resumes the coroutine with the cancellation.
 TEST_F(EventCancelTest, AWaitCancelledWhileSuspendedEndsOnTheQueuesTurn) {
     event_state event;
-    cancellation_source source;
+    stop_source source;
     int taken = 0;
     std::string ended;
 
@@ -202,7 +202,7 @@ TEST_F(EventCancelTest, AWaitCancelledWhileSuspendedEndsOnTheQueuesTurn) {
     EXPECT_TRUE(raise(event));
     EXPECT_EQ(taken, 2);
 
-    source.cancel();
+    source.request_stop();
 
     EXPECT_FALSE(keys.done()) << "cancel() resumed the coroutine itself";
     EXPECT_EQ(turns_asked, 1);
@@ -222,14 +222,14 @@ TEST_F(EventCancelTest, AWaitCancelledWhileSuspendedEndsOnTheQueuesTurn) {
 // finds nobody.
 TEST_F(EventCancelTest, AnEventBeforeTheTurnEndsACancelledWaitUnanswered) {
     event_state event;
-    cancellation_source source;
+    stop_source source;
     int taken = 0;
     std::string ended;
 
     task<> keys = takes_keys(event, source.token(), taken, ended);
 
     EXPECT_TRUE(raise(event));
-    source.cancel();
+    source.request_stop();
     EXPECT_FALSE(keys.done());
 
     EXPECT_FALSE(raise(event)) << "a cancelled wait answered the event";
@@ -246,8 +246,8 @@ TEST_F(EventCancelTest, AnEventBeforeTheTurnEndsACancelledWaitUnanswered) {
 // not suspend, and there is nothing for the queue to do.
 TEST_F(EventCancelTest, UnderATokenCancelledAlreadyAWaitEndsAtOnce) {
     event_state event;
-    cancellation_source source;
-    source.cancel();
+    stop_source source;
+    source.request_stop();
 
     int taken = 0;
     std::string ended;
@@ -264,7 +264,7 @@ TEST_F(EventCancelTest, UnderATokenCancelledAlreadyAWaitEndsAtOnce) {
 // Asked between two waits, by the coroutine itself: the next wait ends at once.
 TEST_F(EventCancelTest, AWaitBegunAfterTheRequestEndsAtOnce) {
     event_state event;
-    cancellation_source source;
+    stop_source source;
     std::vector<std::string> log;
 
     task<> keys = cancels_between_waits(event, source, log);
@@ -281,13 +281,13 @@ TEST_F(EventCancelTest, AWaitBegunAfterTheRequestEndsAtOnce) {
 TEST_F(EventCancelTest, TheAnsweringFormAnswersTheCancellation) {
     {
         event_state event;
-        cancellation_source source;
+        stop_source source;
         std::vector<std::string> log;
 
         task<> keys = answers_keys(event, source.token(), log);
 
         EXPECT_TRUE(raise(event));
-        source.cancel();
+        source.request_stop();
         EXPECT_FALSE(keys.done());
 
         wxl::impl::event_wait::resume_canceled();
@@ -298,8 +298,8 @@ TEST_F(EventCancelTest, TheAnsweringFormAnswersTheCancellation) {
     }
 
     event_state event;
-    cancellation_source source;
-    source.cancel();
+    stop_source source;
+    source.request_stop();
 
     std::vector<std::string> log;
     task<> keys = answers_keys(event, source.token(), log);
@@ -313,19 +313,19 @@ TEST_F(EventCancelTest, TheAnsweringFormAnswersTheCancellation) {
 // the turn, the turn ends the other, and the third goes on taking its events throughout.
 TEST_F(EventCancelTest, EventsAndARequestInterleaved) {
     event_state first, second, third;
-    cancellation_source source;
+    stop_source source;
     int taken_first = 0, taken_second = 0, taken_third = 0;
     std::string ended_first, ended_second, ended_third;
 
     task<> a = takes_keys(first, source.token(), taken_first, ended_first);
     task<> b = takes_keys(second, source.token(), taken_second, ended_second);
-    task<> c = takes_keys(third, cancellation_token{}, taken_third, ended_third);
+    task<> c = takes_keys(third, stop_token{}, taken_third, ended_third);
 
     EXPECT_TRUE(raise(first));
     EXPECT_TRUE(raise(third));
     EXPECT_TRUE(raise(second));
 
-    source.cancel();
+    source.request_stop();
     EXPECT_EQ(turns_asked, 1) << "one turn serves every wait cancelled before it";
 
     EXPECT_FALSE(raise(second));
@@ -354,7 +354,7 @@ TEST_F(EventCancelTest, EventsAndARequestInterleaved) {
 // request afterwards reaches nobody and asks for no turn.
 TEST_F(EventCancelTest, AFrameDestroyedWhileWaitingLeavesBothLists) {
     event_state event;
-    cancellation_source source;
+    stop_source source;
     int taken = 0;
     std::string ended;
 
@@ -366,7 +366,7 @@ TEST_F(EventCancelTest, AFrameDestroyedWhileWaitingLeavesBothLists) {
     EXPECT_TRUE(wxl::impl::event_wait::all_drained());
     EXPECT_EQ(event.unsubscribed, 1);
 
-    source.cancel();
+    source.request_stop();
 
     EXPECT_EQ(turns_asked, 0);
     EXPECT_EQ(ended, "");
@@ -376,13 +376,13 @@ TEST_F(EventCancelTest, AFrameDestroyedWhileWaitingLeavesBothLists) {
 // cancelled waits, and the turn finds nobody.
 TEST_F(EventCancelTest, AFrameDestroyedBeforeTheTurnIsNotResumed) {
     event_state event;
-    cancellation_source source;
+    stop_source source;
     int taken = 0;
     std::string ended;
 
     task<> keys = takes_keys(event, source.token(), taken, ended);
 
-    source.cancel();
+    source.request_stop();
     EXPECT_EQ(turns_asked, 1);
 
     keys = {};
@@ -396,7 +396,7 @@ TEST_F(EventCancelTest, AFrameDestroyedBeforeTheTurnIsNotResumed) {
 // the second does, and a request reaches only the waits that were given its token.
 TEST_F(EventCancelTest, TheFormWithATokenAnswersLikeThePlainOne) {
     event_state under, plain;
-    cancellation_source source;
+    stop_source source;
     int cancelable_taken = 0, taken_plain = 0;
     std::string ended;
 
@@ -411,7 +411,7 @@ TEST_F(EventCancelTest, TheFormWithATokenAnswersLikeThePlainOne) {
     EXPECT_EQ(cancelable_taken, 3);
     EXPECT_EQ(taken_plain, 3);
 
-    source.cancel();
+    source.request_stop();
     wxl::impl::event_wait::resume_canceled();
 
     EXPECT_TRUE(a.done());
@@ -424,14 +424,14 @@ TEST_F(EventCancelTest, TheFormWithATokenAnswersLikeThePlainOne) {
 // rest, since the queue will not.
 TEST_F(EventCancelTest, GoingDownEndsACancelledWaitTheQueueHasNotResumed) {
     event_state canceled, waiting;
-    cancellation_source source;
+    stop_source source;
     int taken_canceled = 0, taken_waiting = 0;
     std::string ended_canceled, ended_waiting;
 
     task<> a = takes_keys(canceled, source.token(), taken_canceled, ended_canceled);
-    task<> b = takes_keys(waiting, cancellation_token{}, taken_waiting, ended_waiting);
+    task<> b = takes_keys(waiting, stop_token{}, taken_waiting, ended_waiting);
 
-    source.cancel();
+    source.request_stop();
     EXPECT_FALSE(a.done());
 
     wxl::impl::event_wait::close_all();
@@ -449,9 +449,9 @@ TEST_F(EventCancelTest, GoingDownEndsACancelledWaitTheQueueHasNotResumed) {
 // A wait made without a token pays nothing for the other: its awaiter is a pointer and two flags,
 // as it was a pointer and one, and the proxy has no field it did not have.
 static_assert(sizeof(plain_keys::awaiter) == 2 * sizeof(void*));
-static_assert(sizeof(keys_under_token) == sizeof(plain_keys) + sizeof(cancellation_token));
-static_assert(wxl::async::detail::cancelable_awaiter<plain_keys::awaiter>);
-static_assert(wxl::async::detail::cancelable_awaiter<plain_keys::awaiter_t<false>>);
+static_assert(sizeof(keys_under_token) == sizeof(plain_keys) + sizeof(stop_token));
+static_assert(wxl::async::detail::stoppable_awaiter<plain_keys::awaiter>);
+static_assert(wxl::async::detail::stoppable_awaiter<plain_keys::awaiter_t<false>>);
 
 // ---- The checks of how a wait is used: assert in a Debug build, core::abort under STRICT_CORO --
 

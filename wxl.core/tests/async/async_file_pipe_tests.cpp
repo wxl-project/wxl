@@ -159,7 +159,7 @@ task<> reads_and_is_dropped(path pipe_name, bool& reading) {
 /// Reads from the pipe under a token, and says what came of it: the frame stays, and
 /// the read ends with an answer -- the bytes, or the cancellation. The read is the form
 /// with a token, kept before it is awaited, or awaited as the call returns it.
-task<> reads_under_a_token(path pipe_name, cancellation_token token, bool kept, bool& reading,
+task<> reads_under_a_token(path pipe_name, stop_token token, bool kept, bool& reading,
                            std::string& outcome) {
     async_file in = co_await async_file::open_read(pipe_name);
 
@@ -374,14 +374,14 @@ TEST_F(AsyncFilePipeTest, AReadTheKernelHoldsEndsWithTheCancellationWhenAsked) {
         rescue watchdog(pipe);
         bool reading = false;
         std::string outcome;
-        cancellation_source source;
+        stop_source source;
 
         task<> work = reads_under_a_token(pipe.name(), source.token(), kept, reading, outcome);
 
         wait_until([&] { return reading; });
         EXPECT_FALSE(work.done());
 
-        source.cancel();
+        source.request_stop();
         EXPECT_FALSE(work.done()) << "the read was answered in place";
 
         EXPECT_NO_THROW(sta_loop::run_until(work));
@@ -471,7 +471,7 @@ TEST(OrphanTest, CancellingAnOrphanCancelsTheCallItStandsInAndItsWaitEndsAtOnce)
         if (!done.try_acquire_for(std::chrono::seconds(10))) pipe.drain();
     });
 
-    cancellation_source source;
+    stop_source source;
     std::atomic<DWORD> outcome{ERROR_SUCCESS};
     const orphans_drained_on_exit drained;
 
@@ -492,7 +492,7 @@ TEST(OrphanTest, CancellingAnOrphanCancelsTheCallItStandsInAndItsWaitEndsAtOnce)
     // pipe holds too little for it to leave.
     ASSERT_TRUE(pipe.take_one());
 
-    source.cancel();
+    source.request_stop();
 
     wait_until([&] { return writing.done(); });
     EXPECT_THROW(writing.result(), operation_canceled_exception);

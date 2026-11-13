@@ -91,7 +91,7 @@ struct type_use {
     // An asynchronous operation only: what the form with a token returns, with '$' standing for
     // the call -- made inside, so that under a token cancelled already it is not made at all --
     // and '@' for the token the form takes last, whose name the member gives it
-    // (cancellation_parameter_name). Empty for every other type.
+    // (stop_parameter_name). Empty for every other type.
     std::string from_winrt_cancelable;
 
     std::set<std::string> public_includes;  // needed by <Namespace>.h

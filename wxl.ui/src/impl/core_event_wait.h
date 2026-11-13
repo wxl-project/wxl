@@ -121,7 +121,7 @@ public:
     /// The arguments of the invocation that resumed the wait. Ended instead -- going
     /// down, or the event let go of the callback -- it throws as every wait of wxl does.
     /// A cancelled token never gets here: the wait under it answers that itself
-    /// (async::detail::cancelable_wait).
+    /// (async::detail::stoppable_wait).
     result_t await_resume() {
         leave();
 
@@ -138,7 +138,7 @@ public:
         }
     }
 
-    /// Cancelled by the token (async::detail::cancelable_awaiter): a wait that is
+    /// Cancelled by the token (async::detail::stoppable_awaiter): a wait that is
     /// suspended is resumed by the queue's next turn, or by an invocation if one comes
     /// first -- never by cancel() itself; one that has not begun never suspends.
     void cancel() noexcept {

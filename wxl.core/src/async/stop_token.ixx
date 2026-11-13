@@ -2,7 +2,7 @@ module;
 
 #include "coroutine_checks.h"
 
-export module wxl.core:async.cancellation;
+export module wxl.core:async.stop_token;
 
 import :async.coroutine_checks;
 import :async.sta_thread;
@@ -35,21 +35,21 @@ public:
         : base(std::string(message)) {}
 };
 
-class cancellation_token;
-class cancellation_source;
+class stop_token;
+class stop_source;
 
 namespace detail {
 
 /// What fires when a token is cancelled: an event of no arguments. Whoever waits under a
 /// token -- an operation or a wait of wxl -- builds its registration into itself
-/// (cancellation_registration), so that registering allocates nothing; it registers while it
+/// (stop_registration), so that registering allocates nothing; it registers while it
 /// waits and unregisters when it is over. A child state, one per source, registers as a
 /// callback the event makes.
-using cancellation_event = core::event<void() noexcept>;
+using stop_event = core::event<void() noexcept>;
 
-class cancellation_state;
+class stop_state;
 
-using cancellation_state_ptr = core::intrusive_ptr<cancellation_state>;
+using stop_state_ptr = core::intrusive_ptr<stop_state>;
 
 /// What a source and its tokens share: the answer, and its event -- and, for
 /// a source made under a parent token, its own place in the parent's event. Whoever is
@@ -59,11 +59,11 @@ using cancellation_state_ptr = core::intrusive_ptr<cancellation_state>;
 /// One thread, the one the coroutines are on: an operation that is cancelled sets its own
 /// flag, the one the worker reads before the body anyway, so the answer is a plain field
 /// and the event an STA one.
-class cancellation_state : public core::sta_refcounted
+class stop_state : public core::sta_refcounted
 {
 public:
     /// A state of its own: cancelled by its source alone.
-    cancellation_state() noexcept = default;
+    stop_state() noexcept = default;
 
     /// A state under the state of a parent token, or under none (null): cancelled by its own
     /// source, or by the parent's -- whichever comes first. Under a live parent it is registered
@@ -71,22 +71,22 @@ public:
     /// parent, so that the event outlives the registration and a chain of generations holds
     /// together; the parent holds nothing of it. Under a parent cancelled already it is born
     /// cancelled and registered nowhere.
-    inline explicit cancellation_state(cancellation_state_ptr parent) {
+    inline explicit stop_state(stop_state_ptr parent) {
         if (!parent) return;
 
-        if (parent->canceled()) {
-            canceled_ = true;
+        if (parent->stop_requested()) {
+            stop_requested_ = true;
             return;
         }
 
         // By a plain pointer: the node lives in the parent's event, and a count there would
         // keep this state alive as long as the parent, and the parent as long as this one.
-        subscription_ = parent->event().add([this]() noexcept { cancel(); });
+        subscription_ = parent->event().add([this]() noexcept { request_stop(); });
         parent_ = std::move(parent);
     }
 
     /// Takes its callback out of the parent's event: here and nowhere else -- its own
-    /// cancel() keeps it registered, and the parent cancelling it again is cancelling it twice.
+    /// request_stop() keeps it registered, and the parent cancelling it again is cancelling it twice.
     /// One thread makes, cancels and destroys a state, and cancelling destroys nobody, so its
     /// end never falls inside the parent's fire, and the destructor is all it takes to leave:
     /// no second count of who may still call it.
@@ -95,14 +95,14 @@ public:
     /// the callback, so remove() finds nothing and answers false: the list compares the
     /// token's address and never reads through it, and since nobody subscribes under a
     /// cancelled parent, no later node there can have taken that address.
-    inline ~cancellation_state() override {
+    inline ~stop_state() override {
         if (parent_) parent_->event().remove(subscription_);
     }
 
-    inline bool canceled() const noexcept { return canceled_; }
+    inline bool stop_requested() const noexcept { return stop_requested_; }
 
     /// The event a subscriber adds itself to and removes itself from.
-    inline cancellation_event& event() noexcept { return event_; }
+    inline stop_event& event() noexcept { return event_; }
 
     /// Sets the answer and cancels everyone registered, once: the event is emptied into a local
     /// one and fired there, so a subscriber that unsubscribes later -- or from inside its
@@ -112,28 +112,28 @@ public:
     /// finds the answer and does not register at all, so a state cancelled already has nobody to
     /// cancel, and asking it again does nothing. A child state cancelled here cancels its own
     /// the same way, from inside this fire, and goes nowhere either.
-    inline void cancel() noexcept {
-        if (canceled_) return;
+    inline void request_stop() noexcept {
+        if (stop_requested_) return;
 
-        canceled_ = true;
+        stop_requested_ = true;
 
-        cancellation_event once;
+        stop_event once;
         once.swap(event_);
         once();
     }
 
 private:
-    bool canceled_ = false;
-    cancellation_event event_;
+    bool stop_requested_ = false;
+    stop_event event_;
 
     /// The parent's state and the token of the callback registered with its event, while
     /// this state is registered there; both empty for a state of its own.
-    cancellation_state_ptr parent_;
+    stop_state_ptr parent_;
     core::event_token subscription_;
 };
 
 /// The state behind a token, for whoever is registered with it; null for a token that has none.
-cancellation_state* cancellation_state_of(const cancellation_token& token) noexcept;
+stop_state* stop_state_of(const stop_token& token) noexcept;
 
 }  // namespace detail
 
@@ -144,31 +144,31 @@ cancellation_state* cancellation_state_of(const cancellation_token& token) noexc
 /// unregister(), and the owner keeps it, so the event's release() of it does nothing. Not
 /// copied: the event holds it by address.
 template <auto Callback>
-class cancellation_registration final : public detail::cancellation_event::func_t
+class stop_registration final : public detail::stop_event::func_t
 {
     using owner_t = core::impl::member_owner<decltype(Callback)>::type;
 
 public:
     /// Constructs a registration, not registered yet, that calls `Callback` on \p owner.
-    inline explicit cancellation_registration(owner_t& owner) noexcept : owner_(owner) {}
+    inline explicit stop_registration(owner_t& owner) noexcept : owner_(owner) {}
 
-    cancellation_registration(const cancellation_registration&) = delete;
-    cancellation_registration& operator=(const cancellation_registration&) = delete;
+    stop_registration(const stop_registration&) = delete;
+    stop_registration& operator=(const stop_registration&) = delete;
 
     /// Registers with the event of `state`, a state not cancelled yet.
-    inline void register_with(detail::cancellation_state& state) noexcept {
+    inline void register_with(detail::stop_state& state) noexcept {
         // Checked here and not in the class: the registration is declared inside its owner,
         // which is not complete there, and a member cannot be called on it yet.
         static_assert(std::is_nothrow_invocable_v<decltype(Callback), owner_t&>,
                       "wxl: a cancellation registration calls its owner from inside the cancel, "
                       "which has nobody to hand an exception to -- name a noexcept member");
-        state.event().add(core::as_not_null<detail::cancellation_event::func_t>(this));
+        state.event().add(core::as_not_null<detail::stop_event::func_t>(this));
     }
 
     /// Out of the event of `state`. Once the token has been cancelled the event the
     /// registration was registered with has been fired and is gone, and unlink() finds nothing.
-    inline void unregister(detail::cancellation_state& state) noexcept {
-        state.event().unlink(static_cast<detail::cancellation_event::func_t&>(*this));
+    inline void unregister(detail::stop_state& state) noexcept {
+        state.event().unlink(static_cast<detail::stop_event::func_t&>(*this));
     }
 
 private:
@@ -189,14 +189,14 @@ namespace detail {
 /// nobody from inside the call. A cancelled awaiter is then left without its await_resume():
 /// whatever it would have handed over is not asked for. Cancelled before it suspends, it does
 /// not suspend. A form that answers rather than throws says what a cancelled wait answers
-/// through `await_canceled()`, which the wait then gives instead of the exception.
+/// through `await_stopped()`, which the wait then gives instead of the exception.
 template <class Awaiter>
-concept cancelable_awaiter = requires(Awaiter& awaiter) {
+concept stoppable_awaiter = requires(Awaiter& awaiter) {
     { awaiter.cancel() } noexcept;
 };
 
 /// The hooks of a wait of wxl under a token, over what `Wait` gives them: `awaiter()`, the
-/// awaiter of what is awaited (`cancelable_awaiter`), and `state()`, the token's state
+/// awaiter of what is awaited (`stoppable_awaiter`), and `state()`, the token's state
 /// or null.
 ///
 /// Until the token is cancelled the wait is the awaiter's own, and is registered with the
@@ -206,18 +206,18 @@ concept cancelable_awaiter = requires(Awaiter& awaiter) {
 /// through the awaiter's cancel() and ends when the awaiter lets it; one that would begin
 /// later is cancelled before it suspends, and does not. One that answers a cancellation
 /// rather than throwing it -- the answering form of an event wait -- gives its answer through
-/// await_canceled().
+/// await_stopped().
 ///
 /// Each hook takes the place of the co_await and hands it on to an awaiter that takes
 /// one, so that a strict build reports the line of the co_await rather than this file's.
 /// `Wait` leaves the event in its own destructor, before its members go: one of them may
 /// be what keeps the state alive.
 template <class Wait>
-class cancelable_wait
+class stoppable_wait
 {
 public:
     inline bool await_ready(detail::site where = detail::site::current()) {
-        if (cancellation_state* const state = self().state(); state && state->canceled())
+        if (stop_state* const state = self().state(); state && state->stop_requested())
             [[unlikely]]
             self().awaiter().cancel();
 
@@ -228,7 +228,7 @@ public:
     inline decltype(auto) await_suspend(
         std::coroutine_handle<Promise> awaiting,
         [[maybe_unused]] detail::site where = detail::site::current()) {
-        if (cancellation_state* const state = self().state(); state && !state->canceled()) {
+        if (stop_state* const state = self().state(); state && !state->stop_requested()) {
             registration_.register_with(*state);
             registered_ = true;
         }
@@ -243,10 +243,10 @@ public:
         [[maybe_unused]] detail::site where = detail::site::current()) {
         unregister_from_token();
 
-        if (cancellation_state* const state = self().state(); state && state->canceled())
+        if (stop_state* const state = self().state(); state && state->stop_requested())
             [[unlikely]] {
-            if constexpr (requires { self().awaiter().await_canceled(); })
-                return self().awaiter().await_canceled();
+            if constexpr (requires { self().awaiter().await_stopped(); })
+                return self().awaiter().await_stopped();
             else
                 throw operation_canceled_exception();
         }
@@ -258,9 +258,9 @@ public:
     }
 
 protected:
-    inline cancelable_wait() noexcept : registration_(*this) {}
+    inline stoppable_wait() noexcept : registration_(*this) {}
 
-    ~cancelable_wait() = default;
+    ~stoppable_wait() = default;
 
     /// Takes the wait out of the token's event, if it is registered there.
     inline void unregister_from_token() noexcept {
@@ -273,7 +273,7 @@ protected:
 private:
     /// The token was cancelled: the event the wait was registered with is gone, and the awaiter
     /// is cancelled.
-    inline void on_token_canceled() noexcept {
+    inline void on_stop_requested() noexcept {
         registered_ = false;
         self().awaiter().cancel();
     }
@@ -288,7 +288,7 @@ private:
     }
 
     /// The wait's place in the token's event, built into it.
-    cancellation_registration<&cancelable_wait::on_token_canceled> registration_;
+    stop_registration<&stoppable_wait::on_stop_requested> registration_;
     bool registered_ = false;
 };
 
@@ -306,8 +306,8 @@ private:
 ///   is the answer of what was aborted or never started; what got there first -- an
 ///   operation already done, an event already come -- answers with its own result. Under
 ///   a token cancelled already nothing is started, and the co_await ends with it at once.
-/// - **The application's own coroutine** asks it itself -- is_canceled(),
-///   throw_if_canceled() -- where it has something to stop, and decides what to do about
+/// - **The application's own coroutine** asks it itself -- stop_requested(),
+///   throw_if_stop_requested() -- where it has something to stop, and decides what to do about
 ///   it. A body of its own handed to sta_loop under a token is not broken off from outside
 ///   either: one the loop has not started is not started; one on the worker runs to its end
 ///   and is waited for; an orphanable one is let go of -- the co_await ends with the
@@ -327,33 +327,42 @@ private:
 /// One thread: tokens and their source live on the thread the coroutines run on. A
 /// default-constructed token is never cancelled and costs nothing: it has no state,
 /// and asking is a comparison against a null pointer.
-class cancellation_token
+class stop_token
 {
 public:
-    cancellation_token() noexcept = default;
+    stop_token() noexcept = default;
 
-    /// Tests whether cancellation has been requested. A default-constructed token returns
-    /// `false`.
-    inline bool is_canceled() const noexcept { return state_ && state_->canceled(); }
+    /// Tests whether a stop has been requested. A default-constructed token returns `false`.
+    inline bool stop_requested() const noexcept { return state_ && state_->stop_requested(); }
 
-    /// \throw operation_canceled_exception if cancellation has been requested.
-    inline void throw_if_canceled() const {
-        if (is_canceled()) throw operation_canceled_exception();
+    /// Tests whether a stop can be requested at all: whether the token has a source. A
+    /// default-constructed token -- nobody's -- returns `false`, and a form taking a token
+    /// asks this to take the path without one.
+    inline bool stop_possible() const noexcept { return state_ != nullptr; }
+
+    /// \throw operation_canceled_exception if a stop has been requested.
+    inline void throw_if_stop_requested() const {
+        if (stop_requested()) throw operation_canceled_exception();
+    }
+
+    /// Tests whether two tokens are of one source, or both of none.
+    friend inline bool operator==(const stop_token& l, const stop_token& r) noexcept {
+        return l.state_ == r.state_;
     }
 
 private:
-    friend class cancellation_source;
-    friend detail::cancellation_state* detail::cancellation_state_of(
-        const cancellation_token&) noexcept;
+    friend class stop_source;
+    friend detail::stop_state* detail::stop_state_of(
+        const stop_token&) noexcept;
 
-    inline explicit cancellation_token(detail::cancellation_state* state) noexcept
+    inline explicit stop_token(detail::stop_state* state) noexcept
         : state_(state) {}
 
-    detail::cancellation_state_ptr state_;
+    detail::stop_state_ptr state_;
 };
 
-inline detail::cancellation_state* detail::cancellation_state_of(
-    const cancellation_token& token) noexcept {
+inline detail::stop_state* detail::stop_state_of(
+    const stop_token& token) noexcept {
     return token.state_.get();
 }
 
@@ -361,7 +370,7 @@ inline detail::cancellation_state* detail::cancellation_state_of(
 /// as long as it lives.
 ///
 /// **A source that goes cancels.** Its owner gone, nobody wants the work any more: the
-/// destructor does what cancel() does, so every operation and wait registered with its
+/// destructor does what request_stop() does, so every operation and wait registered with its
 /// tokens is aborted, every later one is answered at once, and every source made under
 /// them is cancelled in turn. Work that has ended has nothing registered, and the cancellation
 /// is a flag written and an empty event fired. So the source lives exactly as long as the
@@ -380,37 +389,37 @@ inline detail::cancellation_state* detail::cancellation_state_of(
 ///
 /// Only a source cancels, and a token only reads, so a part of some work that may be
 /// cancelled apart from the rest has a source of its own, made under the token of the
-/// whole: `cancellation_source child(parent);`. Its cancel() reaches its own tokens alone,
+/// whole: `stop_source child(parent);`. Its request_stop() reaches its own tokens alone,
 /// and the parent's reaches them too. This is how work is divided: each piece of it -- a
 /// page being laid out, a download -- takes its own source under its owner's token, and
 /// its operations are registered with that. A token's event is a singly linked list that leaving
 /// walks, and this keeps it a handful long: a token's own operations and waits, and the
 /// sources made under it.
-class cancellation_source
+class stop_source
 {
 public:
-    inline cancellation_source() : state_(core::make_refcounted<detail::cancellation_state>()) {}
+    inline stop_source() : state_(core::make_refcounted<detail::stop_state>()) {}
 
-    /// A source under `parent`, cancelled by its own cancel() or by the parent's, whichever
+    /// A source under `parent`, stopped by its own request_stop() or by the parent's, whichever
     /// comes first. Its state is registered with the parent's event, a callback that cancels it,
     /// from now until the state goes, and holds the parent's state meanwhile; under a parent
     /// cancelled already it is born cancelled, and under a token of nobody it is a source
     /// like any other. Made on the coroutines' thread, whose event it joins; a build that
     /// checks coroutines makes sure.
-    inline explicit cancellation_source(
-        cancellation_token parent, [[maybe_unused]] detail::site where = detail::site::current()) {
+    inline explicit stop_source(
+        stop_token parent, [[maybe_unused]] detail::site where = detail::site::current()) {
         coro_check(sta_thread::is_current(),
-                   "cancellation_source: made under a token on a thread other than its coroutines'",
+                   "stop_source: made under a token on a thread other than its coroutines'",
                    where);
 
-        state_ = core::make_refcounted<detail::cancellation_state>(std::move(parent.state_));
+        state_ = core::make_refcounted<detail::stop_state>(std::move(parent.state_));
     }
 
-    cancellation_source(const cancellation_source&) = delete;
-    cancellation_source& operator=(const cancellation_source&) = delete;
+    stop_source(const stop_source&) = delete;
+    stop_source& operator=(const stop_source&) = delete;
 
     /// Takes the right to the work over, and cancels nothing: `other` is left empty.
-    inline cancellation_source(cancellation_source&& other) noexcept
+    inline stop_source(stop_source&& other) noexcept
         : state_(std::move(other.state_)) {}
 
     /// Cancels the work this source held, as its destructor would, and takes over the work
@@ -418,60 +427,60 @@ public:
     /// stays as it is; the work this one held is cancelled as the local goes, after this
     /// source holds its new state, so that nothing the cancelling lets go of finds it half
     /// assigned.
-    inline cancellation_source& operator=(cancellation_source&& other) noexcept {
-        cancellation_source taken(std::move(other));
+    inline stop_source& operator=(stop_source&& other) noexcept {
+        stop_source taken(std::move(other));
         std::swap(state_, taken.state_);
         return *this;
     }
 
-    /// Cancels, as cancel() does, unless the source is empty -- moved from. Where a destructor
+    /// Requests a stop, as request_stop() does, unless the source is empty -- moved from. Where a destructor
     /// is called nothing gives the line, so the check names its own.
-    inline ~cancellation_source() {
-        if (state_) cancel_held(std::move(state_), detail::site::current());
+    inline ~stop_source() {
+        if (state_) request_stop_held(std::move(state_), detail::site::current());
     }
 
     /// \param where the caller's line, for a strict build's report; left to its default.
-    inline cancellation_token token(detail::site where = detail::site::current()) const noexcept {
+    inline stop_token token(detail::site where = detail::site::current()) const noexcept {
         check_not_empty(where);
-        return cancellation_token(state_.get());
+        return stop_token(state_.get());
     }
 
     /// Cancels every operation and wait registered with a token of this source, and answers
     /// every later one at once. Asking again does nothing. On the coroutines' own thread, like
     /// everything about them; a build that checks coroutines makes sure.
-    inline void cancel([[maybe_unused]] detail::site where = detail::site::current()) noexcept {
+    inline void request_stop([[maybe_unused]] detail::site where = detail::site::current()) noexcept {
         check_not_empty(where);
-        cancel_held(state_, where);
+        request_stop_held(state_, where);
     }
 
     /// \param where the caller's line, for a strict build's report; left to its default.
-    inline bool is_canceled(detail::site where = detail::site::current()) const noexcept {
+    inline bool stop_requested(detail::site where = detail::site::current()) const noexcept {
         check_not_empty(where);
-        return state_->canceled();
+        return state_->stop_requested();
     }
 
 private:
     /// Held by a local across the cancelling: an operation cancelled may let go of something
     /// that holds this source, and the state then goes once the fire is over.
-    inline static void cancel_held(detail::cancellation_state_ptr held,
+    inline static void request_stop_held(detail::stop_state_ptr held,
                                    [[maybe_unused]] detail::site where) noexcept {
         coro_check(sta_thread::is_current(),
-                   "cancellation_source: cancelled from a thread other than its coroutines'",
+                   "stop_source: cancelled from a thread other than its coroutines'",
                    where);
 
-        held->cancel();
+        held->request_stop();
     }
 
     inline void check_not_empty([[maybe_unused]] detail::site where) const noexcept {
-        coro_check(state_, "cancellation_source: empty -- moved from", where);
+        coro_check(state_, "stop_source: empty -- moved from", where);
     }
 
-    detail::cancellation_state_ptr state_;
+    detail::stop_state_ptr state_;
 };
 
 namespace detail {
 
-// The empty value of core::nullable<cancellation_source> and core::nullable<cancellation_token>:
+// The empty value of core::nullable<stop_source> and core::nullable<stop_token>:
 // both are one intrusive_ptr to the state and nothing else, so the empty one is that pointer null,
 // read as the object it is the whole of -- as with func_sentinel in wxl.core. The sentinel moves
 // out of that null, which reads the pointer and writes it null again; is_sentinel reads it back
@@ -483,7 +492,7 @@ namespace detail {
 // a right to work. A token's null state is the same bits as a default token, the one with no
 // source, so such a token put in a nullable reads as empty.
 template <class T>
-struct cancellation_sentinel {
+struct stop_sentinel {
     static T sentinel() noexcept {
         void* empty = nullptr;
         return std::move(*reinterpret_cast<T*>(&empty));
@@ -500,24 +509,24 @@ struct cancellation_sentinel {
 
 export namespace wxl::core {
 
-/// Provides the `wxl::core::nullable` representation of a `wxl::async::cancellation_source`: a
+/// Provides the `wxl::core::nullable` representation of a `wxl::async::stop_source`: a
 /// source that may not be there yet, or any more, takes one pointer, as the source itself does.
 template <>
-struct optional_selector<async::cancellation_source> {
+struct optional_selector<async::stop_source> {
     /// The type of an optional source: a `wxl::core::compressed_optional` whose empty value is
     /// the state of a moved-from source.
     using nullable =
-        compressed_optional<async::cancellation_source,
-                            async::detail::cancellation_sentinel<async::cancellation_source>>;
+        compressed_optional<async::stop_source,
+                            async::detail::stop_sentinel<async::stop_source>>;
 };
 
 // The same for a token: one pointer. A default token -- no source -- has the null state, the same
 // bits as the empty one, so put in a nullable it reads as empty.
 template <>
-struct optional_selector<async::cancellation_token> {
+struct optional_selector<async::stop_token> {
     using nullable =
-        compressed_optional<async::cancellation_token,
-                            async::detail::cancellation_sentinel<async::cancellation_token>>;
+        compressed_optional<async::stop_token,
+                            async::detail::stop_sentinel<async::stop_token>>;
 };
 
 }  // export namespace wxl::core

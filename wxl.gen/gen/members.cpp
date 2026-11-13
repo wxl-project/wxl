@@ -312,11 +312,11 @@ void collect_method(MethodDef const& method, std::string_view field_view, TypeDe
     // Beside every asynchronous method, its form with a token, taken last as wxl::async's own
     // operations take one: cancelled, the operation is asked to stop and the co_await ends with
     // the cancellation (impl/operation.h). The token is a parameter of wxl's alone, so it is
-    // named by wxl (cancellation_parameter_name).
+    // named by wxl (stop_parameter_name).
     if (!info.returns_void && !info.result.from_winrt_cancelable.empty()) {
         std::string name;
         try {
-            name = cancellation_parameter_name(info.params);
+            name = stop_parameter_name(info.params);
         } catch (std::runtime_error const& error) {
             throw std::runtime_error(std::format("{}: {}", info.winrt_name, error.what()));
         }
@@ -333,7 +333,7 @@ void collect_method(MethodDef const& method, std::string_view field_view, TypeDe
 
         type_use token;
         token.supported = true;
-        token.value_type = "async::cancellation_token";
+        token.value_type = "async::stop_token";
         token.param_type = token.value_type;
         token.public_includes = {"../Operation.h"};
         cancelable.params.push_back({std::move(name), std::move(token)});
@@ -420,7 +420,7 @@ std::size_t projection_arity(member_info const& member) {
     return member.cancelable ? member.params.size() - 1 : member.params.size();
 }
 
-std::string cancellation_parameter_name(std::vector<param_info> const& params) {
+std::string stop_parameter_name(std::vector<param_info> const& params) {
     auto const taken = [&params](std::string_view name) {
         return std::any_of(params.begin(), params.end(),
                            [name](param_info const& param) { return param.name == name; });

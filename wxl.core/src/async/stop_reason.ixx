@@ -1,6 +1,6 @@
 export module wxl.core:async.stop_reason;
 
-import :async.cancellation;
+import :async.stop_token;
 import std;
 
 export namespace wxl::async {
