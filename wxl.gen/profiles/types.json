@@ -171,7 +171,7 @@
             {
                 "class": "Microsoft.UI.Xaml.Controls.NumberBox",
                 "property": "IntermediateValue",
-                "value": "double",
+                "value": "core::nullable<double>",
                 "direction": "input",
                 "function": "impl::apply_bind_intermediate_value",
                 "include": "../impl/intermediate_value_pair.h"

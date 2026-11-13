@@ -114,7 +114,7 @@
 ```cpp
 struct Equation : sta_refcounted
 {
-    observable<double> a{blank}, b{blank}, c{blank};
+    observable<nullable<double>> a, b, c;
     // Три числа на входе -> автоматический вызов solve при любой правке
     observable<Answer> answer{a, b, c, solve};
 };

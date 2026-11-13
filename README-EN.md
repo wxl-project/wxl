@@ -112,7 +112,7 @@ properties through declarative bindings.
 ```cpp
 struct Equation : sta_refcounted
 {
-    observable<double> a{blank}, b{blank}, c{blank};
+    observable<nullable<double>> a, b, c;
     // Three input numbers -> solve is called automatically on every edit
     observable<Answer> answer{a, b, c, solve};
 };

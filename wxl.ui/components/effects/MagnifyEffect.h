@@ -39,8 +39,12 @@
 // with the amplitude found from the far point. `duration` sets the whole
 // motion either way.
 //
-// The scale is a float, as the composition that shows it keeps it: a double
-// literal warns where it is written rather than narrowing silently inside.
+// The scale is a float, as the composition that shows it keeps it. A double
+// literal narrows, and the warning names the place of the narrowing: the line
+// itself for `MagnifyEffect {1.2}`, the float constructor; the dispatch inside
+// for `MagnifyEffect {1.2, maximum = 1.35}`, whose braces hand the value on as
+// written, and for `scale = 1.2`, a name of several types that keeps the
+// number for the setter. A float literal, `1.2f`, narrows nothing.
 //
 // maximum and minimum are measured on the axis that moves further from 1. The
 // braced `scale = {1.3f, 1.1f}` needs the typed anchor,

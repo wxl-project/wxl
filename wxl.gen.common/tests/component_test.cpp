@@ -256,13 +256,19 @@ TEST(component, the_list_of_the_build_must_match_the_profiles) {
     std::filesystem::remove_all(directory);
 }
 
-// A name listed twice in "components", "dependencies", "sources" or "libraries" is a mistake, not a
-// repetition to fold.
+// A name listed twice in "components", "setterMethods", "dependencies", "sources" or "libraries"
+// is a mistake, not a repetition to fold.
 TEST(component, a_name_listed_twice_is_refused) {
     auto const directory = scratch(L"listed_twice");
     auto const profile = write_profile(directory, R"("window", "window")");
     EXPECT_TRUE(says(stops_with([&] { load_profile(profile); }),
                      {utf8(profile), "'components'", "\"window\" twice"}));
+
+    auto const setters = write_profile(
+        directory, R"("window")",
+        R"("types": {"Microsoft.UI.Xaml.Window": {"setterMethods": ["SetTitleBar", "SetTitleBar"]}})");
+    EXPECT_TRUE(says(stops_with([&] { load_profile(setters); }),
+                     {utf8(setters), "'setterMethods'", "\"SetTitleBar\" twice"}));
 
     auto const manifest = write_component(directory, "grid", R"("dependencies": ["core", "core"])");
     EXPECT_TRUE(says(stops_with([&] { load_component(manifest); }),

@@ -342,8 +342,13 @@ public:
         settings_.minimizeOnClose.on_change([this](bool const&) noexcept { saveSettings(settings_); });
         // The base size: the console goes to it, and it becomes what Ctrl+0
         // returns to. This is the one setting the transient zoom does not touch.
-        settings_.fontSize.on_change([this](double const&) noexcept {
-            zoomSize_ = settings_.fontPixels();
+        // An emptied box is no size: the console keeps the one it has, and so
+        // does the registry, until the box holds a number again.
+        settings_.fontSize.on_change([this](wxl::core::nullable<double> const&) noexcept {
+            auto const pixels = settings_.fontPixels();
+            if (!pixels) return;
+            baseSize_ = *pixels;
+            zoomSize_ = baseSize_;
             applyFont();
             saveSettings(settings_);
         });
@@ -368,8 +373,9 @@ public:
         // The saved look, put on the console before anything is shown in it.
         // The current size starts at the base -- a fresh run starts there,
         // whatever the last run's transient zoom left off at, which is why the
-        // zoom is not saved.
-        zoomSize_ = settings_.fontPixels();
+        // zoom is not saved. The size read from the registry is a number.
+        baseSize_ = settings_.fontPixels().value();
+        zoomSize_ = baseSize_;
         applyFont();
         applyConsoleTheme(settings_.theme.get());
 
@@ -726,10 +732,10 @@ private:
         applyFont();
     }
 
-    /// Back to the base size -- what Ctrl+0 does. The base is the settings' size,
-    /// the one the zoom never wrote to.
+    /// Back to the base size -- what Ctrl+0 does. The base is the settings' size
+    /// last applied, the one the zoom never wrote to.
     void zoomReset() {
-        zoomSize_ = settings_.fontPixels();
+        zoomSize_ = baseSize_;
         applyFont();
     }
 
@@ -903,6 +909,9 @@ private:
     // The console's current font height in pixels: the base until the zoom moves
     // it, and back to the base on Ctrl+0. Never saved -- the zoom is transient.
     int zoomSize_ = 18;
+    // The base size last applied: what Ctrl+0 returns to, kept while the
+    // settings' box is empty.
+    int baseSize_ = 18;
     HANDLE stopped_ = nullptr;
     HWINEVENTHOOK foregroundHook_ = nullptr;
     HHOOK keyboardHook_ = nullptr;

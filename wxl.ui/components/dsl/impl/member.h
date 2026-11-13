@@ -398,11 +398,23 @@ struct typed_assignment {
     }
 };
 
-// A number is taken only as that type. The value converts at the `=` of the
-// markup, so a narrowing -- `0.4` given to a float -- is reported on that line
-// and not inside the dispatch; a widening -- `0.4f` or `2` given to a double --
-// is silent, as the language makes it. A character converts to a number too,
-// and is refused: `'a'` is never meant as one.
+// A scalar that converts to an arithmetic type and is never meant as a value of
+// it. A truth value, a character and a number are each written as themselves,
+// and none of them stands for another -- `fontSize = true`, `rotation = 'a'`,
+// `isEnabled = 0.5` -- and a pointer converts to a truth value and does not
+// stand for one either: `isEnabled = u"no"`.
+template <typename T, typename Value>
+concept mistaken_for =
+    (std::is_arithmetic_v<T> && (std::same_as<T, bool> != std::same_as<Value, bool> ||
+                                 core::character<T> != core::character<Value>)) ||
+    (std::same_as<Value, bool> && std::is_pointer_v<T>);
+
+// An arithmetic type is taken only as that type. The value converts at the `=`
+// of the markup, so a narrowing -- `0.4` given to a float -- is reported on that
+// line and not inside the dispatch; a widening -- `0.4f` or `2` given to a
+// double -- is silent, as the language makes it. A scalar mistaken for the type
+// is refused, as an exact match that is deleted: the tag of one type and every
+// type of a list alike.
 template <PropertyKey key, typename Value, typename Owner>
     requires std::is_arithmetic_v<Value>
 struct typed_assignment<key, Value, Owner> {
@@ -410,7 +422,8 @@ struct typed_assignment<key, Value, Owner> {
         return {value};
     }
 
-    template <core::character T>
+    template <typename T>
+        requires mistaken_for<T, Value>
     void operator=(T) const = delete;
 };
 
@@ -487,7 +500,8 @@ struct property_tag<key, void, Owner> : deduced_property_tag<key, Owner> {
 // away and none of them is the one meant -- `opacity = 1` -- and the setter of
 // the object converts it. That is also how a number reaches a class written by
 // hand, whose types the list does not know -- `size = 200.0f` on a HoverLight.
-// A character is refused here as by every number.
+// A truth value and a character are refused by each number of the list, and a
+// character by the list itself, which may have no number to refuse it.
 //
 // Anything else goes to the setter as written, as on a tag of one type: a
 // Template stays a template until it is applied, and a setter takes what the
