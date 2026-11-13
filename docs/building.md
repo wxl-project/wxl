@@ -99,14 +99,14 @@ build\x64-dynamic\samples\Quadratic\Debug\sample.quadratic.exe
   (`Microsoft.WindowsAppRuntime.2-experimentalF`), загрузчик **wxl** берёт из
   заголовка `WindowsAppSDK-VersionInfo.h` того же пакета.
 - **Обёртки — шаг сборки:** сборка собирает генератор `winui-srcgen`,
-  запускает его с профилями `full`, `extended` и `editor` из `wxl.gen/profiles` и
-  компилирует то, что он написал, в `wxl.ui.full`, `wxl.ui.extended` и `wxl.ui.editor`. Обёртки лежат в каталоге сборки,
+  запускает его с профилями `full`, `extended`, `rich` и `editor` из `wxl.gen/profiles` и
+  компилирует то, что он написал, в `wxl.ui.full`, `wxl.ui.extended`, `wxl.ui.rich` и `wxl.ui.editor`. Обёртки лежат в каталоге сборки,
   `build/x64-dynamic/wxl.ui/<профиль>/wxl`: заголовки подключаются как `<wxl/X.h>`, а тела
   собраны в восемь единиц трансляции `parts/wrapper-00.cpp` …
   `wrapper-07.cpp` (функция `wxl_add_ui_library`,
   `cmake/wxl_ui_profile.cmake`). При `WXL_TESTS` сборка тем же способом
-  генерирует обёртки `base` и `rich` в
-  `build/x64-dynamic/wxl.ui/<профиль>/wxl` для их тестов поверхности (см.
+  генерирует обёртки `base` в
+  `build/x64-dynamic/wxl.ui/base/wxl` для его теста поверхности (см.
   «Статическая верификация синтаксиса»). Описаний из документации метаданных в них нет
   никогда: сайт документации генерирует свои (см. «Сайт документации»), и ни
   он, ни его язык не меняют того, что компилирует библиотека. Генератор
@@ -761,7 +761,7 @@ wxl_target_assets(myapp Assets)
 После подключения проекту доступны цели модулей `wxl::core` — ядро, один
 модуль `wxl.core` со всеми его областями (`fmt`, `async`, `logging`, `xml`,
 `json`, `html`; подключение — `import wxl.core;`), — `wxl::highlight`,
-`wxl::bb`, `wxl::rsdn`; при `WXL_UI` — `wxl::ui.common` и библиотеки профилей `wxl::ui.full`, `wxl::ui.extended` и `wxl::ui.editor`; при
+`wxl::bb`, `wxl::rsdn`; при `WXL_UI` — `wxl::ui.common` и библиотеки профилей `wxl::ui.full`, `wxl::ui.extended`, `wxl::ui.rich` и `wxl::ui.editor`; при
 `WXL_TOOLS` — `Microsoft::CppWinRT`, проекция C++/WinRT для приложения, которое
 само к ней обращается (`target_link_libraries(<цель> PRIVATE
 Microsoft::CppWinRT)`, как в `sandbox/LightingLab/CMakeLists.txt`). Для тестов — `wxl::test`, заголовки
@@ -779,7 +779,7 @@ Microsoft::CppWinRT)`, как в `sandbox/LightingLab/CMakeLists.txt`). Для �
 
 ```cmake
 wxl_add_executable(sample.quadratic
-    UI wxl::ui.full
+    UI wxl::ui.rich
     main.cpp
 )
 
@@ -792,7 +792,7 @@ wxl_target_assets(sample.quadratic Assets)
 - **`wxl_add_executable(<цель> UI <библиотека> <исходники>…)`:** объявляет
   оконный exe с точкой входа из `wxl::ui.common` и вызывает
   `wxl_target_manifest` и `wxl_target_runtime`. Профиль выбирается в одном
-  месте, именем библиотеки в `UI`: `wxl::ui.extended` у HtmlView, `wxl::ui.editor` у `wxl.gen.ui`, `wxl::ui.full` у остальных примеров и проб; без `UI`
+  месте, именем библиотеки в `UI`: `wxl::ui.extended` у HelloHere и HtmlView, `wxl::ui.rich` у Quadratic, Calculator, CustomTitleBar и Trayed, `wxl::ui.editor` у `wxl.gen.ui`, `wxl::ui.full` у Gallery и проб; без `UI`
   настройка останавливается.
 - **`wxl_target_manifest(<цель>)`:** добавляет к цели манифест из
   `cmake/wxl_app.manifest.in` с её именем: проверенную версию Windows,
