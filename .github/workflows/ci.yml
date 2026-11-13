@@ -124,12 +124,13 @@ jobs:
       # puts the toolset and Ninja on PATH, as tools/build.ps1 does at home.
       # The rows that start a sample build winxl as well (WXL_WINXL), which
       # installs the runtime the sample needs; the .NET SDK 10 that publishes
-      # it is the runner image's.
+      # it is the runner image's. The same rows install wxl (WXL_INSTALL), so
+      # that the install-core test builds a consumer from the installed tree.
       - name: Configure
         shell: cmd
         run: |
           call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
-          cmake --preset x64-dynamic -DBUILD_TESTING=ON -DWXL_BUILD_DOCS=OFF ${{ matrix.strict && '-DWXL_STRICT_CORO=ON' || '-DWXL_WINXL=ON' }}
+          cmake --preset x64-dynamic -DBUILD_TESTING=ON -DWXL_BUILD_DOCS=OFF ${{ matrix.strict && '-DWXL_STRICT_CORO=ON' || '-DWXL_WINXL=ON -DWXL_INSTALL=ON' }}
 
       # -k 0: every compile error of the change at once, not only the first. A
       # failed generation still stops everything built on the wrappers: their
