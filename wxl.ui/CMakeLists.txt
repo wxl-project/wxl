@@ -341,18 +341,21 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src PREFIX "src" REGULAR_EXPRESSIO
 
 wxl_set_target_folders(wxl.ui.common)
 
-# ---- The libraries of the profiles, and the surface tests of the others ----
+# ---- The libraries of the profiles, and the surface test of the other ----
 # Each one's wrappers generated into <build>/wxl.ui/<profile>/wxl by a step of
 # the build, with the profile layer above: wxl.ui.<profile> (wxl::ui.<profile>)
 # and its surface test wxl.ui.<profile>.surface-test (cmake/wxl_ui_profile.cmake).
 # Without documentation whatever the site does: the site generates its own.
-# full is for what needs all of WinUI; extended for the samples its vocabulary
-# covers; editor for the profile editor (wxl.gen.ui), which is built wherever
-# this directory is.
+# full is for what needs all of WinUI; extended and rich for the samples their
+# vocabularies cover, rich for those that draw on the composition surface;
+# editor for the profile editor (wxl.gen.ui), which is built wherever this
+# directory is.
 wxl_add_ui_library(full
     PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/full.winxl-profile")
 wxl_add_ui_library(extended
     PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/extended.winxl-profile")
+wxl_add_ui_library(rich
+    PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/rich.winxl-profile")
 wxl_add_ui_library(editor
     PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/editor.winxl-profile")
 
@@ -362,15 +365,13 @@ wxl_add_ui_library(editor
 target_sources(wxl.ui.full.surface-test PRIVATE test/dsl_surface.cpp)
 wxl_set_target_folders(wxl.ui.full.surface-test PREFIX "tests")
 
-# The profiles no target of the tree links, kept compiling: each one's wrappers
+# The profile no target of the tree links, kept compiling: its wrappers
 # generated as for a library, and its surface test -- the generated schema test
 # and the surface fragments of its components -- compiled against its public
 # interface. No source of a component and no part of the wrappers is compiled.
 if(WXL_TESTS)
-    foreach(_wxl_profile IN ITEMS base rich)
-        wxl_add_ui_surface_test(${_wxl_profile}
-            PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/${_wxl_profile}.winxl-profile")
-    endforeach()
+    wxl_add_ui_surface_test(base
+        PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/base.winxl-profile")
 endif()
 
 # The benchmarks (WXL_BUILD_BENCHMARKS at the root) are measurement tools, run

@@ -1,15 +1,9 @@
 {
     "name": "editor",
-    "description": "The profile of the profile editor (wxl.gen.ui): rich plus the composition window, the effects and the card it is built from, and the few members its window calls beyond rich.",
+    "description": "The profile of the profile editor (wxl.gen.ui): rich plus the few members its window calls beyond rich.",
 
     "extends": [
         "rich"
-    ],
-
-    "components": [
-        "composition",
-        "controls",
-        "effects"
     ],
 
     "types": {

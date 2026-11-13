@@ -1,6 +1,6 @@
 {
     "name": "extended",
-    "description": "Everything in the base profile plus the modern WinUI controls with no WinForms counterpart: dialogs, info bars, command/menu bars, pickers, shapes and the richer button family, and the markup blocks (HTML, BB, RSDN). Exists both as the next step up from base and as the exercise of profile composition -- it adds to base rather than restating it.",
+    "description": "Everything in the base profile plus the modern WinUI controls with no WinForms counterpart: dialogs, info bars, command/menu bars, pickers, shapes and the richer button family, the markup blocks (HTML, BB, RSDN) and the cards (Card, SettingsCard, SettingsExpander). Exists both as the next step up from base and as the exercise of profile composition -- it adds to base rather than restating it.",
     "extends": [
         "base"
     ],
@@ -8,6 +8,7 @@
 
     "components": [
         "bb",
+        "controls",
         "markup",
         "number_box",
         "rsdn"
