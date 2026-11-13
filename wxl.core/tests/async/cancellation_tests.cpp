@@ -1476,7 +1476,7 @@ TEST(CancellationTest, ManyChildrenUnderOneParentGoInEitherOrder) {
 
         for (auto& child : children) child.emplace(parent.token());
         for (std::size_t k = 0; k < n; k += 2) nth(k).reset();
-        nth(1)->cancel();
+        nth(1)->request_stop();
 
         parent.request_stop();
 
