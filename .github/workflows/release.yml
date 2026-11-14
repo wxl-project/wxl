@@ -5,12 +5,13 @@
 # and the tool set -- the generator winui-srcgen, the profile editor wxl.gen.ui
 # and the utility winxl, built in the x64-static build directory, the CRT
 # linked statically (CMakePresets.json), in Release, run and tested
-# (tools.yml) -- packed into the NuGet package WinXL. The run keeps the tool
-# set as the artifact wxl-tools-x64 and the package as the artifact WinXL;
-# neither is published.
+# (tools.yml) -- packed into the NuGet package WinXL and tested from a local
+# feed. The run keeps the tool set as the artifact wxl-tools-x64 and the
+# package as the artifact WinXL; neither is published.
 #
-# The static build directory is built and checked here only, at a release, and
-# not on a pull request.
+# The static build directory is built and checked with the package: here, at
+# a release, in the merge queue for a pull request with the label package, and
+# on a run of ci or package by hand (ci.yml); not on a pull request itself.
 name: release
 
 on:
@@ -32,9 +33,15 @@ concurrency:
 
 jobs:
   # ci.yml needs no secrets: its only token is github.token, of the job that
-  # checks the commits of a pull request, which a release does not run.
+  # checks the commits of a pull request and of the job that reads the labels
+  # of a pull request in the merge queue, neither of which a release runs. A
+  # called workflow may not ask for more than its caller grants, even in a job
+  # it skips, so the call grants what those jobs ask for.
   dynamic:
     uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+      pull-requests: read
 
   package:
     needs: [dynamic]
