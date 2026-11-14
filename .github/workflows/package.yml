@@ -1,0 +1,221 @@
+# The NuGet package WinXL, made and uploaded as an artifact of the run, and
+# published nowhere. Called by release.yml, so that a release makes its
+# package, and run by hand.
+#
+#   version  the version of the commit, from the history down to the last
+#            release tag (cmake/wxl_package_version.cmake): v0.1.0 and 64
+#            commits after it are 0.1.0.64, the commit of the tag v0.2.0 is
+#            0.2.0. Every build below is given it, so the archives, the
+#            configuration and the tools all say the same.
+#   libs     the tree installed twice: x64-dynamic (the CRT in a DLL) and
+#            x64-static (the static CRT), each Debug and Release, with the
+#            debugging information in the objects of the archives (/Z7,
+#            CMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded) -- a package has no
+#            place for the .pdb files of a compiler. Only the targets the
+#            install takes are built: wxl.core, fmt.module, wxl.ui.common and
+#            winui-srcgen.
+#   tools    the tool set of tools.yml: the generator, the profile editor and
+#            winxl, x64-static Release, tested; the artifact wxl-tools-x64.
+#   pack     the two installs merged into one prefix -- the archives and the
+#            export of each build in lib/<md|mt> and lib/cmake/wxl/<md|mt>,
+#            everything else the same in both, which the job checks -- with the
+#            tool set in bin, packed by tools/package/pack.cmake into
+#            WinXL.<version>.nupkg, the artifact WinXL.
+#
+# The toolset and the WinUI build tools are installed as in ci.yml, and the
+# restore of the configure runs in locked mode as there.
+name: package
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# The name of the workflow is the caller's under workflow_call, so the group of
+# a release's package is apart from the release's own and from that of the
+# rows of ci.yml it calls. A package is not cancelled by the next one.
+concurrency:
+  group: ${{ github.workflow }}-package-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      # The whole history with the tags: git describe counts the commits since
+      # the last release tag.
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Version of the commit
+        id: version
+        run: |
+          version=$(cmake -P cmake/wxl_package_version.cmake)
+          echo "WinXL $version, commit $GITHUB_SHA"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  libs:
+    needs: [version]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - preset: x64-dynamic
+            variant: md
+          - preset: x64-static
+            variant: mt
+    name: libs (${{ matrix.preset }})
+    runs-on: windows-2025
+    timeout-minutes: 90
+    env:
+      DEVCMD: C:\BuildToolsInsiders\Common7\Tools\VsDevCmd.bat
+      VCVARS: -vcvars_ver=14.53
+      NUGET_PACKAGES: C:\nuget-packages
+      RestoreLockedMode: true
+      WXL_PACKAGE_VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install MSVC 14.53 and the WinUI build tools
+        shell: pwsh
+        run: |
+          $boot = Join-Path $env:RUNNER_TEMP 'vs_buildtools.exe'
+          Invoke-WebRequest -Uri 'https://aka.ms/vs/insiders/vs_buildtools.exe' -OutFile $boot -UseBasicParsing
+          $p = Start-Process -FilePath $boot -WorkingDirectory $env:RUNNER_TEMP -Wait -PassThru -ArgumentList @(
+            '--installPath', 'C:\BuildToolsInsiders',
+            '--add', 'Microsoft.VisualStudio.Component.VC.Preview.Tools.x86.x64',
+            '--add', 'Microsoft.VisualStudio.Workload.UniversalBuildTools',
+            '--add', 'Microsoft.VisualStudio.ComponentGroup.WindowsAppDevelopment.VC.BuildTools',
+            '--quiet', '--wait', '--norestart', '--nocache')
+          "exit code $($p.ExitCode)"
+          Get-ChildItem 'C:\BuildToolsInsiders\VC\Tools\MSVC' | ForEach-Object { $_.Name }
+          if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { throw "Build Tools install failed: $($p.ExitCode)" }
+
+      # The library and its install rules, and nothing an install does not
+      # take: no samples, no sandbox, no site, no tests.
+      - name: Configure
+        shell: cmd
+        run: |
+          call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
+          cmake --preset ${{ matrix.preset }} -DWXL_INSTALL=ON "-DWXL_PACKAGE_VERSION=%WXL_PACKAGE_VERSION%" -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded -DWXL_SAMPLES=OFF -DWXL_SANDBOX=OFF -DWXL_BUILD_DOCS=OFF
+
+      # Every compile of both configurations takes /Z7 and none /Zi, which would
+      # leave the debugging information in a .pdb beside the build.
+      - name: Check the debugging information
+        shell: pwsh
+        run: |
+          foreach ($config in 'Debug', 'Release') {
+            $rules = "build\${{ matrix.preset }}\CMakeFiles\impl-$config.ninja"
+            if (Select-String -Path $rules -Pattern '[-/]Zi\b' -Quiet) { throw "$rules compiles with /Zi" }
+            if (-not (Select-String -Path $rules -Pattern '[-/]Z7\b' -Quiet)) { throw "$rules compiles nothing with /Z7" }
+          }
+
+      - name: Build
+        shell: cmd
+        run: |
+          call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
+          cmake --build build\${{ matrix.preset }} --config Debug --target wxl.core fmt.module wxl.ui.common winui-srcgen -- -k 0 || exit /b 1
+          cmake --build build\${{ matrix.preset }} --config Release --target wxl.core fmt.module wxl.ui.common winui-srcgen -- -k 0 || exit /b 1
+
+      # In the developer environment as well: its CMake configured the tree, and
+      # the CMake of the runner image is older than the tree accepts.
+      - name: Install
+        shell: cmd
+        run: |
+          call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
+          cmake --install build\${{ matrix.preset }} --config Debug --prefix stage || exit /b 1
+          cmake --install build\${{ matrix.preset }} --config Release --prefix stage || exit /b 1
+
+      - name: Upload the install
+        uses: actions/upload-artifact@v7
+        with:
+          name: wxl-install-${{ matrix.variant }}
+          path: stage/
+          if-no-files-found: error
+
+  tools:
+    needs: [version]
+    uses: ./.github/workflows/tools.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+
+  pack:
+    needs: [version, libs, tools]
+    runs-on: windows-2025
+    timeout-minutes: 30
+    env:
+      WXL_PACKAGE_VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: wxl-install-md
+          path: install-md
+      - uses: actions/download-artifact@v8
+        with:
+          name: wxl-install-mt
+          path: install-mt
+      - uses: actions/download-artifact@v8
+        with:
+          name: wxl-tools-x64
+          path: tools-x64
+
+      # Everything the two installs share is the same in both: the module
+      # interfaces, the headers, the components, the profiles, the helpers, the
+      # configuration and its version. Apart are the archives and the export
+      # of each build, and the generator in bin, which the tool set replaces.
+      - name: Merge the installs
+        shell: pwsh
+        run: |
+          function Get-Shared($root) {
+            $root = (Resolve-Path $root).Path
+            Get-ChildItem $root -Recurse -File | ForEach-Object { $_.FullName.Substring($root.Length + 1).Replace('\', '/') } |
+              Where-Object { $_ -notmatch '^(lib/(md|mt)/|lib/cmake/wxl/(md|mt)/|bin/)' } | Sort-Object
+          }
+          $md = @(Get-Shared 'install-md')
+          $mt = @(Get-Shared 'install-mt')
+          $diff = Compare-Object $md $mt
+          if ($diff) { $diff | Format-Table -AutoSize | Out-String | Write-Host; throw 'the two installs do not hold the same files' }
+          foreach ($file in $md) {
+            if ((Get-FileHash "install-md/$file").Hash -ne (Get-FileHash "install-mt/$file").Hash) { throw "$file differs between the two installs" }
+          }
+          foreach ($variant in 'md', 'mt') {
+            foreach ($dir in "lib/$variant", "lib/cmake/wxl/$variant") {
+              if (-not (Test-Path "install-$variant/$dir")) { throw "install-$variant has no $dir" }
+            }
+          }
+          "$($md.Count) files the same in both"
+
+          New-Item -ItemType Directory stage | Out-Null
+          Copy-Item install-md/* stage -Recurse
+          Copy-Item install-mt/lib/mt stage/lib -Recurse
+          Copy-Item install-mt/lib/cmake/wxl/mt stage/lib/cmake/wxl -Recurse
+          Remove-Item stage/bin -Recurse
+          New-Item -ItemType Directory stage/bin | Out-Null
+          Copy-Item tools-x64/* stage/bin -Recurse
+          foreach ($file in 'bin/winui-srcgen.exe', 'bin/winxl.exe') {
+            if (-not (Test-Path "stage/$file")) { throw "the tool set has no $file" }
+          }
+
+      - name: Pack
+        shell: pwsh
+        run: |
+          cmake "-DWXL_PACK_STAGE=$PWD/stage" "-DWXL_PACK_OUTPUT=$PWD/package" "-DWXL_PACK_COMMIT=$env:GITHUB_SHA" -P tools/package/pack.cmake
+          if ($LASTEXITCODE -ne 0) { throw "pack.cmake exited with $LASTEXITCODE" }
+          $package = "package/WinXL.$env:WXL_PACKAGE_VERSION.nupkg"
+          if (-not (Test-Path $package)) { throw "no $package: the version of the install is not $env:WXL_PACKAGE_VERSION" }
+
+      - name: Upload the package
+        uses: actions/upload-artifact@v7
+        with:
+          name: WinXL
+          path: package/WinXL.*.nupkg
+          if-no-files-found: error
