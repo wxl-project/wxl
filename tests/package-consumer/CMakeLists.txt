@@ -5,12 +5,15 @@
 # packages.lock.json it writes here.
 #
 # The job consumer of .github/workflows/package.yml copies this directory out
-# of the checkout, puts the provider into its cmake/ and the fresh package into
-# its packages/, the local source of nuget.config, and configures and builds it
-# with the presets: md, the CRT in a DLL in Debug and Release, and mixed, the
-# CRT in a DLL in Debug and the static one in Release. The same by hand, from a
-# developer prompt in such a copy:
+# of the checkout, puts the provider into its cmake/, publishes the fresh
+# package into its feed/, the local source of nuget.config, with
+# tools/package/publish.cmake, and configures and builds it with the presets:
+# md, the CRT in a DLL in Debug and Release, and mixed, the CRT in a DLL in
+# Debug and the static one in Release. The same by hand, from a developer
+# prompt in such a copy:
 #
+#     cmake -DWXL_PUBLISH_PACKAGE=<WinXL.<version>.nupkg> -DWXL_PUBLISH_FEED=feed
+#           -P <wxl>/tools/package/publish.cmake
 #     cmake --preset md
 #     cmake --build --preset md-debug
 #

@@ -34,6 +34,17 @@
 # rows by name, so on the pull request the windows-pr job reports the same
 # three names at once, without building. The commits job and the docs site
 # still check the pull request itself.
+#
+# The NuGet package WinXL is built and tested (package.yml) in the merge queue
+# only for a pull request that asks for it with the label package, and on
+# every run of ci by hand. The package-request job reads the label: the
+# merge_group event does not carry the labels of the pull request, so the job
+# takes its number from the head ref of the candidate,
+# gh-readonly-queue/main/pr-<number>-<sha>, and asks the API. The label is
+# read when the queue starts the run of the candidate. The package-result job
+# reports the outcome under one name on every event: green at once on a pull
+# request and when the package is not asked for, the result of the package
+# when it is.
 name: ci
 
 # merge_group: the merge queue's candidate branch, main plus the queued pull
@@ -42,7 +53,9 @@ name: ci
 # workflow_call: release.yml runs these rows before it builds the tool set, so
 # that a release checks x64-dynamic together with x64-static. A called workflow
 # sees the caller's event -- a tag push or a run by hand -- so the build rows
-# run there and windows-pr and commits are skipped, as on a run by hand.
+# run there and windows-pr and commits are skipped, as on a run by hand. The
+# package is not built from here then: the name of the workflow is the
+# caller's, not ci, and release.yml calls package.yml itself.
 on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
@@ -216,6 +229,80 @@ jobs:
         env:
           ROW: ${{ matrix.strict && 'Strict' || matrix.config }}
         run: echo "The $ROW build and its tests run in the merge queue, on the candidate that would become main."
+
+  # Whether this run builds the package (see the header): on a run of ci by
+  # hand always, on a merge queue candidate when its pull request has the
+  # label package. The head ref is checked before its number is used.
+  package-request:
+    name: package request
+    if: github.workflow == 'ci' && (github.event_name == 'merge_group' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+    outputs:
+      build: ${{ steps.request.outputs.build }}
+    steps:
+      - name: Read the request
+        id: request
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REF: ${{ github.event.merge_group.head_ref }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            echo "A run by hand builds the package."
+            echo "build=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! [[ "$HEAD_REF" =~ ^(refs/heads/)?gh-readonly-queue/.+/pr-([0-9]+)-[0-9a-f]{40}$ ]]; then
+            echo "::error::the head ref of the candidate is not gh-readonly-queue/<base>/pr-<number>-<sha>"
+            exit 1
+          fi
+          number=${BASH_REMATCH[2]}
+          labels=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$number" --jq '.labels[].name')
+          if grep -qxF package <<< "$labels"; then
+            echo "Pull request $number has the label package: the package is built."
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Pull request $number has no label package: the package is not built."
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # The package, built and tested as a release builds it. The group of its
+  # concurrency is ci-package-<ref>, apart from the ci-<ref> of this run, so
+  # neither cancels the other (package.yml).
+  package:
+    needs: [package-request]
+    if: needs.package-request.outputs.build == 'true'
+    uses: ./.github/workflows/package.yml
+
+  # The outcome of the package under one name, on every event, so that a
+  # check of that name can be required: green when the package is not asked
+  # for or was built and tested, red when the request could not be read or
+  # the package failed or was cancelled.
+  package-result:
+    name: package result
+    needs: [package-request, package]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Result of the package
+        shell: bash
+        env:
+          REQUEST: ${{ needs.package-request.result }}
+          PACKAGE: ${{ needs.package.result }}
+        run: |
+          echo "package request: $REQUEST, package: $PACKAGE"
+          if [ "$REQUEST" != success ] && [ "$REQUEST" != skipped ]; then
+            echo "::error::the request for the package is $REQUEST"
+            exit 1
+          fi
+          if [ "$PACKAGE" != success ] && [ "$PACKAGE" != skipped ]; then
+            echo "::error::the package is $PACKAGE"
+            exit 1
+          fi
 
   # Every commit of a pull request, and on a merge queue candidate the commit
   # the queue squashes a pull request into, is checked against the rules

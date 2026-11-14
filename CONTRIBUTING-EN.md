@@ -59,6 +59,15 @@ request").
   report success immediately so that the pull request can enter the merge
   queue. At the pull request stage, the `commits` job and the documentation
   site build are run.
+- The merge queue does not build the `WinXL` NuGet package by default. A
+  pull request that needs the package checked gets the `package` label: in
+  the merge queue `ci.yml` then calls
+  [`.github/workflows/package.yml`](.github/workflows/package.yml), which
+  builds the package, publishes it into a local feed and builds the sample
+  applications on CMake and MSBuild from it. The label is read when the
+  queue starts the check of the candidate. The `package result` check
+  reports the outcome: without the label it passes at once. A manual run of
+  `ci.yml` always builds the package.
 - The [`.github/workflows/docs.yml`](.github/workflows/docs.yml) workflow
   builds the documentation site on Linux; any Doxygen warning is treated as
   an error.

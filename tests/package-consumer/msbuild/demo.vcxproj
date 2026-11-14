@@ -3,13 +3,14 @@
   The package consumer on MSBuild: an application that takes wxl from the NuGet package WinXL the way a
   Visual Studio project does, with a PackageReference, and gets the language, the modules and the
   archives of wxl from build/native/WinXL.props and WinXL.targets of the package. nuget.config of the
-  directory above names the sources: WinXL from packages/ beside it, the rest from nuget.org.
+  directory above names the sources: WinXL from the local feed feed/ beside it, the rest from nuget.org.
 
   It builds core-only.cpp of the directory above, the console program of the CMake consumer: the modules
   of wxl.core and fmt compiled here from the interfaces of the package, the archives of the CRT the
   configuration compiles with linked, and the program prints the version of the package.
 
-  From a developer prompt in a copy of tests/package-consumer, with the package in its packages/:
+  From a developer prompt in a copy of tests/package-consumer, with the package published into its feed/
+  by tools/package/publish.cmake:
 
       msbuild msbuild\demo.vcxproj -restore -p:Configuration=Debug -p:Platform=x64 -p:VCToolsVersion=%VCToolsVersion%
 

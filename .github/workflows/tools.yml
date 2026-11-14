@@ -2,9 +2,9 @@
 # wxl.gen.ui and the utility winxl, built in the x64-static build directory --
 # the CRT linked statically (CMakePresets.json) -- in Release, run, tested and
 # uploaded as the artifact wxl-tools-x64. Called by package.yml, whose package
-# carries these executables, and through it by release.yml; the static build
-# directory is built and checked only there, at a release, and not on a pull
-# request.
+# carries these executables, and through it by release.yml and ci.yml; the
+# static build directory is built and checked only with the package (see
+# release.yml), and not on a pull request.
 #
 # The toolset and the WinUI build tools are installed as in ci.yml, and the
 # restore of the configure runs in locked mode as there. winxl is published by
