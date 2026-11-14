@@ -186,9 +186,10 @@ build\x64-dynamic\samples\Quadratic\Debug\sample.quadratic.exe
 
 A detailed walkthrough of each automation step, the supported CMake
 configuration options and running the unit tests are covered in
-[docs/building.md](docs/building.md). Your own project adds the root of the
-`wxl` tree — `add_subdirectory` or `FetchContent` — and sets the language
-options of `wxl` before it (see
+[docs/building.md](docs/building.md). Your own project takes `wxl` from the
+`WinXL` package (`find_package(wxl)` in CMake or a `PackageReference` in
+MSBuild), or adds the root of the `wxl` tree — `add_subdirectory` or
+`FetchContent` — and sets the language options of `wxl` before it (see
 [«Подключение wxl»](docs/building.md#подключение-wxl), in Russian).
 
 ## Repository layout

@@ -187,9 +187,11 @@ build\x64-dynamic\samples\Quadratic\Debug\sample.quadratic.exe
 
 Подробный разбор каждого шага автоматизации, поддерживаемые ключи
 конфигурации CMake и запуск модульных тестов описаны в
-[docs/building.md](docs/building.md). Собственный проект подключает корень
-дерева `wxl` — `add_subdirectory` или `FetchContent` — и задаёт ключи языка
-`wxl` до него (см. [«Подключение wxl»](docs/building.md#подключение-wxl)).
+[docs/building.md](docs/building.md). Собственный проект берёт `wxl` из пакета
+`WinXL` (`find_package(wxl)` в CMake или `PackageReference` в MSBuild) либо
+подключает корень дерева `wxl` — `add_subdirectory` или `FetchContent` — и
+задаёт ключи языка `wxl` до него (см.
+[«Подключение wxl»](docs/building.md#подключение-wxl)).
 
 ## Состав репозитория
 
