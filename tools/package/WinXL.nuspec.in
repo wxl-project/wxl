@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The manifest of the package WinXL, written from tools/package/WinXL.nuspec.in by
+  tools/package/pack.cmake, which fills in the version, the commit and the dependencies.
+-->
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>WinXL</id>
+    <version>@WXL_PACK_VERSION@</version>
+    <title>WinXL</title>
+    <authors>wxl-project</authors>
+    <description>wxl, WinUI without XAML: a declarative C++23 syntax over a projection of WinUI of its own. The package carries the installed tree of wxl under build/native: the archives of wxl.core, of the fmt module and of wxl.ui.common with the CRT in a DLL (lib/md) and the static one (lib/mt), Debug and Release; the module interface sources, from which an application builds the modules with its own options; the components and profiles of the profile layer; the generator, the profile editor and winxl; the CMake configuration, found by find_package(wxl CONFIG) with build/native of the package as a prefix.</description>
+    <license type="file">LICENSE</license>
+    <projectUrl>https://github.com/wxl-project/wxl</projectUrl>
+    <repository type="git" url="https://github.com/wxl-project/wxl.git" commit="@WXL_PACK_COMMIT@" />
+    <tags>native C++ modules WinUI WindowsAppSDK</tags>
+    <dependencies>
+      <group targetFramework="native">
+@WXL_PACK_DEPENDENCIES@
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="@WXL_PACK_LICENSE@" target="LICENSE" />
+    <file src="@WXL_PACK_STAGE@\**" target="build/native" />
+  </files>
+</package>

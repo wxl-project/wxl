@@ -92,11 +92,11 @@ add_custom_command(
             -c Release -r win-x64 --nologo
             --artifacts-path "${_wxl_winxl_dir}/artifacts"
             -o "${_wxl_winxl_dir}"
-            "-p:WxlVersion=${wxl-project_VERSION}"
+            "-p:WxlVersion=${WXL_VERSION}"
             -p:IlcUseEnvironmentalTools=true
     DEPENDS ${_wxl_winxl_sources}
     WORKING_DIRECTORY "${_wxl_winxl_source}"
-    COMMENT "dotnet publish: winxl ${wxl-project_VERSION} -> ${_wxl_winxl_exe}"
+    COMMENT "dotnet publish: winxl ${WXL_VERSION} -> ${_wxl_winxl_exe}"
     VERBATIM)
 
 add_custom_target(winxl ALL

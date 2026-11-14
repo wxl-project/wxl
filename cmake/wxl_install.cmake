@@ -16,18 +16,56 @@
 # One export set, wxl-targets: the package is one, and there are no components
 # to ask for. Debug and Release of one build install into the same prefix, the
 # archives of Debug with the suffix d.
+#
+# Two builds of the tree install into one prefix as well: one with the CRT in a
+# DLL (x64-dynamic) and one with the static CRT (x64-static), which is how the
+# package of a release carries both. Everything but the archives and the
+# export is the same in both and is written over; the archives of a build go
+# into lib/<variant> and its export into lib/cmake/wxl/<variant>, md for the
+# CRT in a DLL and mt for the static one, read off CMAKE_MSVC_RUNTIME_LIBRARY
+# (cmake/wxl_runtime_library.cmake). The configuration of the package gives
+# every configuration of a project the archives of the build its CRT asks for.
+# A build directory installs one variant, Debug with a debug CRT and Release
+# with a release one: anything else stops the configure here.
 
 include_guard(GLOBAL)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
+include("${CMAKE_CURRENT_LIST_DIR}/wxl_runtime_library.cmake")
 
 set(WXL_CMAKE_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/wxl")
 set(WXL_HELPERS_RELATIVE_DIR "helpers")
 
+wxl_runtime_configurations(_wxl_configs)
+set(WXL_INSTALL_VARIANT "")
+foreach(_wxl_config IN LISTS _wxl_configs)
+    if(_wxl_config STREQUAL "<none>")
+        set(_wxl_config "")
+    endif()
+    wxl_runtime_library(_wxl_crt "${_wxl_config}")
+    if(_wxl_config MATCHES "^(Debug|Release)$" AND NOT _wxl_crt_CONFIG STREQUAL _wxl_config)
+        message(FATAL_ERROR
+            "WXL_INSTALL: CMAKE_MSVC_RUNTIME_LIBRARY is '${CMAKE_MSVC_RUNTIME_LIBRARY}', which "
+            "builds ${_wxl_config} with ${_wxl_crt_RUNTIME}: an installed wxl links its Debug "
+            "archives for a debug CRT and its Release ones for a release CRT, so Debug is built "
+            "with a debug CRT and Release with a release one.")
+    endif()
+    if(WXL_INSTALL_VARIANT STREQUAL "")
+        set(WXL_INSTALL_VARIANT "${_wxl_crt_VARIANT}")
+    elseif(NOT WXL_INSTALL_VARIANT STREQUAL _wxl_crt_VARIANT)
+        message(FATAL_ERROR
+            "WXL_INSTALL: CMAKE_MSVC_RUNTIME_LIBRARY is '${CMAKE_MSVC_RUNTIME_LIBRARY}', which "
+            "takes the CRT in a DLL in one configuration and the static one in another. A build "
+            "directory installs the archives of one of them; build the other in a directory of "
+            "its own, as the presets x64-dynamic and x64-static do.")
+    endif()
+endforeach()
+set(_wxl_lib_dir "${CMAKE_INSTALL_LIBDIR}/${WXL_INSTALL_VARIANT}")
+
 install(TARGETS wxl.core
     EXPORT wxl-targets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${_wxl_lib_dir}
     FILE_SET modules DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wxl
     FILE_SET headers DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wxl
 )
@@ -51,7 +89,7 @@ if(TARGET fmt.module)
 
     install(TARGETS fmt.module
         EXPORT wxl-targets
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${_wxl_lib_dir}
         FILE_SET fmt DESTINATION ${_wxl_fmt_dir}
     )
     install(DIRECTORY "${fmt_SOURCE_DIR}/include/fmt/" DESTINATION "${_wxl_fmt_dir}")
@@ -79,7 +117,7 @@ if(TARGET wxl.ui.common)
     set(WXL_INSTALL_UI TRUE)
     install(TARGETS wxl.ui.common
         EXPORT wxl-targets
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${_wxl_lib_dir}
         FILE_SET headers DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wxl/ui
     )
     install(TARGETS winui-srcgen
@@ -108,20 +146,50 @@ if(TARGET wxl.ui.common)
 endif()
 
 # CXX_MODULES_DIRECTORY is what carries the C++ module information of the
-# exported targets; without it the export is just archives.
+# exported targets; without it the export is just archives. The export of a
+# build is its variant's; wxl-config.cmake, one for both, picks it.
 install(EXPORT wxl-targets
     FILE wxl-targets.cmake
     NAMESPACE wxl::
-    DESTINATION "${WXL_CMAKE_DIR}"
+    DESTINATION "${WXL_CMAKE_DIR}/${WXL_INSTALL_VARIANT}"
     CXX_MODULES_DIRECTORY cxx-modules
 )
 
+# The module interface units of the export, IMPORTED_CXX_MODULES_<CONFIG>, are
+# named by the files of the build -- the sources of wxl.core, the copy of fmt.cc
+# in the build directory -- and not by the installed ones, when the rule that
+# installs a file set is in another directory than its target, as the rules of
+# this file are; CMake 4.5 names the installed files there as well. A path of
+# the machine that built wxl is nowhere on the machine of an application, so
+# after the export is installed the base directory of every module file set is
+# replaced with its destination under ${_IMPORT_PREFIX}, which is what the
+# export of a rule in the target's own directory says. A module still named by
+# an absolute path afterwards stops the install.
+set(_wxl_module_dirs "")
+foreach(_wxl_pair IN ITEMS "wxl.core;modules;${CMAKE_INSTALL_INCLUDEDIR}/wxl"
+                           "fmt.module;fmt;${CMAKE_INSTALL_INCLUDEDIR}/wxl/fmt")
+    list(GET _wxl_pair 0 _wxl_target)
+    list(GET _wxl_pair 1 _wxl_set)
+    list(GET _wxl_pair 2 _wxl_destination)
+    if(TARGET ${_wxl_target})
+        get_target_property(_wxl_bases ${_wxl_target} CXX_MODULE_DIRS_${_wxl_set})
+        foreach(_wxl_base IN LISTS _wxl_bases)
+            list(APPEND _wxl_module_dirs "${_wxl_base}|${_wxl_destination}")
+        endforeach()
+    endif()
+endforeach()
+install(CODE "set(_WXL_INSTALL_MODULES_DIR \"${WXL_CMAKE_DIR}/${WXL_INSTALL_VARIANT}/cxx-modules\")
+set(_WXL_INSTALL_MODULE_DIRS \"${_wxl_module_dirs}\")")
+install(SCRIPT "${CMAKE_CURRENT_LIST_DIR}/wxl_install_modules.cmake")
+
 # The helpers travel with the package, and wxl-config.cmake includes
+# wxl_runtime_library.cmake, which picks the archives, and
 # wxl_helpers.cmake: it and every file it includes, with the manifest template
 # wxl_target_manifest() reads beside them. A file missing here stops
 # find_package(wxl) in the consumer of the test install-core.
 install(FILES
         "${CMAKE_CURRENT_LIST_DIR}/wxl_helpers.cmake"
+        "${CMAKE_CURRENT_LIST_DIR}/wxl_runtime_library.cmake"
         "${CMAKE_CURRENT_LIST_DIR}/wxl_add_module_library.cmake"
         "${CMAKE_CURRENT_LIST_DIR}/wxl_target_folders.cmake"
         "${CMAKE_CURRENT_LIST_DIR}/wxl_add_gtest.cmake"
@@ -139,12 +207,14 @@ configure_package_config_file(
     PATH_VARS WXL_INSTALL_DATA_DIR
 )
 
-# ExactVersion while the library is pre-1.0: nothing here is stable enough
-# for a consumer to assume compatibility across versions yet.
+# The version of the commit (WXL_VERSION, the root CMakeLists.txt), and any
+# version of the same major one satisfies a request for an older one: the
+# version find_package(wxl <version>) names is the least an application
+# accepts.
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/wxl-config/wxl-config-version.cmake"
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY ExactVersion
+    VERSION ${WXL_VERSION}
+    COMPATIBILITY SameMajorVersion
 )
 
 install(FILES
@@ -169,8 +239,8 @@ configure_file(
 )
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/wxl-config-version.cmake"
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY ExactVersion
+    VERSION ${WXL_VERSION}
+    COMPATIBILITY SameMajorVersion
 )
 
 # The tree installed into a directory of the test's own, and a project outside
@@ -212,7 +282,7 @@ endfunction()
 if(WXL_TESTS)
     _wxl_install_test(install-core install-consumer
         "-DWXL_TEST_PROGRAM=install-consumer.exe"
-        "-DWXL_TEST_EXPECTED=wxl ${PROJECT_VERSION}: 9 code units")
+        "-DWXL_TEST_EXPECTED=wxl ${WXL_VERSION}: 9 code units")
     if(WXL_INSTALL_UI)
         get_target_property(_wxl_profiles winui-srcgen WXL_PROFILES_DIR)
         _wxl_install_test(install-ui install-ui-consumer
