@@ -8,19 +8,21 @@
 # configuration of the tree says.
 #
 # Both configurations are read whichever of them is installed: the files name
-# the archives of both, and a project picks one by its CRT.
+# the archives of both, and a project picks one by its CRT. A tree configured
+# without one of them gives the files no archives of it, and WinXL.targets
+# stops a project whose CRT asks for them.
 
 include("${_WXL_MSBUILD_DATA}/common.cmake")
 
 foreach(_wxl_build IN ITEMS Debug Release)
-    set(_wxl_file "${_WXL_MSBUILD_DATA}/${_wxl_build}.cmake")
-    if(NOT EXISTS "${_wxl_file}")
-        message(FATAL_ERROR
-            "No ${_wxl_file}: WinXL.targets names the archives of Debug and Release, and the "
-            "tree is configured without ${_wxl_build} (CMAKE_CONFIGURATION_TYPES).")
-    endif()
-    include("${_wxl_file}")
     string(TOUPPER "${_wxl_build}" _wxl_key)
+    set(_wxl_archives "")
+    set(_wxl_definitions "")
+    set(_wxl_options "")
+    set(_wxl_file "${_WXL_MSBUILD_DATA}/${_wxl_build}.cmake")
+    if(EXISTS "${_wxl_file}")
+        include("${_wxl_file}")
+    endif()
     foreach(_wxl_name IN ITEMS archives definitions options)
         string(TOUPPER "${_wxl_name}" _wxl_upper)
         set(_wxl_value "${_wxl_${_wxl_name}}")

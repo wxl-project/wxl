@@ -130,6 +130,8 @@
     </PropertyGroup>
     <Error Condition="'$(_WinXLVariant)' == ''"
            Text="WinXL $(WinXLVersion): the project compiles with the CRT '$(_WinXLRuntime)', and the archives of wxl are built with MultiThreaded, MultiThreadedDebug, MultiThreadedDLL or MultiThreadedDebugDLL." />
+    <Error Condition="'$(_WinXLArchives)' == ''"
+           Text="WinXL $(WinXLVersion) carries no archives of the configuration of wxl the CRT $(_WinXLRuntime) of the project links: the tree it was installed from was configured without it." />
     <ItemGroup>
       <_WinXLArchive Include="$(_WinXLArchives)" />
       <_WinXLArchive>
