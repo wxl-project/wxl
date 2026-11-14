@@ -72,6 +72,10 @@
 
 set(WXL_LANGUAGE_OPTIONS /permissive- /utf-8 /Zc:throwingNew)
 
+# The language level, CMAKE_CXX_STANDARD: the version of the standard, without
+# extensions.
+set(WXL_CXX_STANDARD 23)
+
 # The warning level wxl's own targets, its samples and its sandbox are built at.
 # Not part of the language: warning options are not hashed by CMake 4.4, so a
 # project that adds wxl keeps the level of its own, and the check above does not
@@ -79,7 +83,7 @@ set(WXL_LANGUAGE_OPTIONS /permissive- /utf-8 /Zc:throwingNew)
 set(WXL_WARNING_OPTIONS /W3)
 
 function(wxl_apply_language_options)
-    set(CMAKE_CXX_STANDARD 23 PARENT_SCOPE)
+    set(CMAKE_CXX_STANDARD ${WXL_CXX_STANDARD} PARENT_SCOPE)
     set(CMAKE_CXX_STANDARD_REQUIRED ON PARENT_SCOPE)
     set(CMAKE_CXX_EXTENSIONS OFF PARENT_SCOPE)
     set(CMAKE_CXX_MODULE_STD 1 PARENT_SCOPE)
@@ -110,10 +114,10 @@ function(wxl_check_language_options)
         endif()
     endif()
 
-    if(NOT CMAKE_CXX_STANDARD STREQUAL "23")
+    if(NOT CMAKE_CXX_STANDARD STREQUAL WXL_CXX_STANDARD)
         string(APPEND missing
-            "\n  CMAKE_CXX_STANDARD: \"${CMAKE_CXX_STANDARD}\", which is not 23")
-        string(APPEND lines "\n    set(CMAKE_CXX_STANDARD 23)")
+            "\n  CMAKE_CXX_STANDARD: \"${CMAKE_CXX_STANDARD}\", which is not ${WXL_CXX_STANDARD}")
+        string(APPEND lines "\n    set(CMAKE_CXX_STANDARD ${WXL_CXX_STANDARD})")
     endif()
     if(NOT CMAKE_CXX_STANDARD_REQUIRED)
         string(APPEND missing

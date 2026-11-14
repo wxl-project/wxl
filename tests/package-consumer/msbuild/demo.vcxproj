@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The package consumer on MSBuild: an application that takes wxl from the NuGet package WinXL the way a
+  Visual Studio project does, with a PackageReference, and gets the language, the modules and the
+  archives of wxl from build/native/WinXL.props and WinXL.targets of the package. nuget.config of the
+  directory above names the sources: WinXL from packages/ beside it, the rest from nuget.org.
+
+  It builds core-only.cpp of the directory above, the console program of the CMake consumer: the modules
+  of wxl.core and fmt compiled here from the interfaces of the package, the archives of the CRT the
+  configuration compiles with linked, and the program prints the version of the package.
+
+  From a developer prompt in a copy of tests/package-consumer, with the package in its packages/:
+
+      msbuild msbuild\demo.vcxproj -restore -p:Configuration=Debug -p:Platform=x64 -p:VCToolsVersion=%VCToolsVersion%
+
+  MSBuild takes the MSVC toolset of a project from VCToolsVersion, and not from the developer
+  environment, which sets the variable but not the property; without it the default toolset of the
+  installation builds, and WinXL.targets stops on one older than the toolset of the package.
+-->
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{6F0B5D7E-2C1A-4E8B-9A3D-5B7C1E2F4A60}</ProjectGuid>
+    <RootNamespace>core_only</RootNamespace>
+    <!-- What the machine may have set up for every project stays out: the vcpkg integration and the
+         Directory.Build files of the directories above a copy. -->
+    <VcpkgEnabled>false</VcpkgEnabled>
+    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+    <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v145</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)' == 'Debug'">
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)' == 'Release'">
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+
+  <PropertyGroup>
+    <TargetName>core-only</TargetName>
+    <OutDir>$(MSBuildProjectDirectory)\build\$(Configuration)\</OutDir>
+    <IntDir>$(MSBuildProjectDirectory)\build\obj\$(Configuration)\</IntDir>
+    <!-- A console program on wxl.core alone: the Windows App SDK the package depends on is not started. -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSdkBootstrapInitialize>false</WindowsAppSdkBootstrapInitialize>
+    <WindowsAppSdkDeploymentManagerInitialize>false</WindowsAppSdkDeploymentManagerInitialize>
+    <WindowsAppSdkUndockedRegFreeWinRTInitialize>false</WindowsAppSdkUndockedRegFreeWinRTInitialize>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <ItemGroup>
+    <ClCompile Include="..\core-only.cpp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The least version the application accepts; nuget.config gives the one the check packed. -->
+    <PackageReference Include="WinXL" Version="0.1.0" />
+  </ItemGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

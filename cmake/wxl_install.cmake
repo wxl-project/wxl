@@ -182,6 +182,11 @@ install(CODE "set(_WXL_INSTALL_MODULES_DIR \"${WXL_CMAKE_DIR}/${WXL_INSTALL_VARI
 set(_WXL_INSTALL_MODULE_DIRS \"${_wxl_module_dirs}\")")
 install(SCRIPT "${CMAKE_CURRENT_LIST_DIR}/wxl_install_modules.cmake")
 
+# WinXL.props and WinXL.targets at the root of the prefix, for a .vcxproj that
+# takes wxl from the package (cmake/wxl_msbuild.cmake).
+include("${CMAKE_CURRENT_LIST_DIR}/wxl_msbuild.cmake")
+wxl_install_msbuild()
+
 # The helpers travel with the package, and wxl-config.cmake includes
 # wxl_runtime_library.cmake, which picks the archives, and
 # wxl_helpers.cmake: it and every file it includes, with the manifest template

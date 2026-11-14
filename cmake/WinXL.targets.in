@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  WinXL.targets of wxl @WXL_MSBUILD_VERSION@, written at install from cmake/WinXL.targets.in of the wxl
+  tree (cmake/wxl_msbuild.cmake). NuGet imports it into a .vcxproj that references the package WinXL,
+  after the project's own settings.
+
+  The project builds the modules of wxl itself: the module interface units of wxl.core and fmt the
+  package carries are compiled in it, with its own options, into BMIs alone (/ifcOnly: their code is
+  in the archives of wxl), and MSBuild hands every source of the project the BMIs it imports
+  (/reference), as it does with the std module. A BMI is tied to the compiler and the options that made
+  it, so the package carries none.
+
+  The archives of a link are those of the build of wxl made with the CRT the project compiles with
+  (RuntimeLibrary): lib\md for the CRT in a DLL, lib\mt for the static one, the Debug archives for a
+  debug CRT and the Release ones otherwise. A debug CRT and the iterator debugging of a Debug build go
+  together, and the linker stops on a mix of either (LNK2038).
+
+  Checked before the build:
+
+    the toolset    $(VCToolsVersion) is @WXL_MSBUILD_TOOLS_VERSION@, the toolset of the archives, or
+                   newer: a toolset links the archives of its own version and of older ones only. A
+                   Visual Studio developer environment does not set the toolset of MSBuild: the project
+                   names it, VCToolsVersion, or MSBuild takes the default of the installation.
+    the language   every C++ source has the LanguageStandard and the options WinXL.props gives it: the
+                   archives were compiled with them, and the code of wxl the project compiles (the
+                   module units, the templates and inline functions it instantiates) has to agree
+                   with them.
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <WinXLToolsVersion>@WXL_MSBUILD_TOOLS_VERSION@</WinXLToolsVersion>
+    <WinXLLanguageStandard>@WXL_MSBUILD_STANDARD@</WinXLLanguageStandard>
+    <WinXLLanguageOptions>@WXL_MSBUILD_LANGUAGE_OPTIONS@</WinXLLanguageOptions>
+  </PropertyGroup>
+
+  <!-- The build of wxl a source goes with, by its CRT, and what that build gives the code that uses it. -->
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <WinXLBuild Condition="'%(ClCompile.RuntimeLibrary)' == 'MultiThreadedDebugDLL' or '%(ClCompile.RuntimeLibrary)' == 'MultiThreadedDebug'">Debug</WinXLBuild>
+      <WinXLBuild Condition="'%(ClCompile.RuntimeLibrary)' == 'MultiThreadedDLL' or '%(ClCompile.RuntimeLibrary)' == 'MultiThreaded'">Release</WinXLBuild>
+      <PreprocessorDefinitions Condition="'%(ClCompile.WinXLBuild)' == 'Debug'">@WXL_MSBUILD_DEBUG_DEFINITIONS@;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'%(ClCompile.WinXLBuild)' == 'Release'">@WXL_MSBUILD_RELEASE_DEFINITIONS@;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions Condition="'%(ClCompile.WinXLBuild)' == 'Debug'">%(AdditionalOptions) @WXL_MSBUILD_DEBUG_OPTIONS@</AdditionalOptions>
+      <AdditionalOptions Condition="'%(ClCompile.WinXLBuild)' == 'Release'">%(AdditionalOptions) @WXL_MSBUILD_RELEASE_OPTIONS@</AdditionalOptions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <!-- The module interface units, each with the directory of its BMI under $(IntDir)WinXL: two units
+       of different directories may share a file name. -->
+  <ItemGroup>
+@WXL_MSBUILD_CORE_MODULES@@WXL_MSBUILD_FMT_MODULES@  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="@(WinXLCoreModule)" />
+    <!-- The unit of fmt with the definitions of its target in wxl, which are its own. -->
+    <ClCompile Include="@(WinXLFmtModule)">
+      <PreprocessorDefinitions>@WXL_MSBUILD_FMT_DEFINITIONS@;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Update="@(WinXLCoreModule);@(WinXLFmtModule)">
+      <CompileAs>CompileAsCppModule</CompileAs>
+      <AdditionalOptions>%(AdditionalOptions) /ifcOnly</AdditionalOptions>
+      <LinkCompiled>false</LinkCompiled>
+      <LibCompiled>false</LibCompiled>
+      <ImpLibCompiled>false</ImpLibCompiled>
+      <ObjectFileName>$(IntDir)WinXL\%(WinXLDirectory)</ObjectFileName>
+      <ModuleOutputFile>$(IntDir)WinXL\%(WinXLDirectory)</ModuleOutputFile>
+      <ModuleDependenciesFile>$(IntDir)WinXL\%(WinXLDirectory)</ModuleDependenciesFile>
+      <SourceDependenciesFile>$(IntDir)WinXL\%(WinXLDirectory)</SourceDependenciesFile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <ForcedIncludeFiles />
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+  </ItemGroup>
+
+  <Target Name="WinXLCheckToolset" BeforeTargets="PrepareForBuild">
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(VCToolsVersion)', '^\d+\.\d+\.\d+$'))"
+           Text="WinXL $(WinXLVersion): the project names no MSVC toolset (VCToolsVersion is '$(VCToolsVersion)'). wxl is built with $(WinXLToolsVersion) and links with that toolset or a newer one: set VCToolsVersion in the project, or on the command line (-p:VCToolsVersion=...)." />
+    <Error Condition="$([MSBuild]::VersionLessThan('$(VCToolsVersion)', '$(WinXLToolsVersion)'))"
+           Text="WinXL $(WinXLVersion): the project builds with the MSVC toolset $(VCToolsVersion), and wxl is built with $(WinXLToolsVersion): a toolset links archives of its own version and of older ones only. Install MSVC $(WinXLToolsVersion) or newer and name it in VCToolsVersion." />
+  </Target>
+
+  <Target Name="WinXLCheckLanguage" BeforeTargets="PrepareForBuild">
+    <ItemGroup>
+      <!-- The project's own C++ sources: the module units of wxl take the same settings, and naming
+           them would bury the sources the project has to fix. -->
+      <_WinXLCpp Include="@(ClCompile)" Condition="'%(ClCompile.WinXLDirectory)' == '' and '%(ClCompile.CompileAs)' != 'CompileAsC' and '%(ClCompile.Extension)' != '.c'" />
+      <_WinXLWrongLanguage Include="@(_WinXLCpp)" Condition="'%(_WinXLCpp.LanguageStandard)' != '$(WinXLLanguageStandard)'">
+        <WinXLWhat>LanguageStandard %(_WinXLCpp.LanguageStandard), not $(WinXLLanguageStandard)</WinXLWhat>
+      </_WinXLWrongLanguage>
+@WXL_MSBUILD_LANGUAGE_CHECKS@    </ItemGroup>
+    <Error Condition="'@(_WinXLWrongLanguage)' != ''"
+           Text="WinXL $(WinXLVersion): sources of the project are compiled without the language of wxl, which WinXL.props sets (the LanguageStandard $(WinXLLanguageStandard) and the options $(WinXLLanguageOptions) in AdditionalOptions) and the project replaced: @(_WinXLWrongLanguage->'%(Filename)%(Extension): %(WinXLWhat)', '; ')." />
+    <ItemGroup>
+      <_WinXLCpp Remove="@(_WinXLCpp)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- The manifest of a program on wxl, written for it from the template wxl_target_manifest() of the
+       CMake helpers writes it from, with the name of the program in the identity
+       (lib\cmake\wxl\helpers\wxl_app.manifest.in says what it holds and why). A project that brings a
+       manifest of its own keeps it: two manifests with different identities do not merge. -->
+  <Target Name="WinXLManifest" BeforeTargets="ComputeManifestInputsTargets"
+          Condition="'$(ConfigurationType)' == 'Application' and '@(Manifest)' == ''">
+    <PropertyGroup>
+      <_WinXLManifest>$(IntDir)$(TargetName).wxl.manifest</_WinXLManifest>
+      <_WinXLManifestText>$([System.IO.File]::ReadAllText('$(WinXLRoot)@WXL_MSBUILD_MANIFEST@').Replace('@WXL_MSBUILD_APP_NAME@', '$(TargetName)'))</_WinXLManifestText>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_WinXLManifest)" Lines="$([MSBuild]::Escape('$(_WinXLManifestText)'))"
+                      Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <Manifest Include="$(_WinXLManifest)" />
+      <FileWrites Include="$(_WinXLManifest)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Not for a static library: its archive would carry those of wxl, which the link of the program
+       takes from the package. -->
+  <Target Name="WinXLArchives" BeforeTargets="ComputeLinkInputsFromProject"
+          Condition="'$(ConfigurationType)' == 'Application' or '$(ConfigurationType)' == 'DynamicLibrary'">
+    <ItemGroup>
+      <_WinXLRuntime Include="@(ClCompile->'%(RuntimeLibrary)'->Distinct())" />
+    </ItemGroup>
+    <Error Condition="'@(_WinXLRuntime->Count())' != '1'"
+           Text="WinXL $(WinXLVersion): the sources of the project are compiled with different CRTs (@(_WinXLRuntime, ', ')), and the archives of wxl are of one of them." />
+    <PropertyGroup>
+      <_WinXLRuntime>@(_WinXLRuntime)</_WinXLRuntime>
+      <_WinXLVariant Condition="'$(_WinXLRuntime)' == 'MultiThreadedDLL' or '$(_WinXLRuntime)' == 'MultiThreadedDebugDLL'">md</_WinXLVariant>
+      <_WinXLVariant Condition="'$(_WinXLRuntime)' == 'MultiThreaded' or '$(_WinXLRuntime)' == 'MultiThreadedDebug'">mt</_WinXLVariant>
+      <_WinXLArchives Condition="'$(_WinXLRuntime)' == 'MultiThreadedDebugDLL' or '$(_WinXLRuntime)' == 'MultiThreadedDebug'">@WXL_MSBUILD_DEBUG_ARCHIVES@</_WinXLArchives>
+      <_WinXLArchives Condition="'$(_WinXLRuntime)' == 'MultiThreadedDLL' or '$(_WinXLRuntime)' == 'MultiThreaded'">@WXL_MSBUILD_RELEASE_ARCHIVES@</_WinXLArchives>
+    </PropertyGroup>
+    <Error Condition="'$(_WinXLVariant)' == ''"
+           Text="WinXL $(WinXLVersion): the project compiles with the CRT '$(_WinXLRuntime)', and the archives of wxl are built with MultiThreaded, MultiThreadedDebug, MultiThreadedDLL or MultiThreadedDebugDLL." />
+    <Error Condition="'$(_WinXLArchives)' == ''"
+           Text="WinXL $(WinXLVersion) carries no archives of the configuration of wxl the CRT $(_WinXLRuntime) of the project links: the tree it was installed from was configured without it." />
+    <ItemGroup>
+      <_WinXLArchive Include="$(_WinXLArchives)" />
+      <_WinXLArchive>
+        <WinXLPath>$(WinXLRoot)@WXL_MSBUILD_LIB_DIR@\$(_WinXLVariant)\%(Identity)</WinXLPath>
+      </_WinXLArchive>
+    </ItemGroup>
+    <Error Condition="!Exists('%(_WinXLArchive.WinXLPath)')"
+           Text="WinXL $(WinXLVersion) has no %(_WinXLArchive.WinXLPath): the package carries no build of wxl made with the CRT $(_WinXLRuntime) the project compiles with." />
+    <ItemGroup>
+      <Library Include="@(_WinXLArchive->'%(WinXLPath)')" />
+      <_WinXLArchive Remove="@(_WinXLArchive)" />
+      <_WinXLRuntime Remove="@(_WinXLRuntime)" />
+    </ItemGroup>
+  </Target>
+</Project>
