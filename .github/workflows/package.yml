@@ -224,7 +224,7 @@ jobs:
           cmake "-DWXL_PACK_STAGE=$PWD/stage" "-DWXL_PACK_OUTPUT=$PWD/package" "-DWXL_PACK_COMMIT=$env:GITHUB_SHA" -P tools/package/pack.cmake
           if ($LASTEXITCODE -ne 0) { throw "pack.cmake exited with $LASTEXITCODE" }
           $package = "package/WinXL.$env:WXL_PACKAGE_VERSION.nupkg"
-          if (-not (Test-Path $package)) { throw "no $package: the version of the install is not $env:WXL_PACKAGE_VERSION" }
+          if (-not (Test-Path $package)) { throw "no ${package}: the version of the install is not $env:WXL_PACKAGE_VERSION" }
 
       - name: Upload the package
         uses: actions/upload-artifact@v7
@@ -331,7 +331,7 @@ jobs:
         shell: pwsh
         working-directory: ${{ env.APP }}
         run: |
-          $expected = "wxl $env:WXL_PACKAGE_VERSION: 9 code units"
+          $expected = "wxl ${env:WXL_PACKAGE_VERSION}: 9 code units"
           foreach ($config in 'Debug', 'Release') {
             $line = & "build/${{ matrix.preset }}/$config/core-only.exe"
             if ($LASTEXITCODE -ne 0) { throw "core-only ($config) exited with $LASTEXITCODE" }
@@ -424,7 +424,7 @@ jobs:
         shell: pwsh
         working-directory: ${{ env.APP }}
         run: |
-          $expected = "wxl $env:WXL_PACKAGE_VERSION: 9 code units"
+          $expected = "wxl ${env:WXL_PACKAGE_VERSION}: 9 code units"
           foreach ($config in 'Debug', 'Release') {
             $line = & "msbuild/build/$config/core-only.exe"
             if ($LASTEXITCODE -ne 0) { throw "core-only ($config) exited with $LASTEXITCODE" }
