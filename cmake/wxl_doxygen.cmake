@@ -230,7 +230,6 @@ function(wxl_doxygen_tree_inputs input_var exclude_var images_var root)
         "*/test/*"
         "*/bench/*"
         "*/benchmarks/*"
-        "*/packaging/*"
         "*/tools/*"
         "*/wxl.core/src/*/README.md"
         PARENT_SCOPE)
