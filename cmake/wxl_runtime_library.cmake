@@ -221,5 +221,18 @@ function(wxl_import_targets directory)
                 endif()
             endforeach()
         endforeach()
+
+        # The module interfaces of a target are compiled in the project, by a
+        # target CMake makes from the imported one, with the CRT the imported
+        # target names. CMAKE_MSVC_RUNTIME_LIBRARY initializes the property of a
+        # target the project makes, not that of an imported one, which would
+        # leave the default -- the CRT in a DLL -- to every BMI: a configuration
+        # with the static CRT then imports a BMI made with another CRT than its
+        # own sources and the module std. The imported target is given the CRT
+        # of the project's configurations, the value it names them by.
+        get_target_property(modules ${target} IMPORTED_CXX_MODULES_${key_0})
+        if(modules AND NOT "${CMAKE_MSVC_RUNTIME_LIBRARY}" STREQUAL "")
+            set_target_properties(${target} PROPERTIES MSVC_RUNTIME_LIBRARY "${CMAKE_MSVC_RUNTIME_LIBRARY}")
+        endif()
     endforeach()
 endfunction()
