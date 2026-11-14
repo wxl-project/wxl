@@ -11,11 +11,14 @@
 #
 #     find_package(wxl CONFIG REQUIRED PATHS <package>/build/native NO_DEFAULT_PATH)
 #
-# or with <package>/build/native in CMAKE_PREFIX_PATH. The rest of build/native
-# stays free for the MSBuild files of the package. The package of a release is
-# packed from a prefix both builds of the tree were installed into, the CRT in
-# a DLL and the static one, with the tool set of the static build in bin; what
-# the prefix holds is packed as it is, and the workflow that makes it
+# or with <package>/build/native in CMAKE_PREFIX_PATH. The install writes the
+# MSBuild files of the package at the root of the prefix, WinXL.props and
+# WinXL.targets (cmake/wxl_msbuild.cmake), so they land in build/native, where
+# NuGet imports them into a .vcxproj that references the package. The package
+# of a release is packed from a prefix both builds of the tree were installed
+# into, the CRT in a DLL and the static one, with the tool set of the static
+# build in bin; what the prefix holds is packed as it is, and the workflow that
+# makes it
 # (.github/workflows/package.yml) checks that.
 #
 # Read from the prefix, so the package says what the install says:
@@ -125,16 +128,21 @@ if(NOT EXISTS "${_wxl_package}")
     message(FATAL_ERROR "pack.cmake: dotnet pack succeeded and wrote no ${_wxl_package}.")
 endif()
 
-# The package holds the prefix: its configuration is where find_package looks.
+# The package holds the prefix: its configuration is where find_package looks,
+# and its MSBuild files are where NuGet imports them.
 set(_wxl_check "${WXL_PACK_OUTPUT}/check")
+set(_wxl_expected
+    "build/native/lib/cmake/wxl/wxl-config.cmake"
+    "build/native/WinXL.props"
+    "build/native/WinXL.targets")
 file(REMOVE_RECURSE "${_wxl_check}")
-file(ARCHIVE_EXTRACT INPUT "${_wxl_package}" DESTINATION "${_wxl_check}"
-    PATTERNS "build/native/lib/cmake/wxl/wxl-config.cmake")
-if(NOT EXISTS "${_wxl_check}/build/native/lib/cmake/wxl/wxl-config.cmake")
-    message(FATAL_ERROR
-        "pack.cmake: ${_wxl_package} has no build/native/lib/cmake/wxl/wxl-config.cmake: the "
-        "prefix did not reach the package.")
-endif()
+file(ARCHIVE_EXTRACT INPUT "${_wxl_package}" DESTINATION "${_wxl_check}" PATTERNS ${_wxl_expected})
+foreach(_wxl_file IN LISTS _wxl_expected)
+    if(NOT EXISTS "${_wxl_check}/${_wxl_file}")
+        message(FATAL_ERROR
+            "pack.cmake: ${_wxl_package} has no ${_wxl_file}: the prefix did not reach the package.")
+    endif()
+endforeach()
 file(REMOVE_RECURSE "${_wxl_check}")
 
 file(SIZE "${_wxl_package}" _wxl_size)

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  WinXL.props of wxl @WXL_MSBUILD_VERSION@, written at install from cmake/WinXL.props.in of the wxl tree
+  (cmake/wxl_msbuild.cmake). NuGet imports it into a .vcxproj that references the package WinXL, before
+  the project's own settings, which may replace these; WinXL.targets checks what wxl cannot do without.
+
+  The language every translation unit that imports a wxl module shares with wxl (the level, the
+  options of the language, the std module built by the project), the include directory of the headers
+  the module interfaces include, and the system libraries the archives of wxl link.
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <WinXLRoot>$(MSBuildThisFileDirectory)</WinXLRoot>
+    <WinXLVersion>@WXL_MSBUILD_VERSION@</WinXLVersion>
+  </PropertyGroup>
+
+  <!-- Unconditional: a package imported before this one, Microsoft.Windows.CppWinRT among them, sets a
+       lower level when the project names none. -->
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <LanguageStandard>@WXL_MSBUILD_STANDARD@</LanguageStandard>
+      <AdditionalOptions>%(AdditionalOptions) @WXL_MSBUILD_LANGUAGE_OPTIONS@</AdditionalOptions>
+      <BuildStlModules>true</BuildStlModules>
+      <AdditionalIncludeDirectories>$(WinXLRoot)@WXL_MSBUILD_INCLUDE_DIR@;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>@WXL_MSBUILD_LIBRARIES@;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+</Project>
