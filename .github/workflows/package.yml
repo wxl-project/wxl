@@ -21,9 +21,17 @@
 #            everything else the same in both, which the job checks -- with the
 #            tool set in bin, packed by tools/package/pack.cmake into
 #            WinXL.<version>.nupkg, the artifact WinXL.
+#   consumer the package used as an application uses it: tests/package-consumer
+#            copied out of the checkout with the provider
+#            cmake/winxl-provider.cmake and the package, restored through the
+#            provider, configured and built Debug and Release with the CRT in a
+#            DLL (md) and with the static one in Release (mixed); nothing of
+#            the checkout may reach its build, core-only runs and prints the
+#            version, and the window of demo opens on the Windows App Runtime
+#            winxl of the package installs.
 #
 # The toolset and the WinUI build tools are installed as in ci.yml, and the
-# restore of the configure runs in locked mode as there.
+# restore of the configure of the tree runs in locked mode as there.
 name: package
 
 on:
@@ -219,3 +227,137 @@ jobs:
           name: WinXL
           path: package/WinXL.*.nupkg
           if-no-files-found: error
+
+  consumer:
+    needs: [version, pack]
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [md, mixed]
+    name: consumer (${{ matrix.preset }})
+    runs-on: windows-2025
+    timeout-minutes: 90
+    env:
+      DEVCMD: C:\BuildToolsInsiders\Common7\Tools\VsDevCmd.bat
+      VCVARS: -vcvars_ver=14.53
+      WXL_PACKAGE_VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+
+      # The installation an application on wxl needs: MSVC 14.53 and the WinUI
+      # build tools, whose MSBuild restores the package and its dependencies.
+      - name: Install MSVC 14.53 and the WinUI build tools
+        shell: pwsh
+        run: |
+          $boot = Join-Path $env:RUNNER_TEMP 'vs_buildtools.exe'
+          Invoke-WebRequest -Uri 'https://aka.ms/vs/insiders/vs_buildtools.exe' -OutFile $boot -UseBasicParsing
+          $p = Start-Process -FilePath $boot -WorkingDirectory $env:RUNNER_TEMP -Wait -PassThru -ArgumentList @(
+            '--installPath', 'C:\BuildToolsInsiders',
+            '--add', 'Microsoft.VisualStudio.Component.VC.Preview.Tools.x86.x64',
+            '--add', 'Microsoft.VisualStudio.Workload.UniversalBuildTools',
+            '--add', 'Microsoft.VisualStudio.ComponentGroup.WindowsAppDevelopment.VC.BuildTools',
+            '--quiet', '--wait', '--norestart', '--nocache')
+          "exit code $($p.ExitCode)"
+          Get-ChildItem 'C:\BuildToolsInsiders\VC\Tools\MSVC' | ForEach-Object { $_.Name }
+          if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { throw "Build Tools install failed: $($p.ExitCode)" }
+
+      # The application, out of the checkout: its sources, the provider in its
+      # cmake/ as its preset names it, and the package in packages/, the local
+      # source of its nuget.config. Nothing else of the checkout is copied.
+      - name: Copy the application out of the checkout
+        shell: pwsh
+        run: |
+          $app = Join-Path $env:RUNNER_TEMP 'package-consumer'
+          Copy-Item tests/package-consumer $app -Recurse
+          New-Item -ItemType Directory "$app/cmake", "$app/packages" | Out-Null
+          Copy-Item cmake/winxl-provider.cmake "$app/cmake"
+          "APP=$app" >> $env:GITHUB_ENV
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: WinXL
+          path: ${{ env.APP }}/packages
+
+      # The lock file is not there, so the restore writes one, and the
+      # environment has no RestoreLockedMode: a locked restore stops without it.
+      - name: Configure
+        shell: cmd
+        working-directory: ${{ env.APP }}
+        run: |
+          call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
+          cmake --preset ${{ matrix.preset }}
+
+      - name: Build
+        shell: cmd
+        working-directory: ${{ env.APP }}
+        run: |
+          call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
+          cmake --build --preset ${{ matrix.preset }}-debug -- -k 0 || exit /b 1
+          cmake --build --preset ${{ matrix.preset }}-release -- -k 0 || exit /b 1
+
+      # The package is self-contained: the cache and the compile commands of the
+      # application name no file of the checkout, however the path is written, and
+      # the configuration came from the package the provider restored, the
+      # version the package job made.
+      - name: Check the build reaches nothing of the checkout
+        shell: pwsh
+        working-directory: ${{ env.APP }}
+        run: |
+          $build = "build/${{ matrix.preset }}"
+          $checkout = $env:GITHUB_WORKSPACE.TrimEnd('\', '/')
+          # Backslashes, forward slashes, and backslashes as JSON escapes them.
+          $native = $checkout.Replace('/', '\')
+          $forms = @($native, $checkout.Replace('\', '/'), $native.Replace('\', '\\'))
+          foreach ($file in "$build/CMakeCache.txt", "$build/compile_commands.json") {
+            if (-not (Test-Path $file)) { throw "the configure wrote no $file" }
+            foreach ($form in $forms) {
+              $hits = Select-String -Path $file -Pattern $form -SimpleMatch
+              if ($hits) { $hits | Select-Object -First 10 | Out-String | Write-Host; throw "$file names the checkout $form" }
+            }
+          }
+          $dir = (Select-String -Path "$build/CMakeCache.txt" -Pattern '^wxl_DIR:[A-Z]+=(.*)$').Matches[0].Groups[1].Value
+          "wxl_DIR $dir"
+          if ($dir -notmatch "/winxl/$([regex]::Escape($env:WXL_PACKAGE_VERSION))/build/native/lib/cmake/wxl$") {
+            throw "find_package(wxl) took $dir, not WinXL $env:WXL_PACKAGE_VERSION restored by the provider"
+          }
+          "WXL_DIR=$dir" >> $env:GITHUB_ENV
+
+      - name: Run core-only
+        shell: pwsh
+        working-directory: ${{ env.APP }}
+        run: |
+          $expected = "wxl $env:WXL_PACKAGE_VERSION: 9 code units"
+          foreach ($config in 'Debug', 'Release') {
+            $line = & "build/${{ matrix.preset }}/$config/core-only.exe"
+            if ($LASTEXITCODE -ne 0) { throw "core-only ($config) exited with $LASTEXITCODE" }
+            "$config`: $line"
+            if ($line -ne $expected) { throw "core-only ($config) printed '$line', not '$expected'" }
+          }
+
+      # The experimental runtime the wrappers ask for, installed by winxl of the
+      # package from the Runtime package the restore of the application
+      # resolved; then the window of demo, twenty seconds in each
+      # configuration, as ci.yml starts a sample.
+      - name: Install the experimental Windows App Runtime
+        shell: pwsh
+        working-directory: ${{ env.APP }}
+        run: |
+          $winxl = Join-Path $env:WXL_DIR '../../../bin/winxl.exe'
+          & $winxl runtime install --packages "build/${{ matrix.preset }}/wxl.packages/restored-packages.json"
+          if ($LASTEXITCODE -ne 0) { throw "winxl runtime install exited with $LASTEXITCODE" }
+
+      - name: Start demo
+        shell: pwsh
+        working-directory: ${{ env.APP }}
+        run: |
+          foreach ($config in 'Debug', 'Release') {
+            $exe = Get-Item "build/${{ matrix.preset }}/$config/demo.exe"
+            $p = Start-Process -FilePath $exe.FullName -WorkingDirectory $exe.DirectoryName -PassThru
+            Start-Sleep -Seconds 20
+            $p.Refresh()
+            if ($p.HasExited) { throw "demo ($config) exited within 20 s, code $($p.ExitCode)" }
+            $window = $p.MainWindowHandle
+            "$config`: running after 20 s; main window handle $window, title '$($p.MainWindowTitle)'"
+            Stop-Process -Id $p.Id
+            if ($window -eq 0) { throw "demo ($config) runs but shows no main window" }
+          }

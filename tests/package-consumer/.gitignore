@@ -1,0 +1,5 @@
+# What a check puts into its copy of this directory: the provider, the package
+# and the lock file the restore writes.
+cmake/
+packages/
+packages.lock.json

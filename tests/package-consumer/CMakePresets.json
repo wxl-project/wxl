@@ -1,0 +1,45 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 4,
+    "minor": 3,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja Multi-Config",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_PROJECT_TOP_LEVEL_INCLUDES": "${sourceDir}/cmake/winxl-provider.cmake",
+        "CMAKE_CONFIGURATION_TYPES": "Debug;Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "md",
+      "displayName": "CRT in a DLL, Debug and Release",
+      "description": "/MDd in Debug, /MD in Release: what the samples of wxl build with.",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
+      }
+    },
+    {
+      "name": "mixed",
+      "displayName": "CRT in a DLL in Debug, static in Release",
+      "description": "/MDd in Debug, /MT in Release: what an application shipped as one executable builds with.",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded$<$<CONFIG:Debug>:DebugDLL>"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "md-debug", "configurePreset": "md", "configuration": "Debug" },
+    { "name": "md-release", "configurePreset": "md", "configuration": "Release" },
+    { "name": "mixed-debug", "configurePreset": "mixed", "configuration": "Debug" },
+    { "name": "mixed-release", "configurePreset": "mixed", "configuration": "Release" }
+  ]
+}

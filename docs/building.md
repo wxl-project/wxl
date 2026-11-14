@@ -211,7 +211,14 @@ C (CRT), а дереву нужны две. Поэтому в `CMakePresets.json
   файлы артефактом `wxl-tools-x64`. Обе установки и инструменты сводятся в
   один префикс, который `tools/package/pack.cmake` упаковывает в
   `build/native` пакета; пакет остаётся артефактом `WinXL` запуска и никуда не
-  публикуется. `package.yml` можно запустить и вручную. На запросе на слияние
+  публикуется. Затем задание `consumer` берёт пакет так, как его берёт
+  приложение: копирует `tests/package-consumer` за пределы checkout вместе с
+  поставщиком `cmake/winxl-provider.cmake` и пакетом, восстанавливает пакет
+  через поставщика и собирает Debug и Release с CRT в DLL (`md`) и со
+  статическим CRT в Release (`mixed`). Шаг падает, если `CMakeCache.txt` или
+  `compile_commands.json` называют checkout; `core-only` печатает версию
+  пакета, окно `demo` открывается на Windows App Runtime, который ставит
+  `winxl` из пакета. `package.yml` можно запустить и вручную. На запросе на слияние
   ни пакет, ни `x64-static` не проверяются.
 
 Пресет задаёт только `CMAKE_MSVC_RUNTIME_LIBRARY` (и у `x64-static` — три
