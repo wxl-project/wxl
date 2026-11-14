@@ -54,7 +54,13 @@ if(_wxl_ui)
     unset(_WXL_PACKAGES_INSTALLED_PINS)
 endif()
 
-include("${CMAKE_CURRENT_LIST_DIR}/wxl-targets.cmake")
+# The targets, and for every configuration of the project the archives of the
+# build made with its CRT: lib/md for the CRT in a DLL, lib/mt for the static
+# one, Debug for a debug CRT and Release otherwise, as CMAKE_MSVC_RUNTIME_LIBRARY
+# names them (cmake/wxl_runtime_library.cmake). The project sets that variable
+# before find_package(wxl), in its preset, and does not change it afterwards.
+include("${_wxl_helpers}/wxl_runtime_library.cmake")
+wxl_import_targets("${CMAKE_CURRENT_LIST_DIR}")
 
 # The helpers travel with the package and are made available right away, so a
 # consumer can describe its own module targets in the same style wxl does.

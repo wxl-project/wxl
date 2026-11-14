@@ -382,7 +382,7 @@ wxl_set_target_folders(wxl.core)
 
 target_compile_definitions(wxl.core
     PUBLIC
-        WXL_VERSION="${PROJECT_VERSION}"
+        WXL_VERSION="${WXL_VERSION}"
 )
 
 # A consumer compiles wxl's module interfaces in its own build tree, so the
