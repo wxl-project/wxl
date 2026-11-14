@@ -61,8 +61,9 @@
   (скомпилированные интерфейсы модулей) для импортированных целей.
 - **Командная оболочка:** PowerShell 7 (`pwsh`).
 - **.NET SDK 10:** только для сборки утилиты `winxl` (ключ `WXL_WINXL`, см.
-  «Утилита winxl»). Остальному дереву .NET не нужен, а самой `winxl` — и на
-  машине, где она запускается.
+  «Утилита winxl»), а также для упаковки и публикации пакета `WinXL`, которым
+  нужен выпуск 10.0.200 или новее (см. «Пакет WinXL»). Остальному дереву
+  .NET не нужен, а самой `winxl` — и на машине, где она запускается.
 - **Сетевое подключение:** необходимо при первой настройке для загрузки
   пакетов NuGet, зависимостей `winmd` и `fmt` через механизм `FetchContent`
   (при `BUILD_TESTING=ON` — и GoogleTest), а также Doxygen 1.18 и темы
@@ -200,30 +201,33 @@ C (CRT), а дереву нужны две. Поэтому в `CMakePresets.json
   Собирает набор инструментов: генератор `winui-srcgen`, редактор профилей
   `wxl.gen.ui` и, с ключом `WXL_WINXL`, утилиту `winxl`. Пресет выключает
   `WXL_SAMPLES`, `WXL_SANDBOX` и `WXL_BUILD_DOCS`: набору инструментов они не
-  нужны. Этот каталог собирается и проверяется только при выпуске, вместе с
-  `x64-dynamic`: сценарий `.github/workflows/release.yml` (запуск вручную и
-  метки `v*`) сначала прогоняет строки CI на `x64-dynamic` (`ci.yml`), а
-  затем собирает пакет NuGet `WinXL` (`package.yml`). Для пакета
-  `x64-dynamic` и `x64-static` собирают библиотеки в Debug и Release с
-  отладочными сведениями внутри объектов (`/Z7`) и устанавливают их, а
+  нужны. Этот каталог собирается и проверяется только вместе с пакетом NuGet
+  `WinXL` (`package.yml`): при выпуске, в очереди слияния для pull request с
+  меткой `package` и при запуске `ci.yml` или `package.yml` вручную. При
+  выпуске сценарий `.github/workflows/release.yml` (запуск вручную и метки
+  `v*`) сначала прогоняет строки CI на `x64-dynamic` (`ci.yml`), а затем
+  собирает пакет. Для пакета `x64-dynamic` и `x64-static` собирают
+  библиотеки в Debug и Release с отладочными сведениями внутри объектов
+  (`/Z7`) и устанавливают их, а
   `tools.yml` собирает в `x64-static` инструменты в Release, запускает их,
   прогоняет тесты `wxl.gen` и `wxl.gen.common` и выкладывает исполняемые
   файлы артефактом `wxl-tools-x64`. Обе установки и инструменты сводятся в
   один префикс, который `tools/package/pack.cmake` упаковывает в
-  `build/native` пакета; пакет остаётся артефактом `WinXL` запуска и никуда не
-  публикуется. Затем задание `consumer` берёт пакет так, как его берёт
-  приложение: копирует `tests/package-consumer` за пределы checkout вместе с
-  поставщиком `cmake/winxl-provider.cmake` и пакетом, восстанавливает пакет
-  через поставщика и собирает Debug и Release с CRT в DLL (`md`) и со
+  `build/native` пакета; пакет остаётся артефактом `WinXL` запуска. Затем
+  задание `consumer` берёт пакет так, как его берёт приложение: копирует
+  `tests/package-consumer` за пределы checkout вместе с поставщиком
+  `cmake/winxl-provider.cmake`, публикует пакет в локальный каталог пакетов
+  `feed` этой копии (`tools/package/publish.cmake`), восстанавливает пакет из
+  него через поставщика и собирает Debug и Release с CRT в DLL (`md`) и со
   статическим CRT в Release (`mixed`). Шаг падает, если `CMakeCache.txt` или
   `compile_commands.json` называют checkout; `core-only` печатает версию
   пакета, окно `demo` открывается на Windows App Runtime, который ставит
   `winxl` из пакета. Задание `consumer (msbuild)` так же копирует
-  `tests/package-consumer` с пакетом, восстанавливает пакет по
-  `PackageReference` проекта `msbuild/demo.vcxproj`, собирает им `core-only` в
-  Debug и Release через `WinXL.props` и `WinXL.targets` и запускает программу.
-  `package.yml` можно запустить и вручную. На запросе на слияние
-  ни пакет, ни `x64-static` не проверяются.
+  `tests/package-consumer` и публикует пакет в её `feed`, восстанавливает пакет
+  по `PackageReference` проекта `msbuild/demo.vcxproj`, собирает им
+  `core-only` в Debug и Release через `WinXL.props` и `WinXL.targets` и
+  запускает программу. На самом pull request ни пакет, ни `x64-static` не
+  проверяются.
 
 Пресет задаёт только `CMAKE_MSVC_RUNTIME_LIBRARY` (и у `x64-static` — три
 ключа выше). Эта переменная задаёт CRT целям каталога, в том числе
@@ -895,21 +899,37 @@ wxl_target_assets(sample.quadratic Assets)
 метке `v*` и четвёртым числом число коммитов после неё (`0.1.0.64`); её
 вычисляет `cmake/wxl_package_version.cmake`.
 
-Пакет собирает сценарий `.github/workflows/package.yml` при выпуске (см.
-«Два каталога сборки»), и файл `WinXL.<версия>.nupkg` — артефакт `WinXL`
-этого запуска. Приложение берёт его из источника, который называет его
-`nuget.config`; источником может быть и локальная папка, как в примере ниже.
+Пакет собирает сценарий `.github/workflows/package.yml` (см. «Два каталога
+сборки»), и файл `WinXL.<версия>.nupkg` — артефакт `WinXL` этого запуска.
+Приложение берёт пакет из источника, который называет его `nuget.config`.
+Таким источником служит и локальный каталог пакетов, в который пакет
+публикует сценарий `tools/package/publish.cmake`:
+
+```
+cmake -DWXL_PUBLISH_PACKAGE=<каталог>\WinXL.<версия>.nupkg -DWXL_PUBLISH_FEED=<каталог пакетов> -P tools\package\publish.cmake
+```
+
+Сценарий раскладывает пакет так, как NuGet раскладывает локальные каталоги
+пакетов: `<каталог пакетов>/winxl/<версия>/` с пакетом, его манифестом и
+хешем. Каталог создаётся, если его нет. Пакет устанавливается в него командой
+`dotnet package download`, которая есть в .NET SDK начиная с выпуска
+10.0.200; этот выпуск или более новый закрепляет `tools/package/global.json`.
+Каждая версия публикуется один раз: если в каталоге уже есть пакет той же
+версии, сценарий останавливается. Восстановление продолжало бы брать пакет,
+который уже лежит в каталоге или в глобальной папке пакетов NuGet.
 
 Образец приложения на пакете — проект `tests/package-consumer`: его
 настраивает и собирает задание `consumer` сценария `package.yml`, а проект
 MSBuild `msbuild/demo.vcxproj` того же каталога — задание
-`consumer (msbuild)`. Файл `nuget.config` образца берёт `WinXL` из папки
-`packages` рядом с ним, а зависимости — с nuget.org:
+`consumer (msbuild)`. Каждое задание публикует пакет в каталог `feed` своей
+копии образца. Файл `nuget.config` образца берёт `WinXL` из этого каталога, а
+зависимости — с nuget.org; назначение источников не даёт взять `WinXL` с
+nuget.org:
 
 ```xml
 <packageSources>
   <clear />
-  <add key="local" value="packages" />
+  <add key="local" value="feed" />
   <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
 </packageSources>
 <packageSourceMapping>
@@ -917,6 +937,39 @@ MSBuild `msbuild/demo.vcxproj` того же каталога — задание
   <packageSource key="nuget.org"><package pattern="*" /></packageSource>
 </packageSourceMapping>
 ```
+
+Пакет можно собрать и из своего дерева. Каталог сборки настраивается так
+же, как в задании `libs` сценария `package.yml`: с ключом `WXL_INSTALL` и с
+отладочными сведениями внутри объектов, потому что файлов `.pdb`
+компилятора в пакете нет. Собираются только цели, которые берёт установка;
+затем каталог устанавливается в префикс, префикс упаковывается, а пакет
+публикуется в локальный каталог пакетов. Из окружения разработчика, в корне
+дерева:
+
+```
+cmake --preset x64-dynamic -DWXL_INSTALL=ON -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded -DWXL_SAMPLES=OFF -DWXL_SANDBOX=OFF -DWXL_BUILD_DOCS=OFF
+cmake --build build\x64-dynamic --config Debug --target wxl.core fmt.module wxl.ui.common winui-srcgen
+cmake --install build\x64-dynamic --config Debug --prefix <префикс>
+cmake -DWXL_PACK_STAGE=<префикс> -DWXL_PACK_OUTPUT=<каталог> -P tools\package\pack.cmake
+cmake -DWXL_PUBLISH_PACKAGE=<каталог>\WinXL.<версия>.nupkg -DWXL_PUBLISH_FEED=<каталог пакетов> -P tools\package\publish.cmake
+```
+
+Ключи настройки сохраняются в кэше каталога сборки: после них каталог
+собирается без примеров, песочницы и сайта, пока ключи не будут изменены.
+
+Такой пакет содержит только то, что установлено в префикс: из одного
+каталога сборки — библиотеки одного вида CRT (`lib/md` для `x64-dynamic`) и
+только тех конфигураций, которые собраны и установлены, а в `bin` — один
+генератор `winui-srcgen`. Редактора профилей и утилиты `winxl` в нём нет:
+их кладёт в пакет только `package.yml`. Приложение настраивает на таком
+пакете только собранные конфигурации: образец с пакетом из одной Debug
+настраивается с `-DCMAKE_CONFIGURATION_TYPES=Debug`, а с Debug и Release
+настройка останавливается, потому что в пакете нет Release-сборки
+`wxl::core`. Версия пакета — версия коммита, на котором настроен каталог
+сборки (`cmake/wxl_package_version.cmake`): незакоммиченные изменения её не
+меняют. Поэтому пакет той же версии, уже опубликованный в каталоге, перед
+новой публикацией удаляется из него (`<каталог пакетов>/winxl/<версия>`) и из
+глобальной папки пакетов NuGet.
 
 ### Пакет WinXL в проекте CMake
 
@@ -1028,9 +1081,11 @@ wxl_add_executable(demo UI wxl::ui.demo demo.cpp)
   ```
 
 Настройка и сборка образца из окружения разработчика, в копии
-`tests/package-consumer` с поставщиком в `cmake/` и пакетом в `packages/`:
+`tests/package-consumer` с поставщиком в `cmake/`, после публикации пакета в
+её каталог `feed`:
 
 ```
+cmake -DWXL_PUBLISH_PACKAGE=<каталог>\WinXL.<версия>.nupkg -DWXL_PUBLISH_FEED=feed -P <wxl>\tools\package\publish.cmake
 cmake --preset md
 cmake --build --preset md-debug
 ```

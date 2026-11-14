@@ -1,7 +1,7 @@
-# What a check puts into its copy of this directory: the provider, the package
-# and the lock file the restore writes.
+# What a check puts into its copy of this directory: the provider, the local
+# feed the package is published into and the lock file the restore writes.
 cmake/
-packages/
+feed/
 packages.lock.json
 # What MSBuild writes beside msbuild/demo.vcxproj: the restore and the build.
 msbuild/obj/

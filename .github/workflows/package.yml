@@ -1,6 +1,9 @@
-# The NuGet package WinXL, made and uploaded as an artifact of the run, and
-# published nowhere. Called by release.yml, so that a release makes its
-# package, and run by hand.
+# The NuGet package WinXL, made, uploaded as the artifact WinXL of the run and
+# tested as an application takes it: each consumer job publishes the package
+# into a local feed, a directory of its own, and restores it from there. The
+# package is published nowhere else. Called by release.yml, so that a release
+# makes its package; by ci.yml in the merge queue for a pull request that asks
+# for the package and on a run of ci by hand; and run by hand.
 #
 #   version  the version of the commit, from the history down to the last
 #            release tag (cmake/wxl_package_version.cmake): v0.1.0 and 64
@@ -23,17 +26,20 @@
 #            WinXL.<version>.nupkg, the artifact WinXL.
 #   consumer the package used as an application uses it: tests/package-consumer
 #            copied out of the checkout with the provider
-#            cmake/winxl-provider.cmake and the package, restored through the
-#            provider, configured and built Debug and Release with the CRT in a
-#            DLL (md) and with the static one in Release (mixed); nothing of
-#            the checkout may reach its build, core-only runs and prints the
+#            cmake/winxl-provider.cmake, the package published by
+#            tools/package/publish.cmake into feed/ of the copy, the local
+#            source its nuget.config names, restored through the provider,
+#            configured and built Debug and Release with the CRT in a DLL (md)
+#            and with the static one in Release (mixed); nothing of the
+#            checkout may reach its build, core-only runs and prints the
 #            version, and the window of demo opens on the Windows App Runtime
 #            winxl of the package installs.
 #   consumer-msbuild  the package used as a Visual Studio project uses it:
 #            tests/package-consumer/msbuild/demo.vcxproj, copied out of the
-#            checkout with the package, restores WinXL by its PackageReference
-#            and builds core-only Debug and Release through WinXL.props and
-#            WinXL.targets of the package; core-only runs and prints the version.
+#            checkout with the package published into feed/ as above, restores
+#            WinXL by its PackageReference and builds core-only Debug and
+#            Release through WinXL.props and WinXL.targets of the package;
+#            core-only runs and prints the version.
 #
 # The toolset and the WinUI build tools are installed as in ci.yml, and the
 # restore of the configure of the tree runs in locked mode as there.
@@ -48,7 +54,9 @@ permissions:
 
 # The name of the workflow is the caller's under workflow_call, so the group of
 # a release's package is apart from the release's own and from that of the
-# rows of ci.yml it calls. A package is not cancelled by the next one.
+# rows of ci.yml it calls, and the package ci.yml calls is apart from the rows
+# of ci.yml (ci-package-<ref> and ci-<ref>): neither cancels the other. A
+# package is not cancelled by the next one.
 concurrency:
   group: ${{ github.workflow }}-package-${{ github.ref }}
   cancel-in-progress: false
@@ -266,22 +274,29 @@ jobs:
           Get-ChildItem 'C:\BuildToolsInsiders\VC\Tools\MSVC' | ForEach-Object { $_.Name }
           if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { throw "Build Tools install failed: $($p.ExitCode)" }
 
-      # The application, out of the checkout: its sources, the provider in its
-      # cmake/ as its preset names it, and the package in packages/, the local
-      # source of its nuget.config. Nothing else of the checkout is copied.
+      # The application, out of the checkout: its sources and the provider in
+      # its cmake/ as its preset names it. Nothing else of the checkout is
+      # copied.
       - name: Copy the application out of the checkout
         shell: pwsh
         run: |
           $app = Join-Path $env:RUNNER_TEMP 'package-consumer'
           Copy-Item tests/package-consumer $app -Recurse
-          New-Item -ItemType Directory "$app/cmake", "$app/packages" | Out-Null
+          New-Item -ItemType Directory "$app/cmake" | Out-Null
           Copy-Item cmake/winxl-provider.cmake "$app/cmake"
           "APP=$app" >> $env:GITHUB_ENV
 
       - uses: actions/download-artifact@v8
         with:
           name: WinXL
-          path: ${{ env.APP }}/packages
+          path: ${{ runner.temp }}/WinXL
+
+      # Into feed/ of the application, the local source of its nuget.config.
+      - name: Publish the package into the local feed
+        shell: pwsh
+        run: |
+          cmake "-DWXL_PUBLISH_PACKAGE=$env:RUNNER_TEMP/WinXL/WinXL.$env:WXL_PACKAGE_VERSION.nupkg" "-DWXL_PUBLISH_FEED=$env:APP/feed" -P tools/package/publish.cmake
+          if ($LASTEXITCODE -ne 0) { throw "publish.cmake exited with $LASTEXITCODE" }
 
       # The lock file is not there, so the restore writes one, and the
       # environment has no RestoreLockedMode: a locked restore stops without it.
@@ -394,20 +409,25 @@ jobs:
           Get-ChildItem 'C:\BuildToolsInsiders\VC\Tools\MSVC' | ForEach-Object { $_.Name }
           if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { throw "Build Tools install failed: $($p.ExitCode)" }
 
-      # The application, out of the checkout: its sources, with the package in
-      # packages/, the local source of its nuget.config.
+      # The application, out of the checkout: its sources, with the package
+      # published into feed/, the local source of its nuget.config.
       - name: Copy the application out of the checkout
         shell: pwsh
         run: |
           $app = Join-Path $env:RUNNER_TEMP 'package-consumer'
           Copy-Item tests/package-consumer $app -Recurse
-          New-Item -ItemType Directory "$app/packages" | Out-Null
           "APP=$app" >> $env:GITHUB_ENV
 
       - uses: actions/download-artifact@v8
         with:
           name: WinXL
-          path: ${{ env.APP }}/packages
+          path: ${{ runner.temp }}/WinXL
+
+      - name: Publish the package into the local feed
+        shell: pwsh
+        run: |
+          cmake "-DWXL_PUBLISH_PACKAGE=$env:RUNNER_TEMP/WinXL/WinXL.$env:WXL_PACKAGE_VERSION.nupkg" "-DWXL_PUBLISH_FEED=$env:APP/feed" -P tools/package/publish.cmake
+          if ($LASTEXITCODE -ne 0) { throw "publish.cmake exited with $LASTEXITCODE" }
 
       # MSBuild takes the toolset of a project from the property VCToolsVersion
       # and not from the developer environment, which sets only the variable.

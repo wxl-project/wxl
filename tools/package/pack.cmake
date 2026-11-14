@@ -36,9 +36,11 @@
 # The package is made by `dotnet pack` of the manifest itself, which the .NET
 # SDK packs without a project since 10.0 (an SDK before it takes the file for
 # a project and stops on its root element). global.json beside this script
-# holds the SDK to a released 10.0 or a later feature band of it, as
-# tools/winxl/global.json does; dotnet reads it from the working directory,
-# which is this one.
+# holds the SDK to a released 10.0 of the feature band 10.0.200 or a later
+# one, which publish.cmake beside it needs as well; dotnet reads it from the
+# working directory, which is this one.
+#
+# The package is published into a local feed by publish.cmake.
 
 cmake_minimum_required(VERSION 3.28)
 
