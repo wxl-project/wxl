@@ -29,6 +29,11 @@
 #            the checkout may reach its build, core-only runs and prints the
 #            version, and the window of demo opens on the Windows App Runtime
 #            winxl of the package installs.
+#   consumer-msbuild  the package used as a Visual Studio project uses it:
+#            tests/package-consumer/msbuild/demo.vcxproj, copied out of the
+#            checkout with the package, restores WinXL by its PackageReference
+#            and builds core-only Debug and Release through WinXL.props and
+#            WinXL.targets of the package; core-only runs and prints the version.
 #
 # The toolset and the WinUI build tools are installed as in ci.yml, and the
 # restore of the configure of the tree runs in locked mode as there.
@@ -360,4 +365,69 @@ jobs:
             "$config`: running after 20 s; main window handle $window, title '$($p.MainWindowTitle)'"
             Stop-Process -Id $p.Id
             if ($window -eq 0) { throw "demo ($config) runs but shows no main window" }
+          }
+
+  consumer-msbuild:
+    needs: [version, pack]
+    name: consumer (msbuild)
+    runs-on: windows-2025
+    timeout-minutes: 60
+    env:
+      DEVCMD: C:\BuildToolsInsiders\Common7\Tools\VsDevCmd.bat
+      VCVARS: -vcvars_ver=14.53
+      WXL_PACKAGE_VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install MSVC 14.53 and the WinUI build tools
+        shell: pwsh
+        run: |
+          $boot = Join-Path $env:RUNNER_TEMP 'vs_buildtools.exe'
+          Invoke-WebRequest -Uri 'https://aka.ms/vs/insiders/vs_buildtools.exe' -OutFile $boot -UseBasicParsing
+          $p = Start-Process -FilePath $boot -WorkingDirectory $env:RUNNER_TEMP -Wait -PassThru -ArgumentList @(
+            '--installPath', 'C:\BuildToolsInsiders',
+            '--add', 'Microsoft.VisualStudio.Component.VC.Preview.Tools.x86.x64',
+            '--add', 'Microsoft.VisualStudio.Workload.UniversalBuildTools',
+            '--add', 'Microsoft.VisualStudio.ComponentGroup.WindowsAppDevelopment.VC.BuildTools',
+            '--quiet', '--wait', '--norestart', '--nocache')
+          "exit code $($p.ExitCode)"
+          Get-ChildItem 'C:\BuildToolsInsiders\VC\Tools\MSVC' | ForEach-Object { $_.Name }
+          if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { throw "Build Tools install failed: $($p.ExitCode)" }
+
+      # The application, out of the checkout: its sources, with the package in
+      # packages/, the local source of its nuget.config.
+      - name: Copy the application out of the checkout
+        shell: pwsh
+        run: |
+          $app = Join-Path $env:RUNNER_TEMP 'package-consumer'
+          Copy-Item tests/package-consumer $app -Recurse
+          New-Item -ItemType Directory "$app/packages" | Out-Null
+          "APP=$app" >> $env:GITHUB_ENV
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: WinXL
+          path: ${{ env.APP }}/packages
+
+      # MSBuild takes the toolset of a project from the property VCToolsVersion
+      # and not from the developer environment, which sets only the variable.
+      - name: Build
+        shell: cmd
+        working-directory: ${{ env.APP }}
+        run: |
+          call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
+          for %%c in (Debug Release) do (
+            msbuild msbuild\demo.vcxproj -restore -nologo -verbosity:minimal -p:Configuration=%%c -p:Platform=x64 -p:VCToolsVersion=%VCToolsVersion% "-p:RestoreConfigFile=%APP%\nuget.config" || exit /b 1
+          )
+
+      - name: Run core-only
+        shell: pwsh
+        working-directory: ${{ env.APP }}
+        run: |
+          $expected = "wxl $env:WXL_PACKAGE_VERSION: 9 code units"
+          foreach ($config in 'Debug', 'Release') {
+            $line = & "msbuild/build/$config/core-only.exe"
+            if ($LASTEXITCODE -ne 0) { throw "core-only ($config) exited with $LASTEXITCODE" }
+            "$config`: $line"
+            if ($line -ne $expected) { throw "core-only ($config) printed '$line', not '$expected'" }
           }
