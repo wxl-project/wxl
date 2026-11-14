@@ -94,6 +94,24 @@
     </ItemGroup>
   </Target>
 
+  <!-- The manifest of a program on wxl, written for it from the template wxl_target_manifest() of the
+       CMake helpers writes it from, with the name of the program in the identity
+       (lib\cmake\wxl\helpers\wxl_app.manifest.in says what it holds and why). A project that brings a
+       manifest of its own keeps it: two manifests with different identities do not merge. -->
+  <Target Name="WinXLManifest" BeforeTargets="ComputeManifestInputsTargets"
+          Condition="'$(ConfigurationType)' == 'Application' and '@(Manifest)' == ''">
+    <PropertyGroup>
+      <_WinXLManifest>$(IntDir)$(TargetName).wxl.manifest</_WinXLManifest>
+      <_WinXLManifestText>$([System.IO.File]::ReadAllText('$(WinXLRoot)@WXL_MSBUILD_MANIFEST@').Replace('@WXL_MSBUILD_APP_NAME@', '$(TargetName)'))</_WinXLManifestText>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_WinXLManifest)" Lines="$([MSBuild]::Escape('$(_WinXLManifestText)'))"
+                      Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <Manifest Include="$(_WinXLManifest)" />
+      <FileWrites Include="$(_WinXLManifest)" />
+    </ItemGroup>
+  </Target>
+
   <!-- Not for a static library: its archive would carry those of wxl, which the link of the program
        takes from the package. -->
   <Target Name="WinXLArchives" BeforeTargets="ComputeLinkInputsFromProject"

@@ -150,6 +150,9 @@ function(wxl_install_msbuild)
         "${CMAKE_INSTALL_INCLUDEDIR}/wxl/fmt")
     string(REPLACE "/" "\\" include_dir "${CMAKE_INSTALL_INCLUDEDIR}/wxl")
     string(REPLACE "/" "\\" lib_dir "${CMAKE_INSTALL_LIBDIR}")
+    # The template of the manifest of an executable, installed among the
+    # helpers (cmake/wxl_install.cmake), which wxl_target_manifest() reads too.
+    string(REPLACE "/" "\\" manifest "${WXL_CMAKE_DIR}/${WXL_HELPERS_RELATIVE_DIR}/wxl_app.manifest.in")
 
     # The definitions of the unit of fmt are fmt.module's own, PRIVATE and the
     # same in every configuration (wxl.core/src/CMakeLists.txt).
@@ -188,6 +191,8 @@ set(WXL_MSBUILD_LANGUAGE_CHECKS [==[${checks}]==])
 set(WXL_MSBUILD_TOOLS_VERSION [==[${tools_version}]==])
 set(WXL_MSBUILD_INCLUDE_DIR [==[${include_dir}]==])
 set(WXL_MSBUILD_LIB_DIR [==[${lib_dir}]==])
+set(WXL_MSBUILD_MANIFEST [==[${manifest}]==])
+set(WXL_MSBUILD_APP_NAME [==[@WXL_APP_NAME@]==])
 set(WXL_MSBUILD_LIBRARIES [==[${libraries}]==])
 set(WXL_MSBUILD_CORE_MODULES [==[${core_modules}]==])
 set(WXL_MSBUILD_FMT_MODULES [==[${fmt_modules}]==])
