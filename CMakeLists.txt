@@ -7,14 +7,9 @@
 # of this project and are not configured or added on their own.
 #
 # Every CMake script the tree uses lives in cmake/ next to this file.
-cmake_minimum_required(VERSION 4.3)
-
-# Opens CMake's experimental `import std;` gate, which wxl.core's module build
-# needs. Only the top-level project can open it, and only before project().
-# CMAKE_CXX_MODULE_STD below is the request; this is the permission, and CMake
-# refuses the request without it ("requires toolchain support, but it was not
-# provided").
-include(cmake/wxl_import_std_gate.cmake)
+# 4.5: the first CMake that gives `import std;` to every C++ target scanned for
+# modules, without an experimental gate.
+cmake_minimum_required(VERSION 4.5)
 
 project(
     wxl-project VERSION 0.1.0

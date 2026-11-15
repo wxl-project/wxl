@@ -24,7 +24,7 @@
 # consumer's first test program stops on kernel32.lib.
 
 foreach(_wxl_arg WXL_TEST_NAME WXL_TEST_DIR WXL_TEST_BUILD WXL_TEST_CONFIG WXL_TEST_CONSUMER
-                 WXL_TEST_COMPILER WXL_TEST_MAKE_PROGRAM WXL_TEST_IMPORT_STD_UUID)
+                 WXL_TEST_COMPILER WXL_TEST_MAKE_PROGRAM)
     if(NOT ${_wxl_arg})
         message(FATAL_ERROR "${WXL_TEST_NAME}: ${_wxl_arg} is not given.")
     endif()
@@ -64,7 +64,6 @@ execute_process(
             "-DCMAKE_CXX_COMPILER=${WXL_TEST_COMPILER}"
             "-DCMAKE_MAKE_PROGRAM=${WXL_TEST_MAKE_PROGRAM}"
             "-DCMAKE_PREFIX_PATH=${_wxl_prefix}"
-            "-DWXL_TEST_IMPORT_STD_UUID=${WXL_TEST_IMPORT_STD_UUID}"
             ${_wxl_tools}
     COMMAND_ERROR_IS_FATAL ANY)
 

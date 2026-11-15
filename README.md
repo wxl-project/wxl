@@ -158,7 +158,7 @@ TextBox {
   build tools» с компонентом «C++ WinUI app development build tools». Пакеты
   NuGet и проекцию cppwinrt настройка получает от MSBuild этой установки
 - **Windows SDK:** 10.0.26100.0 или новее
-- **Сборка:** CMake (версии 4.3 / 4.4) и Ninja
+- **Сборка:** CMake (версии 4.5 или новее) и Ninja
 - **Окружение:** PowerShell 7 (`pwsh`)
 - **.NET SDK 10:** для сборки утилиты `winxl`, которая устанавливает среду
   выполнения; самой утилите .NET на машине не нужен

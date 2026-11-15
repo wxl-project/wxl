@@ -110,8 +110,8 @@ function(wxl_set_target_folders target)
 
     # СБРОС ДЕФОЛТНЫХ ПАПОК VISUAL STUDIO:
     # Принудительно очищаем стандартные группы "Source Files" и "Header Files" для этого таргета
-    source_group("Source Files" REGEX "^$")
-    source_group("Header Files" REGEX "^$")
+    source_group("Source Files" REGULAR_EXPRESSION "^$")
+    source_group("Header Files" REGULAR_EXPRESSION "^$")
 
     # Идеально строит дерево исходников в IDE напрямую от корня проекта
     source_group(TREE "${_target_dir}" FILES ${_abs_files})
