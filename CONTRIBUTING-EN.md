@@ -67,7 +67,9 @@ request").
   applications on CMake and MSBuild from it. The label is read when the
   queue starts the check of the candidate. The `package result` check
   reports the outcome: without the label it passes at once. A manual run of
-  `ci.yml` always builds the package.
+  `ci.yml` always builds the package. How to add the label and how to build
+  the package of a branch without a pull request is in
+  [docs/building.md](docs/building.md#проверка-пакета-в-ci) (in Russian).
 - The [`.github/workflows/docs.yml`](.github/workflows/docs.yml) workflow
   builds the documentation site on Linux; any Doxygen warning is treated as
   an error.
