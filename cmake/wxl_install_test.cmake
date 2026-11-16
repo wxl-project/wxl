@@ -1,6 +1,6 @@
 # A test of cmake/wxl_install.cmake: the tree installed into a prefix under
 # WXL_TEST_DIR, and a project outside the tree configured and built against
-# it. Run as a test (ctest -R "install-(core|ui)"), and by hand with the
+# it. Run as a test (ctest -R "install-(core|ui|extended)"), and by hand with the
 # arguments the root passes to it (cmake/wxl_install.cmake):
 #
 #     cmake -DWXL_TEST_NAME=install-core -DWXL_TEST_DIR=<directory>

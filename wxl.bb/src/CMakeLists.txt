@@ -7,6 +7,9 @@ wxl_add_module_library(wxl.bb STATIC
 
 add_library(wxl::bb ALIAS wxl.bb)
 
+# Exported as wxl::bb, the name the alias gives it in the tree.
+set_target_properties(wxl.bb PROPERTIES EXPORT_NAME bb)
+
 # PUBLIC: parse() отвечает html::document — дерево семейства стоит в
 # интерфейсе, и с ним приезжает wxl::core.
 target_link_libraries(wxl.bb PUBLIC wxl::core)

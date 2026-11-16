@@ -16,9 +16,11 @@
 #   the toolset        the version of the MSVC toolset of the compiler, from its
 #                      path (VC/Tools/MSVC/<version>/bin): archives built by a
 #                      toolset link only with that toolset or a newer one;
-#   the modules        the module interface units of wxl.core and fmt.module as
-#                      installed, which a project compiles with its own options,
-#                      as a project on CMake does;
+#   the modules        the module interface units of wxl.core, fmt.module and
+#                      the libraries WXL_INSTALL_MODULE_LIBRARIES names
+#                      (wxl.highlight, wxl.bb, wxl.rsdn) as installed, which a
+#                      project compiles with its own options, as a project on
+#                      CMake does;
 #   the archives, the definitions and the options, of each configuration of
 #                      the tree, which file(GENERATE) evaluates;
 #   the system libraries the archives link.
@@ -148,6 +150,16 @@ function(wxl_install_msbuild)
         "${CMAKE_INSTALL_INCLUDEDIR}/wxl")
     _wxl_msbuild_module_items(fmt_modules WinXLFmtModule fmt.module fmt
         "${CMAKE_INSTALL_INCLUDEDIR}/wxl/fmt")
+    set(library_modules "")
+    set(library_archives "")
+    set(library_targets "")
+    foreach(library IN LISTS WXL_INSTALL_MODULE_LIBRARIES)
+        _wxl_msbuild_module_items(items WinXLLibraryModule wxl.${library} modules
+            "${CMAKE_INSTALL_INCLUDEDIR}/wxl/${library}")
+        string(APPEND library_modules "${items}")
+        string(APPEND library_archives ";$<TARGET_LINKER_FILE_NAME:wxl.${library}>")
+        list(APPEND library_targets wxl.${library})
+    endforeach()
     string(REPLACE "/" "\\" include_dir "${CMAKE_INSTALL_INCLUDEDIR}/wxl")
     string(REPLACE "/" "\\" lib_dir "${CMAKE_INSTALL_LIBDIR}")
     # The template of the manifest of an executable, installed among the
@@ -166,17 +178,41 @@ function(wxl_install_msbuild)
         _wxl_msbuild_check_value("a definition of fmt.module" "${definition}")
     endforeach()
 
-    _wxl_msbuild_system_libraries(libraries wxl.core)
-    _wxl_msbuild_system_libraries(fmt_libraries fmt.module)
-    list(APPEND libraries ${fmt_libraries})
+    set(libraries "")
+    foreach(target IN ITEMS wxl.core fmt.module ${library_targets})
+        _wxl_msbuild_system_libraries(target_libraries ${target})
+        list(APPEND libraries ${target_libraries})
+    endforeach()
     list(REMOVE_DUPLICATES libraries)
+
+    # The files give every source the definitions and the options of wxl.core,
+    # and nothing of the libraries beside it: one of them that gives the code
+    # that uses it anything wxl.core does not give stops here.
+    get_target_property(core_options wxl.core INTERFACE_COMPILE_OPTIONS)
+    if(NOT core_options)
+        set(core_options "")
+    endif()
+    foreach(target IN LISTS library_targets)
+        get_target_property(definitions ${target} INTERFACE_COMPILE_DEFINITIONS)
+        get_target_property(options ${target} INTERFACE_COMPILE_OPTIONS)
+        if(NOT options)
+            set(options "")
+        endif()
+        list(REMOVE_ITEM options ${core_options})
+        if(definitions OR options)
+            message(FATAL_ERROR
+                "WXL_INSTALL: ${target} gives the code that uses it the definitions '${definitions}' "
+                "and the options '${options}', which wxl.core does not, and WinXL.props and "
+                "WinXL.targets (cmake/wxl_msbuild.cmake) give a project only those of wxl.core.")
+        endif()
+    endforeach()
 
     # The names of the archives, and the definitions and the options wxl.core
     # gives the code that uses it, in each configuration.
     set(data "${CMAKE_CURRENT_BINARY_DIR}/wxl-msbuild")
     file(REMOVE_RECURSE "${data}")
     file(GENERATE OUTPUT "${data}/$<CONFIG>.cmake" CONTENT
-"set(_wxl_archives [==[$<TARGET_LINKER_FILE_NAME:wxl.core>;$<TARGET_LINKER_FILE_NAME:fmt.module>]==])
+"set(_wxl_archives [==[$<TARGET_LINKER_FILE_NAME:wxl.core>;$<TARGET_LINKER_FILE_NAME:fmt.module>${library_archives}]==])
 set(_wxl_definitions [==[$<TARGET_PROPERTY:wxl.core,INTERFACE_COMPILE_DEFINITIONS>]==])
 set(_wxl_options [==[$<TARGET_PROPERTY:wxl.core,INTERFACE_COMPILE_OPTIONS>]==])
 ")
@@ -196,6 +232,7 @@ set(WXL_MSBUILD_APP_NAME [==[@WXL_APP_NAME@]==])
 set(WXL_MSBUILD_LIBRARIES [==[${libraries}]==])
 set(WXL_MSBUILD_CORE_MODULES [==[${core_modules}]==])
 set(WXL_MSBUILD_FMT_MODULES [==[${fmt_modules}]==])
+set(WXL_MSBUILD_LIBRARY_MODULES [==[${library_modules}]==])
 set(WXL_MSBUILD_FMT_DEFINITIONS [==[${fmt_definitions}]==])
 ")
 

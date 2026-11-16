@@ -15,8 +15,8 @@
 #            debugging information in the objects of the archives (/Z7,
 #            CMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded) -- a package has no
 #            place for the .pdb files of a compiler. Only the targets the
-#            install takes are built: wxl.core, fmt.module, wxl.ui.common and
-#            winui-srcgen.
+#            install takes are built: wxl.core, fmt.module, wxl.highlight,
+#            wxl.bb, wxl.rsdn, wxl.ui.common and winui-srcgen.
 #   tools    the tool set of tools.yml: the generator, the profile editor and
 #            winxl, x64-static Release, tested; the artifact wxl-tools-x64.
 #   pack     the two installs merged into one prefix -- the archives and the
@@ -146,8 +146,8 @@ jobs:
         shell: cmd
         run: |
           call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
-          cmake --build build\${{ matrix.preset }} --config Debug --target wxl.core fmt.module wxl.ui.common winui-srcgen -- -k 0 || exit /b 1
-          cmake --build build\${{ matrix.preset }} --config Release --target wxl.core fmt.module wxl.ui.common winui-srcgen -- -k 0 || exit /b 1
+          cmake --build build\${{ matrix.preset }} --config Debug --target wxl.core fmt.module wxl.highlight wxl.bb wxl.rsdn wxl.ui.common winui-srcgen -- -k 0 || exit /b 1
+          cmake --build build\${{ matrix.preset }} --config Release --target wxl.core fmt.module wxl.highlight wxl.bb wxl.rsdn wxl.ui.common winui-srcgen -- -k 0 || exit /b 1
 
       # In the developer environment, as the configure and the build.
       - name: Install

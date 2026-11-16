@@ -4,9 +4,10 @@
 # installed prefix. Included by the root under WXL_INSTALL, after the
 # directories that make the targets it installs.
 #
-# What ships: the archives of wxl.core, of the fmt module it imports and of
-# wxl.ui.common; the module *interface sources* of wxl.core and fmt with the
-# headers they include; the headers of wxl.ui.common; the CMake glue. Built
+# What ships: the archives of wxl.core, of the fmt module it imports, of
+# wxl.highlight, wxl.bb and wxl.rsdn and of wxl.ui.common; the module
+# *interface sources* of wxl.core, fmt, wxl.highlight, wxl.bb and wxl.rsdn with
+# the headers they include; the headers of wxl.ui.common; the CMake glue. Built
 # module interfaces (.ifc) are deliberately absent -- they are tied to the
 # exact compiler build and flags, so CMake never installs them and the consumer
 # compiles the interfaces once in its own build tree, with the definitions and
@@ -95,6 +96,23 @@ if(TARGET fmt.module)
     install(DIRECTORY "${fmt_SOURCE_DIR}/include/fmt/" DESTINATION "${_wxl_fmt_dir}")
     install(FILES "${fmt_SOURCE_DIR}/LICENSE" DESTINATION "${_wxl_fmt_dir}")
 endif()
+
+# The libraries of the components bb, rsdn and code, which link wxl::bb,
+# wxl::rsdn and wxl::highlight (wxl.ui/components/<name>/component.json): the
+# profiles that select those components -- extended and every profile over it
+# -- are built in an application only with them. Each ships as wxl.core does,
+# its archive beside wxl.core's and its module interface units in
+# include/wxl/<name>. wxl.bb and wxl.rsdn export import wxl.core, and wxl.rsdn
+# links wxl.highlight, so the three are in the export set of wxl.core.
+# cmake/wxl_msbuild.cmake reads the names.
+set(WXL_INSTALL_MODULE_LIBRARIES highlight bb rsdn)
+foreach(_wxl_library IN LISTS WXL_INSTALL_MODULE_LIBRARIES)
+    install(TARGETS wxl.${_wxl_library}
+        EXPORT wxl-targets
+        ARCHIVE DESTINATION ${_wxl_lib_dir}
+        FILE_SET modules DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wxl/${_wxl_library}
+    )
+endforeach()
 
 # The export names what wxl.ui.common links over the NuGet packages -- the
 # targets Microsoft::CppWinRT and wxl.winappsdk.bootstrap -- and does not carry
@@ -239,6 +257,14 @@ write_basic_package_version_file(
 #                  wxl::ui.base from the installed components, and an
 #                  application links it. Linked, not run: a window needs the
 #                  Windows App Runtime and a desktop.
+#   install-extended
+#                  tests/install-extended-consumer, whose own profile extends
+#                  extended, found among the installed profiles: the library
+#                  of the profile compiles the components bb, rsdn and code
+#                  with the modules of wxl.bb, wxl.rsdn and wxl.highlight built
+#                  from the installed interfaces, and an application that
+#                  shows the three blocks links their archives. Linked, not
+#                  run, as install-ui.
 function(_wxl_install_test name consumer)
     add_test(NAME ${name}
         COMMAND "${CMAKE_COMMAND}"
@@ -270,6 +296,10 @@ if(WXL_TESTS)
         # (docs.language): the lock the tests that run it take
         # (wxl.gen/tests/CMakeLists.txt).
         set_tests_properties(install-ui PROPERTIES
+            TIMEOUT 1800
+            RESOURCE_LOCK winui-srcgen)
+        _wxl_install_test(install-extended install-extended-consumer)
+        set_tests_properties(install-extended PROPERTIES
             TIMEOUT 1800
             RESOURCE_LOCK winui-srcgen)
     endif()
