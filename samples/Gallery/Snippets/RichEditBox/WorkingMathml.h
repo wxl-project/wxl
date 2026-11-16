@@ -16,8 +16,19 @@ description.html(
     u"<div><span style=\"semibold\">SetMathML</span> and <span style=\"semibold\">GetMathML</span> can be used to restore "
     u"and save equations.</div>");
 
-// What the editor holds is shown under it as MathML, as often as it changes.
-auto mathml = RsdnBlock {isTextSelectionEnabled = true};
+// What the editor holds is shown under it as MathML, as often as it changes, on a raised card of its own.
+auto mathml = CodeBlock {isTextSelectionEnabled = true};
+auto mathmlCard = Border {
+    Margin {8, 4, 8, 8},
+    Padding {10, 6, 10, 6},
+    CornerRadius {4},
+    background = brushes.Card.BackgroundFillColor.Secondary,
+    borderBrush = brushes.Card.StrokeColorDefault,
+    BorderThickness {1},
+    shadow = ThemeShadow {},
+    translation = {0.0f, 0.0f, 16.0f},
+    mathml,
+};
 
 auto editor = RichEditBox {
     fontSize = 16,
@@ -27,10 +38,8 @@ auto editor = RichEditBox {
     onTextChanged += [mathml](RichEditBox const& self) {
         // Only a formula in one line has MathML to give: more lines give an empty string.
         auto const text = self.document().getMathML();
-        mathml.rsdn(L"[code=xml]" +
-                    (text.empty() ? std::wstring{L"<!-- No MathML content -->"}
-                                  : gallery::indentXml(gallery::wide(text))) +
-                    L"[/code]");
+        mathml.code(u"xml", text.empty() ? std::wstring{L"<!-- No MathML content -->"}
+                                         : gallery::indentXml(gallery::wide(text)));
     },
 };
 editor.document().setMathMode(RichEditMathMode::MathOnly);
