@@ -2834,7 +2834,8 @@ intrusive_ptr<Editor> Editor::open(std::filesystem::path const& prof, std::files
     // решило её восстановление NuGet, редактор их не выводит.
     auto const restored = load_restored_packages(packages);
 
-    // Каталог компонентов даёт вызывающий (main.cpp: по умолчанию wxl.ui/components дерева).
+    // Каталог компонентов даёт вызывающий (main.cpp: по умолчанию wxl.ui/components дерева
+    // или share/wxl/components пакета).
     component_search search;
     if (!componentDir.empty()) {
         search.directories.push_back(componentDir);
