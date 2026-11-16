@@ -3,7 +3,8 @@
 # Included by the root of the tree under WXL_TESTS, or by a project that adds
 # wxl and wants its GoogleTest, before the add_subdirectory of wxl. The guard
 # makes a second include a no-op, so the root reuses what such a project made
-# available.
+# available. An installed wxl ships the file among its helpers, and a project
+# that takes wxl from it includes it after find_package(wxl) (end of file).
 #
 # GoogleTest is built from its own sources, at a pinned tag, with the language
 # standard and runtime of the configure that includes this file, not taken
@@ -71,3 +72,10 @@ include("${CMAKE_CURRENT_LIST_DIR}/googletest-config-version.cmake")
 ]=])
 endif()
 unset(_redirects)
+
+# A project that takes wxl from an installed prefix includes this file after
+# find_package(wxl), which names it WXL_GTEST_SCRIPT: wxl::test is there
+# already, and the fixture wxl::test.gtest is made here, over the GoogleTest
+# just made available. Included before wxl, as the tree does, it makes nothing.
+include("${CMAKE_CURRENT_LIST_DIR}/wxl_add_gtest.cmake")
+_wxl_add_test_gtest()
