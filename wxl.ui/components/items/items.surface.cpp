@@ -19,4 +19,10 @@ using namespace wxl::dsl;
     ListView{itemContainerStyle = Preset{padding = Thickness{4}}, TextBlock{u"item"}};
 }
 
+// boundTemplate -- a DataTemplate whose root is a control and whose properties are made from the item.
+[[maybe_unused]] void boundTemplate_of_control() {
+    [[maybe_unused]] DataTemplate const itemTemplate =
+        boundTemplate(u"TextBlock", {{u"Text", [](Object const& item) { return item; }}});
+}
+
 }  // namespace

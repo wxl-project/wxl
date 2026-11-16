@@ -21,7 +21,11 @@ wxl_target_assets(wxl.gen.ui Assets)
 # Профили и обход метаданных -- те же, что у генератора.
 target_link_libraries(wxl.gen.ui PRIVATE wxl.gen.common)
 
-# Откуда открывается профиль по умолчанию: из дерева исходников.
-target_compile_definitions(wxl.gen.ui PRIVATE
-    "WXL_GEN_PROFILES=\"${PROJECT_SOURCE_DIR}/wxl.gen/profiles\""
-    "WXL_GEN_COMPONENTS=\"${PROJECT_SOURCE_DIR}/wxl.ui/components\"")
+# Откуда открывается профиль по умолчанию, если редактор не установлен
+# (main.cpp): из дерева исходников. Повторяемая сборка (WXL_REPRODUCIBLE_BUILD),
+# из которой редактор берёт пакет WinXL, путей дерева не несёт.
+if(NOT WXL_REPRODUCIBLE_BUILD)
+    target_compile_definitions(wxl.gen.ui PRIVATE
+        "WXL_GEN_PROFILES=\"${PROJECT_SOURCE_DIR}/wxl.gen/profiles\""
+        "WXL_GEN_COMPONENTS=\"${PROJECT_SOURCE_DIR}/wxl.ui/components\"")
+endif()

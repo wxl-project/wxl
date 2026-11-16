@@ -262,17 +262,17 @@ function Build-Package([string]$Work, [string]$PackageDir, [string]$Again) {
     # bytes but for the profile editor, whose link MSVC 14.53 does not repeat
     # (WXL_REPRODUCIBLE_BUILD, pack.cmake, docs/building.md). Without a second
     # build a run checks what it can: no archive or CMake file of lib and no
-    # executable directly in bin names the tree -- the builds ran at the same
-    # root, and the maps of the compiler took the paths out of the objects;
-    # every member of an archive has the time -1 of lib /Brepro; and the prefix
-    # packed a second time is the same bytes. The profile editor in
-    # bin/wxl.gen.ui is not searched: it opens the profiles and components of
-    # the tree it was built from, whose paths it carries.
+    # file of bin, the profile editor's folder among them, names the tree --
+    # the builds ran at the same root, the maps of the compiler took the paths
+    # out of the objects, and the editor opens the profiles and components of
+    # the package, found from its own folder; every member of an archive has
+    # the time -1 of lib /Brepro; and the prefix packed a second time is the
+    # same bytes.
     Invoke-Part 'Check the package is reproducible' {
         $tree = $root.TrimEnd('\', '/')
         $forms = @($tree.Replace('/', '\'), $tree.Replace('\', '/'))
         $latin1 = [Text.Encoding]::Latin1
-        foreach ($file in @(Get-ChildItem "$stage/lib" -Recurse -File) + @(Get-ChildItem "$stage/bin" -File)) {
+        foreach ($file in @(Get-ChildItem "$stage/lib" -Recurse -File) + @(Get-ChildItem "$stage/bin" -Recurse -File)) {
             $bytes = [IO.File]::ReadAllBytes($file.FullName)
             # One character per byte, and UTF-16 from either alignment.
             $texts = @($latin1.GetString($bytes), [Text.Encoding]::Unicode.GetString($bytes))
