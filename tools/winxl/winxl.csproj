@@ -40,6 +40,24 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
+  <!-- A ContinuousIntegrationBuild, as the build of the package WinXL makes it
+       (WXL_REPRODUCIBLE_BUILD, cmake/wxl_winxl.cmake), is the same bytes from any
+       directory at any time. The compiler maps the sources to /_N/ by the source
+       roots; the artifacts directory, which the build of the tree puts in its build
+       directory, is a source root of its own, so the path of the .pdb the assembly
+       names is /_N/obj/... and neither it nor, through it, the module version id
+       Native AOT copies into the executable carries the build directory. The linker
+       of Native AOT writes a hash in place of the time of the link (/Brepro) and
+       the name of the .pdb without its directory (/PDBALTPATH, %_PDB% being the
+       linker's own name for the file). -->
+  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(ArtifactsPath)' != ''">
+    <SourceRoot Include="$([MSBuild]::EnsureTrailingSlash('$(ArtifactsPath)'))" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
+    <LinkerArg Include="/Brepro" />
+    <LinkerArg Include="/PDBALTPATH:%_PDB%" />
+  </ItemGroup>
+
   <!-- Without the version of the tree the SDK would stamp its default, 1.0.0, and
        the version option would print a version the tree never had. -->
   <Target Name="WxlRequireVersion" BeforeTargets="BeforeBuild">

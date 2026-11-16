@@ -16,7 +16,11 @@
 #            CMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded) -- a package has no
 #            place for the .pdb files of a compiler. Only the targets the
 #            install takes are built: wxl.core, fmt.module, wxl.highlight,
-#            wxl.bb, wxl.rsdn, wxl.ui.common and winui-srcgen.
+#            wxl.bb, wxl.rsdn, wxl.ui.common and winui-srcgen. Reproducible
+#            (WXL_REPRODUCIBLE_BUILD), as the tools and the pack are: the
+#            package made again from the commit with the same toolset is the
+#            same bytes but for the profile editor, whose link MSVC 14.53 does
+#            not repeat (docs/building.md).
 #   tools    the tool set of tools.yml: the generator, the profile editor and
 #            winxl, x64-static Release, tested; the artifact wxl-tools-x64.
 #   pack     the two installs merged into one prefix -- the archives and the

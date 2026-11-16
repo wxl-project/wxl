@@ -189,6 +189,24 @@ install(EXPORT wxl-targets
     CXX_MODULES_DIRECTORY cxx-modules
 )
 
+# The file of a configuration that includes the module information of each
+# target, cxx-modules-wxl-targets-<config>.cmake, lists the targets in an order
+# that changes from one configure to the next (CMake 4.5: two fresh builds of
+# the same tree gave core, fmt.module and fmt.module, core). The order means
+# nothing -- each file sets the properties of its own target -- so the install
+# sorts the lines, and the prefix, and the package packed from it, are the same
+# bytes every time.
+install(CODE "
+    file(GLOB _wxl_module_lists
+        \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${WXL_CMAKE_DIR}/${WXL_INSTALL_VARIANT}/cxx-modules/cxx-modules-wxl-targets-*.cmake\")
+    foreach(_wxl_list IN LISTS _wxl_module_lists)
+        file(STRINGS \"\${_wxl_list}\" _wxl_lines)
+        list(SORT _wxl_lines)
+        list(JOIN _wxl_lines \"\\n\" _wxl_lines)
+        file(WRITE \"\${_wxl_list}\" \"\${_wxl_lines}\\n\")
+    endforeach()
+")
+
 # WinXL.props and WinXL.targets at the root of the prefix, for a .vcxproj that
 # takes wxl from the package (cmake/wxl_msbuild.cmake).
 include("${CMAKE_CURRENT_LIST_DIR}/wxl_msbuild.cmake")
