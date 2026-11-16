@@ -47,6 +47,20 @@
 #       (cmake/wxl-config.cmake.in); a target of headers alone is left as the
 #       export makes it. A package without that build stops the configure,
 #       naming the configuration and its CRT.
+#
+#   wxl_bmi_without_debug_information(<target>)
+#       has the BMIs of the module interfaces of the imported target <target>
+#       compiled without debugging information. CMake compiles them in targets
+#       of its own, copied from the imported one, which take its
+#       MSVC_DEBUG_INFORMATION_FORMAT (cmTarget::CopyCxxModulesProperties, read
+#       at v4.5.0). An imported target is not initialized from
+#       CMAKE_MSVC_DEBUG_INFORMATION_FORMAT, and a copy without the property
+#       takes the default of its directory: /Zi in Debug. A copy is an
+#       interface library and has no PDB of its own (/Fd""), so every copy
+#       writes vc<version>.pdb in the build directory, and copies compiled at
+#       once stop on it (C1041). A copy compiles the BMI alone (-ifcOnly), with
+#       no object -- the code is in the archive -- so no debugging information
+#       is lost.
 
 include_guard(GLOBAL)
 
@@ -238,8 +252,16 @@ function(wxl_import_targets directory)
         # own sources and the module std. The imported target is given the CRT
         # of the project's configurations, the value it names them by.
         get_target_property(modules ${target} IMPORTED_CXX_MODULES_${key_0})
-        if(modules AND NOT "${CMAKE_MSVC_RUNTIME_LIBRARY}" STREQUAL "")
-            set_target_properties(${target} PROPERTIES MSVC_RUNTIME_LIBRARY "${CMAKE_MSVC_RUNTIME_LIBRARY}")
+        if(modules)
+            if(NOT "${CMAKE_MSVC_RUNTIME_LIBRARY}" STREQUAL "")
+                set_target_properties(${target} PROPERTIES MSVC_RUNTIME_LIBRARY "${CMAKE_MSVC_RUNTIME_LIBRARY}")
+            endif()
+            wxl_bmi_without_debug_information(${target})
         endif()
     endforeach()
+endfunction()
+
+function(wxl_bmi_without_debug_information target)
+    # Set and empty: no option, where an unset property takes the default.
+    set_target_properties(${target} PROPERTIES MSVC_DEBUG_INFORMATION_FORMAT "")
 endfunction()
