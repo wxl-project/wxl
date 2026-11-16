@@ -1,0 +1,86 @@
+# The package WinXL packed from the two installs of package-libs and the tool
+# set of package-tools: what the job pack of package.yml does between the
+# downloads and the upload, and what the CI of an application that builds
+# WinXL from a checkout of wxl does the same way. The job puts them at the
+# root of the tree, where the action reads them:
+#
+#   install-md  stage/ of package-libs with x64-dynamic
+#   install-mt  stage/ of package-libs with x64-static
+#   tools-x64   artifact/wxl-tools-x64 of package-tools
+#
+# The two installs are merged into one prefix -- the archives and the export
+# of each build in lib/<md|mt> and lib/cmake/wxl/<md|mt>, everything else the
+# same in both, which the action checks -- with the tool set in bin, and
+# packed by tools/package/pack.cmake into package/WinXL.<version>.nupkg at the
+# root of the tree.
+#
+#   version  the version of the commit, which the installs carry: the
+#            package is checked to be of it
+#   commit   the commit the package is built from, which its manifest names
+#
+# The tree is the one this action is in, wherever it is checked out: every
+# step works at its root. CMake 4.5 and the .NET SDK of tools/package/global.json
+# are on PATH.
+name: package-pack
+description: WinXL packed from the two installs and the tool set into package/WinXL.<version>.nupkg at the root of the tree.
+
+inputs:
+  version:
+    description: The version of the commit, which the installs carry.
+    required: true
+  commit:
+    description: The full hash of the commit the package is built from.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # Everything the two installs share is the same in both: the module
+    # interfaces, the headers, the components, the profiles, the helpers, the
+    # configuration and its version. Apart are the archives and the export
+    # of each build, and the generator in bin, which the tool set replaces.
+    - name: Merge the installs
+      shell: pwsh
+      working-directory: ${{ github.action_path }}/../../..
+      run: |
+        function Get-Shared($root) {
+          $root = (Resolve-Path $root).Path
+          Get-ChildItem $root -Recurse -File | ForEach-Object { $_.FullName.Substring($root.Length + 1).Replace('\', '/') } |
+            Where-Object { $_ -notmatch '^(lib/(md|mt)/|lib/cmake/wxl/(md|mt)/|bin/)' } | Sort-Object
+        }
+        $md = @(Get-Shared 'install-md')
+        $mt = @(Get-Shared 'install-mt')
+        $diff = Compare-Object $md $mt
+        if ($diff) { $diff | Format-Table -AutoSize | Out-String | Write-Host; throw 'the two installs do not hold the same files' }
+        foreach ($file in $md) {
+          if ((Get-FileHash "install-md/$file").Hash -ne (Get-FileHash "install-mt/$file").Hash) { throw "$file differs between the two installs" }
+        }
+        foreach ($variant in 'md', 'mt') {
+          foreach ($dir in "lib/$variant", "lib/cmake/wxl/$variant") {
+            if (-not (Test-Path "install-$variant/$dir")) { throw "install-$variant has no $dir" }
+          }
+        }
+        "$($md.Count) files the same in both"
+
+        New-Item -ItemType Directory stage | Out-Null
+        Copy-Item install-md/* stage -Recurse
+        Copy-Item install-mt/lib/mt stage/lib -Recurse
+        Copy-Item install-mt/lib/cmake/wxl/mt stage/lib/cmake/wxl -Recurse
+        Remove-Item stage/bin -Recurse
+        New-Item -ItemType Directory stage/bin | Out-Null
+        Copy-Item tools-x64/* stage/bin -Recurse
+        foreach ($file in 'bin/winui-srcgen.exe', 'bin/winxl.exe') {
+          if (-not (Test-Path "stage/$file")) { throw "the tool set has no $file" }
+        }
+
+    - name: Pack
+      shell: pwsh
+      working-directory: ${{ github.action_path }}/../../..
+      env:
+        WXL_PACKAGE_VERSION: ${{ inputs.version }}
+        WXL_PACK_COMMIT: ${{ inputs.commit }}
+      run: |
+        cmake "-DWXL_PACK_STAGE=$PWD/stage" "-DWXL_PACK_OUTPUT=$PWD/package" "-DWXL_PACK_COMMIT=$env:WXL_PACK_COMMIT" -P tools/package/pack.cmake
+        if ($LASTEXITCODE -ne 0) { throw "pack.cmake exited with $LASTEXITCODE" }
+        $package = "package/WinXL.$env:WXL_PACKAGE_VERSION.nupkg"
+        if (-not (Test-Path $package)) { throw "no ${package}: the version of the install is not $env:WXL_PACKAGE_VERSION" }
