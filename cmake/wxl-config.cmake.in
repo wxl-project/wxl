@@ -14,18 +14,12 @@
 # tied to the exact compiler build and flags, so CMake never installs them and
 # the consumer compiles them once in its own build tree.
 
-# `import std;` needs CMake's experimental gate, and it must be open before the
-# consumer's project() call -- far too early for this file to fix, so all it can
-# do is say precisely what is missing.
-if(NOT DEFINED CMAKE_EXPERIMENTAL_CXX_IMPORT_STD)
+# The module interfaces import std, which CMake gives a project without an
+# experimental gate from 4.5 on. An older CMake would stop much later, on the
+# first `import std;`, so the release is checked here.
+if(CMAKE_VERSION VERSION_LESS 4.5)
     message(FATAL_ERROR
-        "\n[ERROR]: wxl needs CMake's experimental `import std;` support.\n"
-        "Add this ABOVE project() in your top-level CMakeLists.txt:\n"
-        "\n"
-        "    set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD \"@WXL_IMPORT_STD_UUID@\")\n"
-        "\n"
-        "The UUID is tied to a CMake release (this package was built with\n"
-        "CMake @CMAKE_VERSION@); see cmake/wxl_import_std_gate.cmake in wxl.\n"
+        "\n[ERROR]: wxl needs CMake 4.5 or newer for `import std;`; this is CMake ${CMAKE_VERSION}.\n"
     )
 endif()
 

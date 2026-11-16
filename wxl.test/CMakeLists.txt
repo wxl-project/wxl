@@ -36,8 +36,8 @@ if(TARGET GTest::gtest)
 
     target_link_libraries(wxl.test.gtest PUBLIC GTest::gtest wxl::test)
 
-    # The fixture imports std and wxl.core: CMAKE_CXX_MODULE_STD and
-    # CMAKE_CXX_SCAN_FOR_MODULES give it the std module and the scan, set by the
-    # root at the top level and checked by it in a project that adds wxl.
+    # The fixture imports std and wxl.core: CMAKE_CXX_SCAN_FOR_MODULES gives it
+    # the scan and with it the std module, set by the root at the top level and
+    # checked by it in a project that adds wxl.
     set_target_properties(wxl.test.gtest PROPERTIES EXCLUDE_FROM_ALL ON)
 endif()

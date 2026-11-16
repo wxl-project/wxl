@@ -274,12 +274,11 @@ if(NOT TARGET fmt::module)
     configure_file("${fmt_SOURCE_DIR}/src/fmt.cc" "${_fmt_module_dir}/fmt.cc" COPYONLY)
 
     # A plain translation unit: it includes the standard headers and imports
-    # nothing, so it asks for no std module and is not scanned.
+    # nothing, so it is not scanned and gets no std module.
     add_library(fmt.format OBJECT "${fmt_SOURCE_DIR}/src/format.cc")
     target_include_directories(fmt.format PRIVATE ${fmt_SOURCE_DIR}/include)
     target_compile_features(fmt.format PRIVATE cxx_std_23)
     set_target_properties(fmt.format PROPERTIES
-        CXX_MODULE_STD OFF
         CXX_SCAN_FOR_MODULES OFF
     )
     wxl_set_target_folders(fmt.format)
@@ -298,7 +297,6 @@ if(NOT TARGET fmt::module)
     target_compile_definitions(fmt.module PRIVATE FMT_IMPORT_STD FMT_ATTACH_TO_GLOBAL_MODULE FMT_OS=0)
     target_compile_features(fmt.module PUBLIC cxx_std_23)
     set_target_properties(fmt.module PROPERTIES
-        CXX_MODULE_STD ON
         CXX_SCAN_FOR_MODULES ON
         # The same rule as wxl_add_module_library's: Debug and Release land in
         # the same install prefix, so the archives must not share a file name.

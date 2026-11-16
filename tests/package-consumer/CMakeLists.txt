@@ -28,17 +28,7 @@
 #              and wxl::ui.common of the package is linked. The profile is a copy
 #              of wxl's base and extends nothing, so that it needs nothing
 #              outside the package.
-cmake_minimum_required(VERSION 4.3)
-
-# The `import std;` gate opens before project(); its UUID is that of the CMake
-# release that configures (Help/dev/experimental.rst of CMake).
-if(CMAKE_VERSION VERSION_GREATER_EQUAL 4.4 AND CMAKE_VERSION VERSION_LESS 4.5)
-    set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "f35a9ac6-8463-4d38-8eec-5d6008153e7d")
-elseif(CMAKE_VERSION VERSION_GREATER_EQUAL 4.3 AND CMAKE_VERSION VERSION_LESS 4.4)
-    set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "451f2fe2-a8a2-47c3-bc32-94786d8fc91b")
-else()
-    message(FATAL_ERROR "No CMAKE_EXPERIMENTAL_CXX_IMPORT_STD UUID here for CMake ${CMAKE_VERSION}.")
-endif()
+cmake_minimum_required(VERSION 4.5)
 
 project(wxl_package_consumer LANGUAGES CXX)
 
@@ -48,7 +38,6 @@ add_compile_options(/permissive- /utf-8 /Zc:throwingNew)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_MODULE_STD 1)
 set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 
 # The least version of WinXL the application accepts, and the one the provider

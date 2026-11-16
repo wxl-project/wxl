@@ -58,10 +58,13 @@
 
 include_guard(GLOBAL)
 
-if(CMAKE_VERSION VERSION_LESS 3.24)
+# Dependency providers came with CMake 3.24, but the package needs 4.5, the
+# first CMake that gives `import std;` without an experimental gate: an older
+# one is stopped here, before the restore.
+if(CMAKE_VERSION VERSION_LESS 4.5)
     message(FATAL_ERROR
-        "winxl-provider.cmake: CMake ${CMAKE_VERSION} has no dependency providers; they came "
-        "with CMake 3.24.")
+        "winxl-provider.cmake: the package WinXL needs CMake 4.5 or newer for `import std;`; "
+        "this is CMake ${CMAKE_VERSION}.")
 endif()
 
 # The restore of WinXL at the least version `version`, the prefix of the

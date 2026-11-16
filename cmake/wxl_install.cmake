@@ -155,33 +155,6 @@ install(EXPORT wxl-targets
     CXX_MODULES_DIRECTORY cxx-modules
 )
 
-# The module interface units of the export, IMPORTED_CXX_MODULES_<CONFIG>, are
-# named by the files of the build -- the sources of wxl.core, the copy of fmt.cc
-# in the build directory -- and not by the installed ones, when the rule that
-# installs a file set is in another directory than its target, as the rules of
-# this file are; CMake 4.5 names the installed files there as well. A path of
-# the machine that built wxl is nowhere on the machine of an application, so
-# after the export is installed the base directory of every module file set is
-# replaced with its destination under ${_IMPORT_PREFIX}, which is what the
-# export of a rule in the target's own directory says. A module still named by
-# an absolute path afterwards stops the install.
-set(_wxl_module_dirs "")
-foreach(_wxl_pair IN ITEMS "wxl.core;modules;${CMAKE_INSTALL_INCLUDEDIR}/wxl"
-                           "fmt.module;fmt;${CMAKE_INSTALL_INCLUDEDIR}/wxl/fmt")
-    list(GET _wxl_pair 0 _wxl_target)
-    list(GET _wxl_pair 1 _wxl_set)
-    list(GET _wxl_pair 2 _wxl_destination)
-    if(TARGET ${_wxl_target})
-        get_target_property(_wxl_bases ${_wxl_target} CXX_MODULE_DIRS_${_wxl_set})
-        foreach(_wxl_base IN LISTS _wxl_bases)
-            list(APPEND _wxl_module_dirs "${_wxl_base}|${_wxl_destination}")
-        endforeach()
-    endif()
-endforeach()
-install(CODE "set(_WXL_INSTALL_MODULES_DIR \"${WXL_CMAKE_DIR}/${WXL_INSTALL_VARIANT}/cxx-modules\")
-set(_WXL_INSTALL_MODULE_DIRS \"${_wxl_module_dirs}\")")
-install(SCRIPT "${CMAKE_CURRENT_LIST_DIR}/wxl_install_modules.cmake")
-
 # WinXL.props and WinXL.targets at the root of the prefix, for a .vcxproj that
 # takes wxl from the package (cmake/wxl_msbuild.cmake).
 include("${CMAKE_CURRENT_LIST_DIR}/wxl_msbuild.cmake")
@@ -279,7 +252,6 @@ function(_wxl_install_test name consumer)
                 "-DWXL_TEST_RC_COMPILER=${CMAKE_RC_COMPILER}"
                 "-DWXL_TEST_MT=${CMAKE_MT}"
                 "-DWXL_TEST_RUNTIME_LIBRARY=${CMAKE_MSVC_RUNTIME_LIBRARY}"
-                "-DWXL_TEST_IMPORT_STD_UUID=${WXL_IMPORT_STD_UUID}"
                 ${ARGN}
                 -P "${CMAKE_CURRENT_LIST_DIR}/wxl_install_test.cmake")
 endfunction()
