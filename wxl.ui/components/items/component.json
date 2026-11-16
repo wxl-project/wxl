@@ -18,6 +18,18 @@
   "description": "Item templates, item factories and container presets of the list controls.",
   "imports": {
     "types": {
+      "Microsoft.UI.Xaml.DataTemplate": {
+        "comment": "boundTemplate returns a DataTemplate.",
+        "members": []
+      },
+      "Microsoft.UI.Xaml.Controls.Primitives.SelectorItem": {
+        "comment": "The container an ItemContainerPreset dresses.",
+        "members": []
+      },
+      "Microsoft.UI.Xaml.Controls.GridView": {
+        "comment": "The surface gives a GridView its itemContainerStyle.",
+        "members": []
+      },
       "Microsoft.UI.Xaml.Controls.ItemsControl": {
         "members": [],
         "syntheticMembers": {
