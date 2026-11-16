@@ -12,7 +12,8 @@
 # it, with WXL_TEST_PROFILE when one is given, so the project reaches nothing
 # of the tree but the prefix. What is checked: the install of one
 # configuration; find_package(wxl CONFIG REQUIRED) taking the package from the
-# prefix, helpers included; the BMIs of wxl's modules compiled without a PDB;
+# prefix, helpers included; the modules of the tree and the BMIs of wxl's
+# modules in the consumer compiled without a PDB of the build directory;
 # the build of the consumer; with WXL_TEST_CTEST, the consumer's tests run by
 # ctest; and, with WXL_TEST_PROGRAM, the program run and printing
 # WXL_TEST_EXPECTED.
@@ -84,19 +85,25 @@ if(NOT _wxl_from_prefix)
         "${WXL_TEST_NAME}: find_package(wxl) took ${_wxl_dir}, not the prefix ${_wxl_prefix}.")
 endif()
 
-# The BMIs of the modules of wxl are compiled by targets CMake copies from the
-# imported ones, wxl__<name>@synth_<n>, which have no PDB of their own: with
-# /Zi every copy would write the same file in the build directory, and copies
-# compiled at once stop on it (cmake/wxl_runtime_library.cmake).
-file(GLOB _wxl_rules "${_wxl_build}/build.ninja" "${_wxl_build}/CMakeFiles/impl-*.ninja")
-foreach(_wxl_file IN LISTS _wxl_rules)
-    file(READ "${_wxl_file}" _wxl_text)
-    if(_wxl_text MATCHES "\nbuild [^\n]*: CXX_COMPILER__wxl__[A-Za-z0-9_.-]*\\.40synth_[0-9]+_[^\n]*\n(  [^\n]*\n)*  FLAGS = [^\n]*[-/]Z[iI][ \n]")
-        message(FATAL_ERROR
-            "${WXL_TEST_NAME}: a BMI of a module of wxl is compiled with a PDB of the build "
-            "directory (${_wxl_file}):\n${CMAKE_MATCH_0}")
-    endif()
-endforeach()
+# Modules are compiled by targets CMake copies from the ones that own them,
+# <name>@synth_<n>, which have no PDB of their own: with /Zi every copy would
+# write the same file in the build directory, and copies compiled at once stop
+# on it. Checked are every copy of the tree (the root CMakeLists.txt) and the
+# copies of wxl's imported targets in the consumer, wxl__<name>@synth_<n>
+# (cmake/wxl_runtime_library.cmake).
+function(_wxl_check_copies build rule what)
+    file(GLOB rules "${build}/build.ninja" "${build}/CMakeFiles/impl-*.ninja")
+    foreach(file IN LISTS rules)
+        file(READ "${file}" text)
+        if(text MATCHES "\nbuild [^\n]*: CXX_COMPILER__${rule}[A-Za-z0-9_.-]*\\.40synth_[0-9]+_[^\n]*\n(  [^\n]*\n)*  FLAGS = [^\n]*[-/]Z[iI][ \n]")
+            message(FATAL_ERROR
+                "${WXL_TEST_NAME}: ${what} is compiled with a PDB of the build directory "
+                "(${file}):\n${CMAKE_MATCH_0}")
+        endif()
+    endforeach()
+endfunction()
+_wxl_check_copies("${WXL_TEST_BUILD}" "" "a module of the tree")
+_wxl_check_copies("${_wxl_build}" "wxl__" "a BMI of a module of wxl")
 
 execute_process(
     COMMAND "${CMAKE_COMMAND}" --build "${_wxl_build}"

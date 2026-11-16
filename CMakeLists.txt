@@ -61,21 +61,42 @@ include(cmake/wxl_language.cmake)
 if(PROJECT_IS_TOP_LEVEL)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
     wxl_apply_language_options()
-
-    # The format of the debugging information asked for reaches the `std`
-    # module too. CMake builds that module in targets of its own, copied at
-    # generate time from the imported target @cmake_cxx_std, and the copy takes
-    # MSVC_DEBUG_INFORMATION_FORMAT from it (cmTarget::CopyCxxModulesProperties,
-    # read at v4.5.0). An imported target never takes the property from
-    # CMAKE_MSVC_DEBUG_INFORMATION_FORMAT, so the copies have none and fall back
-    # to CMAKE_MSVC_DEBUG_INFORMATION_FORMAT_DEFAULT of their directory -- /Zi in
-    # Debug, nothing in Release (cmLocalGenerator::GetMSVCDebugFormatName). The
-    # tree's own targets have the property and do not read the default.
-    if(DEFINED CMAKE_MSVC_DEBUG_INFORMATION_FORMAT)
-        set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT_DEFAULT "${CMAKE_MSVC_DEBUG_INFORMATION_FORMAT}")
-    endif()
 else()
     wxl_check_language_options()
+endif()
+
+# ---- The format of the debugging information ----
+# CMake compiles the `std` module, and the modules of a target for an importer
+# with other options, in copies of the module's target it makes at generate
+# time: @cmake_cxx_std@synth_<n>, <target>@synth_<n>. A copy takes
+# MSVC_DEBUG_INFORMATION_FORMAT from its model (cmTarget::CopyCxxModulesProperties,
+# read at v4.5.0); a copy of the imported @cmake_cxx_std, which
+# CMAKE_MSVC_DEBUG_INFORMATION_FORMAT does not initialize, has none and takes
+# CMAKE_MSVC_DEBUG_INFORMATION_FORMAT_DEFAULT of its directory. A copy is an
+# interface library with no PDB of its own: with /Zi it compiles with /Fd"" and
+# writes vc<version>.pdb in the build directory, and copies compiled at once
+# stop on it (C1041).
+#
+# So the format asked for -- the variable, or the default without it -- becomes
+# a generator expression, which CMake evaluates for each target
+# (cmLocalGenerator::GetMSVCDebugFormatName): a target of the tree gets the
+# format as it is, and a copy, the only interface library that compiles, the
+# debugging information in its objects (/Z7) whenever any is asked for -- the
+# objects of the `std` module go into wxl.core. Both are set for this directory
+# and those below it, so a project that adds the tree keeps its own. An empty
+# default is CMP0141 OLD in such a project, where CMake reads no property.
+if(NOT "${CMAKE_MSVC_DEBUG_INFORMATION_FORMAT_DEFAULT}" STREQUAL "")
+    if(DEFINED CMAKE_MSVC_DEBUG_INFORMATION_FORMAT)
+        set(_wxl_format "${CMAKE_MSVC_DEBUG_INFORMATION_FORMAT}")
+    else()
+        set(_wxl_format "${CMAKE_MSVC_DEBUG_INFORMATION_FORMAT_DEFAULT}")
+    endif()
+    set(_wxl_format "$<IF:$<STREQUAL:$<TARGET_PROPERTY:TYPE>,INTERFACE_LIBRARY>,$<$<BOOL:${_wxl_format}>:Embedded>,${_wxl_format}>")
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT_DEFAULT "${_wxl_format}")
+    if(DEFINED CMAKE_MSVC_DEBUG_INFORMATION_FORMAT)
+        set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "${_wxl_format}")
+    endif()
+    unset(_wxl_format)
 endif()
 
 # ---- Reproducible builds ----
