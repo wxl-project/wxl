@@ -23,7 +23,7 @@ using namespace wxl::dsl;
                            .stringColor = rgb(139, 0, 0),
                            .commentColor = rgb(0, 128, 0)});
     code.code(u"cpp", u"int main() { return 0; }  // done");
-    code.code(L"xml", std::wstring{L"<!-- comment -->\n<a href=\"x\"/>"});
+    code.code(u"xml", std::wstring{L"<!-- comment -->\n<a href=\"x\"/>"});
     code.code(u"no-such-language", u"shown plain");
 }
 

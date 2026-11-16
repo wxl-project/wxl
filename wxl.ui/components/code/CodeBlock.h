@@ -11,6 +11,8 @@
 // markup blocks fall back to when a colour is left empty. The rest of the
 // theme is not read.
 
+#include <string_view>
+
 #include "MarkupBlock.h"
 
 namespace wxl {
@@ -32,10 +34,11 @@ public:
 
     // Replaces the content with `source` highlighted as `language`. The
     // palette is the one of the block's actual theme at this call.
-    void code(zstring_view language, hstring_param const& source) const;
+    void code(std::u16string_view language, hstring_param const& source) const;
 
-    // The look of what is filled from now on; content already shown keeps the
-    // look it was filled with.
+    // The look of what is filled from now on: the monospace family and the
+    // three code colours of `value`; content already shown keeps the look it
+    // was filled with.
     void theme(MarkupTheme const& value) const;
 
 protected:

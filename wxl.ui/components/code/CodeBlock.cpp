@@ -32,8 +32,10 @@ class CodeBlock::Impl : public base_t::Impl
 public:
     using base_t::Impl::Impl;
 
-    // The look code() fills with.
-    MarkupTheme theme_;
+    // What code() reads of the theme, starting from MarkupTheme's defaults:
+    // the colours by impl::code_kind, empty where the palette decides.
+    core::nullable<Color> colors_[3]{};
+    FontFamily monospace_{MarkupTheme{}.monospace};
 };
 
 namespace {
@@ -80,23 +82,23 @@ CodeBlock::CodeBlock(Impl* impl) noexcept : base_t(impl) {}
 
 CodeBlock::CodeBlock() : base_t(new Impl{impl::activation<impl::activator<CodeBlock>>{}}) {}
 
-void CodeBlock::code(zstring_view language, hstring_param const& source) const {
-    MarkupTheme const& theme = static_cast<Impl*>(impl())->theme_;
+void CodeBlock::code(std::u16string_view language, hstring_param const& source) const {
+    Impl const& self = *static_cast<Impl*>(impl());
     clear();
     // On the runs rather than on the block, as the markup blocks wear it on
     // <pre>: a line break keeps the height of the block's own font.
-    pushStyle({.fontFamily = theme.monospace});
+    pushStyle({.fontFamily = self.monospace_});
 
     line_writer lines(*this);
     const std::u16string_view text = source.text().view();
-    if (const highlight::language* found = highlight::find_language(language.view())) {
+    if (const highlight::language* found = highlight::find_language(language)) {
         // The colours once per fill; the actual theme is asked only when the
         // theme leaves a colour to the palette.
         TextStyle styles[3];
         core::nullable<bool> dark;
         for (std::size_t i = 0; i < 3; ++i) {
             const auto kind = static_cast<impl::code_kind>(i);
-            const core::nullable<Color>& themed = impl::themed_code_color(theme, kind);
+            const core::nullable<Color>& themed = self.colors_[i];
             if (!themed && !dark) dark = actualTheme() == ElementTheme::Dark;
             styles[i].color = themed ? *themed : impl::palette_code_color(kind, *dark);
         }
@@ -129,7 +131,11 @@ void CodeBlock::code(zstring_view language, hstring_param const& source) const {
 }
 
 void CodeBlock::theme(MarkupTheme const& value) const {
-    static_cast<Impl*>(impl())->theme_ = value;
+    Impl& self = *static_cast<Impl*>(impl());
+    for (std::size_t i = 0; i < 3; ++i) {
+        self.colors_[i] = impl::themed_code_color(value, static_cast<impl::code_kind>(i));
+    }
+    self.monospace_ = value.monospace;
 }
 
 }  // namespace wxl
