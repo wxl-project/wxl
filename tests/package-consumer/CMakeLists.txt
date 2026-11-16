@@ -26,9 +26,13 @@
 #              demo.winxl-profile: the generator of the package writes the
 #              wrappers, the components of the package are compiled with them,
 #              and wxl::ui.common of the package is linked. The profile extends
-#              wxl's base, which is not beside it: the generator and the
-#              configure find it among the profiles of the package. Its own
-#              lists are those of base.
+#              wxl's extended, which is not beside it: the generator and the
+#              configure find it, and base under it, among the profiles of the
+#              package. extended selects the components bb, rsdn and code, and
+#              the window shows a block of each, so the modules of wxl.bb,
+#              wxl.rsdn and wxl.highlight are built here from the interfaces of
+#              the package and their archives are linked, with the CRT of each
+#              configuration. Its own lists are those of base.
 cmake_minimum_required(VERSION 4.5)
 
 project(wxl_package_consumer LANGUAGES CXX)

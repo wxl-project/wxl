@@ -1,7 +1,7 @@
 {
     "name": "demo",
-    "description": "The profile of the package consumer. It extends base of wxl, which is not beside it: the generator and the configure find it among the profiles of the package, as they find what the profile of any application extends. Its own lists are those of base, so the library is the one of base.",
-    "extends": ["base"],
+    "description": "The profile of the package consumer. It extends extended of wxl, which is not beside it: the generator and the configure find it, and base under it, among the profiles of the package, as they find what the profile of any application extends. extended selects the components bb, rsdn and code, so the library links wxl::bb, wxl::rsdn and wxl::highlight of the package. Its own lists are those of base, which extended contains already.",
+    "extends": ["extended"],
 
     "components": [
         "window",
