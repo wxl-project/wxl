@@ -1,0 +1,79 @@
+# The libraries of the package WinXL from one build directory of the tree,
+# installed into stage/ at the root of the tree: what the job libs of
+# package.yml does between the checkout and the upload, and what the CI of an
+# application that builds WinXL from a checkout of wxl does the same way.
+#
+#   preset   x64-dynamic (the CRT in a DLL) or x64-static (the static CRT)
+#   version  the version of the commit (cmake/wxl_package_version.cmake)
+#
+# The tree is the one this action is in, wherever it is checked out: every
+# step works at its root. The job gives the environment the workflows of the
+# tree give: DEVCMD and VCVARS for the developer environment of MSVC 14.53 and
+# the WinUI build tools, installed before, NUGET_PACKAGES and
+# RestoreLockedMode for the restore of the configure.
+#
+# Debug and Release are built and installed, with the debugging information in
+# the objects of the archives (/Z7, CMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded)
+# -- a package has no place for the .pdb files of a compiler. Only the targets
+# the install takes are built: wxl.core, fmt.module, wxl.highlight, wxl.bb,
+# wxl.rsdn, wxl.ui.common and winui-srcgen.
+name: package-libs
+description: The libraries of WinXL from one build directory, installed into stage/ at the root of the tree.
+
+inputs:
+  preset:
+    description: The configure preset, x64-dynamic or x64-static.
+    required: true
+  version:
+    description: The version of the commit, which the install carries.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # The library and its install rules, and nothing an install does not
+    # take: no samples, no sandbox, no site, no tests.
+    - name: Configure
+      shell: cmd
+      working-directory: ${{ github.action_path }}/../../..
+      env:
+        PRESET: ${{ inputs.preset }}
+        WXL_PACKAGE_VERSION: ${{ inputs.version }}
+      run: |
+        call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
+        cmake --preset %PRESET% -DWXL_INSTALL=ON "-DWXL_PACKAGE_VERSION=%WXL_PACKAGE_VERSION%" -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded -DWXL_SAMPLES=OFF -DWXL_SANDBOX=OFF -DWXL_BUILD_DOCS=OFF
+
+    # Every compile of both configurations takes /Z7 and none /Zi, which would
+    # leave the debugging information in a .pdb beside the build.
+    - name: Check the debugging information
+      shell: pwsh
+      working-directory: ${{ github.action_path }}/../../..
+      env:
+        PRESET: ${{ inputs.preset }}
+      run: |
+        foreach ($config in 'Debug', 'Release') {
+          $rules = "build\$env:PRESET\CMakeFiles\impl-$config.ninja"
+          if (Select-String -Path $rules -Pattern '[-/]Zi\b' -Quiet) { throw "$rules compiles with /Zi" }
+          if (-not (Select-String -Path $rules -Pattern '[-/]Z7\b' -Quiet)) { throw "$rules compiles nothing with /Z7" }
+        }
+
+    - name: Build
+      shell: cmd
+      working-directory: ${{ github.action_path }}/../../..
+      env:
+        PRESET: ${{ inputs.preset }}
+      run: |
+        call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
+        cmake --build build\%PRESET% --config Debug --target wxl.core fmt.module wxl.highlight wxl.bb wxl.rsdn wxl.ui.common winui-srcgen -- -k 0 || exit /b 1
+        cmake --build build\%PRESET% --config Release --target wxl.core fmt.module wxl.highlight wxl.bb wxl.rsdn wxl.ui.common winui-srcgen -- -k 0 || exit /b 1
+
+    # In the developer environment, as the configure and the build.
+    - name: Install
+      shell: cmd
+      working-directory: ${{ github.action_path }}/../../..
+      env:
+        PRESET: ${{ inputs.preset }}
+      run: |
+        call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
+        cmake --install build\%PRESET% --config Debug --prefix stage || exit /b 1
+        cmake --install build\%PRESET% --config Release --prefix stage || exit /b 1
