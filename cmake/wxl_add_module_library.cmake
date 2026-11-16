@@ -122,8 +122,6 @@ function(wxl_add_module_library target)
     add_library(${target} ${_lib_type})
 
     set_target_properties(${target} PROPERTIES
-		CXX_MODULE_STD ON
-
 		# Debug and Release land in the same install prefix, so the archives must
 		# not share a file name.
 		DEBUG_POSTFIX d

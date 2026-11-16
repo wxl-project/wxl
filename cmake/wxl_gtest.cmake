@@ -49,12 +49,11 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-# gtest imports nothing, so it is neither scanned for imports nor given a std
-# module of its own, which a project-wide CMAKE_CXX_SCAN_FOR_MODULES and
-# CMAKE_CXX_MODULE_STD would otherwise give its targets.
+# gtest imports nothing, so it is not scanned for imports, which a
+# project-wide CMAKE_CXX_SCAN_FOR_MODULES would otherwise do and give its
+# targets a std module of their own.
 set_target_properties(gtest gtest_main PROPERTIES
     CXX_SCAN_FOR_MODULES OFF
-    CXX_MODULE_STD OFF
 )
 
 set(_redirects "${CMAKE_FIND_PACKAGE_REDIRECTS_DIR}")

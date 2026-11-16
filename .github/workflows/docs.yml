@@ -43,6 +43,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: ./.github/actions/cmake
+
       # Doxygen 1.18.0 and the theme are fetched by the configure step itself
       # (cmake/wxl_doxygen.cmake), pinned by hash and by commit.
       - name: Configure

@@ -157,7 +157,7 @@ To build the library and the sample projects, you will need:
   build tools". The configure gets the NuGet packages and the cppwinrt
   projection from the MSBuild of that installation
 - **Windows SDK:** 10.0.26100.0 or newer
-- **Build:** CMake (version 4.3 / 4.4) and Ninja
+- **Build:** CMake (version 4.5 or newer) and Ninja
 - **Environment:** PowerShell 7 (`pwsh`)
 - **.NET SDK 10:** to build the `winxl` utility, which installs the runtime;
   the utility itself needs no .NET on the machine

@@ -115,6 +115,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: ./.github/actions/cmake
+
       # 3010 is "installed, a reboot is pending": the compiler is usable as is.
       # One installation for the toolset and the WinUI build tools, so that
       # VsDevCmd of it gives both MSVC 14.53 and the MSBuild the configure runs.
@@ -134,7 +136,8 @@ jobs:
           if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { throw "Build Tools install failed: $($p.ExitCode)" }
 
       # One shell for the developer environment and every CMake call: VsDevCmd
-      # puts the toolset and Ninja on PATH, as tools/build.ps1 does at home.
+      # puts the toolset and Ninja on PATH, as tools/build.ps1 does at home, and
+      # its own CMake behind the 4.5.0 the step above put first.
       # The rows that start a sample build winxl as well (WXL_WINXL), which
       # installs the runtime the sample needs; the .NET SDK 10 that publishes
       # it is the runner image's. The same rows install wxl (WXL_INSTALL), so

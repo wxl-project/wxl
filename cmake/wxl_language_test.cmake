@@ -31,14 +31,12 @@ set(_wxl_test_all
     -DCMAKE_CXX_STANDARD=23
     -DCMAKE_CXX_STANDARD_REQUIRED=ON
     -DCMAKE_CXX_EXTENSIONS=OFF
-    -DCMAKE_CXX_MODULE_STD=1
     -DCMAKE_CXX_SCAN_FOR_MODULES=ON)
 
 set(_wxl_test_lines
     "set(CMAKE_CXX_STANDARD 23)"
     "set(CMAKE_CXX_STANDARD_REQUIRED ON)"
     "set(CMAKE_CXX_EXTENSIONS OFF)"
-    "set(CMAKE_CXX_MODULE_STD 1)"
     "set(CMAKE_CXX_SCAN_FOR_MODULES ON)")
 
 # _wxl_test_case(<name> OPTIONS <options> [SET <-Dvariable=value>...] [LINES <line>...])
@@ -113,15 +111,14 @@ _wxl_test_case("C++20"
     SET ${_wxl_test_all} -DCMAKE_CXX_STANDARD=20
     LINES "set(CMAKE_CXX_STANDARD 23)")
 
-_wxl_test_case("extensions on, and no std module"
+_wxl_test_case("extensions on, and no scan for imports"
     OPTIONS "/permissive-,/utf-8,/Zc:throwingNew"
     SET -DCMAKE_CXX_STANDARD=23 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=ON
-        -DCMAKE_CXX_SCAN_FOR_MODULES=ON
-    LINES "set(CMAKE_CXX_EXTENSIONS OFF)" "set(CMAKE_CXX_MODULE_STD 1)")
+    LINES "set(CMAKE_CXX_EXTENSIONS OFF)" "set(CMAKE_CXX_SCAN_FOR_MODULES ON)")
 
 _wxl_test_case("extensions unset, and the standard not required"
     OPTIONS "/permissive-,/utf-8,/Zc:throwingNew"
-    SET -DCMAKE_CXX_STANDARD=23 -DCMAKE_CXX_STANDARD_REQUIRED=OFF -DCMAKE_CXX_MODULE_STD=1
+    SET -DCMAKE_CXX_STANDARD=23 -DCMAKE_CXX_STANDARD_REQUIRED=OFF
         -DCMAKE_CXX_SCAN_FOR_MODULES=ON
     LINES "set(CMAKE_CXX_EXTENSIONS OFF)" "set(CMAKE_CXX_STANDARD_REQUIRED ON)")
 

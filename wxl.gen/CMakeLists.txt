@@ -63,8 +63,6 @@ wxl_set_target_folders(wxl.gen)
 add_executable(winui-srcgen main.cpp)
 
 set_target_properties(winui-srcgen PROPERTIES
-    CXX_MODULE_STD ON
-
     # main.cpp imports std after its headers; scanning ordinary sources is
     # CMP0155-gated and the project leaves that policy at OLD. Same reason as
     # in wxl_add_module_library().

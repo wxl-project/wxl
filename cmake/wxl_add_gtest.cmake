@@ -18,18 +18,15 @@ macro(wxl_add_gtest target)
     )
 
     # A test target links wxl.core, and consuming a module built with
-    # `import std;` means being scanned and getting the std module too.
+    # `import std;` means being scanned, which gives it the std module too.
     set_target_properties(${target} PROPERTIES
-        CXX_MODULE_STD ON
         CXX_SCAN_FOR_MODULES ON
     )
 
     wxl_set_target_folders(${target} PREFIX "tests")
 
     # Listed when ctest starts, from the binary of the configuration it tests. A
-    # listing taken after the link is one file per target for every configuration
-    # of a multi-config tree (CMake before 4.4): after a Release link, ctest -C Debug
-    # took the Release binary's tests and ran the Release binary. A program that
-    # cannot list itself stops ctest with an error, as it stopped the build.
+    # program that cannot list itself stops ctest with an error, as it would
+    # stop the build.
     gtest_discover_tests(${target} DISCOVERY_MODE PRE_TEST)
 endmacro()

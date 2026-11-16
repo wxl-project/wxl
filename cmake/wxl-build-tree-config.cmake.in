@@ -9,12 +9,9 @@
 # @PACKAGE_INIT@ preamble (there is no relocatable prefix here): one package,
 # the targets export(EXPORT ...) writes, and no components.
 
-if(NOT DEFINED CMAKE_EXPERIMENTAL_CXX_IMPORT_STD)
+if(CMAKE_VERSION VERSION_LESS 4.5)
     message(FATAL_ERROR
-        "\n[ERROR]: wxl needs CMake's experimental `import std;` support.\n"
-        "Add this ABOVE project() in your top-level CMakeLists.txt:\n"
-        "\n"
-        "    set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD \"@WXL_IMPORT_STD_UUID@\")\n"
+        "\n[ERROR]: wxl needs CMake 4.5 or newer for `import std;`; this is CMake ${CMAKE_VERSION}.\n"
     )
 endif()
 

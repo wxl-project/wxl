@@ -415,13 +415,12 @@ if(WXL_TESTS)
     # plain executable rather than a gtest because launch.h reaches wxl.core
     # through core.h (include-then-import), which gtest's own standard headers
     # cannot share a translation unit with; it reports through its exit code.
-    # CXX_MODULE_STD / scanning as wxl_add_gtest sets, since it consumes a
-    # module built with `import std;`.
+    # Scanned as wxl_add_gtest sets, since it consumes a module built with
+    # `import std;`.
     add_executable(wxl.ui.teardown-test test/teardown_test.cpp)
     target_link_libraries(wxl.ui.teardown-test PRIVATE wxl::core)
     target_include_directories(wxl.ui.teardown-test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     set_target_properties(wxl.ui.teardown-test PROPERTIES
-        CXX_MODULE_STD ON
         CXX_SCAN_FOR_MODULES ON)
     wxl_set_target_folders(wxl.ui.teardown-test PREFIX "tests")
     add_test(NAME wxl.ui.teardown COMMAND wxl.ui.teardown-test)
@@ -434,7 +433,6 @@ if(WXL_TESTS)
     target_link_libraries(wxl.ui.app-zoom-test PRIVATE wxl::core)
     target_include_directories(wxl.ui.app-zoom-test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     set_target_properties(wxl.ui.app-zoom-test PROPERTIES
-        CXX_MODULE_STD ON
         CXX_SCAN_FOR_MODULES ON)
     wxl_set_target_folders(wxl.ui.app-zoom-test PREFIX "tests")
     add_test(NAME wxl.ui.app-zoom COMMAND wxl.ui.app-zoom-test)
@@ -446,7 +444,6 @@ if(WXL_TESTS)
     target_link_libraries(wxl.ui.state-pair-test PRIVATE wxl::core)
     target_include_directories(wxl.ui.state-pair-test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     set_target_properties(wxl.ui.state-pair-test PROPERTIES
-        CXX_MODULE_STD ON
         CXX_SCAN_FOR_MODULES ON)
     wxl_set_target_folders(wxl.ui.state-pair-test PREFIX "tests")
     add_test(NAME wxl.ui.state-pair COMMAND wxl.ui.state-pair-test)
@@ -457,7 +454,6 @@ if(WXL_TESTS)
     target_link_libraries(wxl.ui.file-uri-test PRIVATE wxl::core)
     target_include_directories(wxl.ui.file-uri-test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     set_target_properties(wxl.ui.file-uri-test PROPERTIES
-        CXX_MODULE_STD ON
         CXX_SCAN_FOR_MODULES ON)
     wxl_set_target_folders(wxl.ui.file-uri-test PREFIX "tests")
     add_test(NAME wxl.ui.file-uri COMMAND wxl.ui.file-uri-test)
@@ -470,7 +466,6 @@ if(WXL_TESTS)
     target_link_libraries(wxl.ui.stream-reference-test PRIVATE wxl::core Microsoft::CppWinRT runtimeobject.lib)
     target_include_directories(wxl.ui.stream-reference-test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     set_target_properties(wxl.ui.stream-reference-test PROPERTIES
-        CXX_MODULE_STD ON
         CXX_SCAN_FOR_MODULES ON)
     wxl_set_target_folders(wxl.ui.stream-reference-test PREFIX "tests")
     add_test(NAME wxl.ui.stream-reference COMMAND wxl.ui.stream-reference-test)
