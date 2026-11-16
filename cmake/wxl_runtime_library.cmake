@@ -44,8 +44,9 @@
 #       includes the targets of wxl from the export of one of the builds in
 #       <directory>/<variant> and gives every configuration of the project the
 #       archives of its build, lib/<variant>/<archive> of the prefix
-#       (cmake/wxl-config.cmake.in). A package without that build stops the
-#       configure, naming the configuration and its CRT.
+#       (cmake/wxl-config.cmake.in); a target of headers alone is left as the
+#       export makes it. A package without that build stops the configure,
+#       naming the configuration and its CRT.
 
 include_guard(GLOBAL)
 
@@ -177,6 +178,13 @@ function(wxl_import_targets directory)
     endif()
 
     foreach(target IN LISTS targets)
+        # A target of headers alone (wxl::test) has no archive and nothing of a
+        # configuration to give.
+        get_target_property(type ${target} TYPE)
+        if(type STREQUAL "INTERFACE_LIBRARY")
+            continue()
+        endif()
+
         # What the export gives the target for each configuration of wxl, read
         # before a configuration of the project is written over it.
         foreach(build IN ITEMS DEBUG RELEASE)
@@ -186,7 +194,6 @@ function(wxl_import_targets directory)
             endforeach()
         endforeach()
 
-        get_target_property(type ${target} TYPE)
         foreach(i RANGE ${last})
             set(build "${build_${i}}")
             set(key "${key_${i}}")
