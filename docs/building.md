@@ -1113,8 +1113,9 @@ wxl_add_executable(demo UI wxl::ui.demo demo.cpp)
   генератор и настройка находят его в каталоге профилей пакета, как
   находят профиль из `extends` для профиля любого приложения. Свой список
   типов и компонентов у образца тот же, что у `base`. Целей
-  `wxl::highlight`, `wxl::bb`, `wxl::rsdn`, `wxl::test` и `wxl::test.gtest` в пакете нет; компоненты `bb` и `rsdn`
-  линкуют `wxl::bb` и `wxl::rsdn`, а входят они в цепочку профилей
+  `wxl::highlight`, `wxl::bb`, `wxl::rsdn`, `wxl::test` и `wxl::test.gtest`
+  в пакете нет; компоненты `bb`, `rsdn` и `code` линкуют `wxl::bb`,
+  `wxl::rsdn` и `wxl::highlight`, а входят они в цепочку профилей
   `extended`, `rich`, `full` и `editor`.
 - **Windows App Runtime.** Экспериментальную среду устанавливает утилита
   `winxl` из `bin` пакета по списку восстановления приложения:
