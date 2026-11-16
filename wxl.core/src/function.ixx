@@ -143,7 +143,7 @@ public:
         using Fn = std::decay_t<F>;
         struct impl : public body_type {
             Fn fn_;
-            explicit impl(Fn value) : fn_(std::move(value)) {}
+            explicit impl(Fn fn) : fn_(std::move(fn)) {}
             R operator()(T... args) noexcept(NX) override {
                 if constexpr (std::is_void_v<R> || !void_result<Fn, T...>) {
                     return fn_(std::forward<T>(args)...);

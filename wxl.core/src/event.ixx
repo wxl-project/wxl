@@ -79,7 +79,7 @@ private:
 
 namespace impl {
 
-inline event_token make_event_token(std::int64_t value) noexcept { return event_token{value}; }
+inline event_token make_event_token(std::int64_t raw) noexcept { return event_token{raw}; }
 
 }  // namespace impl
 

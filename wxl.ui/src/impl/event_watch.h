@@ -45,10 +45,11 @@ class event_watch
     using owner_t = typename core::impl::member_owner<decltype(Listener)>::type;
 
 public:
-    /// A watch on `source`, calling the listener on `owner` each time the event is raised. The
+    /// A watch on `watched`, calling the listener on `owner` each time the event is raised. The
     /// source is copied first and the handler put on it after: a subscription that throws
     /// leaves no handler behind, and the copy goes with the half-made watch.
-    event_watch(Source const& source, owner_t& owner) : source_(source), token_(subscribe(owner)) {}
+    event_watch(Source const& watched, owner_t& owner)
+        : source_(watched), token_(subscribe(owner)) {}
 
     event_watch(event_watch const&) = delete;
     event_watch& operator=(event_watch const&) = delete;
