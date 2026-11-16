@@ -85,7 +85,8 @@ struct MarkupTheme {
     // <span style="kw">, "str" и "com" — ключевое слово, строка,
     // комментарий, имена RsdnFormatter. Пустое поле — палитра по теме
     // окна, светлой или тёмной, выбираемая при постройке; зарегистрированный
-    // стиль с тем же именем сильнее темы.
+    // стиль с тем же именем сильнее темы. Те же цвета и ту же палитру берёт
+    // CodeBlock.
     core::nullable<Color> keywordColor;
     core::nullable<Color> stringColor;
     core::nullable<Color> commentColor;

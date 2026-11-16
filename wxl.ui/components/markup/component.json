@@ -11,6 +11,7 @@
     "HtmlBlock.cpp",
     "HtmlBlock.h",
     "HtmlBlock.impl.h",
+    "impl/code_palette.h",
     "impl/markup_build.h",
     "MarkupBlock.cpp",
     "MarkupBlock.h",

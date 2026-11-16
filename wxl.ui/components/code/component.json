@@ -1,0 +1,16 @@
+{
+  "name": "code",
+  "dependencies": [
+    "schema",
+    "markup"
+  ],
+  "sources": [
+    "CodeBlock.cpp",
+    "CodeBlock.h"
+  ],
+  "surface": "code.surface.cpp",
+  "libraries": [
+    "wxl::highlight"
+  ],
+  "description": "The block of source code with syntax highlighting."
+}

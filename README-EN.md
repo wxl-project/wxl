@@ -201,7 +201,7 @@ MSBuild), or adds the root of the `wxl` tree — `add_subdirectory` or
 | `wxl.core/src/fmt`, `logging` | `text_builder` and string formatting on top of the `fmt` library. The logging subsystem. |
 | `wxl.core/src/xml`, `json` | Lightweight parsers for XML and JSON. |
 | `wxl.core/src/html` | Parsing of the HTML subset for the `HtmlBlock` visual component. |
-| **`wxl.bb`** / **`wxl.rsdn`** / **`wxl.highlight`** | Modules parsing BB-code and RSDN markup into the same tree for `BbBlock`, `RsdnBlock`. The `wxl.highlight` syntax highlighting subsystem. |
+| **`wxl.bb`** / **`wxl.rsdn`** / **`wxl.highlight`** | Modules parsing BB-code and RSDN markup into the same tree for `BbBlock`, `RsdnBlock`. The `wxl.highlight` syntax highlighting subsystem, shown by `CodeBlock`. |
 | **`wxl.gen.*`** | Source code of the `winui-srcgen` projection generator (`wxl.gen`, `wxl.gen.common`) and `wxl.gen.ui`, a GUI for visually editing code generation profiles (launched via `run-gen-ui.cmd`). |
 | **`wxl.ui`** | The **WinUI** graphics stack without XAML: public object wrappers, the declarative DSL syntax, window management, data binding and visual effects. |
 | **Auxiliary** | `samples` — sample projects; `sandbox` — isolated experiments with **WinUI** mechanisms; `wxl.test` — unit testing infrastructure; `cmake`, `tools`, `docs` — build and automation scripts and documentation sources. |
