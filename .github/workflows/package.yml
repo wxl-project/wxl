@@ -49,7 +49,8 @@
 # the actions .github/actions/package-libs, package-tools and package-pack,
 # which work at the root of the tree they are in: the CI of an application
 # that builds WinXL from a checkout of wxl at a commit runs the same steps
-# from that checkout.
+# from that checkout. The actions run tools/package/build.ps1, which builds
+# the same package on a machine with one command.
 #
 # The toolset and the WinUI build tools are installed as in ci.yml, and the
 # restore of the configure of the tree runs in locked mode as there.
