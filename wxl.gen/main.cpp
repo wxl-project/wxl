@@ -19,11 +19,18 @@ constexpr std::string_view usage = R"(winui-srcgen -- generates wxl wrappers fro
                [--winmd <file.winmd>]... [--types <file.json>]
                [--symbols <file.json>] [--docs [--doc-language <code>]]
                [--component-dir <dir>]... [--component <name>]...
-               [--common-dir <dir>]
+               [--common-dir <dir>] [--profiles-dir <dir>]
 
   --profile      Input profile; may be repeated. Profiles say which NuGet
                  packages to read, which types are the roots of the
                  dependency walk, and which of their members take part.
+  --profiles-dir The generator's own profiles (wxl.gen/profiles, or the copy
+                 an installed wxl ships), where a bare name in "extends" is
+                 looked for when the profile that names it has no such file
+                 beside it -- so a profile outside that directory extends
+                 full or base. A name found in neither stops the run with
+                 both files named; a path in "extends" is only ever relative
+                 to the profile. Without it, only the file beside is read.
   --packages     What the NuGet restore of the build resolved: every package
                  with its version and directory, and the Windows SDK of the
                  build's projection with its .winmd files. The configure of
@@ -114,6 +121,7 @@ struct options {
     std::filesystem::path out_dir;
     std::size_t parts = 1;
     std::filesystem::path packages;
+    std::filesystem::path profiles_dir;  // empty: a bare name is looked for beside its referrer only
     std::filesystem::path type_map;
     std::filesystem::path symbols;
     // Whether --symbols named the file: a file named is read whether or not it is there, so
@@ -192,6 +200,8 @@ options parse_options(int argc, wchar_t** argv) {
             opts.build_components.push_back(text_value(i, argument));
         } else if (argument == L"--common-dir") {
             opts.search.common_directory = value(i, argument);
+        } else if (argument == L"--profiles-dir") {
+            opts.profiles_dir = value(i, argument);
         } else {
             throw std::runtime_error(std::format("unknown argument: {}", text_of(argument)));
         }
@@ -269,7 +279,7 @@ int wmain(int argc, wchar_t** argv) {
         }
 
         auto profiles = resolve_profiles(opts.profiles, load_restored_packages(opts.packages),
-                                         opts.search);
+                                         opts.search, opts.profiles_dir);
         if (!opts.search.directories.empty()) {
             check_build_components(profiles, opts.build_components);
         }

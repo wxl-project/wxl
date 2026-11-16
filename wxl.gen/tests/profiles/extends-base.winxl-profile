@@ -1,0 +1,6 @@
+// A profile outside the generator's profiles directory that extends base by name, as an
+// application's profile does: there is no base beside it, and the run takes the one of
+// --profiles-dir.
+{
+    "extends": ["base"]
+}

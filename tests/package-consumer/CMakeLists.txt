@@ -25,9 +25,10 @@
 #   demo       a window on the library of the profile demo, profile/
 #              demo.winxl-profile: the generator of the package writes the
 #              wrappers, the components of the package are compiled with them,
-#              and wxl::ui.common of the package is linked. The profile is a copy
-#              of wxl's base and extends nothing, so that it needs nothing
-#              outside the package.
+#              and wxl::ui.common of the package is linked. The profile extends
+#              wxl's base, which is not beside it: the generator and the
+#              configure find it among the profiles of the package. Its own
+#              lists are those of base.
 cmake_minimum_required(VERSION 4.3)
 
 # The `import std;` gate opens before project(); its UUID is that of the CMake

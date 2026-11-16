@@ -401,10 +401,16 @@ profile load_profile(std::filesystem::path const& path);
 // Where a profile named in `extends` lives. A reference is either a path (has
 // a directory part or an extension), relative to the referring profile's
 // directory, or a bare profile name, the file <name>.winxl-profile next to the
-// profile that named it. The reference is a profile's own text, checked UTF-8,
-// as load_profile() puts it in `extends`.
+// profile that named it -- and, when there is no such file there and
+// `profiles_dir` is given, the file of that name in `profiles_dir`, the
+// generator's own profiles (wxl.gen/profiles, or the copy an installed wxl
+// ships), which is how a profile of an application extends `full`. A path has
+// no such second place. A bare name found in neither throws std::runtime_error
+// naming the referrer and both files. The reference is a profile's own text,
+// checked UTF-8, as load_profile() puts it in `extends`.
 std::filesystem::path resolve_reference(std::string_view reference,
-                                        std::filesystem::path const& referrer);
+                                        std::filesystem::path const& referrer,
+                                        std::filesystem::path const& profiles_dir = {});
 
 // A package version, parsed and compared the way NuGet's NuGetVersion is:
 // SemVer 2.0 with a fourth numeric part. The numeric parts are compared as
@@ -488,7 +494,8 @@ struct component_search {
 
 // Loads every named profile plus, transitively, the profiles they
 // `extends`, and merges them. A profile reference is either a path or a
-// bare name resolved as `<dir of the referencing profile>/<name>.winxl-profile`.
+// bare name resolved as `<dir of the referencing profile>/<name>.winxl-profile`,
+// or else as `<profiles_dir>/<name>.winxl-profile` (resolve_reference).
 // Diamonds are loaded once; cycles are an error.
 //
 // Every package a profile names is read from `restored`, at the version the
@@ -499,7 +506,8 @@ struct component_search {
 // versions, or what the restore has to add.
 profile_set resolve_profiles(std::vector<std::filesystem::path> const& paths,
                              restored_packages const& restored,
-                             component_search const& search = {});
+                             component_search const& search = {},
+                             std::filesystem::path const& profiles_dir = {});
 
 // Compares the components a build read from the profile chain on its own with those the chain
 // names in "components" before "dependencies" adds to them, as sets: the build compiles the

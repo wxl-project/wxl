@@ -100,8 +100,10 @@
 # profiles changes: of the profile's own directory and of the generator's
 # profiles directory -- the profiles, types.json, fluent-symbols.json. Every one
 # of them, and not only the profile and what it extends: a profile outside the
-# tree may extend one of the tree's. With a library or a surface test of a
-# profile it also runs again when a manifest of a selected component changes.
+# tree may extend one of the tree's -- a bare name in "extends" with no file of
+# that name beside the profile is the generator's (--profiles-dir) -- and a
+# profile added beside it takes that name over. With a library or a surface test
+# of a profile it also runs again when a manifest of a selected component changes.
 #
 # The generator is the target wxl::winui-srcgen: in the wxl tree the alias of
 # winui-srcgen, which the tree builds (wxl.gen/CMakeLists.txt), and in a project
@@ -110,8 +112,10 @@
 # WXL_SHARED_FILE, and the directory of the generator's own profiles and tables,
 # WXL_PROFILES_DIR: types.json and fluent-symbols.json are handed to every run
 # from there (--types, --symbols), so a profile outside that directory is
-# generated with the same tables. The library's include directory, which holds
-# what no component owns (--common-dir), is the directory of the file set
+# generated with the same tables. The directory itself goes to the run as
+# --profiles-dir and to the script below as -ProfilesDir, so that such a profile
+# extends one of the generator's by name, in the run and in the configure
+# alike. The library's include directory, which holds what no component owns (--common-dir), is the directory of the file set
 # headers of wxl::ui.common, and the directory of the components is its
 # WXL_UI_COMPONENTS_DIR: the sources in the tree, the copies in the package.
 #
@@ -252,6 +256,7 @@ function(wxl_generate_wrappers name)
         OUTPUT ${_wxl_parts} "${_wxl_surface}" "${_wxl_stamp}"
         COMMAND "${_wxl_generator}"
                 --profile "${A_PROFILE}" --packages "${_wxl_packages}"
+                --profiles-dir "${_wxl_gen_profiles}"
                 --types "${_wxl_gen_profiles}/types.json"
                 --symbols "${_wxl_gen_profiles}/fluent-symbols.json"
                 --out "${_wxl_out}" --parts ${A_PARTS} ${_wxl_docs}
@@ -292,7 +297,9 @@ endfunction()
 # configure: <prefix>_CHAIN, the names the chain itself gives (what the generator
 # compares with --component); and, closed over "dependencies", <prefix>_DIRS,
 # <prefix>_SOURCES and <prefix>_SURFACES (absolute, the last the fragments of the
-# surface test), <prefix>_LIBRARIES and <prefix>_MANIFESTS. Every
+# surface test), <prefix>_LIBRARIES and <prefix>_MANIFESTS. The chain is
+# resolved as the generator resolves it, with the profiles directory of
+# wxl::winui-srcgen, which has to be there. Every
 # profile of the chain and every manifest becomes a configure dependency, so an
 # edit of either configures again. A script that fails stops the configure with
 # its message.
@@ -301,10 +308,14 @@ function(wxl_read_profile_components prefix profile component_dir)
     # manifest through different paths would be one ninja output declared twice.
     cmake_path(ABSOLUTE_PATH profile NORMALIZE)
     cmake_path(ABSOLUTE_PATH component_dir NORMALIZE)
+    # The chain as the generator resolves it: a bare name in "extends" that is not
+    # beside its profile is looked for among the generator's profiles.
+    _wxl_ui_generator("wxl_read_profile_components(${profile})" _wxl_generator _wxl_gen_profiles)
     execute_process(
         COMMAND "${POWERSHELL_EXE}" -NoProfile -ExecutionPolicy Bypass -File
                 "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/Read-ProfileComponents.ps1"
-                -Profile "${profile}" -ComponentDir "${component_dir}"
+                -Profile "${profile}" -ProfilesDir "${_wxl_gen_profiles}"
+                -ComponentDir "${component_dir}"
         OUTPUT_VARIABLE _wxl_output
         RESULT_VARIABLE _wxl_result
         ERROR_VARIABLE _wxl_error

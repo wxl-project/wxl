@@ -532,13 +532,25 @@ std::weak_ordering operator<=>(nuget_version const& a, nuget_version const& b) {
 }
 
 std::filesystem::path resolve_reference(std::string_view reference,
-                                        std::filesystem::path const& referrer) {
+                                        std::filesystem::path const& referrer,
+                                        std::filesystem::path const& profiles_dir) {
     auto path = path_of(reference);
     if (path.has_extension() || path.has_parent_path()) {
         return path.is_absolute() ? path : referrer.parent_path() / path;
     }
     path += L".winxl-profile";
-    return referrer.parent_path() / path;
+    auto beside = referrer.parent_path() / path;
+    if (profiles_dir.empty() || std::filesystem::is_regular_file(beside)) {
+        return beside;
+    }
+    auto packaged = profiles_dir / path;
+    if (std::filesystem::is_regular_file(packaged)) {
+        return packaged;
+    }
+    fail(referrer, std::format("profile '{}' named in extends is not found: not beside it ({}) "
+                               "and not in the profiles directory ({})",
+                               reference, wxl::core::unicode::to_utf8(beside).chars(),
+                               wxl::core::unicode::to_utf8(packaged).chars()));
 }
 
 bool member_filter::allows(std::string_view name) const {
@@ -938,6 +950,7 @@ struct profile_loader {
     std::set<std::filesystem::path>& loading;  // cycle detection
     std::vector<profile>& in_load_order;
     bool& windows_metadata;
+    std::filesystem::path const& profiles_dir;  // where a bare name not beside its referrer is
     // The file each definition kept comes from, by what it defines. Between profiles the extends
     // chain decides which one is kept; a component giving a definition differently from the one
     // kept stops the run instead, since nothing orders a component against a profile.
@@ -971,7 +984,7 @@ struct profile_loader {
 
         auto const prof = load_profile(path);
         for (auto&& reference : prof.extends) {
-            load(resolve_reference(reference, prof.source));
+            load(resolve_reference(reference, prof.source, profiles_dir));
         }
         for (auto&& name : prof.components) {
             if (std::ranges::find(result.named_components, name,
@@ -1157,7 +1170,8 @@ void check_includes(std::vector<profile> const& in_load_order,
 }  // namespace
 
 profile_set resolve_profiles(std::vector<std::filesystem::path> const& paths,
-                             restored_packages const& restored, component_search const& search) {
+                             restored_packages const& restored, component_search const& search,
+                             std::filesystem::path const& profiles_dir) {
     profile_set result;
 
     std::set<std::filesystem::path> loaded;   // canonical paths, load-once
@@ -1167,7 +1181,7 @@ profile_set resolve_profiles(std::vector<std::filesystem::path> const& paths,
     std::vector<profile> in_load_order;
     bool windows_metadata = false;
 
-    profile_loader loader{result, loaded, loading, in_load_order, windows_metadata};
+    profile_loader loader{result, loaded, loading, in_load_order, windows_metadata, profiles_dir};
     for (auto&& path : paths) {
         loader.load(path);
     }
