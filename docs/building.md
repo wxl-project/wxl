@@ -1117,6 +1117,12 @@ wxl_add_executable(demo UI wxl::ui.demo demo.cpp)
   останавливается. Без переменной действует умолчание CMake — CRT в DLL.
   Пресеты образца: `md` — CRT в DLL в Debug и Release, `mixed` — CRT в DLL в
   Debug и статическая в Release (`MultiThreaded$<$<CONFIG:Debug>:DebugDLL>`).
+- **BMI модулей пакета.** CMake компилирует их в целях, которые копирует из
+  импортированных, и у этих копий нет своего файла `.pdb`. Поэтому
+  конфигурация пакета компилирует BMI без отладочных сведений: с `/Zi` все
+  копии писали бы один файл в каталоге сборки и останавливались бы на нём
+  (C1041). Код модулей находится в библиотеках пакета, поэтому отладочные
+  сведения при этом не теряются.
 - **Цели и функции.** Пакет даёт цели `wxl::core`, `wxl::highlight`,
   `wxl::bb`, `wxl::rsdn` и `wxl::ui.common`, генератор `wxl::winui-srcgen` и функции, среди них `wxl_add_executable`,
   `wxl_target_manifest`, `wxl_target_runtime`, `wxl_target_icon`,
