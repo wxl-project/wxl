@@ -75,7 +75,7 @@ FrameworkElement workingMathml() {
                 CornerRadius {4},
                 background = brushes.Card.BackgroundFillColor.Default,
                 Padding {8, 8, 8, 0},
-                ScrollViewer {maxHeight = 450, content = mathml},
+                ScrollViewer {maxHeight = 450, content = mathmlCard},
             },
         },
         .options = {setFormula},

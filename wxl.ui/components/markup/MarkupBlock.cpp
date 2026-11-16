@@ -21,6 +21,7 @@
 #include "Object.impl.h"
 #include <wxl/Microsoft.UI.Xaml.Media.impl.h>
 #include <wxl/brushes.h>
+#include "impl/code_palette.h"
 #include "impl/conversions.h"
 
 // Импорт последним — его несёт markup_build.h.
@@ -1112,35 +1113,19 @@ private:
     }
 
     // Цвет куска кода по имени стиля подсветки: из темы, а при пустом поле
-    // — палитра по фактической теме элемента, светлой или тёмной (цвета
-    // Visual Studio: синее ключевое слово с белого фона на чёрном не
-    // читается). Реестр стилей смотрели раньше: он сильнее.
+    // — палитра кода (impl/code_palette.h) по фактической теме элемента.
+    // Реестр стилей смотрели раньше: он сильнее.
     bool code_style(std::u16string_view name, MarkupStyle& out) {
-        const core::nullable<Color>* themed = nullptr;
-        std::uint32_t light = 0;
-        std::uint32_t dark = 0;
-        if (name == u"kw") {
-            themed = &theme_.keywordColor;
-            light = 0x0000FF;
-            dark = 0x569CD6;
-        } else if (name == u"str") {
-            themed = &theme_.stringColor;
-            light = 0x8B0000;
-            dark = 0xD69D85;
+        impl::code_kind kind = impl::code_kind::keyword;
+        if (name == u"str") {
+            kind = impl::code_kind::string;
         } else if (name == u"com") {
-            themed = &theme_.commentColor;
-            light = 0x008000;
-            dark = 0x57A64A;
-        } else {
+            kind = impl::code_kind::comment;
+        } else if (name != u"kw") {
             return false;
         }
-        if (*themed) {
-            out.text.color = **themed;
-            return true;
-        }
-        const std::uint32_t rgb = dark_theme() ? dark : light;
-        out.text.color = Color{255, static_cast<std::uint8_t>(rgb >> 16),
-                               static_cast<std::uint8_t>(rgb >> 8), static_cast<std::uint8_t>(rgb)};
+        const core::nullable<Color>& themed = impl::themed_code_color(theme_, kind);
+        out.text.color = themed ? *themed : impl::palette_code_color(kind, dark_theme());
         return true;
     }
 
