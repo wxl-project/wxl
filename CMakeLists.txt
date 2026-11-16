@@ -104,8 +104,8 @@ endif()
 # are the same bytes whenever the same sources are built with the same toolset,
 # whatever the directories and the time -- all but the profile editor, whose
 # link MSVC 14.53 does not repeat (docs/building.md, "Пакет WinXL"). The builds
-# of the package WinXL turn it on (.github/actions/package-libs,
-# package-tools), so that the package made again from a commit has the hash of
+# of the package WinXL turn it on (tools/package/build.ps1, which
+# .github/actions/package-libs and package-tools run), so that the package made again from a commit has the hash of
 # the first, which an application's NuGet lock file can then hold. Off in a
 # working tree, where a debugger finds the sources by the paths the objects
 # carry.

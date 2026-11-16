@@ -6,7 +6,8 @@
 # static build directory is built and checked only with the package (see
 # release.yml), and not on a pull request. The steps between the checkout and
 # the upload are the action .github/actions/package-tools, which the CI of an
-# application that builds WinXL from a checkout of wxl runs as well.
+# application that builds WinXL from a checkout of wxl runs as well, and which
+# runs tools/package/build.ps1 -Step Tools.
 #
 # The toolset and the WinUI build tools are installed as in ci.yml, and the
 # restore of the configure runs in locked mode as there. winxl is published by

@@ -17,9 +17,9 @@
 # NuGet imports them into a .vcxproj that references the package. The package
 # of a release is packed from a prefix both builds of the tree were installed
 # into, the CRT in a DLL and the static one, with the tool set of the static
-# build in bin; what the prefix holds is packed as it is, and the workflow that
-# makes it
-# (.github/workflows/package.yml) checks that.
+# build in bin; what the prefix holds is packed as it is, and build.ps1 beside
+# this script, which makes it on a machine and in the workflow
+# .github/workflows/package.yml, checks that.
 #
 # Read from the prefix, so the package says what the install says:
 #

@@ -65,50 +65,12 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 
-function Import-VisualStudioEnvironment {
-    if ($env:VSCMD_VER) { return }  # already inside a developer prompt
-
-    $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
-    if (-not (Test-Path $vswhere)) { throw "vswhere.exe not found: $vswhere" }
-
-    # -prerelease so an Insiders/preview installation counts; the tree needs a
-    # toolset new enough for `import std;`, which is where those tend to be.
-    # The installation also needs the C++ WinUI tools, which the configure
-    # checks (cmake/wxl_packages.cmake): the component of Visual Studio or the
-    # component group of Build Tools. vswhere applies -requiresAny to every ID
-    # it is given, so the two conditions are two lists, and the newest
-    # installation of the first list that is also in the second is taken.
-    $withCpp = @(& $vswhere -prerelease -products * -sort `
-        -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
-        -property installationPath)
-    $withWinUI = @(& $vswhere -prerelease -products * -requiresAny `
-        -requires Microsoft.VisualStudio.Component.WindowsAppSdkSupport.Cpp `
-                  Microsoft.VisualStudio.ComponentGroup.WindowsAppDevelopment.VC.BuildTools `
-        -property installationPath)
-    $install = $withCpp | Where-Object { $withWinUI -contains $_ } | Select-Object -First 1
-    if (-not $install) {
-        throw ('No Visual Studio installation with the C++ toolset and the C++ WinUI tools was found. ' +
-            'Visual Studio 2026: the workload "WinUI application development" with "C++ WinUI app ' +
-            'development tools" (Microsoft.VisualStudio.Component.WindowsAppSdkSupport.Cpp). Build Tools ' +
-            'for Visual Studio 2026: the workload "WinUI application development build tools" with ' +
-            '"C++ WinUI app development build tools" ' +
-            '(Microsoft.VisualStudio.ComponentGroup.WindowsAppDevelopment.VC.BuildTools).')
-    }
-
-    $vcvars = Join-Path $install 'VC\Auxiliary\Build\vcvars64.bat'
-    if (-not (Test-Path $vcvars)) { throw "vcvars64.bat not found: $vcvars" }
-
-    & "$env:ComSpec" /c "`"$vcvars`" -vcvars_ver=$Toolset >nul 2>nul && set" | ForEach-Object {
-        if ($_ -match '^([^=]+)=(.*)$') {
-            Set-Item -Path "env:$($Matches[1])" -Value $Matches[2]
-        }
-    }
-}
+. (Join-Path $PSScriptRoot 'vs-environment.ps1')
 
 # -Configure stops before the build, so a target given with it would be dropped.
 if ($Configure -and $Target) { throw '-Configure stops before the build: -Target has nothing to build.' }
 
-Import-VisualStudioEnvironment
+Import-VisualStudioEnvironment $Toolset
 
 $buildDir = Join-Path $root "build\$Preset"
 if ($Configure -or $Define -or $UpdatePackages -or
