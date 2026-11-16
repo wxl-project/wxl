@@ -61,6 +61,19 @@ include(cmake/wxl_language.cmake)
 if(PROJECT_IS_TOP_LEVEL)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
     wxl_apply_language_options()
+
+    # The format of the debugging information asked for reaches the `std`
+    # module too. CMake builds that module in targets of its own, copied at
+    # generate time from the imported target @cmake_cxx_std, and the copy takes
+    # MSVC_DEBUG_INFORMATION_FORMAT from it (cmTarget::CopyCxxModulesProperties,
+    # read at v4.5.0). An imported target never takes the property from
+    # CMAKE_MSVC_DEBUG_INFORMATION_FORMAT, so the copies have none and fall back
+    # to CMAKE_MSVC_DEBUG_INFORMATION_FORMAT_DEFAULT of their directory -- /Zi in
+    # Debug, nothing in Release (cmLocalGenerator::GetMSVCDebugFormatName). The
+    # tree's own targets have the property and do not read the default.
+    if(DEFINED CMAKE_MSVC_DEBUG_INFORMATION_FORMAT)
+        set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT_DEFAULT "${CMAKE_MSVC_DEBUG_INFORMATION_FORMAT}")
+    endif()
 else()
     wxl_check_language_options()
 endif()
