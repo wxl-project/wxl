@@ -4,11 +4,11 @@
   tree (cmake/wxl_msbuild.cmake). NuGet imports it into a .vcxproj that references the package WinXL,
   after the project's own settings.
 
-  The project builds the modules of wxl itself: the module interface units of wxl.core and fmt the
-  package carries are compiled in it, with its own options, into BMIs alone (/ifcOnly: their code is
-  in the archives of wxl), and MSBuild hands every source of the project the BMIs it imports
-  (/reference), as it does with the std module. A BMI is tied to the compiler and the options that made
-  it, so the package carries none.
+  The project builds the modules of wxl itself: the module interface units of wxl.core, fmt,
+  wxl.highlight, wxl.bb and wxl.rsdn the package carries are compiled in it, with its own options,
+  into BMIs alone (/ifcOnly: their code is in the archives of wxl), and MSBuild hands every source of
+  the project the BMIs it imports (/reference), as it does with the std module. A BMI is tied to the
+  compiler and the options that made it, so the package carries none.
 
   The archives of a link are those of the build of wxl made with the CRT the project compiles with
   (RuntimeLibrary): lib\md for the CRT in a DLL, lib\mt for the static one, the Debug archives for a
@@ -48,14 +48,16 @@
   <!-- The module interface units, each with the directory of its BMI under $(IntDir)WinXL: two units
        of different directories may share a file name. -->
   <ItemGroup>
-@WXL_MSBUILD_CORE_MODULES@@WXL_MSBUILD_FMT_MODULES@  </ItemGroup>
+@WXL_MSBUILD_CORE_MODULES@@WXL_MSBUILD_FMT_MODULES@@WXL_MSBUILD_LIBRARY_MODULES@  </ItemGroup>
   <ItemGroup>
     <ClCompile Include="@(WinXLCoreModule)" />
     <!-- The unit of fmt with the definitions of its target in wxl, which are its own. -->
     <ClCompile Include="@(WinXLFmtModule)">
       <PreprocessorDefinitions>@WXL_MSBUILD_FMT_DEFINITIONS@;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
-    <ClCompile Update="@(WinXLCoreModule);@(WinXLFmtModule)">
+    <!-- The units of wxl.highlight, wxl.bb and wxl.rsdn, the libraries beside wxl.core. -->
+    <ClCompile Include="@(WinXLLibraryModule)" />
+    <ClCompile Update="@(WinXLCoreModule);@(WinXLFmtModule);@(WinXLLibraryModule)">
       <CompileAs>CompileAsCppModule</CompileAs>
       <AdditionalOptions>%(AdditionalOptions) /ifcOnly</AdditionalOptions>
       <LinkCompiled>false</LinkCompiled>

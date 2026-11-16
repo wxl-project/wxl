@@ -172,7 +172,7 @@ tools\build.ps1 -Preset x64-static -Config Release -Target winui-srcgen  # на�
 | `WXL_STRICT_CORO` | `OFF` | Оставляет проверки корутин области `async` модуля `wxl.core` в любой конфигурации сборки, а не только в Debug (см. [«Асинхронность»](async.md)). |
 | `WXL_ENABLE_PCH` | `ON` | Включает предкомпилированный заголовок `src/pch.h` у `wxl.core`. Модульные единицы из него исключены (MSVC не принимает его перед объявлением модуля), поэтому ключ влияет только на время сборки обычных единиц трансляции. |
 | `WXL_WINXL` | `OFF` | Утилита `winxl`: цель `winxl` публикует её через `dotnet publish` в `<сборка>/winxl/winxl.exe` (см. «Утилита winxl»). Требует .NET SDK 10: без него настройка останавливается. |
-| `WXL_INSTALL` | `OFF`, чтобы `cmake --install` потребителя не переносил файлы **wxl** в его префикс | Включает правила установки и экспорта (`cmake/wxl_install.cmake`). `cmake --install` кладёт в префикс библиотеки `wxl.core`, модуля `fmt` и `wxl.ui.common`, исходники интерфейсов модулей `wxl.core` и `fmt` вместе с заголовками, которые они включают, заголовки `wxl.ui.common`, генератор `winui-srcgen` с его профилями и таблицами, компоненты слоя профилей, конфигурацию для `find_package(wxl CONFIG)` и файлы MSBuild `WinXL.props` и `WinXL.targets` (см. «Пакет WinXL»). Готовых BMI в префиксе нет: проект строит их из установленных исходников со своими ключами. Debug и Release одной сборки устанавливаются в один префикс, у библиотек Debug суффикс `d`. Библиотеки и файл целей кладутся в каталог вида CRT: `lib/md` и `lib/cmake/wxl/md` у сборки с CRT в DLL, `lib/mt` и `lib/cmake/wxl/mt` у сборки со статической CRT, поэтому `x64-dynamic` и `x64-static` устанавливаются в один префикс. Конфигурация `wxl-config.cmake` для каждой конфигурации проекта вычисляет `CMAKE_MSVC_RUNTIME_LIBRARY` и берёт библиотеки того вида CRT, а с отладочной CRT — Debug, с остальными — Release (`cmake/wxl_runtime_library.cmake`). Версия префикса — версия коммита (`cmake/wxl_package_version.cmake`): последний выпуск по метке `v*` и четвёртым числом число коммитов после неё; `find_package(wxl <версия>)` принимает любую версию той же старшей не ниже названной. Цели `Microsoft::CppWinRT` и `wxl.winappsdk.bootstrap`, которые линкует `wxl::ui.common`, в префикс не попадают: они ссылаются на пакеты NuGet, восстановленные настройкой, и установленная конфигурация создаёт их заново над пакетами, которые восстанавливает сама по закреплённым версиям `share/wxl/packages.json` (`cmake/wxl_ui_packages.cmake`). С `WXL_TESTS` добавляются тесты `install-core` и, при `WXL_UI`, `install-ui` (см. «Тесты и бенчмарки»). |
+| `WXL_INSTALL` | `OFF`, чтобы `cmake --install` потребителя не переносил файлы **wxl** в его префикс | Включает правила установки и экспорта (`cmake/wxl_install.cmake`). `cmake --install` кладёт в префикс библиотеки `wxl.core`, модуля `fmt`, `wxl.highlight`, `wxl.bb`, `wxl.rsdn` и `wxl.ui.common`, исходники интерфейсов модулей `wxl.core`, `fmt`, `wxl.highlight`, `wxl.bb` и `wxl.rsdn` вместе с заголовками, которые они включают, заголовки `wxl.ui.common`, генератор `winui-srcgen` с его профилями и таблицами, компоненты слоя профилей, конфигурацию для `find_package(wxl CONFIG)` и файлы MSBuild `WinXL.props` и `WinXL.targets` (см. «Пакет WinXL»). Готовых BMI в префиксе нет: проект строит их из установленных исходников со своими ключами. Debug и Release одной сборки устанавливаются в один префикс, у библиотек Debug суффикс `d`. Библиотеки и файл целей кладутся в каталог вида CRT: `lib/md` и `lib/cmake/wxl/md` у сборки с CRT в DLL, `lib/mt` и `lib/cmake/wxl/mt` у сборки со статической CRT, поэтому `x64-dynamic` и `x64-static` устанавливаются в один префикс. Конфигурация `wxl-config.cmake` для каждой конфигурации проекта вычисляет `CMAKE_MSVC_RUNTIME_LIBRARY` и берёт библиотеки того вида CRT, а с отладочной CRT — Debug, с остальными — Release (`cmake/wxl_runtime_library.cmake`). Версия префикса — версия коммита (`cmake/wxl_package_version.cmake`): последний выпуск по метке `v*` и четвёртым числом число коммитов после неё; `find_package(wxl <версия>)` принимает любую версию той же старшей не ниже названной. Цели `Microsoft::CppWinRT` и `wxl.winappsdk.bootstrap`, которые линкует `wxl::ui.common`, в префикс не попадают: они ссылаются на пакеты NuGet, восстановленные настройкой, и установленная конфигурация создаёт их заново над пакетами, которые восстанавливает сама по закреплённым версиям `share/wxl/packages.json` (`cmake/wxl_ui_packages.cmake`). С `WXL_TESTS` добавляются тест `install-core` и, при `WXL_UI`, тесты `install-ui` и `install-extended` (см. «Тесты и бенчмарки»). |
 | `WXL_LOCAL_SOURCE_DIR` | пусто | Каталог с локальными копиями зависимостей: `winmd`, `fmt`, `googletest`, `wxl_doxygen` и `wxl_doxygen_awesome`, каждая в подкаталоге с этим именем. Если ключ задан, зависимости берутся оттуда и не загружаются. Пустое значение возвращает загрузку. |
 
 Сквозная оптимизация (`/GL`, LTCG) не используется. Это решение принято по
@@ -672,22 +672,30 @@ ctest --preset x64-dynamic-debug -R docs  # сайт документации к
   типы. Почему эти интерфейсы запрещены, описано на странице [о тексте](text.md).
   Тест регистрируется в клоне с git; на CI его отсутствие останавливает
   настройку.
-- **Установка:** тесты `install-core` и `install-ui`
+- **Установка:** тесты `install-core`, `install-ui` и `install-extended`
   (`cmake/wxl_install_test.cmake`) регистрируются при `WXL_INSTALL`. Каждый
   устанавливает конфигурацию, которую проверяет `ctest`, в префикс внутри
   каталога сборки, копирует туда же проект-потребитель, настраивает его с этим
   префиксом в `CMAKE_PREFIX_PATH` и собирает. Потребителю передаются
   компилятор, Ninja, компилятор ресурсов и `mt` из кэша дерева. Тесты
   запускаются из окружения разработчика: без его `LIB` и `INCLUDE`
-  компоновщик потребителя не находит библиотек Windows SDK, а `install-ui`
-  ещё и восстанавливает пакеты NuGet через MSBuild, как настройка дерева.
+  компоновщик потребителя не находит библиотек Windows SDK, а `install-ui` и
+  `install-extended` ещё и восстанавливают пакеты NuGet через MSBuild, как
+  настройка дерева.
   Проект `tests/install-consumer`
   (`install-core`) подключает **wxl** через `find_package(wxl CONFIG
   REQUIRED)`, строит BMI `wxl.core` и `fmt` из установленных исходников,
   запускается и печатает версию пакета. Проект `tests/install-ui-consumer`
   (`install-ui`) получает копию профиля `base`, собирает его библиотеку
   функцией `wxl_add_ui_library` из установленного пакета и линкует с ней
-  приложение; запуск приложения не проверяется.
+  приложение; запуск приложения не проверяется. Проект
+  `tests/install-extended-consumer` (`install-extended`) собирает так же
+  библиотеку собственного профиля, который продолжает `extended`: рядом с
+  ним профилей `extended` и `base` нет, и их находят в каталоге профилей
+  установленного пакета. Профиль выбирает компоненты `bb`, `rsdn` и `code`,
+  поэтому BMI `wxl.bb`, `wxl.rsdn` и `wxl.highlight` строятся из
+  установленных исходников, а приложение с блоками `BbBlock`, `RsdnBlock` и
+  `CodeBlock` линкуется с их библиотеками из префикса.
 - **Бенчмарки:** это отдельные исполняемые файлы, каждый из которых сам
   выводит свою таблицу.
 
@@ -922,12 +930,14 @@ wxl_target_assets(sample.quadratic Assets)
 Пакет NuGet `WinXL` содержит установленную **wxl** (`cmake --install` с
 ключом `WXL_INSTALL`) в каталоге `build/native`:
 
-- библиотеки `wxl.core`, модуля `fmt` и `wxl.ui.common` в Debug и Release,
-  собранные с CRT в DLL (`lib/md`) и со статической CRT (`lib/mt`), с
-  отладочными сведениями внутри объектов (`/Z7`);
+- библиотеки `wxl.core`, модуля `fmt`, `wxl.highlight`, `wxl.bb`, `wxl.rsdn`
+  и `wxl.ui.common` в Debug и Release, собранные с CRT в DLL (`lib/md`) и со
+  статической CRT (`lib/mt`), с отладочными сведениями внутри объектов
+  (`/Z7`);
 - исходники интерфейсов модулей `wxl.core` и `fmt` с заголовками, которые они
-  включают, и заголовки `wxl.ui.common` (`include/wxl`): BMI приложение строит
-  само, со своими ключами;
+  включают, исходники интерфейсов модулей `wxl.highlight`, `wxl.bb` и
+  `wxl.rsdn` (`include/wxl/<имя>`) и заголовки `wxl.ui.common`
+  (`include/wxl`): BMI приложение строит само, со своими ключами;
 - профили и таблицы генератора (`share/wxl/profiles`) и компоненты слоя
   профилей (`share/wxl/components`);
 - инструменты, собранные в каталоге `x64-static`, в `bin`: генератор
@@ -992,7 +1002,7 @@ nuget.org:
 
 ```
 cmake --preset x64-dynamic -DWXL_INSTALL=ON -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded -DWXL_SAMPLES=OFF -DWXL_SANDBOX=OFF -DWXL_BUILD_DOCS=OFF
-cmake --build build\x64-dynamic --config Debug --target wxl.core fmt.module wxl.ui.common winui-srcgen
+cmake --build build\x64-dynamic --config Debug --target wxl.core fmt.module wxl.highlight wxl.bb wxl.rsdn wxl.ui.common winui-srcgen
 cmake --install build\x64-dynamic --config Debug --prefix <префикс>
 cmake -DWXL_PACK_STAGE=<префикс> -DWXL_PACK_OUTPUT=<каталог> -P tools\package\pack.cmake
 cmake -DWXL_PUBLISH_PACKAGE=<каталог>\WinXL.<версия>.nupkg -DWXL_PUBLISH_FEED=<каталог пакетов> -P tools\package\publish.cmake
@@ -1101,22 +1111,25 @@ wxl_add_executable(demo UI wxl::ui.demo demo.cpp)
   останавливается. Без переменной действует умолчание CMake — CRT в DLL.
   Пресеты образца: `md` — CRT в DLL в Debug и Release, `mixed` — CRT в DLL в
   Debug и статическая в Release (`MultiThreaded$<$<CONFIG:Debug>:DebugDLL>`).
-- **Цели и функции.** Пакет даёт цели `wxl::core` и `wxl::ui.common`,
-  генератор `wxl::winui-srcgen` и функции, среди них `wxl_add_executable`,
+- **Цели и функции.** Пакет даёт цели `wxl::core`, `wxl::highlight`,
+  `wxl::bb`, `wxl::rsdn` и `wxl::ui.common`, генератор `wxl::winui-srcgen` и функции, среди них `wxl_add_executable`,
   `wxl_target_manifest`, `wxl_target_runtime`, `wxl_target_icon`,
   `wxl_target_assets`, `wxl_add_module_library`, `wxl_add_ui_library` и
   `wxl_add_ui_surface_test` (см. «Цели и функции»). Готовых библиотек
   профилей в пакете нет: приложение строит библиотеку своего профиля функцией
   `wxl_add_ui_library` генератором, профилями и компонентами из пакета.
-  Профиль образца `profile/demo.winxl-profile` продолжает `base`
-  (`"extends": ["base"]`): рядом с ним файла `base.winxl-profile` нет, и
-  генератор и настройка находят его в каталоге профилей пакета, как
-  находят профиль из `extends` для профиля любого приложения. Свой список
-  типов и компонентов у образца тот же, что у `base`. Целей
-  `wxl::highlight`, `wxl::bb`, `wxl::rsdn`, `wxl::test` и `wxl::test.gtest`
-  в пакете нет; компоненты `bb`, `rsdn` и `code` линкуют `wxl::bb`,
-  `wxl::rsdn` и `wxl::highlight`, а входят они в цепочку профилей
-  `extended`, `rich`, `full` и `editor`.
+  Компоненты `bb`, `rsdn` и `code` линкуют `wxl::bb`, `wxl::rsdn` и
+  `wxl::highlight` пакета, поэтому профили `extended`, `rich`, `full` и
+  `editor` и профили приложений, которые их продолжают, собираются из
+  пакета. Профиль образца `profile/demo.winxl-profile` продолжает `extended`
+  (`"extends": ["extended"]`): рядом с ним файлов `extended.winxl-profile` и
+  `base.winxl-profile` нет, и генератор и настройка находят их в каталоге
+  профилей пакета, как находят профиль из `extends` для профиля любого
+  приложения. Свой список типов и компонентов у образца тот же, что у
+  `base`. Окно образца показывает `BbBlock`, `RsdnBlock` и `CodeBlock`,
+  поэтому `demo` строит BMI `wxl.bb`, `wxl.rsdn` и `wxl.highlight` из
+  исходников пакета и линкует их библиотеки в каждой конфигурации каждого
+  пресета. Целей `wxl::test` и `wxl::test.gtest` в пакете нет.
 - **Windows App Runtime.** Экспериментальную среду устанавливает утилита
   `winxl` из `bin` пакета по списку восстановления приложения:
 
@@ -1139,7 +1152,8 @@ cmake --build --preset md-debug
 Проект Visual Studio (`.vcxproj`) получает пакет ссылкой `PackageReference`,
 а NuGet импортирует в него `WinXL.props` из `build/native` пакета до
 собственных настроек проекта и `WinXL.targets` — после них. Путь MSBuild
-даёт модули `wxl.core` и `fmt` и их библиотеки. Библиотеки `wxl.ui.common`,
+даёт модули `wxl.core`, `fmt`, `wxl.highlight`, `wxl.bb` и `wxl.rsdn` и их
+библиотеки. Библиотеки `wxl.ui.common`,
 генерации обёрток по профилю и размещения DLL времени выполнения рядом с
 программой в нём нет. Образец — `tests/package-consumer/msbuild/demo.vcxproj`,
 консольная программа `core-only` образца CMake:
@@ -1168,7 +1182,8 @@ cmake --build --preset md-debug
   `Microsoft.Windows.CppWinRT`, ставит более низкий уровень, если проект не
   назвал свой.
 - **`WinXL.targets`** добавляет в проект исходники интерфейсов модулей
-  `wxl.core` и `fmt` из пакета. Они компилируются ключами проекта только в
+  `wxl.core`, `fmt`, `wxl.highlight`, `wxl.bb` и `wxl.rsdn` из пакета. Они
+  компилируются ключами проекта только в
   BMI (`/ifcOnly`), в каталог `$(IntDir)WinXL`, а MSBuild передаёт BMI каждому
   исходнику, который импортирует модуль, как и BMI модуля `std`. Код этих
   модулей находится в библиотеках пакета. Библиотеки выбираются по CRT, с

@@ -7,6 +7,9 @@ wxl_add_module_library(wxl.rsdn STATIC
 
 add_library(wxl::rsdn ALIAS wxl.rsdn)
 
+# Exported as wxl::rsdn, the name the alias gives it in the tree.
+set_target_properties(wxl.rsdn PROPERTIES EXPORT_NAME rsdn)
+
 # PUBLIC: parse() отвечает html::document — дерево семейства стоит в
 # интерфейсе, и с ним приезжает wxl::core.
 target_link_libraries(wxl.rsdn PUBLIC wxl::core)

@@ -1,0 +1,7 @@
+{
+    "name": "app",
+    "description": "The profile of the consumer of the test install-extended: wxl's extended as it is, extended by an application whose profile is not beside wxl's.",
+    "extends": [
+        "extended"
+    ]
+}
