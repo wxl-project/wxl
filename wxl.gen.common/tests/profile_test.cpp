@@ -614,6 +614,69 @@ TEST(profile, a_cycle_of_extends_is_refused) {
     std::filesystem::remove_all(directory);
 }
 
+// A bare name in `extends` is the profile beside the one that names it, and when there is none
+// there, the one of the profiles directory -- whose own bare names are, again, beside it first.
+// The profile beside wins over the one of the directory.
+TEST(profile, a_bare_name_not_beside_its_profile_is_looked_for_in_the_profiles_directory) {
+    auto const directory = scratch(L"extends_profiles_dir");
+    auto const application = directory / L"application";
+    auto const profiles = directory / L"profiles";
+    write(profiles / L"full.winxl-profile", R"({"name": "packaged full", "extends": ["base"]})");
+    write(profiles / L"base.winxl-profile", R"({"name": "packaged base"})");
+    auto const app = application / L"app.winxl-profile";
+    write(app, R"({"name": "app", "extends": ["full"]})");
+    auto const restored = load_restored_packages(write_list(directory, {}));
+
+    EXPECT_EQ(resolve_profiles({app}, restored, {}, profiles).loaded,
+              (std::vector<std::string>{"packaged base", "packaged full", "app"}));
+
+    write(application / L"base.winxl-profile", R"({"name": "own base"})");
+    write(app, R"({"name": "app", "extends": ["base"]})");
+    EXPECT_EQ(resolve_profiles({app}, restored, {}, profiles).loaded,
+              (std::vector<std::string>{"own base", "app"}));
+    EXPECT_TRUE(same_path(resolve_reference("base", app, profiles),
+                          application / L"base.winxl-profile"));
+    EXPECT_TRUE(same_path(resolve_reference("full", app, profiles),
+                          profiles / L"full.winxl-profile"));
+
+    std::filesystem::remove_all(directory);
+}
+
+// A reference with a directory part or an extension is a path from the profile that names it,
+// and nothing else: the profiles directory having a file of that name does not make it found.
+TEST(profile, a_path_in_extends_is_not_looked_for_in_the_profiles_directory) {
+    auto const directory = scratch(L"extends_path");
+    auto const profiles = directory / L"profiles";
+    write(profiles / L"full.winxl-profile", "{}");
+    auto const app = directory / L"application" / L"app.winxl-profile";
+    write(app, R"({"extends": ["full.winxl-profile"]})");
+    auto const restored = load_restored_packages(write_list(directory, {}));
+
+    EXPECT_TRUE(says(stops_with([&] { resolve_profiles({app}, restored, {}, profiles); }),
+                     {"cannot open: " + utf8(app.parent_path() / L"full.winxl-profile")}));
+
+    std::filesystem::remove_all(directory);
+}
+
+// A bare name found neither beside its profile nor in the profiles directory stops the load with
+// the profile that names it and both files looked for.
+TEST(profile, a_bare_name_found_nowhere_names_both_places) {
+    auto const directory = scratch(L"extends_nowhere");
+    auto const profiles = directory / L"profiles";
+    std::filesystem::create_directories(profiles);
+    auto const app = directory / L"application" / L"app.winxl-profile";
+    write(app, R"({"extends": ["full"]})");
+    auto const restored = load_restored_packages(write_list(directory, {}));
+
+    EXPECT_TRUE(says(stops_with([&] { resolve_profiles({app}, restored, {}, profiles); }),
+                     {utf8(app) + ": profile 'full' named in extends is not found",
+                      "not beside it (" + utf8(app.parent_path() / L"full.winxl-profile") + ")",
+                      "not in the profiles directory (" + utf8(profiles / L"full.winxl-profile") +
+                          ")"}));
+
+    std::filesystem::remove_all(directory);
+}
+
 // The files a profile asks of a package are looked for in the directory the restore names, and
 // one that is not there stops the run with the package, its version and the place named: no
 // metadata directory, no .winmd file in it, a metadata or a resource file named and missing.

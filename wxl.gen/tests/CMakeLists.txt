@@ -161,6 +161,23 @@ _wxl_gen_refusal(nothing-to-read "no metadata to read: the profiles name no pack
 _wxl_gen_refusal(nothing-to-walk "no roots to walk: the profiles list no types"
     --profile "${CMAKE_CURRENT_SOURCE_DIR}/profiles/nothing-to-walk.winxl-profile" ${_wxl_gen_run})
 
+# A bare name in "extends" that is not beside its profile is the profile of --profiles-dir, as
+# the build hands it over (cmake/wxl_ui_profile.cmake): a profile of these tests extends base
+# and is generated as base is, with the chain of base; a name in neither place stops the run with
+# both files named.
+set(_wxl_gen_profiles_dir --profiles-dir "${CMAKE_CURRENT_SOURCE_DIR}/../profiles")
+add_test(NAME winui-srcgen.extends-from-profiles-dir
+    COMMAND winui-srcgen
+        --profile "${CMAKE_CURRENT_SOURCE_DIR}/profiles/extends-base.winxl-profile"
+        --packages "${_wxl_gen_restored_packages}" --out "${CMAKE_CURRENT_BINARY_DIR}/extends-base"
+        --types "${CMAKE_CURRENT_SOURCE_DIR}/../profiles/types.json"
+        --symbols "${CMAKE_CURRENT_SOURCE_DIR}/../profiles/fluent-symbols.json"
+        ${_wxl_gen_profiles_dir} ${_wxl_gen_component_args} --parts 1)
+_wxl_gen_refusal(extends-nowhere
+    "extends-nowhere\\.winxl-profile: profile 'no-such-profile' named in extends is not found: not beside it \\(.*tests.profiles.no-such-profile\\.winxl-profile\\) and not in the profiles directory \\(.*profiles.no-such-profile\\.winxl-profile\\)"
+    --profile "${CMAKE_CURRENT_SOURCE_DIR}/profiles/extends-nowhere.winxl-profile" ${_wxl_gen_run}
+    ${_wxl_gen_profiles_dir})
+
 # Every test above runs the winui-srcgen executable, and the setup of the
 # documentation site's test (docs.language, docs/CMakeLists.txt) builds the site's
 # generation, which may link that executable anew. Windows does not let a running

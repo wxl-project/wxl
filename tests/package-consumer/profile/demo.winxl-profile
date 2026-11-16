@@ -1,7 +1,7 @@
 {
     "name": "demo",
-    "description": "The profile of the package consumer: a copy of the profile base of wxl, self-contained (no extends), so that the package alone generates and builds its library.",
-    "extends": [],
+    "description": "The profile of the package consumer. It extends base of wxl, which is not beside it: the generator and the configure find it among the profiles of the package, as they find what the profile of any application extends. Its own lists are those of base, so the library is the one of base.",
+    "extends": ["base"],
 
     "components": [
         "window",
