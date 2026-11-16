@@ -42,6 +42,14 @@ unset(_wxl_target)
 
 include("@WXL_SOURCE_CMAKE_DIR@/wxl_helpers.cmake")
 
+# The helpers of the tests, as the installed configuration gives them: the
+# fixture's source on wxl::test, the fixture itself when GoogleTest came first,
+# and the file that makes GoogleTest available otherwise.
+set_target_properties(wxl::test PROPERTIES
+    WXL_TEST_GTEST_SOURCE "@_wxl_test_gtest_source@")
+_wxl_add_test_gtest()
+set(WXL_GTEST_SCRIPT "@WXL_SOURCE_CMAKE_DIR@/wxl_gtest.cmake")
+
 # check_required_components() lives in the @PACKAGE_INIT@ preamble of an
 # installed config, which this file does not have -- so the same rule is spelled
 # out explicitly here: the package has no components to ask for.

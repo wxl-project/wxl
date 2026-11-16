@@ -60,6 +60,20 @@ wxl_import_targets("${CMAKE_CURRENT_LIST_DIR}")
 # consumer can describe its own module targets in the same style wxl does.
 include("${_wxl_helpers}/wxl_helpers.cmake")
 
+# The helpers of the tests: wxl::test, the headers, came with the targets, and
+# the fixture wxl::test.gtest is compiled here from its installed source over
+# the project's GoogleTest -- now, when the project made GoogleTest available
+# before find_package(wxl), and otherwise when it includes WXL_GTEST_SCRIPT,
+# wxl_gtest.cmake, which fetches GoogleTest the way the tree does:
+#
+#     find_package(wxl 0.1 CONFIG REQUIRED)
+#     include("${WXL_GTEST_SCRIPT}")
+#     wxl_add_gtest(app.tests SRC tests.cpp DEPS wxl::test.gtest wxl::core)
+set_target_properties(wxl::test PROPERTIES
+    WXL_TEST_GTEST_SOURCE "@PACKAGE_WXL_INSTALL_DATA_DIR@/test/@WXL_INSTALL_TEST_GTEST_SOURCE@")
+_wxl_add_test_gtest()
+set(WXL_GTEST_SCRIPT "${_wxl_helpers}/wxl_gtest.cmake")
+
 # What wxl::ui.common stands on in the restore -- the bootstrapper, the DLLs an
 # application gets beside it, what a library of a profile links -- made anew
 # over the project's restore, and what wxl_add_ui_library reads from the

@@ -7,7 +7,8 @@
 # What ships: the archives of wxl.core, of the fmt module it imports, of
 # wxl.highlight, wxl.bb and wxl.rsdn and of wxl.ui.common; the module
 # *interface sources* of wxl.core, fmt, wxl.highlight, wxl.bb and wxl.rsdn with
-# the headers they include; the headers of wxl.ui.common; the CMake glue. Built
+# the headers they include; the headers of wxl.ui.common; the helpers of the
+# tests, wxl::test and the source of its GoogleTest fixture; the CMake glue. Built
 # module interfaces (.ifc) are deliberately absent -- they are tied to the
 # exact compiler build and flags, so CMake never installs them and the consumer
 # compiles the interfaces once in its own build tree, with the definitions and
@@ -131,6 +132,21 @@ endforeach()
 # on the imported targets, where the tree names its own.
 set(WXL_INSTALL_UI FALSE)
 set(WXL_INSTALL_DATA_DIR "${CMAKE_INSTALL_DATADIR}/wxl")
+
+# The helpers of the tests (wxl.test/CMakeLists.txt): wxl::test with its
+# headers in include/wxl/test, and the source of the fixture wxl::test.gtest in
+# share/wxl/test, which the configuration names on wxl::test. GoogleTest is the
+# application's: the fixture is compiled over it in the application's build,
+# and wxl_gtest.cmake, among the helpers below, is the way wxl makes it
+# available.
+install(TARGETS wxl.test
+    EXPORT wxl-targets
+    FILE_SET headers DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wxl/test
+)
+get_target_property(_wxl_test_gtest_source wxl.test WXL_TEST_GTEST_SOURCE)
+install(FILES "${_wxl_test_gtest_source}" DESTINATION "${WXL_INSTALL_DATA_DIR}/test")
+cmake_path(GET _wxl_test_gtest_source FILENAME WXL_INSTALL_TEST_GTEST_SOURCE)
+
 if(TARGET wxl.ui.common)
     set(WXL_INSTALL_UI TRUE)
     install(TARGETS wxl.ui.common
@@ -182,13 +198,17 @@ wxl_install_msbuild()
 # wxl_runtime_library.cmake, which picks the archives, and
 # wxl_helpers.cmake: it and every file it includes, with the manifest template
 # wxl_target_manifest() reads beside them. A file missing here stops
-# find_package(wxl) in the consumer of the test install-core.
+# find_package(wxl) in the consumer of the test install-core. With them goes
+# wxl_gtest.cmake, which the configuration does not include: it fetches
+# GoogleTest, and only a project with tests asks for that, by including the
+# file the configuration names WXL_GTEST_SCRIPT.
 install(FILES
         "${CMAKE_CURRENT_LIST_DIR}/wxl_helpers.cmake"
         "${CMAKE_CURRENT_LIST_DIR}/wxl_runtime_library.cmake"
         "${CMAKE_CURRENT_LIST_DIR}/wxl_add_module_library.cmake"
         "${CMAKE_CURRENT_LIST_DIR}/wxl_target_folders.cmake"
         "${CMAKE_CURRENT_LIST_DIR}/wxl_add_gtest.cmake"
+        "${CMAKE_CURRENT_LIST_DIR}/wxl_gtest.cmake"
         "${CMAKE_CURRENT_LIST_DIR}/wxl_app_icon.cmake"
         "${CMAKE_CURRENT_LIST_DIR}/wxl_target_assets.cmake"
         "${CMAKE_CURRENT_LIST_DIR}/wxl_add_executable.cmake"
@@ -250,7 +270,11 @@ write_basic_package_version_file(
 #   install-core   tests/install-consumer: wxl.core and fmt built from the
 #                  installed interfaces, the program run and printing the
 #                  version of the package and the length of the text it
-#                  formatted.
+#                  formatted; and a GoogleTest program declared with
+#                  wxl_add_gtest over the installed wxl_gtest.cmake, linking
+#                  wxl::test.gtest compiled from the installed source, its
+#                  tests run by ctest. GoogleTest comes from the sources the
+#                  tree fetched.
 #   install-ui     tests/install-ui-consumer, with a copy of the tree's profile
 #                  base beside it: wxl_add_ui_library of the package restores
 #                  the packages, runs the installed generator and builds
@@ -285,7 +309,9 @@ endfunction()
 if(WXL_TESTS)
     _wxl_install_test(install-core install-consumer
         "-DWXL_TEST_PROGRAM=install-consumer.exe"
-        "-DWXL_TEST_EXPECTED=wxl ${WXL_VERSION}: 9 code units")
+        "-DWXL_TEST_EXPECTED=wxl ${WXL_VERSION}: 9 code units"
+        "-DWXL_TEST_CTEST=ON"
+        "-DWXL_TEST_GOOGLETEST=${googletest_SOURCE_DIR}")
     if(WXL_INSTALL_UI)
         get_target_property(_wxl_profiles winui-srcgen WXL_PROFILES_DIR)
         _wxl_install_test(install-ui install-ui-consumer

@@ -13,8 +13,9 @@
 # of the tree but the prefix. What is checked: the install of one
 # configuration; find_package(wxl CONFIG REQUIRED) taking the package from the
 # prefix, helpers included; the BMIs of wxl's modules compiled without a PDB;
-# the build of the consumer; and, with
-# WXL_TEST_PROGRAM, the program run and printing WXL_TEST_EXPECTED.
+# the build of the consumer; with WXL_TEST_CTEST, the consumer's tests run by
+# ctest; and, with WXL_TEST_PROGRAM, the program run and printing
+# WXL_TEST_EXPECTED.
 #
 # The consumer is given the compiler, the make program, the resource compiler
 # and the manifest tool of the tree -- the link of an executable runs the last
@@ -59,6 +60,12 @@ foreach(_wxl_pair IN ITEMS "RC_COMPILER;CMAKE_RC_COMPILER" "MT;CMAKE_MT"
     endif()
 endforeach()
 
+# The sources of GoogleTest the tree fetched, for a consumer that makes it
+# available with the installed wxl_gtest.cmake: the same tag, and no network.
+if(WXL_TEST_GOOGLETEST)
+    list(APPEND _wxl_tools "-DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=${WXL_TEST_GOOGLETEST}")
+endif()
+
 execute_process(
     COMMAND "${CMAKE_COMMAND}" -S "${_wxl_source}" -B "${_wxl_build}" -G Ninja
             "-DCMAKE_BUILD_TYPE=${WXL_TEST_CONFIG}"
@@ -94,6 +101,15 @@ endforeach()
 execute_process(
     COMMAND "${CMAKE_COMMAND}" --build "${_wxl_build}"
     COMMAND_ERROR_IS_FATAL ANY)
+
+# The consumer's own tests, with WXL_TEST_CTEST: a consumer that declares none
+# fails here rather than passing on nothing.
+if(WXL_TEST_CTEST)
+    execute_process(
+        COMMAND "${CMAKE_CTEST_COMMAND}" --test-dir "${_wxl_build}"
+                --output-on-failure --no-tests=error
+        COMMAND_ERROR_IS_FATAL ANY)
+endif()
 
 if(NOT WXL_TEST_PROGRAM)
     message(STATUS "${WXL_TEST_NAME}: ${_wxl_source} built against ${_wxl_prefix}")
