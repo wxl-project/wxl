@@ -78,6 +78,52 @@ else()
     wxl_check_language_options()
 endif()
 
+# ---- Reproducible builds ----
+# WXL_REPRODUCIBLE_BUILD: the objects, archives and executables the tree makes
+# are the same bytes whenever the same sources are built with the same toolset,
+# whatever the directories and the time -- all but the profile editor, whose
+# link MSVC 14.53 does not repeat (docs/building.md, "Пакет WinXL"). The builds
+# of the package WinXL turn it on (.github/actions/package-libs,
+# package-tools), so that the package made again from a commit has the hash of
+# the first, which an application's NuGet lock file can then hold. Off in a
+# working tree, where a debugger finds the sources by the paths the objects
+# carry.
+#
+# /experimental:deterministic stamps no time into an object and makes the
+# compiler honour /pathmap, which it ignores without it (MSVC 14.53; /Brepro
+# alone does not). The maps rename, in the debugging information of /Z7, in
+# __FILE__ and in std::source_location, the build directory to \wxl.build, the
+# local copies of the dependencies (WXL_LOCAL_SOURCE_DIR) to \wxl.local and the
+# tree to \wxl: the build directory first, since it may lie inside the tree and
+# the first map that matches wins. In CMAKE_CXX_FLAGS and not in the compile
+# options of the directory: those reach the export of the modules
+# (IMPORTED_CXX_MODULES_COMPILE_OPTIONS), and an application would build the
+# modules with the maps of this build; the flags of the language reach every
+# C++ compile of the tree, the `std` module among them, and nothing else. /Brepro
+# makes lib.exe write -1 for the time of each member of an archive, where it
+# writes the time of the archive otherwise, and gives an executable a hash in
+# place of the time of the link; the linker of winxl gets it from
+# cmake/wxl_winxl.cmake.
+if(PROJECT_IS_TOP_LEVEL)
+    option(WXL_REPRODUCIBLE_BUILD
+        "Build objects, archives and executables that depend on the sources and the toolset only." OFF)
+    if(WXL_REPRODUCIBLE_BUILD)
+        set(_wxl_maps "${CMAKE_BINARY_DIR}=\\wxl.build")
+        if(_wxl_local_source_dir)
+            list(APPEND _wxl_maps "${_wxl_local_source_dir}=\\wxl.local")
+        endif()
+        list(APPEND _wxl_maps "${CMAKE_SOURCE_DIR}=\\wxl")
+        string(APPEND CMAKE_CXX_FLAGS " /experimental:deterministic")
+        foreach(_wxl_map IN LISTS _wxl_maps)
+            file(TO_NATIVE_PATH "${_wxl_map}" _wxl_map)
+            string(APPEND CMAKE_CXX_FLAGS " \"/pathmap:${_wxl_map}\"")
+        endforeach()
+        string(APPEND CMAKE_EXE_LINKER_FLAGS " /Brepro")
+        string(APPEND CMAKE_SHARED_LINKER_FLAGS " /Brepro")
+        string(APPEND CMAKE_STATIC_LINKER_FLAGS " /Brepro")
+    endif()
+endif()
+
 # ---- No link-time optimization ----
 # Measured on this tree, and the measurement went the other way from what one
 # expects. The STA pool gets *faster* without /GL -- 28.4 against 31.7 ns per

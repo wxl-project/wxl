@@ -29,7 +29,9 @@ runs:
   steps:
     # BUILD_TESTING for the tests of the generator and of its common library,
     # which the next steps build and run; WXL_WINXL for the utility;
-    # WXL_PACKAGE_VERSION for the version winxl prints.
+    # WXL_PACKAGE_VERSION for the version winxl prints; WXL_REPRODUCIBLE_BUILD
+    # for executables that are the same bytes from the same commit and toolset,
+    # wherever the tree is checked out.
     - name: Configure
       shell: cmd
       working-directory: ${{ github.action_path }}/../../..
@@ -38,7 +40,7 @@ runs:
       run: |
         call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
         dotnet --list-sdks
-        cmake --preset x64-static -DBUILD_TESTING=ON -DWXL_WINXL=ON "-DWXL_PACKAGE_VERSION=%WXL_PACKAGE_VERSION%"
+        cmake --preset x64-static -DBUILD_TESTING=ON -DWXL_WINXL=ON "-DWXL_PACKAGE_VERSION=%WXL_PACKAGE_VERSION%" -DWXL_REPRODUCIBLE_BUILD=ON
 
     - name: Build
       shell: cmd

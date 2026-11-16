@@ -84,3 +84,55 @@ runs:
         if ($LASTEXITCODE -ne 0) { throw "pack.cmake exited with $LASTEXITCODE" }
         $package = "package/WinXL.$env:WXL_PACKAGE_VERSION.nupkg"
         if (-not (Test-Path $package)) { throw "no ${package}: the version of the install is not $env:WXL_PACKAGE_VERSION" }
+
+    # The package made again from the commit with the same toolset is the same
+    # bytes but for the profile editor, whose link MSVC 14.53 does not repeat
+    # (WXL_REPRODUCIBLE_BUILD, tools/package/pack.cmake, docs/building.md).
+    # Without a second build a run checks what it can: no archive or CMake file of lib and no
+    # executable directly in bin names the tree -- the builds ran at the same
+    # root, and the maps of the compiler took the paths out of the objects;
+    # every member of an archive has the time -1 of lib /Brepro; and the prefix
+    # packed a second time is the same bytes. The profile editor in
+    # bin/wxl.gen.ui is not searched: it opens the profiles and components of
+    # the tree it was built from, whose paths it carries.
+    - name: Check the package is reproducible
+      shell: pwsh
+      working-directory: ${{ github.action_path }}/../../..
+      env:
+        WXL_PACKAGE_VERSION: ${{ inputs.version }}
+        WXL_PACK_COMMIT: ${{ inputs.commit }}
+      run: |
+        $tree = $PWD.Path.TrimEnd('\', '/')
+        $forms = @($tree.Replace('/', '\'), $tree.Replace('\', '/'))
+        $latin1 = [Text.Encoding]::Latin1
+        foreach ($file in @(Get-ChildItem stage/lib -Recurse -File) + @(Get-ChildItem stage/bin -File)) {
+          $bytes = [IO.File]::ReadAllBytes($file.FullName)
+          # One character per byte, and UTF-16 from either alignment.
+          $texts = @($latin1.GetString($bytes), [Text.Encoding]::Unicode.GetString($bytes))
+          if ($bytes.Length -gt 1) { $texts += [Text.Encoding]::Unicode.GetString($bytes, 1, $bytes.Length - 1) }
+          foreach ($text in $texts) {
+            foreach ($form in $forms) {
+              if ($text.IndexOf($form, [StringComparison]::OrdinalIgnoreCase) -ge 0) { throw "$($file.FullName) names the tree $form" }
+            }
+          }
+          if ($file.Extension -eq '.lib') {
+            # !<arch>, then each member: a header of 60 bytes -- the date in
+            # bytes 16 to 28, the size in 48 to 58 -- and the data, padded to
+            # an even length.
+            if ($latin1.GetString($bytes, 0, 8) -ne "!<arch>`n") { throw "$($file.FullName) is not an archive" }
+            $at = 8
+            while ($at -lt $bytes.Length) {
+              $date = $latin1.GetString($bytes, $at + 16, 12).Trim()
+              if ($date -ne '-1') { throw "$($file.FullName): a member at $at has the time $date, not -1 of lib /Brepro" }
+              $size = [long]$latin1.GetString($bytes, $at + 48, 10).Trim()
+              $at += 60 + $size + ($size % 2)
+            }
+          }
+        }
+        $again = Join-Path $env:RUNNER_TEMP 'WinXL-again'
+        cmake "-DWXL_PACK_STAGE=$PWD/stage" "-DWXL_PACK_OUTPUT=$again" "-DWXL_PACK_COMMIT=$env:WXL_PACK_COMMIT" -P tools/package/pack.cmake
+        if ($LASTEXITCODE -ne 0) { throw "pack.cmake exited with $LASTEXITCODE" }
+        $first = (Get-FileHash "package/WinXL.$env:WXL_PACKAGE_VERSION.nupkg" -Algorithm SHA512).Hash
+        $second = (Get-FileHash "$again/WinXL.$env:WXL_PACKAGE_VERSION.nupkg" -Algorithm SHA512).Hash
+        if ($first -ne $second) { throw "the prefix packed twice gives two packages: $first and $second" }
+        "SHA-512 $first"

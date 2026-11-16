@@ -32,7 +32,9 @@ runs:
   using: composite
   steps:
     # The library and its install rules, and nothing an install does not
-    # take: no samples, no sandbox, no site, no tests.
+    # take: no samples, no sandbox, no site, no tests. Reproducible
+    # (WXL_REPRODUCIBLE_BUILD): the archives are the same bytes from the same
+    # commit and toolset, wherever the tree is checked out.
     - name: Configure
       shell: cmd
       working-directory: ${{ github.action_path }}/../../..
@@ -41,7 +43,7 @@ runs:
         WXL_PACKAGE_VERSION: ${{ inputs.version }}
       run: |
         call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
-        cmake --preset %PRESET% -DWXL_INSTALL=ON "-DWXL_PACKAGE_VERSION=%WXL_PACKAGE_VERSION%" -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded -DWXL_SAMPLES=OFF -DWXL_SANDBOX=OFF -DWXL_BUILD_DOCS=OFF
+        cmake --preset %PRESET% -DWXL_INSTALL=ON "-DWXL_PACKAGE_VERSION=%WXL_PACKAGE_VERSION%" -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded -DWXL_REPRODUCIBLE_BUILD=ON -DWXL_SAMPLES=OFF -DWXL_SANDBOX=OFF -DWXL_BUILD_DOCS=OFF
 
     # Every compile of both configurations takes /Z7 and none /Zi, which would
     # leave the debugging information in a .pdb beside the build.

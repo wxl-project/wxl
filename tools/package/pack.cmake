@@ -40,6 +40,13 @@
 # one, which publish.cmake beside it needs as well; dotnet reads it from the
 # working directory, which is this one.
 #
+# The package is the same bytes whenever the same prefix is packed with the same
+# SDK: zip-epoch.cs beside this script, run by that SDK, sets the time of every
+# entry to 1980-01-01 00:00 -- dotnet pack stamps the time of the pack and of
+# each file, and has no setting that stops it. The builds of the prefix are
+# reproducible too (WXL_REPRODUCIBLE_BUILD), all but the link of the profile
+# editor (docs/building.md, "Пакет WinXL").
+#
 # The package is published into a local feed by publish.cmake.
 
 cmake_minimum_required(VERSION 3.28)
@@ -129,6 +136,14 @@ execute_process(
 if(NOT EXISTS "${_wxl_package}")
     message(FATAL_ERROR "pack.cmake: dotnet pack succeeded and wrote no ${_wxl_package}.")
 endif()
+
+# Every entry at the zip epoch: dotnet pack stamps the entries with the time of
+# the pack and the times of the files, the one thing that differs between two
+# packs of the same prefix.
+execute_process(
+    COMMAND "${_wxl_dotnet}" run --file zip-epoch.cs -- "${_wxl_package}"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
+    COMMAND_ERROR_IS_FATAL ANY)
 
 # The package holds the prefix: its configuration is where find_package looks,
 # and its MSBuild files are where NuGet imports them.
