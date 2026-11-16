@@ -20,24 +20,26 @@
 # a static library only the objects that something refers to. The objects of an object library go
 # into each target that links it directly -- through another library's usage requirements they do
 # not -- so a test program names wxl::test.gtest itself.
+#
+# Both travel with an installed wxl (cmake/wxl_install.cmake): wxl::test exported with its headers,
+# and the source of the fixture, which the project compiles over its own GoogleTest.
 add_library(wxl.test INTERFACE)
 add_library(wxl::test ALIAS wxl.test)
 
-target_include_directories(wxl.test INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_sources(wxl.test
+    INTERFACE
+        FILE_SET headers TYPE HEADERS
+        BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
+        FILES sta_box.h stress_test.h test_directory.h
+)
 
 target_link_libraries(wxl.test INTERFACE wxl::core)
 
+set_target_properties(wxl.test PROPERTIES
+    EXPORT_NAME test
+    WXL_TEST_GTEST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/test_initializer.cpp"
+)
+
 # Where there is GoogleTest: the tree's own when its tests are built (cmake/wxl_gtest.cmake, WXL_TESTS
-# at the root), or one a project that adds wxl made available before it. Out of ALL: a project that
-# has GoogleTest for tests of its own and does not link the fixture should not compile it.
-if(TARGET GTest::gtest)
-    add_library(wxl.test.gtest OBJECT test_initializer.cpp)
-    add_library(wxl::test.gtest ALIAS wxl.test.gtest)
-
-    target_link_libraries(wxl.test.gtest PUBLIC GTest::gtest wxl::test)
-
-    # The fixture imports std and wxl.core: CMAKE_CXX_SCAN_FOR_MODULES gives it
-    # the scan and with it the std module, set by the root at the top level and
-    # checked by it in a project that adds wxl.
-    set_target_properties(wxl.test.gtest PROPERTIES EXCLUDE_FROM_ALL ON)
-endif()
+# at the root), or one a project that adds wxl made available before it (cmake/wxl_add_gtest.cmake).
+_wxl_add_test_gtest()

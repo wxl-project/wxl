@@ -30,3 +30,34 @@ macro(wxl_add_gtest target)
     # stop the build.
     gtest_discover_tests(${target} DISCOVERY_MODE PRE_TEST)
 endmacro()
+
+# wxl::test.gtest, the global fixture of a GoogleTest program
+# (wxl.test/CMakeLists.txt), made once both wxl::test and GTest::gtest are
+# there, by whichever of the two comes second: wxl.test after a project's
+# GoogleTest in the tree, and for an installed wxl its configuration, or
+# wxl_gtest.cmake included after find_package(wxl). The source is the one the
+# property WXL_TEST_GTEST_SOURCE of wxl::test names, the tree's or the
+# installed copy.
+#
+# An object library, out of ALL: a gtest environment registers itself from
+# the initializer of a global that nothing refers to, so the objects go into
+# each program that links the fixture itself, and a project that has
+# GoogleTest without linking the fixture does not compile it.
+function(_wxl_add_test_gtest)
+    if(TARGET wxl.test.gtest OR NOT TARGET wxl::test OR NOT TARGET GTest::gtest)
+        return()
+    endif()
+    get_target_property(source wxl::test WXL_TEST_GTEST_SOURCE)
+    add_library(wxl.test.gtest OBJECT "${source}")
+    add_library(wxl::test.gtest ALIAS wxl.test.gtest)
+    # wxl::core besides wxl::test, which brings it already: for an installed
+    # wxl, CMake builds the BMI of an imported module for the targets that link
+    # it themselves, and not for those that reach it through an imported
+    # library of headers.
+    target_link_libraries(wxl.test.gtest PUBLIC GTest::gtest wxl::test wxl::core)
+
+    # The fixture imports std and wxl.core: CMAKE_CXX_SCAN_FOR_MODULES gives it
+    # the scan and with it the std module, set by the root at the top level and
+    # checked in a project that adds or installs wxl.
+    set_target_properties(wxl.test.gtest PROPERTIES EXCLUDE_FROM_ALL ON)
+endfunction()

@@ -172,7 +172,7 @@ tools\build.ps1 -Preset x64-static -Config Release -Target winui-srcgen  # на�
 | `WXL_STRICT_CORO` | `OFF` | Оставляет проверки корутин области `async` модуля `wxl.core` в любой конфигурации сборки, а не только в Debug (см. [«Асинхронность»](async.md)). |
 | `WXL_ENABLE_PCH` | `ON` | Включает предкомпилированный заголовок `src/pch.h` у `wxl.core`. Модульные единицы из него исключены (MSVC не принимает его перед объявлением модуля), поэтому ключ влияет только на время сборки обычных единиц трансляции. |
 | `WXL_WINXL` | `OFF` | Утилита `winxl`: цель `winxl` публикует её через `dotnet publish` в `<сборка>/winxl/winxl.exe` (см. «Утилита winxl»). Требует .NET SDK 10: без него настройка останавливается. |
-| `WXL_INSTALL` | `OFF`, чтобы `cmake --install` потребителя не переносил файлы **wxl** в его префикс | Включает правила установки и экспорта (`cmake/wxl_install.cmake`). `cmake --install` кладёт в префикс библиотеки `wxl.core`, модуля `fmt`, `wxl.highlight`, `wxl.bb`, `wxl.rsdn` и `wxl.ui.common`, исходники интерфейсов модулей `wxl.core`, `fmt`, `wxl.highlight`, `wxl.bb` и `wxl.rsdn` вместе с заголовками, которые они включают, заголовки `wxl.ui.common`, генератор `winui-srcgen` с его профилями и таблицами, компоненты слоя профилей, конфигурацию для `find_package(wxl CONFIG)` и файлы MSBuild `WinXL.props` и `WinXL.targets` (см. «Пакет WinXL»). Готовых BMI в префиксе нет: проект строит их из установленных исходников со своими ключами. Debug и Release одной сборки устанавливаются в один префикс, у библиотек Debug суффикс `d`. Библиотеки и файл целей кладутся в каталог вида CRT: `lib/md` и `lib/cmake/wxl/md` у сборки с CRT в DLL, `lib/mt` и `lib/cmake/wxl/mt` у сборки со статической CRT, поэтому `x64-dynamic` и `x64-static` устанавливаются в один префикс. Конфигурация `wxl-config.cmake` для каждой конфигурации проекта вычисляет `CMAKE_MSVC_RUNTIME_LIBRARY` и берёт библиотеки того вида CRT, а с отладочной CRT — Debug, с остальными — Release (`cmake/wxl_runtime_library.cmake`). Версия префикса — версия коммита (`cmake/wxl_package_version.cmake`): последний выпуск по метке `v*` и четвёртым числом число коммитов после неё; `find_package(wxl <версия>)` принимает любую версию той же старшей не ниже названной. Цели `Microsoft::CppWinRT` и `wxl.winappsdk.bootstrap`, которые линкует `wxl::ui.common`, в префикс не попадают: они ссылаются на пакеты NuGet, восстановленные настройкой, и установленная конфигурация создаёт их заново над пакетами, которые восстанавливает сама по закреплённым версиям `share/wxl/packages.json` (`cmake/wxl_ui_packages.cmake`). С `WXL_TESTS` добавляются тест `install-core` и, при `WXL_UI`, тесты `install-ui` и `install-extended` (см. «Тесты и бенчмарки»). |
+| `WXL_INSTALL` | `OFF`, чтобы `cmake --install` потребителя не переносил файлы **wxl** в его префикс | Включает правила установки и экспорта (`cmake/wxl_install.cmake`). `cmake --install` кладёт в префикс библиотеки `wxl.core`, модуля `fmt`, `wxl.highlight`, `wxl.bb`, `wxl.rsdn` и `wxl.ui.common`, исходники интерфейсов модулей `wxl.core`, `fmt`, `wxl.highlight`, `wxl.bb` и `wxl.rsdn` вместе с заголовками, которые они включают, заголовки `wxl.ui.common`, генератор `winui-srcgen` с его профилями и таблицами, компоненты слоя профилей, заголовки `wxl::test` и исходник фикстуры GoogleTest `wxl::test.gtest`, конфигурацию для `find_package(wxl CONFIG)` и файлы MSBuild `WinXL.props` и `WinXL.targets` (см. «Пакет WinXL»). Готовых BMI в префиксе нет: проект строит их из установленных исходников со своими ключами. Debug и Release одной сборки устанавливаются в один префикс, у библиотек Debug суффикс `d`. Библиотеки и файл целей кладутся в каталог вида CRT: `lib/md` и `lib/cmake/wxl/md` у сборки с CRT в DLL, `lib/mt` и `lib/cmake/wxl/mt` у сборки со статической CRT, поэтому `x64-dynamic` и `x64-static` устанавливаются в один префикс. Конфигурация `wxl-config.cmake` для каждой конфигурации проекта вычисляет `CMAKE_MSVC_RUNTIME_LIBRARY` и берёт библиотеки того вида CRT, а с отладочной CRT — Debug, с остальными — Release (`cmake/wxl_runtime_library.cmake`). Версия префикса — версия коммита (`cmake/wxl_package_version.cmake`): последний выпуск по метке `v*` и четвёртым числом число коммитов после неё; `find_package(wxl <версия>)` принимает любую версию той же старшей не ниже названной. Цели `Microsoft::CppWinRT` и `wxl.winappsdk.bootstrap`, которые линкует `wxl::ui.common`, в префикс не попадают: они ссылаются на пакеты NuGet, восстановленные настройкой, и установленная конфигурация создаёт их заново над пакетами, которые восстанавливает сама по закреплённым версиям `share/wxl/packages.json` (`cmake/wxl_ui_packages.cmake`). С `WXL_TESTS` добавляются тест `install-core` и, при `WXL_UI`, тесты `install-ui` и `install-extended` (см. «Тесты и бенчмарки»). |
 | `WXL_LOCAL_SOURCE_DIR` | пусто | Каталог с локальными копиями зависимостей: `winmd`, `fmt`, `googletest`, `wxl_doxygen` и `wxl_doxygen_awesome`, каждая в подкаталоге с этим именем. Если ключ задан, зависимости берутся оттуда и не загружаются. Пустое значение возвращает загрузку. |
 
 Сквозная оптимизация (`/GL`, LTCG) не используется. Это решение принято по
@@ -685,7 +685,11 @@ ctest --preset x64-dynamic-debug -R docs  # сайт документации к
   Проект `tests/install-consumer`
   (`install-core`) подключает **wxl** через `find_package(wxl CONFIG
   REQUIRED)`, строит BMI `wxl.core` и `fmt` из установленных исходников,
-  запускается и печатает версию пакета. Проект `tests/install-ui-consumer`
+  запускается и печатает версию пакета. Он же объявляет функцией
+  `wxl_add_gtest` программу GoogleTest с фикстурой `wxl::test.gtest` и
+  заголовками `wxl::test`, получив GoogleTest установленным сценарием
+  `wxl_gtest.cmake` из исходников, которые загрузило дерево, и `ctest`
+  потребителя запускает её тесты. Проект `tests/install-ui-consumer`
   (`install-ui`) получает копию профиля `base`, собирает его библиотеку
   функцией `wxl_add_ui_library` из установленного пакета и линкует с ней
   приложение; запуск приложения не проверяется. Проект
@@ -872,7 +876,7 @@ Microsoft::CppWinRT)`, как в `sandbox/LightingLab/CMakeLists.txt`). Для �
 проекта — свой, ставший доступным до `add_subdirectory`, например сценарием
 `cmake/wxl_gtest.cmake` из дерева **wxl**. Её линкует сама программа теста:
 объекты объектной библиотеки попадают только в цель, которая линкует её
-напрямую.
+напрямую. Обе цели есть и в пакете `WinXL` (см. «Пакет WinXL», «Тесты»).
 
 Приложение объявляется функциями из каталога `cmake/`. Так выглядит
 `samples/Quadratic/CMakeLists.txt`:
@@ -940,6 +944,9 @@ wxl_target_assets(sample.quadratic Assets)
   (`include/wxl`): BMI приложение строит само, со своими ключами;
 - профили и таблицы генератора (`share/wxl/profiles`) и компоненты слоя
   профилей (`share/wxl/components`);
+- заголовки `wxl::test` (`include/wxl/test`) и исходник фикстуры GoogleTest
+  `wxl::test.gtest` (`share/wxl/test`), которую приложение компилирует над
+  своим GoogleTest;
 - инструменты, собранные в каталоге `x64-static`, в `bin`: генератор
   `winui-srcgen`, редактор профилей `wxl.gen.ui` и утилиту `winxl`;
 - конфигурацию CMake для `find_package(wxl CONFIG)` с функциями из каталога
@@ -1112,10 +1119,10 @@ wxl_add_executable(demo UI wxl::ui.demo demo.cpp)
   Пресеты образца: `md` — CRT в DLL в Debug и Release, `mixed` — CRT в DLL в
   Debug и статическая в Release (`MultiThreaded$<$<CONFIG:Debug>:DebugDLL>`).
 - **Цели и функции.** Пакет даёт цели `wxl::core`, `wxl::highlight`,
-  `wxl::bb`, `wxl::rsdn` и `wxl::ui.common`, генератор `wxl::winui-srcgen` и функции, среди них `wxl_add_executable`,
+  `wxl::bb`, `wxl::rsdn`, `wxl::ui.common` и `wxl::test`, генератор `wxl::winui-srcgen` и функции, среди них `wxl_add_executable`,
   `wxl_target_manifest`, `wxl_target_runtime`, `wxl_target_icon`,
-  `wxl_target_assets`, `wxl_add_module_library`, `wxl_add_ui_library` и
-  `wxl_add_ui_surface_test` (см. «Цели и функции»). Готовых библиотек
+  `wxl_target_assets`, `wxl_add_module_library`, `wxl_add_ui_library`,
+  `wxl_add_ui_surface_test` и `wxl_add_gtest` (см. «Цели и функции»). Готовых библиотек
   профилей в пакете нет: приложение строит библиотеку своего профиля функцией
   `wxl_add_ui_library` генератором, профилями и компонентами из пакета.
   Компоненты `bb`, `rsdn` и `code` линкуют `wxl::bb`, `wxl::rsdn` и
@@ -1129,7 +1136,30 @@ wxl_add_executable(demo UI wxl::ui.demo demo.cpp)
   `base`. Окно образца показывает `BbBlock`, `RsdnBlock` и `CodeBlock`,
   поэтому `demo` строит BMI `wxl.bb`, `wxl.rsdn` и `wxl.highlight` из
   исходников пакета и линкует их библиотеки в каждой конфигурации каждого
-  пресета. Целей `wxl::test` и `wxl::test.gtest` в пакете нет.
+  пресета.
+- **Тесты.** Пакет даёт средства тестов **wxl**: цель `wxl::test` с
+  заголовками `sta_box.h`, `stress_test.h` и `test_directory.h`
+  (`include/wxl/test`) и исходник фикстуры `wxl::test.gtest`
+  (`share/wxl/test`). GoogleTest в пакет не входит: его приносит
+  приложение, и фикстуру оно компилирует над ним в своей сборке. Сценарий
+  `cmake/wxl_gtest.cmake`, которым GoogleTest получает дерево **wxl**,
+  лежит среди функций пакета, конфигурация называет его переменной
+  `WXL_GTEST_SCRIPT`, и включают его после `find_package(wxl)`:
+
+  ```cmake
+  enable_testing()
+  find_package(wxl 0.1 CONFIG REQUIRED)
+  include("${WXL_GTEST_SCRIPT}")
+  wxl_add_gtest(app.tests SRC tests.cpp DEPS wxl::test.gtest wxl::test wxl::core)
+  ```
+
+  Цель `wxl::test.gtest` появляется, когда есть и `wxl::test`, и GoogleTest:
+  после этого сценария, а если приложение сделало свой GoogleTest доступным
+  до `find_package(wxl)` — в нём самом. Модуль `wxl.core` программа линкует
+  напрямую, как и фикстура: BMI модуля из пакета CMake строит для цели,
+  которая линкует его сама, а не через импортированную цель из одних
+  заголовков. Так устроен проект `tests/install-consumer`, программу тестов
+  которого запускает тест `install-core`.
 - **Windows App Runtime.** Экспериментальную среду устанавливает утилита
   `winxl` из `bin` пакета по списку восстановления приложения:
 

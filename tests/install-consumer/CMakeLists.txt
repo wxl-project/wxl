@@ -1,6 +1,7 @@
 # A project outside the wxl tree that takes wxl from an installed prefix. The
 # test install-core (cmake/wxl_install_test.cmake) copies it out of the tree,
-# configures it with CMAKE_PREFIX_PATH naming the prefix, builds and runs it.
+# configures it with CMAKE_PREFIX_PATH naming the prefix, builds and runs it,
+# and runs its tests with ctest.
 cmake_minimum_required(VERSION 4.5)
 
 project(wxl_install_consumer LANGUAGES CXX)
@@ -13,7 +14,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 
+enable_testing()
+
 find_package(wxl CONFIG REQUIRED)
 
 add_executable(install-consumer main.cpp)
 target_link_libraries(install-consumer PRIVATE wxl::core)
+
+# GoogleTest the way the package makes it available, and a test program
+# declared with its helper, on its fixture and its headers.
+include("${WXL_GTEST_SCRIPT}")
+wxl_add_gtest(install-consumer.tests
+    SRC tests.cpp
+    DEPS wxl::test.gtest wxl::test wxl::core
+)
