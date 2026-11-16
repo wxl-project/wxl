@@ -100,8 +100,8 @@ public:
 
 protected:
     observable() = default;
-    /// Constructs an observable that holds \p value.
-    explicit observable(T value) : value_(std::move(value)) {}
+    /// Constructs an observable that holds \p initial.
+    explicit observable(T initial) : value_(std::move(initial)) {}
     ~observable() = default;
 
     /// The current value.
@@ -179,8 +179,8 @@ class observable : public impl::readonly_observable<T>
 
 public:
     observable() = default;
-    /// Constructs a field that holds \p value.
-    explicit observable(T value) : readonly(std::move(value)) {}
+    /// Constructs a field that holds \p initial.
+    explicit observable(T initial) : readonly(std::move(initial)) {}
 
     /// Constructs a field that follows other fields from the start: its value is `fn` --
     /// the last argument -- of the values of the sources, computed here and again on every

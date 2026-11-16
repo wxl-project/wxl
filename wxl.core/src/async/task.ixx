@@ -214,15 +214,15 @@ public:
     /// and over. The pool asserts the thread in debug builds, so a frame made anywhere else
     /// is caught here. Counted by a build that checks: a frame is alive from here to operator
     /// delete.
-    inline static void* operator new(std::size_t size) {
-        void* const frame = core::sta_memory_pool::alloc(size);
+    inline static void* operator new(std::size_t bytes) {
+        void* const frame = core::sta_memory_pool::alloc(bytes);
         if constexpr (detail::checked) ++task_frames::live;
         return frame;
     }
 
-    inline static void operator delete(void* frame, std::size_t size) noexcept {
+    inline static void operator delete(void* frame, std::size_t bytes) noexcept {
         if constexpr (detail::checked) --task_frames::live;
-        core::sta_memory_pool::free(frame, size);
+        core::sta_memory_pool::free(frame, bytes);
     }
 
     /// Makes the producer -- the second allocation of a call, from the same pool -- which

@@ -71,12 +71,12 @@ public:
 
     ~static_thread_heap() { s_heap = nullptr; }
 
-    /// Allocates \p size bytes from the heap of the instance, which must exist.
-    static void* alloc(size_t size) noexcept {
+    /// Allocates \p bytes from the heap of the instance, which must exist.
+    static void* alloc(size_t bytes) noexcept {
         thread_guard<Tag>::debug_check_thread();
         assert(initialized() && "Heap must be initialized before allocation");
 
-        return s_heap->alloc(size);
+        return s_heap->alloc(bytes);
     }
 
     /// Releases the block at \p mem to the heap of the instance, which must exist.

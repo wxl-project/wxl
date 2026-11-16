@@ -461,26 +461,26 @@ protected:
         : Base(std::forward<Args>(args)...) {}
 
 public:
-    inline static void* operator new([[maybe_unused]] std::size_t size) {
+    inline static void* operator new([[maybe_unused]] std::size_t bytes) {
         static_assert(std::is_final_v<Derived>, "pooled: the producer must be final");
-        assert(size == sizeof(Derived));
+        assert(bytes == sizeof(Derived));
 
         if constexpr (sizeof(Derived) <= core::sta_memory_pool::MaxBlockSize)
             return core::sta_memory_pool::alloc<sizeof(Derived)>();
         else
-            return core::sta_memory_pool::alloc(size);
+            return core::sta_memory_pool::alloc(bytes);
     }
 
     /// Sized, and the only form: were the form without the size declared too, a delete would
     /// choose that one, and the size would go unchecked.
-    inline static void operator delete(void* mem, [[maybe_unused]] std::size_t size) noexcept {
+    inline static void operator delete(void* mem, [[maybe_unused]] std::size_t bytes) noexcept {
         static_assert(std::is_final_v<Derived>, "pooled: the producer must be final");
-        assert(size == sizeof(Derived));
+        assert(bytes == sizeof(Derived));
 
         if constexpr (sizeof(Derived) <= core::sta_memory_pool::MaxBlockSize)
             core::sta_memory_pool::free<sizeof(Derived)>(mem);
         else
-            core::sta_memory_pool::free(mem, size);
+            core::sta_memory_pool::free(mem, bytes);
     }
 };
 

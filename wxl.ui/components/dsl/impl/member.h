@@ -165,7 +165,7 @@ void bind_transformed_input(core::observable<T>& model, Fn const& fn, Bind&& bin
     auto const own = core::make_refcounted<core::observable<T>>();
     bind(*own);
     model.set(T(std::invoke(fn, own->get())));
-    own->on_change([&model, fn](T const& value) noexcept { model.set(T(std::invoke(fn, value))); });
+    own->on_change([&model, fn](T const& current) noexcept { model.set(T(std::invoke(fn, current))); });
     model.watch_for_binding([own](T const&) noexcept {});
 }
 
@@ -181,8 +181,8 @@ void bind_mirrored(core::observable<T>& model, Fn const& fn, Bind&& bind) {
                   "inverse. For a one-way view of another type write BindOutput{field, fn}.");
     auto const mirror = core::make_refcounted<core::observable<T>>(T(std::invoke(fn, model.get())));
     bind(*mirror);
-    mirror->on_change([&model, fn](T const& value) noexcept { model.set(T(std::invoke(fn, value))); });
-    model.watch_for_binding([mirror, fn](T const& value) noexcept { mirror->set(T(std::invoke(fn, value))); });
+    mirror->on_change([&model, fn](T const& current) noexcept { model.set(T(std::invoke(fn, current))); });
+    model.watch_for_binding([mirror, fn](T const& current) noexcept { mirror->set(T(std::invoke(fn, current))); });
 }
 
 // `property = Bind{field}`: the field's value now, and every value after.
@@ -214,8 +214,8 @@ void bind_property(Obj const& object, core::observable<T>& model, Fn const& fn) 
                       "wxl: BindOutput{} names a property this control only reports and never "
                       "shows, so there is nothing to write to. It takes BindInput{}.");
         property_setter<key>::set(object, std::invoke(fn, model.get()));
-        model.watch_for_binding([object, fn](T const& value) noexcept {
-            property_setter<key>::set(object, std::invoke(fn, value));
+        model.watch_for_binding([object, fn](T const& current) noexcept {
+            property_setter<key>::set(object, std::invoke(fn, current));
         });
     } else if constexpr (!paired) {
         static_assert(direction != bind_direction::input,
@@ -343,8 +343,8 @@ struct token_slot {
 template <PropertyKey key, typename Owner = void>
 struct deduced_property_tag {
     template <typename T>
-    constexpr setter_op<key, std::decay_t<T>, Owner> operator=(T&& value) const {
-        return {std::forward<T>(value)};
+    constexpr setter_op<key, std::decay_t<T>, Owner> operator=(T&& assigned) const {
+        return {std::forward<T>(assigned)};
     }
 };
 
@@ -393,8 +393,8 @@ concept number = std::is_arithmetic_v<T> && !std::same_as<T, bool> && !core::cha
 // {20}`.
 template <PropertyKey key, typename Value, typename Owner>
 struct typed_assignment {
-    constexpr setter_op<key, Value, Owner> operator=(Value value) const {
-        return {std::move(value)};
+    constexpr setter_op<key, Value, Owner> operator=(Value assigned) const {
+        return {std::move(assigned)};
     }
 };
 
@@ -418,8 +418,8 @@ concept mistaken_for =
 template <PropertyKey key, typename Value, typename Owner>
     requires std::is_arithmetic_v<Value>
 struct typed_assignment<key, Value, Owner> {
-    constexpr setter_op<key, Value, Owner> operator=(Value value) const {
-        return {value};
+    constexpr setter_op<key, Value, Owner> operator=(Value assigned) const {
+        return {assigned};
     }
 
     template <typename T>
@@ -438,12 +438,12 @@ struct solid_color_brush : Color {
 // converts to nothing.
 template <PropertyKey key, typename Owner>
 struct typed_assignment<key, Brush, Owner> {
-    constexpr setter_op<key, Brush, Owner> operator=(Brush value) const {
-        return {std::move(value)};
+    constexpr setter_op<key, Brush, Owner> operator=(Brush assigned) const {
+        return {std::move(assigned)};
     }
 
-    constexpr setter_op<key, solid_color_brush, Owner> operator=(Color color) const {
-        return {{color}};
+    constexpr setter_op<key, solid_color_brush, Owner> operator=(Color assigned) const {
+        return {{assigned}};
     }
 };
 
@@ -471,8 +471,8 @@ template <PropertyKey key, typename Owner>
 struct bound_property_tag {
     template <typename T>
         requires is_bind<std::decay_t<T>>
-    constexpr setter_op<key, std::decay_t<T>, Owner> operator=(T&& value) const {
-        return {std::forward<T>(value)};
+    constexpr setter_op<key, std::decay_t<T>, Owner> operator=(T&& assigned) const {
+        return {std::forward<T>(assigned)};
     }
 };
 
@@ -512,14 +512,14 @@ struct property_tag<key, one_of<Values...>, Owner> : typed_assignment<key, Value
     using typed_assignment<key, Values, Owner>::operator=...;
 
     template <number T>
-    constexpr setter_op<key, T, Owner> operator=(T value) const {
-        return {value};
+    constexpr setter_op<key, T, Owner> operator=(T assigned) const {
+        return {assigned};
     }
 
     template <typename T>
         requires(!std::is_arithmetic_v<std::remove_cvref_t<T>>)
-    constexpr setter_op<key, std::decay_t<T>, Owner> operator=(T&& value) const {
-        return {std::forward<T>(value)};
+    constexpr setter_op<key, std::decay_t<T>, Owner> operator=(T&& assigned) const {
+        return {std::forward<T>(assigned)};
     }
 
     template <core::character T>
@@ -632,16 +632,16 @@ struct values {
         }
     }
 
-    consteval values(T value)
+    consteval values(T single)
         requires(Length == 1)
-        : items{value}, count(1) {}
+        : items{single}, count(1) {}
 };
 
 template <typename T, std::size_t Length>
 values(T const (&)[Length]) -> values<T, Length>;
 
 template <typename T>
-values(T value) -> values<T, 1>;
+values(T single) -> values<T, 1>;
 
 }  // namespace impl
 

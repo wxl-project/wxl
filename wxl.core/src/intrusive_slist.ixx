@@ -28,15 +28,15 @@ struct intrusive_slist_node : public noncopyable {
 /// pool's thread and inside its life. What `event` links its callbacks with.
 template <class Node>
 struct sta_intrusive_slist_node : public intrusive_slist_node<Node> {
-    /// Allocates \p size bytes from the STA memory pool.
-    inline static void* operator new(std::size_t size) { return sta_memory_pool::alloc(size); }
+    /// Allocates \p bytes from the STA memory pool.
+    inline static void* operator new(std::size_t bytes) { return sta_memory_pool::alloc(bytes); }
 
-    /// Returns \p mem, of \p size bytes, to the STA memory pool. The operator is sized because
+    /// Returns \p mem, \p bytes long, to the STA memory pool. The operator is sized because
     /// the pool returns memory to the size class it was allocated from. The size is that of the
     /// complete object: the callback node derived from this type has a virtual destructor, and
     /// the deleting destructor that the compiler generates knows which object it frees.
-    inline static void operator delete(void* mem, std::size_t size) noexcept {
-        sta_memory_pool::free(mem, size);
+    inline static void operator delete(void* mem, std::size_t bytes) noexcept {
+        sta_memory_pool::free(mem, bytes);
     }
 };
 

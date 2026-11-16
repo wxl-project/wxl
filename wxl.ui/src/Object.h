@@ -257,7 +257,7 @@ struct optional_selector<T> {
             return maker{};
         }
 
-        static bool is_sentinel(T const& value) noexcept { return !value; }
+        static bool is_sentinel(T const& wrapper) noexcept { return !wrapper; }
     };
 
     using nullable = compressed_optional<T, wrapper_sentinel>;
