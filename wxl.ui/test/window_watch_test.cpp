@@ -18,7 +18,11 @@
 // The list first: it reaches the projection, whose standard headers have to come before
 // the wxl.core import the watch's header carries.
 #include "impl/handler_list.h"
+// The refusing source below makes a watch's destructor abort, so it never returns.
+#pragma warning(push)
+#pragma warning(disable : 4722)
 #include "impl/event_watch.h"
+#pragma warning(pop)
 #include "sta_box.h"
 
 namespace {
