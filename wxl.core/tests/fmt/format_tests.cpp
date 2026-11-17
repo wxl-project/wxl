@@ -3,8 +3,12 @@
 #include <complex>
 #include <string_view>
 
+// fmt's code_point_length returns early for UTF-16 and leaves the rest unreachable.
+#pragma warning(push)
+#pragma warning(disable : 4702)
 import wxl.core;
 import fmt;
+#pragma warning(pop)
 
 using namespace std::string_view_literals;
 using namespace fmt::literals;

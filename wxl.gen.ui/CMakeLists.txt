@@ -3,6 +3,10 @@
 # editor.winxl-profile): rich — и ничего сверх того, что зовёт его окно.
 # WIN32 делает точкой входа wWinMain самой wxl.
 
+# Редактор открывает wxl::dsl на уровне файла, как приложение, и локальное имя,
+# совпадающее с тегом, здесь ожидаемо: C4459 о нём ничего не говорит.
+add_compile_options(/wd4459)
+
 wxl_add_executable(wxl.gen.ui
     UI wxl::ui.editor
     main.cpp
