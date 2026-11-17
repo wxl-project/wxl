@@ -130,6 +130,35 @@ struct Model {
     (void)core::unicode::find_invalid_utf16(std::wstring_view{L"ab"});
 }
 
+[[maybe_unused]] void comparisons() {
+    std::u16string const owner = u"ab";
+    zstring_view const view = owner;
+    (void)(view == view);
+    (void)(view == std::u16string_view{u"ab"});
+    (void)(view == u"ab");
+    (void)(view <=> view);
+
+    core::hstring const held{u"ab"};
+    (void)(held == held);
+    (void)(held == std::u16string_view{u"ab"});
+    (void)(held == view);
+    (void)(held == u"ab");
+
+    core::path const folder{L"a"};
+    (void)(folder / L"b");
+    (void)(folder == folder);
+
+    (void)core::equal_ignore_ascii_case(std::string_view{"a"}, std::string_view{"A"});
+    (void)core::equal_ignore_ascii_case(std::wstring_view{L"a"}, std::wstring_view{L"A"});
+    (void)core::equal_ignore_ascii_case(std::u16string_view{u"a"}, std::u16string_view{u"A"});
+}
+
+[[maybe_unused]] void numbers_in_text() {
+    std::u16string wide;
+    core::append_number(wide, 42);
+    (void)core::to_wstring(1.5);
+}
+
 [[maybe_unused]] void nullables() {
     core::nullable<Note> const pointer;
     core::nullable<int> const whole = 1;

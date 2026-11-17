@@ -168,10 +168,10 @@ void append_number(std::basic_string<CharT, Traits, Allocator>& out, T value, Fo
     const auto digits = static_cast<std::size_t>(stop - buffer.data());
     const std::size_t was = out.size();
 
-    out.resize_and_overwrite(was + digits, [&buffer, was, digits](CharT* room, std::size_t size) {
+    out.resize_and_overwrite(was + digits, [&buffer, was, digits](CharT* room, std::size_t total) {
         for (std::size_t at = 0; at != digits; ++at)
             room[was + at] = static_cast<CharT>(buffer[at]);
-        return size;
+        return total;
     });
 }
 
