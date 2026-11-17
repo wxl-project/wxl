@@ -26,7 +26,7 @@ auto const repeaterPage = [model, objects, items] {
         itemsSource = items,
         onElementPrepared += [model](auto const&, ItemsRepeaterElementPreparedEventArgs& args) {
             // Tapping an item is what navigates; the handler is given to each element as it is made ready.
-            args.element().add_onTapped([model](auto const& sender, TappedRoutedEventArgs&) {
+            args.element().add_onTapped([model](Object const& sender, TappedRoutedEventArgs&) {
                 auto const element = sender.try_as<UIElement>();
                 model->stored = model->repeater.getElementIndex(element);
                 model->offset = model->scroll.verticalOffset();
