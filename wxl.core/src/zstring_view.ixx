@@ -254,9 +254,9 @@ constexpr basic_zstring_view<CharT, Traits> assume_terminated(
 }
 
 /// The seam: a wstring_view that is terminated, as a zstring_view.
-inline zstring_view assume_terminated(std::wstring_view text) noexcept {
+inline zstring_view assume_terminated(std::wstring_view chars) noexcept {
     return assume_terminated(
-        std::u16string_view(reinterpret_cast<const char16_t*>(text.data()), text.size()));
+        std::u16string_view(reinterpret_cast<const char16_t*>(chars.data()), chars.size()));
 }
 
 }  // export

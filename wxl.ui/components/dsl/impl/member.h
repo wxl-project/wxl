@@ -641,7 +641,7 @@ template <typename T, std::size_t Length>
 values(T const (&)[Length]) -> values<T, Length>;
 
 template <typename T>
-values(T value) -> values<T, 1>;
+values(T single) -> values<T, 1>;
 
 }  // namespace impl
 
