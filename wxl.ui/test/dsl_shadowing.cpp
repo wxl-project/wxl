@@ -4,8 +4,8 @@
 // tag of the syntax (value, text, source, size, ...) a global name. A parameter or a
 // local of a wxl template, an inline function or a body of a module interface that
 // takes one of those names then hides it, and a build at /W4 reports C4459 at that
-// declaration. wxl itself builds at /W3 and never sees it, so this target raises
-// C4456-C4459 to level 1 and makes them errors.
+// declaration. wxl's own sources never open the namespace that way, so their build does
+// not see it; this target does, and raises C4456-C4459 to level 1 and makes them errors.
 //
 // The surface sources of this target write the syntax; this one opens the namespace
 // the way an application does and uses what an application uses beside the syntax --
