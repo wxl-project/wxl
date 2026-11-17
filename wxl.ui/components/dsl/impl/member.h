@@ -615,9 +615,9 @@ struct values {
     T items[capacity]{};
     std::size_t count = Length;
 
-    consteval values(T const (&source)[Length]) {
+    consteval values(T const (&run)[Length]) {
         for (std::size_t i = 0; i < Length; ++i) {
-            items[i] = source[i];
+            items[i] = run[i];
         }
         // A terminator is a thing only for characters, so nothing else ever
         // needs to be comparable to zero. A run that arrived without one is

@@ -291,8 +291,16 @@ wxl_add_ui_library(editor
 # The syntax test over full's vocabulary: many of the classes it writes only
 # full generates, so it is full's alone. The IDE layout is read from the
 # target's sources, so it is laid out again with this one among them.
-target_sources(wxl.ui.full.surface-test PRIVATE test/dsl_surface.cpp)
+target_sources(wxl.ui.full.surface-test PRIVATE test/dsl_surface.cpp test/dsl_shadowing.cpp)
 wxl_set_target_folders(wxl.ui.full.surface-test PREFIX "tests")
+
+# An application opens wxl::dsl at file scope, and every tag becomes a global
+# name there. A parameter or local of a wxl template, inline function or module
+# interface named like a tag then hides it, and a build at /W4 reports C4459 at
+# the declaration in wxl. Its sources open the namespace the same way, so here
+# C4456-C4459 are pulled up to level 1 and made errors.
+target_compile_options(wxl.ui.full.surface-test PRIVATE
+    /w14456 /w14457 /w14458 /w14459 /we4456 /we4457 /we4458 /we4459)
 
 # The profile no target of the tree links, kept compiling: its wrappers
 # generated as for a library, and its surface test -- the generated schema test

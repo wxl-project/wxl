@@ -241,11 +241,11 @@ public:
 
     /// Replaces everything at once -- one reset however much changed; says nothing if the
     /// new items equal the old.
-    void assign(sta_vector<T> items) {
+    void assign(sta_vector<T> replacement) {
         if constexpr (std::equality_comparable<T>) {
-            if (this->items_ == items) return;
+            if (this->items_ == replacement) return;
         }
-        this->items_ = std::move(items);
+        this->items_ = std::move(replacement);
         this->notify({list_change::reset, 0, this->size()});
     }
 
