@@ -38,14 +38,22 @@ macro(_wxl_doxygen_pins)
     # compiles, so the Linux build renders this tree without MSVC or anything of
     # the toolchain -- which is what lets the site be built where the code
     # cannot.
+    #
+    # Each archive has two hosts, the release on GitHub and doxygen.nl, which
+    # serve the same bytes. The download moves on to the next URL when an
+    # archive fails its hash, and doxygen.nl sometimes serves a corrupt one
+    # several times in a row; a second host turns that into a slower download
+    # instead of a failed configure.
     if(WIN32)
         set(WXL_DOXYGEN_URL
+            "https://github.com/doxygen/doxygen/releases/download/Release_1_18_0/doxygen-1.18.0.windows.x64.bin.zip"
             "https://www.doxygen.nl/files/doxygen-1.18.0.windows.x64.bin.zip")
         set(WXL_DOXYGEN_SHA256
             "e84f54cfd49ef06b0b16536056dbec0c496323de28abcce53a4269463de35eaf")
         set(WXL_DOXYGEN_FETCHED_EXECUTABLE "doxygen.exe")
     elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
         set(WXL_DOXYGEN_URL
+            "https://github.com/doxygen/doxygen/releases/download/Release_1_18_0/doxygen-1.18.0.linux.bin.tar.gz"
             "https://www.doxygen.nl/files/doxygen-1.18.0.linux.bin.tar.gz")
         set(WXL_DOXYGEN_SHA256
             "14fa81bdc34171edb5f1f02b1d60e74802f0439b77fa44e592565d517d72df90")
@@ -97,7 +105,7 @@ function(wxl_doxygen_bootstrap)
         message(STATUS "Doxygen ${DOXYGEN_VERSION}: ${_doxygen}")
     elseif(WXL_DOXYGEN_URL)
         FetchContent_Declare(wxl_doxygen
-            URL "${WXL_DOXYGEN_URL}"
+            URL ${WXL_DOXYGEN_URL}
             URL_HASH "SHA256=${WXL_DOXYGEN_SHA256}"
             DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
         FetchContent_MakeAvailable(wxl_doxygen)
