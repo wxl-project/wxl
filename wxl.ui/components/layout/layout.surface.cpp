@@ -107,11 +107,11 @@ struct [[maybe_unused]] grid_in_a_model {
 
 // SplitPanel -- written by hand: its orientation and pane placement take the tags
 // of StackPanel and SplitView.
-[[maybe_unused]] void SplitPanel_vertical_trailing(::wxl::UIElement const& top,
+[[maybe_unused]] void SplitPanel_vertical_trailing(::wxl::UIElement const& upper,
                                                    ::wxl::UIElement const& bottom) {
     using namespace ::wxl::dsl;
     ::wxl::SplitPanel const split{orientation.vertical, panePlacement.right, openPaneLength = 200.0f,
-                                  content = top, pane = bottom};
+                                  content = upper, pane = bottom};
     (void)split;
 }
 

@@ -208,11 +208,11 @@ public:
     /// The bindings hear first, the application after: by the time a watcher
     /// added through on_change runs -- to save the model, say -- the controls
     /// already show what it is saving.
-    void set(T value) {
+    void set(T next) {
         if constexpr (std::equality_comparable<T>) {
-            if (this->value_ == value) return;
+            if (this->value_ == next) return;
         }
-        this->value_ = std::move(value);
+        this->value_ = std::move(next);
         this->bound_(this->value_);
         this->changed_(this->value_);
     }

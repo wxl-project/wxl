@@ -95,10 +95,10 @@ void bind_items(Control const& control, core::observable_list<T const>& list, Bu
             "`ItemContainer {child = ...}`.");
     }
 
-    bound_list_watch source{&list, list.size(),
-                            [&list, build](uint32_t at) -> Object { return std::invoke(build, list[at]); }};
-    attach_items(control, source);
-    list.watch_for_binding(std::move(source));
+    bound_list_watch watch{&list, list.size(),
+                           [&list, build](uint32_t at) -> Object { return std::invoke(build, list[at]); }};
+    attach_items(control, watch);
+    list.watch_for_binding(std::move(watch));
 }
 
 }  // namespace wxl::impl

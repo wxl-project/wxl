@@ -188,7 +188,7 @@ struct promise_returns {
     /// By value rather than by forwarding reference: `co_return {}` and
     /// `co_return name_of_a_local` both have to work, and the move this costs an
     /// rvalue is nothing next to the operation the coroutine just awaited.
-    inline void return_value(R value) { producer->keep_value(std::move(value)); }
+    inline void return_value(R result) { producer->keep_value(std::move(result)); }
 
     coroutine_op<R>* producer = nullptr;
 };

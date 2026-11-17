@@ -155,20 +155,20 @@ public:
     stop_registration(const stop_registration&) = delete;
     stop_registration& operator=(const stop_registration&) = delete;
 
-    /// Registers with the event of `state`, a state not cancelled yet.
-    inline void register_with(detail::stop_state& state) noexcept {
+    /// Registers with the event of `token_state`, a state not cancelled yet.
+    inline void register_with(detail::stop_state& token_state) noexcept {
         // Checked here and not in the class: the registration is declared inside its owner,
         // which is not complete there, and a member cannot be called on it yet.
         static_assert(std::is_nothrow_invocable_v<decltype(Callback), owner_t&>,
                       "wxl: a cancellation registration calls its owner from inside the cancel, "
                       "which has nobody to hand an exception to -- name a noexcept member");
-        state.event().add(core::as_not_null<detail::stop_event::func_t>(this));
+        token_state.event().add(core::as_not_null<detail::stop_event::func_t>(this));
     }
 
-    /// Out of the event of `state`. Once the token has been cancelled the event the
+    /// Out of the event of `token_state`. Once the token has been cancelled the event the
     /// registration was registered with has been fired and is gone, and unlink() finds nothing.
-    inline void unregister(detail::stop_state& state) noexcept {
-        state.event().unlink(static_cast<detail::stop_event::func_t&>(*this));
+    inline void unregister(detail::stop_state& token_state) noexcept {
+        token_state.event().unlink(static_cast<detail::stop_event::func_t&>(*this));
     }
 
 private:
@@ -217,8 +217,8 @@ class stoppable_wait
 {
 public:
     inline bool await_ready(detail::site where = detail::site::current()) {
-        if (stop_state* const state = self().state(); state && state->stop_requested())
-            [[unlikely]]
+        if (stop_state* const token_state = self().state();
+            token_state && token_state->stop_requested()) [[unlikely]]
             self().awaiter().cancel();
 
         return ready(where);
@@ -228,8 +228,9 @@ public:
     inline decltype(auto) await_suspend(
         std::coroutine_handle<Promise> awaiting,
         [[maybe_unused]] detail::site where = detail::site::current()) {
-        if (stop_state* const state = self().state(); state && !state->stop_requested()) {
-            registration_.register_with(*state);
+        if (stop_state* const token_state = self().state();
+            token_state && !token_state->stop_requested()) {
+            registration_.register_with(*token_state);
             registered_ = true;
         }
 
@@ -243,8 +244,8 @@ public:
         [[maybe_unused]] detail::site where = detail::site::current()) {
         unregister_from_token();
 
-        if (stop_state* const state = self().state(); state && state->stop_requested())
-            [[unlikely]] {
+        if (stop_state* const token_state = self().state();
+            token_state && token_state->stop_requested()) [[unlikely]] {
             if constexpr (requires { self().awaiter().await_stopped(); })
                 return self().awaiter().await_stopped();
             else
@@ -498,8 +499,8 @@ struct stop_sentinel {
         return std::move(*reinterpret_cast<T*>(&empty));
     }
 
-    static bool is_sentinel(T const& value) noexcept {
-        return *reinterpret_cast<void* const*>(&value) == nullptr;
+    static bool is_sentinel(T const& held) noexcept {
+        return *reinterpret_cast<void* const*>(&held) == nullptr;
     }
 };
 

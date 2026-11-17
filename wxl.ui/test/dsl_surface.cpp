@@ -72,7 +72,7 @@ using namespace wxl::dsl;
         vAlign.center,
     };
 
-    TextBlock text{
+    TextBlock line{
         L"WinUI in C++ Without XAML!",
         hAlign.center,
     };
@@ -136,12 +136,12 @@ using namespace wxl::dsl;
 // there only where the elements are text.
 [[maybe_unused]] void iterated_children() {
     StackPanel keypad{
-        [](iterate<L"789"> key) {
+        [](iterate<L"789"> digit) {
             return Button{
-                key.text(),
+                digit.text(),
                 onClick +=
-                [key](Object const&, RoutedEventArgs&) {
-                    wchar_t const pressed = key;
+                [digit](Object const&, RoutedEventArgs&) {
+                    wchar_t const pressed = digit;
                     (void)pressed;
                 },
             };
@@ -170,7 +170,7 @@ using namespace wxl::dsl;
     static_assert(from_value.count == 1 && from_value.items[from_value.count] == L'\0');
 
     static constexpr int spans[]{1, 2, 4};
-    Grid layout{
+    Grid table{
         ColumnDefinitions<u"*,*,*,*">,
         [](iterate<0, 1, 2> at) { return TextBlock{L"head", column = at}; },
         [](iterate<spans> span) { return TextBlock{L"body", row = 1, columnSpan = span}; },
@@ -203,10 +203,10 @@ using namespace wxl::dsl;
 
     OverlappedPresenter const presenter = OverlappedPresenter::create();
     presenter.preferredMinimumWidth(600);
-    core::nullable<int32_t> const width = presenter.preferredMinimumWidth();
+    core::nullable<int32_t> const smallest = presenter.preferredMinimumWidth();
     presenter.preferredMaximumWidth({});
     window.appWindow().setPresenter(presenter);
-    (void)width;
+    (void)smallest;
 }
 
 // A method written as a tag: Window.SetTitleBar takes one argument and hands
@@ -228,8 +228,8 @@ using namespace wxl::dsl;
     bar.preferredHeightOption(TitleBarHeightOption::Tall);
     bar.buttonBackgroundColor(colors.transparent);
     bar.buttonHoverBackgroundColor({});
-    core::nullable<Color> const background = bar.buttonBackgroundColor();
-    (void)background;
+    core::nullable<Color> const buttonBack = bar.buttonBackgroundColor();
+    (void)buttonBack;
 }
 
 // One reading of a member for every spelling: const or not, noexcept or not.
@@ -311,7 +311,7 @@ static_assert(impl::iterating<decltype([](repeat<3>) noexcept { return Button{};
         background = brushes.Card.BackgroundFillColor.Default,
         borderBrush = brushes.Card.StrokeColorDefault,
     };
-    TextBlock text{L"secondary", foreground = brushes.Text.FillColor.Secondary};
+    TextBlock secondary{L"secondary", foreground = brushes.Text.FillColor.Secondary};
 }
 
 // A synthetic property with two homes: the same text is the hover hint
@@ -338,7 +338,7 @@ static_assert(impl::iterating<decltype([](repeat<3>) noexcept { return Button{};
 // A named framework resource, reached as a path and routed by its type: a
 // Style can only be the Style property.
 [[maybe_unused]] void named_style() {
-    TextBlock title{
+    TextBlock heading{
         L"WinUI in C++ Without XAML!",
         styles.TextBlock.Title,
         hAlign.center,
@@ -446,8 +446,8 @@ Preset const stamp{
 
     Border given{borderBrush = ink};
 
-    SolidColorBrush const brush = ink.build();
-    Border same{borderBrush = brush};
+    SolidColorBrush const built = ink.build();
+    Border same{borderBrush = built};
 
     constexpr Preset inkLook{color = rgb(124, 135, 104)};
     SolidColorBrush worn{inkLook};
@@ -459,9 +459,9 @@ Preset const stamp{
 [[maybe_unused]] void preset_fits_by_its_members() {
     constexpr Preset wide{fontSize = 18.0, hAlign.stretch};
 
-    Button key{L"7", wide};
-    TextBox entry{wide};
-    TextBlock label{wide};
+    Button seven{L"7", wide};
+    TextBox box{wide};
+    TextBlock note{wide};
 }
 
 // A binding written on a property, in the one form its shape allows. Bind
@@ -618,14 +618,14 @@ static_assert(!assignable<decltype(isEnabled), char16_t const*>);
     Border{opacity = amount};
     Border{opacity = BindOutput{model->amount}};
 
-    constexpr PropertyKey key = PropertyKey::Opacity;
-    static_assert(std::same_as<decltype(opacity = 1), impl::setter_op<key, int>>);
-    static_assert(std::same_as<decltype(opacity = 0.5), impl::setter_op<key, double>>);
-    static_assert(std::same_as<decltype(opacity = 0.5f), impl::setter_op<key, float>>);
-    static_assert(std::same_as<decltype(opacity = level), impl::setter_op<key, float>>);
-    static_assert(std::same_as<decltype(opacity = amount), impl::setter_op<key, double>>);
+    constexpr PropertyKey prop = PropertyKey::Opacity;
+    static_assert(std::same_as<decltype(opacity = 1), impl::setter_op<prop, int>>);
+    static_assert(std::same_as<decltype(opacity = 0.5), impl::setter_op<prop, double>>);
+    static_assert(std::same_as<decltype(opacity = 0.5f), impl::setter_op<prop, float>>);
+    static_assert(std::same_as<decltype(opacity = level), impl::setter_op<prop, float>>);
+    static_assert(std::same_as<decltype(opacity = amount), impl::setter_op<prop, double>>);
     static_assert(std::same_as<decltype(opacity = BindOutput{model->level}),
-                               impl::setter_op<key, BindOutput<float>>>);
+                               impl::setter_op<prop, BindOutput<float>>>);
     static_assert(!assignable<decltype(opacity), bool>);
     static_assert(!assignable<decltype(opacity), char>);
     static_assert(!assignable<decltype(opacity), char16_t>);
@@ -680,8 +680,8 @@ concept placement_takes = requires(Obj const& object, Value const& value) {
 
 // Copy construction must not be hijacked by the variadic constructor -- the
 // single-argument case is what the constraint on it exists for.
-[[maybe_unused]] void copying(Button const& source) {
-    Button copy = source;
+[[maybe_unused]] void copying(Button const& original) {
+    Button copy = original;
     Button moved{Button{}};
     (void)copy;
     (void)moved;
@@ -692,9 +692,9 @@ concept placement_takes = requires(Obj const& object, Value const& value) {
 // from the exclusion the copy constructor needs, and only the pointed-to
 // type tells the two apart.
 [[maybe_unused]] void singleUnnamedString() {
-    TextBlock caption{L"the only argument"};
+    TextBlock only{L"the only argument"};
     Button action{L"Click"};
-    (void)caption;
+    (void)only;
     (void)action;
 }
 
@@ -706,8 +706,8 @@ concept placement_takes = requires(Obj const& object, Value const& value) {
     app.move({120, 80});
     app.moveAndResize({120, 80, 1000, 700});
     app.title(L"wxl");
-    SizeInt32 const size = app.size();
-    (void)size;
+    SizeInt32 const measured = app.size();
+    (void)measured;
 }
 
 // Timing and the UI thread, both reached through the window's dispatcher.
@@ -737,9 +737,9 @@ concept placement_takes = requires(Obj const& object, Value const& value) {
 }
 
 // The procedural side of the same members: ordinary calls, all const.
-[[maybe_unused]] void procedural(TextBlock const& text, Button const& button) {
-    text.text(L"changed");
-    hstring const current = text.text();
+[[maybe_unused]] void procedural(TextBlock const& block, Button const& button) {
+    block.text(L"changed");
+    hstring const current = block.text();
     button.content(L"Click");
     EventToken token = button.add_onClick([](Object const&, RoutedEventArgs&) {});
     button.remove_onClick(token);
@@ -756,8 +756,8 @@ concept placement_takes = requires(Obj const& object, Value const& value) {
 // changing one is not.
 [[maybe_unused]] void event_arguments(Button const& button, ListView const& list) {
     button.add_onClick([](Object const&, RoutedEventArgs& args) {
-        Object const source = args.originalSource();
-        (void)source;
+        Object const origin = args.originalSource();
+        (void)origin;
     });
 
     button.add_onKeyDown([](Object const&, KeyRoutedEventArgs& args) {
@@ -835,7 +835,7 @@ static_assert(std::is_same_v<decltype(&PointerRoutedEventArgs::getCurrentPoint),
 // wxl can write nullable<T> without asking: a type nobody has given a
 // sentinel still does not compile.
 [[maybe_unused]] void projected_nullables(ToggleButton const& toggle, ScrollViewer const& scroll,
-                                          TimePicker const& time, DatePicker const& date) {
+                                          TimePicker const& time, DatePicker const& picker) {
     toggle.isChecked(true);
     toggle.isChecked({});
     core::nullable<bool> const checked = toggle.isChecked();
@@ -850,7 +850,7 @@ static_assert(std::is_same_v<decltype(&PointerRoutedEventArgs::getCurrentPoint),
     // A length of time empties into the maximum it never counts to; a point
     // in time into WinRT's own zero, the year 1601, which no picker offers.
     time.selectedTime(core::duration{std::chrono::hours{9}});
-    core::nullable<DateTime> const picked = date.selectedDate();
+    core::nullable<DateTime> const picked = picker.selectedDate();
     static_assert(sizeof(core::nullable<core::duration>) == sizeof(core::duration));
     static_assert(sizeof(core::nullable<DateTime>) == sizeof(DateTime));
     (void)picked;
@@ -896,11 +896,11 @@ static_assert(std::is_same_v<decltype(&PointerRoutedEventArgs::getCurrentPoint),
     crop.rightInset(60.0f);
     sheet.clip(crop);
 
-    DropShadow shadow = compositor.createDropShadow();
-    shadow.blurRadius(24.0f);
-    shadow.opacity(0.35f);
-    shadow.offset({-8, 4, 0});
-    sheet.shadow(shadow);
+    DropShadow drop = compositor.createDropShadow();
+    drop.blurRadius(24.0f);
+    drop.opacity(0.35f);
+    drop.offset({-8, 4, 0});
+    sheet.shadow(drop);
 
     // The sheen: a gradient whose opacity is animated rather than redrawn.
     CompositionLinearGradientBrush sheen = compositor.createLinearGradientBrush();
@@ -917,13 +917,13 @@ static_assert(std::is_same_v<decltype(&PointerRoutedEventArgs::getCurrentPoint),
     fade.delayTime(std::chrono::milliseconds{80});
     fade.insertKeyFrame(1.0f, 1.0f, compositor.createLinearEasingFunction());
 
-    Vector3KeyFrameAnimation rise = compositor.createVector3KeyFrameAnimation();
-    rise.duration(std::chrono::milliseconds{200});
-    rise.insertKeyFrame(0.0f, Vector3{0, 12, 0});
-    rise.insertKeyFrame(1.0f, Vector3{0, 0, 0});
+    Vector3KeyFrameAnimation lift = compositor.createVector3KeyFrameAnimation();
+    lift.duration(std::chrono::milliseconds{200});
+    lift.insertKeyFrame(0.0f, Vector3{0, 12, 0});
+    lift.insertKeyFrame(1.0f, Vector3{0, 0, 0});
 
     sheet.startAnimation(L"Opacity", fade);
-    sheet.startAnimation(L"Offset", rise);
+    sheet.startAnimation(L"Offset", lift);
 
     Visual hosted = ElementCompositionPreview::getElementVisual(host);
     hosted.opacity(1.0f);
@@ -959,10 +959,10 @@ void handing_work_over(DispatcherQueue const& queue) {
     (void)soon;
 
     UiThread const ui = UiThread::current();
-    auto const background = [ui](std::wstring found) {
+    auto const worker = [ui](std::wstring found) {
         ui.post([found = std::move(found)] { (void)found; });
     };
-    background(L"a file");
+    worker(L"a file");
 }
 
 // A wait for a quiet moment on the UI thread's queue, which nobody names.
@@ -1134,15 +1134,15 @@ concept declares_snaps_to_tag = requires { typename T::SnapsToTag; };
 // Every element of it is compiled by the generated schema_surface.cpp beside
 // this file; what is here is the part a generator cannot write down -- what
 // it is *for*, and the one thing it can do that the flat vocabulary cannot.
-[[maybe_unused]] void the_schema_names_the_class(LinearGradientBrush const& brush) {
+[[maybe_unused]] void the_schema_names_the_class(LinearGradientBrush const& gradient) {
     namespace x = dsl::schema;
 
     // Two classes declare StartPoint with different types, Point and Vector2,
     // so the flat tag takes both and `startPoint = {0, 0}` cannot compile
     // through it: the braced list fits either. Through the class the type is
     // one again.
-    impl::apply_argument(brush, x::LinearGradientBrush::startPoint = {0.0f, 0.0f});
-    impl::apply_argument(brush, x::LinearGradientBrush::endPoint = Point{1.0f, 1.0f});
+    impl::apply_argument(gradient, x::LinearGradientBrush::startPoint = {0.0f, 0.0f});
+    impl::apply_argument(gradient, x::LinearGradientBrush::endPoint = Point{1.0f, 1.0f});
 
     // And it is the same op the bare name produces, so the two forms mix
     // inside one set of braces.
@@ -1179,11 +1179,11 @@ concept declares_snaps_to_tag = requires { typename T::SnapsToTag; };
     core::function const type = [](wchar_t) {};
 
     Grid{
-        [type](iterate<L"789"> key) {
+        [type](iterate<L"789"> digit) {
             return Button{
-                key.text(),
-                column = key.index,
-                onClick += [type, symbol = key.value] { type(symbol); },
+                digit.text(),
+                column = digit.index,
+                onClick += [type, symbol = digit.value] { type(symbol); },
             };
         },
     };
@@ -1198,8 +1198,8 @@ concept declares_snaps_to_tag = requires { typename T::SnapsToTag; };
 // member goes; a member that starts a coroutine keeps its task in a field.
 struct HandlersAsMembers {
     void clicked(Button const& self, RoutedEventArgs& args) {
-        Object const source = args.originalSource();
-        (void)source;
+        Object const origin = args.originalSource();
+        (void)origin;
         self.isEnabled(false);
     }
     void toggled(ToggleSwitch const& self) { self.isOn(false); }
@@ -1248,12 +1248,12 @@ static_assert(!impl::droppable_result<bool> && !impl::droppable_result<async::ta
 static_assert([] {
     struct Probe {
         int sender = 0;
-        constexpr void take(int const& from, int& args) {
-            sender = from;
+        constexpr void take(int const& sent, int& args) {
+            sender = sent;
             args = 2;
         }
-        constexpr void keep(int const& from, int& args) noexcept {
-            sender += from;
+        constexpr void keep(int const& sent, int& args) noexcept {
+            sender += sent;
             args += 3;
         }
     };
@@ -1420,8 +1420,8 @@ static_assert(Relief::under(rgb(200, 60, 30), lampAtLeft, 1.3, 2.0) == rgb(164, 
 namespace {
 constexpr auto leftUp = Direction::from_angles(120, 60);
 constexpr auto overhead = Direction::from_angles(45, 90);
-constexpr bool close_to(double value, double expected) {
-    return value - expected < 1e-6 && expected - value < 1e-6;
+constexpr bool close_to(double actual, double expected) {
+    return actual - expected < 1e-6 && expected - actual < 1e-6;
 }
 }  // namespace
 static_assert(close_to(leftUp.x, -0.25) && close_to(leftUp.y, -0.433013) &&
@@ -1617,7 +1617,7 @@ struct probe_task {
     };
 };
 
-[[maybe_unused]] probe_task awaiting_an_event(Button button, TextBlock text) {
+[[maybe_unused]] probe_task awaiting_an_event(Button button, TextBlock block) {
     // Kept in a variable: one subscription, waited on as many times as the
     // loop goes round.
     auto clicks = on_event<EventKey::Click>(button);
@@ -1629,13 +1629,13 @@ struct probe_task {
         // Answering the framework from inside a coroutine, which is the one
         // thing this whole shape has to keep possible: the handler resumes
         // the frame before it returns, so Handled set here is set in time.
-        KeyRoutedEventArgs& key = co_await on_event<EventKey::KeyDown>(button);
-        key.handled(true);
+        KeyRoutedEventArgs& keyArgs = co_await on_event<EventKey::KeyDown>(button);
+        keyArgs.handled(true);
 
         // And as a temporary: one wait, subscribed and unsubscribed by the
         // full expression it is written in. The temporary outlives the
         // suspension inside it, which is what makes this legal.
-        Object const& sender = co_await on_event<EventKey::LayoutUpdated>(text);
+        Object const& sender = co_await on_event<EventKey::LayoutUpdated>(block);
         static_cast<void>(sender);
 
         // The same wait named by its own two members instead of by a key --
@@ -1753,8 +1753,8 @@ static_assert(!impl::invocation_answerable<sliced_answer const&>);
     int const count = co_await on_event(counted, token);
     static_cast<void>(count);
 
-    auto const [name, times] = co_await on_event(renamed, token);
-    static_cast<void>(name);
+    auto const [who, times] = co_await on_event(renamed, token);
+    static_cast<void>(who);
     static_cast<void>(times);
 
     co_await on_event(reset, token);
@@ -1792,16 +1792,17 @@ struct Board {
 [[maybe_unused]] void bound_lists(Board& board) {
     using namespace ::wxl;
     using namespace ::wxl::dsl;
-    auto const row = [](core::u16_text const& word) { return TextBlock{text = word}; };
+    auto const line = [](core::u16_text const& word) { return TextBlock{text = word}; };
 
-    ListView{itemsSource = BindOutput{board.words, row}};
-    GridView{itemsSource = BindOutput{board.words, row}};
-    ItemsRepeater{itemsSource = BindOutput{board.words, row}};
+    ListView{itemsSource = BindOutput{board.words, line}};
+    GridView{itemsSource = BindOutput{board.words, line}};
+    ItemsRepeater{itemsSource = BindOutput{board.words, line}};
     ItemsView{itemsSource = BindOutput{board.words, [](core::u16_text const& word) {
                                            return ItemContainer{child = TextBlock{text = word}};
                                        }}};
-    ListView{itemsSource = BindOutput{board.shown(), row}};  // read-only: only the model changes it
-    ListView{schema::ItemsControl::itemsSource = BindOutput{board.words, row}};
+    // read-only: only the model changes it
+    ListView{itemsSource = BindOutput{board.shown(), line}};
+    ListView{schema::ItemsControl::itemsSource = BindOutput{board.words, line}};
 
     ListView{
         isItemClickEnabled = true,
@@ -1819,8 +1820,8 @@ struct Board {
         },
         selectedIndex = Bind{board.chosen},
     };
-    ListView{itemsSource = BindOutput{board.words, row}, selectedIndex = BindInput{board.chosen}};
-    GridView{itemsSource = BindOutput{board.words, row}, selectedIndex = BindOutput{board.chosen}};
+    ListView{itemsSource = BindOutput{board.words, line}, selectedIndex = BindInput{board.chosen}};
+    GridView{itemsSource = BindOutput{board.words, line}, selectedIndex = BindOutput{board.chosen}};
     FlipView{selectedIndex = Bind{board.chosen}};
     ComboBox{selectedIndex = Bind{board.chosen}};
 }

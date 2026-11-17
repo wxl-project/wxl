@@ -21,7 +21,7 @@ using namespace wxl::dsl;
 
 // boundTemplate -- a DataTemplate whose root is a control and whose properties are made from the item.
 [[maybe_unused]] void boundTemplate_of_control() {
-    [[maybe_unused]] DataTemplate const itemTemplate =
+    [[maybe_unused]] DataTemplate const made =
         boundTemplate(u"TextBlock", {{u"Text", [](Object const& item) { return item; }}});
 }
 

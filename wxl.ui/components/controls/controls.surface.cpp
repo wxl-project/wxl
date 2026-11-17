@@ -17,16 +17,16 @@ using namespace wxl::dsl;
 // with -- here the face, for a card that lies over artwork and must not
 // drown it. A card passes wherever its base does, and one written with a
 // single child claims the positional route Border already has.
-[[maybe_unused]] void library_looks(UIElement const& content) {
-    Card plain{content};
-    OverlayCard over_picture{content};
+[[maybe_unused]] void library_looks(UIElement const& inner) {
+    Card plain{inner};
+    OverlayCard over_picture{inner};
 
     Card over_artwork{
         hAlign.right,
         vAlign.top,
         Margin{0, 64, 72, 0},
         background = SolidColorBrush{rgba(28, 18, 8, 0.424)},
-        content,
+        inner,
     };
 
     // The copy guard in setter_pack: one argument of the look's own type is

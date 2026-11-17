@@ -16,9 +16,9 @@ using namespace wxl::dsl;
 // FocusEffect: attached to the window like ZoomEffect, the look as the bare
 // argument, an element that shows its own focus left out.
 [[maybe_unused]] void focus_effect(UIElement const& tree) {
-    auto const focus = FocusEffect{FocusLook::Lift};
-    CompositionWindow const window{focus};
-    focus.look(FocusLook::Glow);
+    auto const lift = FocusEffect{FocusLook::Lift};
+    CompositionWindow const window{lift};
+    lift.look(FocusLook::Glow);
     FocusEffect::exclude(tree);
 }
 
@@ -39,8 +39,8 @@ using namespace wxl::dsl;
 [[maybe_unused]] void glass_in_braces() {
     using namespace ::wxl;
     using namespace ::wxl::dsl;
-    GlassEffect const pane{rgba(255, 255, 255, 0.2), blurRadius = 24.0f, opacity = 0.9f};
-    Border{pane, GlassEffect{blurRadius = 12.0f}};
+    GlassEffect const glass{rgba(255, 255, 255, 0.2), blurRadius = 24.0f, opacity = 0.9f};
+    Border{glass, GlassEffect{blurRadius = 12.0f}};
 }
 
 // The braces as a button writes them: the generic tags, a colour where the
@@ -48,9 +48,9 @@ using namespace wxl::dsl;
 [[maybe_unused]] void Button3DEffect_in_braces() {
     using namespace ::wxl;
     using namespace ::wxl::dsl;
-    Button3DEffect const key{foreground = rgb(237, 239, 242), background = rgba(68, 72, 79, 0.933),
+    Button3DEffect const cap{foreground = rgb(237, 239, 242), background = rgba(68, 72, 79, 0.933),
                              shadow = 0.7, emboss = -1};
-    Button{u"7", key};
+    Button{u"7", cap};
     // The lights over the pointer, written bare: one pair given to two kinds
     // of key, and one light written in place.
     HoverLight const spot{size = 200.0f, fullSize = 100.0f, diffuseAmount = 0.4f};
@@ -78,9 +78,9 @@ using namespace wxl::dsl;
                              offset = 2.0f,
                              Margin{1},
                              CornerRadius{6}};
-    Button const key{u"=", raised};
+    Button const equals{u"=", raised};
     (void)object;
-    (void)key;
+    (void)equals;
 }
 
 [[maybe_unused]] void MagnifyEffect_scale_braced(::wxl::MagnifyEffect const& object) {
@@ -89,9 +89,9 @@ using namespace wxl::dsl;
 // What grows is positional, among the scale and the tags.
 [[maybe_unused]] void MagnifyEffect_target_positional() {
     using namespace ::wxl::dsl;
-    ::wxl::MagnifyEffect const content{1.2f, ::wxl::MagnifyTarget::Content, maximum = 1.35f};
+    ::wxl::MagnifyEffect const magnify{1.2f, ::wxl::MagnifyTarget::Content, maximum = 1.35f};
     ::wxl::MagnifyEffect const alone{::wxl::MagnifyTarget::Content};
-    ::wxl::Button const button{u"Play", content};
+    ::wxl::Button const button{u"Play", magnify};
     (void)alone;
     (void)button;
 }

@@ -284,9 +284,9 @@ struct optional_selector<duration> {
             return duration::from_ticks(std::numeric_limits<uint64_t>::max());
         }
 
-        /// Tests whether \p value is the sentinel duration.
-        static constexpr bool is_sentinel(const duration& value) noexcept {
-            return value.ticks() == std::numeric_limits<uint64_t>::max();
+        /// Tests whether \p held is the sentinel duration.
+        static constexpr bool is_sentinel(const duration& held) noexcept {
+            return held.ticks() == std::numeric_limits<uint64_t>::max();
         }
     };
 

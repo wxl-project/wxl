@@ -137,7 +137,7 @@ public:
     using args_value_t = std::reference_wrapper<std::remove_reference_t<args_ref_t>>;
     using next_result_t = std::expected<args_value_t, async::stop_reason>;
 
-    explicit event_awaitable(Source source) : source_{std::move(source)} {
+    explicit event_awaitable(Source watched) : source_{std::move(watched)} {
         // The element is held by value, which is a reference count: the
         // subscription outlives every temporary in the description tree, and
         // the unsubscription below has to have something to unsubscribe from.
@@ -353,8 +353,8 @@ public:
     using args_value_t = typename event_t::args_value_t;
     using next_result_t = typename event_t::next_result_t;
 
-    stoppable_event_awaitable(Source source, async::stop_token token)
-        : event_{std::move(source)}, token_{std::move(token)} {}
+    stoppable_event_awaitable(Source watched, async::stop_token token)
+        : event_{std::move(watched)}, token_{std::move(token)} {}
 
     stoppable_event_awaitable(stoppable_event_awaitable const&) = delete;
     stoppable_event_awaitable& operator=(stoppable_event_awaitable const&) = delete;
