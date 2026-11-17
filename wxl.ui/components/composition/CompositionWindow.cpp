@@ -257,11 +257,11 @@ struct CompositionWindow::Impl : core::refcounted, core::intrusive_list_node<Imp
             buttons.VerticalAlignment(xaml::VerticalAlignment::Stretch);
             controls::Grid::SetColumn(buttons, 1);
 
-            HWND const window = state.window.get();
+            HWND const hwnd = state.window.get();
             xaml::Automation::AutomationProperties::SetName(minimize,
-                                                            system_menu_text(window, SC_MINIMIZE));
+                                                            system_menu_text(hwnd, SC_MINIMIZE));
             xaml::Automation::AutomationProperties::SetName(close,
-                                                            system_menu_text(window, SC_CLOSE));
+                                                            system_menu_text(hwnd, SC_CLOSE));
             maximize.Loaded([&state](auto&&, auto&&) { state.show_maximized(); });
             for (controls::Button const& button : {minimize, maximize, close}) {
                 buttons.Children().Append(button);
