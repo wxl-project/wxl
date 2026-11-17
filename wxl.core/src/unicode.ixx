@@ -343,7 +343,7 @@ constexpr std::size_t floor_code_point_boundary(const std::wstring_view str,
     return impl::floor_utf16_boundary(str, at);
 }
 
-/// Returns the nearest offset at or before \p at where the UTF-16 text \p text can be cut:
+/// Returns the nearest offset at or before \p at where the UTF-16 text \p str can be cut:
 /// \p at itself, unless it falls between the halves of a surrogate pair, and then the start
 /// of the pair. An offset at or past the end returns the size of the text.
 constexpr std::size_t floor_code_point_boundary(const std::u16string_view str,
