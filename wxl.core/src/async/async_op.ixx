@@ -637,6 +637,9 @@ public:
     explicit async_op_f(Fn2&& fn) : fn_(std::forward<Fn2>(fn)) {}
 
 protected:
+    // Unreachable only for a body that always throws.
+#pragma warning(push)
+#pragma warning(disable : 4702)
     bool execute() override {
         if constexpr (std::is_void_v<R>)
             fn_();
@@ -645,6 +648,7 @@ protected:
 
         return true;
     }
+#pragma warning(pop)
 
 private:
     Fn fn_;

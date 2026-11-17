@@ -15,8 +15,8 @@ using namespace wxl::dsl;
 // A layout written as two functions, in a LayoutPanel.
 [[maybe_unused]] void custom_layout() {
     auto const custom = CustomLayout{
-        [](Collection<UIElement> const& elements, Size available) { return available; },
-        [](Collection<UIElement> const& elements, Size final) { return final; },
+        [](Collection<UIElement> const& /*elements*/, Size available) { return available; },
+        [](Collection<UIElement> const& /*elements*/, Size final) { return final; },
     };
     LayoutPanel{layout = custom};
 }

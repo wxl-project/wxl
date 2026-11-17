@@ -225,17 +225,18 @@ namespace wxl::dsl::schema {{
     std::print(file, "}}  // namespace wxl::dsl::schema\n");
 }
 
-// The value a test line hands the member. A property takes one of its own
-// type; an enum-typed one takes it through the anchor, which proves the
-// enumerators the anchor carries are reachable as well.
-std::string test_value(schema::class_t const& owner, schema::member const& member, dsl const& d) {
+// The enumerator a test line hands an enum-typed member, through the anchor,
+// which proves the enumerators the anchor carries are reachable as well. Any
+// other property takes a value of its own type, and gets nothing here.
+std::optional<std::string> test_enumerator(schema::class_t const& owner, schema::member const& member,
+                                           dsl const& d) {
     if (auto const values = d.enumerators.find(member.type);
         member.single_type && values != d.enumerators.end() && !values->second.empty()) {
         return std::format("::wxl::dsl::schema::{}::{}.{}", owner.name, member.name,
                            values->second.front().first);
     }
 
-    return "value";
+    return std::nullopt;
 }
 
 // The checks of the descriptions the components give of the classes they write by hand
@@ -375,13 +376,20 @@ void write_schema_test(std::filesystem::path const& path, schema const& sch, dsl
                                    klass.name, member.name, object, qualified(member.type));
                         break;
                     }
-                    std::print(file, R"([[maybe_unused]] void {0}_{1}_assigned({2}, {4} value) {{
-    ::wxl::impl::apply_argument(object, {3} = {5});
+                    if (auto const enumerator = test_enumerator(klass, member, d)) {
+                        std::print(file, R"([[maybe_unused]] void {0}_{1}_assigned({2}) {{
+    ::wxl::impl::apply_argument(object, {3} = {4});
 }}
 )",
-                               klass.name, member.name, object, path_to,
-                               member.type.empty() ? "::wxl::Object" : qualified(member.type),
-                               test_value(klass, member, d));
+                                   klass.name, member.name, object, path_to, *enumerator);
+                        break;
+                    }
+                    std::print(file, R"([[maybe_unused]] void {0}_{1}_assigned({2}, {3} value) {{
+    ::wxl::impl::apply_argument(object, {4} = value);
+}}
+)",
+                               klass.name, member.name, object,
+                               member.type.empty() ? "::wxl::Object" : qualified(member.type), path_to);
                     break;
 
                 // Bound in the direction its pair takes: the one line that

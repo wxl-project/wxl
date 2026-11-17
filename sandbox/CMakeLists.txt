@@ -9,6 +9,10 @@
 # и этот файл ради неё править не надо. Каталог без CMakeLists.txt в сборку не
 # идёт: рецепт, которому в дереве не хватает кода, остаётся текстом, и его
 # README.md говорит, чего именно.
+# Пробы открывают wxl::dsl на уровне файла, как приложение, и локальное имя,
+# совпадающее с тегом, здесь ожидаемо: C4459 о нём ничего не говорит.
+add_compile_options(/wd4459)
+
 file(GLOB _wxl_sandbox_apps CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*/CMakeLists.txt")
 
 foreach(_app IN LISTS _wxl_sandbox_apps)

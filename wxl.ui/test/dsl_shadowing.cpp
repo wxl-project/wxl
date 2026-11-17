@@ -4,8 +4,8 @@
 // tag of the syntax (value, text, source, size, ...) a global name. A parameter or a
 // local of a wxl template, an inline function or a body of a module interface that
 // takes one of those names then hides it, and a build at /W4 reports C4459 at that
-// declaration. wxl itself builds at /W3 and never sees it, so this target raises
-// C4456-C4459 to level 1 and makes them errors.
+// declaration. wxl's own sources never open the namespace that way, so their build does
+// not see it; this target does, and raises C4456-C4459 to level 1 and makes them errors.
 //
 // The surface sources of this target write the syntax; this one opens the namespace
 // the way an application does and uses what an application uses beside the syntax --
@@ -129,6 +129,35 @@ struct Model {
     (void)built.to_utf8();
     (void)core::unicode::floor_code_point_boundary(std::u16string_view{u"ab"}, 1);
     (void)core::unicode::find_invalid_utf16(std::wstring_view{L"ab"});
+}
+
+[[maybe_unused]] void comparisons() {
+    std::u16string const owner = u"ab";
+    zstring_view const view = owner;
+    (void)(view == view);
+    (void)(view == std::u16string_view{u"ab"});
+    (void)(view == u"ab");
+    (void)(view <=> view);
+
+    core::hstring const held{u"ab"};
+    (void)(held == held);
+    (void)(held == std::u16string_view{u"ab"});
+    (void)(held == view);
+    (void)(held == u"ab");
+
+    core::path const folder{L"a"};
+    (void)(folder / L"b");
+    (void)(folder == folder);
+
+    (void)core::equal_ignore_ascii_case(std::string_view{"a"}, std::string_view{"A"});
+    (void)core::equal_ignore_ascii_case(std::wstring_view{L"a"}, std::wstring_view{L"A"});
+    (void)core::equal_ignore_ascii_case(std::u16string_view{u"a"}, std::u16string_view{u"A"});
+}
+
+[[maybe_unused]] void numbers_in_text() {
+    std::u16string wide;
+    core::append_number(wide, 42);
+    (void)core::to_wstring(1.5);
 }
 
 [[maybe_unused]] void every_form_of_text() {

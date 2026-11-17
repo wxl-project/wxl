@@ -1,6 +1,9 @@
 # The gate: the whole tree -- the WinUI half included -- built and tested on
 # the hosted Windows runner, Debug and Release side by side, with the tree's
-# own flags and nothing else.
+# own flags and one more: every row builds with warnings as errors
+# (CMAKE_COMPILE_WARNING_AS_ERROR), so a change that brings a warning fails the
+# gate. A false positive of /W4 is settled with a pragma at its site, case by
+# case; a local build keeps warnings as warnings.
 #
 # The toolset is MSVC 14.53 from the Insiders channel's Build Tools, installed
 # on each run: the image's 14.51 miscompiles a coroutine whose final_suspend()
@@ -149,7 +152,7 @@ jobs:
         shell: cmd
         run: |
           call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
-          cmake --preset x64-dynamic -DBUILD_TESTING=ON -DWXL_BUILD_DOCS=OFF ${{ matrix.strict && '-DWXL_STRICT_CORO=ON' || '-DWXL_WINXL=ON -DWXL_INSTALL=ON' }}
+          cmake --preset x64-dynamic -DBUILD_TESTING=ON -DWXL_BUILD_DOCS=OFF -DCMAKE_COMPILE_WARNING_AS_ERROR=ON ${{ matrix.strict && '-DWXL_STRICT_CORO=ON' || '-DWXL_WINXL=ON -DWXL_INSTALL=ON' }}
 
       # -k 0: every compile error of the change at once, not only the first. A
       # failed generation still stops everything built on the wrappers: their

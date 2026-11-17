@@ -188,26 +188,26 @@ public:
     }
 
     /// Tests whether two views contain the same characters.
-    friend constexpr bool operator==(basic_zstring_view left, basic_zstring_view right) noexcept {
-        return left.view() == right.view();
+    friend constexpr bool operator==(basic_zstring_view lhs, basic_zstring_view rhs) noexcept {
+        return lhs.view() == rhs.view();
     }
 
-    /// Tests whether the view \p left contains the same characters as the plain view
-    /// \p right.
-    friend constexpr bool operator==(basic_zstring_view left, view_type right) noexcept {
-        return left.view() == right;
+    /// Tests whether the view \p lhs contains the same characters as the plain view
+    /// \p rhs.
+    friend constexpr bool operator==(basic_zstring_view lhs, view_type rhs) noexcept {
+        return lhs.view() == rhs;
     }
 
     /// A literal against a view: without this the array would reach either of
     /// the two above through a conversion each, and neither would be better.
-    friend constexpr bool operator==(basic_zstring_view left, const_pointer right) noexcept {
-        return left.view() == view_type(right);
+    friend constexpr bool operator==(basic_zstring_view lhs, const_pointer rhs) noexcept {
+        return lhs.view() == view_type(rhs);
     }
 
     /// Compares the characters of two views lexicographically, as `std::basic_string_view`
     /// does.
-    friend constexpr auto operator<=>(basic_zstring_view left, basic_zstring_view right) noexcept {
-        return left.view() <=> right.view();
+    friend constexpr auto operator<=>(basic_zstring_view lhs, basic_zstring_view rhs) noexcept {
+        return lhs.view() <=> rhs.view();
     }
 
     /// The doors that have looked, or need not: the promise is theirs, and the

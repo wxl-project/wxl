@@ -71,7 +71,7 @@ set(WXL_CXX_STANDARD 23)
 # Not part of the language: warning options are not hashed by CMake, so a
 # project that adds wxl keeps the level of its own, and the check above does not
 # ask for it.
-set(WXL_WARNING_OPTIONS /W3)
+set(WXL_WARNING_OPTIONS /W4)
 
 function(wxl_apply_language_options)
     set(CMAKE_CXX_STANDARD ${WXL_CXX_STANDARD} PARENT_SCOPE)

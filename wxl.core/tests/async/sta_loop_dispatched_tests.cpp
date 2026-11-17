@@ -303,6 +303,9 @@ void listen_on_the_pool() noexcept { fail_on_the_pool(); }
 // The body's own exceptions go back to the co_await; one that leaves a noexcept call inside
 // it ends the process on the pool's thread, which the callback gives the handler that names
 // it. Nothing is set on the thread of the test.
+// The lambda's return is unreachable on purpose: the call before it never returns.
+#pragma warning(push)
+#pragma warning(disable : 4702)
 void die_on_the_pool() {
     report_broken_rules_to_stderr();
 
@@ -313,6 +316,7 @@ void die_on_the_pool() {
 
     sta_loop::run_until(pending);
 }
+#pragma warning(pop)
 
 TEST(StaLoopDispatchedDeathTest, AnExceptionLeavingANoexceptCallOnThePoolIsNamed) {
     EXPECT_DEATH(die_on_the_pool(), "wxl: unhandled exception: проба пула");
