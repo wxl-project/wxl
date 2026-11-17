@@ -27,8 +27,10 @@ macro(wxl_add_gtest target)
 
     # Listed when ctest starts, from the binary of the configuration it tests. A
     # program that cannot list itself stops ctest with an error, as it would
-    # stop the build.
-    gtest_discover_tests(${target} DISCOVERY_MODE PRE_TEST)
+    # stop the build. The listing may take up to a minute: a CI runner can take
+    # longer than the default five seconds to start a large program, and ctest
+    # goes on as soon as the program has answered.
+    gtest_discover_tests(${target} DISCOVERY_MODE PRE_TEST DISCOVERY_TIMEOUT 60)
 endmacro()
 
 # wxl::test.gtest, the global fixture of a GoogleTest program

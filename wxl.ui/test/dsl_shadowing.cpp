@@ -23,6 +23,7 @@
 #include "ui.h"
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 #include <wxl/Microsoft.UI.Xaml.Documents.h>
+#include <sstream>
 
 import wxl.core;
 
@@ -159,6 +160,33 @@ struct Model {
     (void)core::to_wstring(1.5);
 }
 
+[[maybe_unused]] void every_form_of_text() {
+    std::wstring const wide = L"ёж";
+    zstring_view const terminated = wide;
+    (void)terminated.size();
+    (void)core::assume_terminated(std::wstring_view{L"ab"});
+
+    (void)core::unicode::is_valid_utf8(std::string_view{"ab"});
+    (void)core::unicode::is_valid_utf16(std::wstring_view{L"ab"});
+    (void)core::unicode::find_invalid_utf8(std::u8string_view{u8"ab"});
+    (void)core::unicode::find_invalid_utf16(std::u16string_view{u"ab"});
+    (void)core::unicode::floor_code_point_boundary(std::wstring_view{L"ab"}, 1);
+    (void)core::unicode::floor_code_point_boundary(std::string_view{"ab"}, 1);
+    (void)core::unicode::floor_code_point_boundary(std::u8string_view{u8"ab"}, 1);
+    (void)core::unicode::checked(std::wstring_view{L"ab"});
+    (void)core::unicode::checked(std::u16string_view{u"ab"});
+
+    std::optional<core::u8_view> const narrow = core::unicode::checked(std::u8string_view{u8"ab"});
+    if (narrow) {
+        std::u16string grown;
+        core::unicode::append_utf16(grown, *narrow);
+        std::string back;
+        core::unicode::append_utf8(back, core::u16_view{u"cd"});
+        std::ostringstream shown;
+        shown << *narrow << core::u16_view{u"ef"};
+    }
+}
+
 [[maybe_unused]] void nullables() {
     core::nullable<Note> const pointer;
     core::nullable<int> const whole = 1;
@@ -166,8 +194,9 @@ struct Model {
     core::nullable<double> const ratio = 0.5;
     core::nullable<core::duration> const wait;
     core::nullable<async::stop_token> const token;
+    core::nullable<DateTime> const day;
     (void)(pointer.has_value() && whole.has_value() && count.has_value() && ratio.has_value() &&
-           wait.has_value() && token.has_value());
+           wait.has_value() && token.has_value() && day.has_value());
 }
 
 [[maybe_unused]] async::task<int> answer() { co_return 42; }

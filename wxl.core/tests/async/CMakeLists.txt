@@ -95,12 +95,14 @@ include(GoogleTest)
 # another, not after each link. Discovery after the link writes its listing to a file whose
 # name does not depend on the target, in the directory all three share: when ninja links
 # them at once, one program can be given another's listing, and its own suites are then
-# never registered. Listed at ctest's start, the three runs cannot overlap.
+# never registered. Listed at ctest's start, the three runs cannot overlap. Each listing
+# has the minute wxl_add_gtest gives it.
 gtest_discover_tests(
     wxl.async.tests
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
     DISCOVERY_MODE PRE_TEST
+    DISCOVERY_TIMEOUT 60
 )
 
 # The loop on a dispatcher queue -- start_dispatched(), the mode an application with a
@@ -135,6 +137,7 @@ gtest_discover_tests(
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
     DISCOVERY_MODE PRE_TEST
+    DISCOVERY_TIMEOUT 60
 )
 
 # The driven mode of sta_loop -- start_driven(), a dispatcher callback, run_pending()
@@ -158,4 +161,5 @@ gtest_discover_tests(
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
     DISCOVERY_MODE PRE_TEST
+    DISCOVERY_TIMEOUT 60
 )

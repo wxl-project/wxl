@@ -343,8 +343,8 @@ struct token_slot {
 template <PropertyKey key, typename Owner = void>
 struct deduced_property_tag {
     template <typename T>
-    constexpr setter_op<key, std::decay_t<T>, Owner> operator=(T&& assigned) const {
-        return {std::forward<T>(assigned)};
+    constexpr setter_op<key, std::decay_t<T>, Owner> operator=(T&& value) const {
+        return {std::forward<T>(value)};
     }
 };
 
@@ -471,8 +471,8 @@ template <PropertyKey key, typename Owner>
 struct bound_property_tag {
     template <typename T>
         requires is_bind<std::decay_t<T>>
-    constexpr setter_op<key, std::decay_t<T>, Owner> operator=(T&& assigned) const {
-        return {std::forward<T>(assigned)};
+    constexpr setter_op<key, std::decay_t<T>, Owner> operator=(T&& value) const {
+        return {std::forward<T>(value)};
     }
 };
 
@@ -512,14 +512,14 @@ struct property_tag<key, one_of<Values...>, Owner> : typed_assignment<key, Value
     using typed_assignment<key, Values, Owner>::operator=...;
 
     template <number T>
-    constexpr setter_op<key, T, Owner> operator=(T assigned) const {
-        return {assigned};
+    constexpr setter_op<key, T, Owner> operator=(T value) const {
+        return {value};
     }
 
     template <typename T>
         requires(!std::is_arithmetic_v<std::remove_cvref_t<T>>)
-    constexpr setter_op<key, std::decay_t<T>, Owner> operator=(T&& assigned) const {
-        return {std::forward<T>(assigned)};
+    constexpr setter_op<key, std::decay_t<T>, Owner> operator=(T&& value) const {
+        return {std::forward<T>(value)};
     }
 
     template <core::character T>

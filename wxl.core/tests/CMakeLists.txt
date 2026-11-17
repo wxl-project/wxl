@@ -57,12 +57,14 @@ include(GoogleTest)
 
 # Listed when ctest starts, from the binary of the configuration it tests, as
 # wxl_add_gtest does: the Debug and Release programs differ here, the probes
-# that read the debug CRT heap are built in Debug only.
+# that read the debug CRT heap are built in Debug only. The listing has the
+# minute wxl_add_gtest gives it.
 gtest_discover_tests(
     wxl.core.tests
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
     DISCOVERY_MODE PRE_TEST
+    DISCOVERY_TIMEOUT 60
 )
 
 # The tests of the areas of the module, one directory each.
