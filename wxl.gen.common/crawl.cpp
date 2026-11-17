@@ -717,12 +717,12 @@ struct crawler {
     // metadata genuinely contains. The roots and each type's dependencies
     // are taken by full name, so the order depends on the metadata alone.
     void order() {
-        std::vector<TypeDef> types;
-        types.reserve(result.surface.size());
+        std::vector<TypeDef> roots;
+        roots.reserve(result.surface.size());
         for (auto&& [type, filter] : result.surface) {
-            types.push_back(type);
+            roots.push_back(type);
         }
-        std::sort(types.begin(), types.end(), by_full_name{});
+        std::sort(roots.begin(), roots.end(), by_full_name{});
 
         std::set<TypeDef> done;
         std::set<TypeDef> visiting;
@@ -743,7 +743,7 @@ struct crawler {
             result.ordered.push_back(type);
         };
 
-        for (auto&& type : types) {
+        for (auto&& type : roots) {
             visit(type);
         }
 

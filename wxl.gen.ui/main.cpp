@@ -550,8 +550,8 @@ wxl::Teardown wxl_launched() {
     // Раскрытая панель — по самому длинному пункту: отступ под значок, текст и
     // поле справа.
     double longest = 0;
-    for (zstring_view const label : {typesTab, resourcesTab, settingsName}) {
-        TextBlock const text {label};
+    for (zstring_view const tab : {typesTab, resourcesTab, settingsName}) {
+        TextBlock const text {tab};
         text.measure({std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()});
         longest = std::max(longest, static_cast<double>(text.desiredSize().width));
     }

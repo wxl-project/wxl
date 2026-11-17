@@ -202,14 +202,14 @@ std::string_view without_interface_prefix(std::string_view interface_name);
 std::string interface_field_name(std::string_view interface_name);
 
 // "Microsoft.UI.Xaml.Controls" -> "winrt::Microsoft::UI::Xaml::Controls"
-std::string winrt_namespace(std::string_view metadata_namespace);
+std::string winrt_namespace(std::string_view namespace_name);
 
 // The C++ name cppwinrt gives a type, qualified: the metadata name in its own
 // namespace, except for the numerics, which it spells float2, float3, float4,
 // float3x2, float4x4, plane and quaternion.
-std::string winrt_type_name(std::string_view metadata_namespace, std::string_view name);
+std::string winrt_type_name(std::string_view namespace_name, std::string_view name);
 
 // The cppwinrt projection header a WinRT namespace lives in.
-std::string winrt_include(std::string_view metadata_namespace);
+std::string winrt_include(std::string_view namespace_name);
 
 }  // namespace gen

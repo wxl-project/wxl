@@ -373,10 +373,10 @@ void analyze_enums_and_structs(type_kinds const& kinds, closure const& cl, type_
         file.structs.push_back(m.structs.size());
         auto& info = m.structs.emplace_back(analyze_struct(source));
         document(docs, source.type, documentation_id(source.type), info.doc);
-        auto field = info.fields.begin();
+        auto described = info.fields.begin();
         for (auto&& declared : source.type.FieldList()) {
             document(docs, source.type, std::format("F:{}.{}", full_name(source.type), declared.Name()),
-                     (field++)->doc);
+                     (described++)->doc);
         }
 
         for (auto&& [name, field] : source.fields) {

@@ -1678,8 +1678,6 @@ public:
             return;
         }
 
-        auto& info = source_.info;
-
         if (member.kind == member_info::kind_t::EventAdd) {
             context_.m.dsl.events.insert(member.winrt_name);
             klass_.members.push_back({schema::member::kind_t::Event, member.winrt_name,

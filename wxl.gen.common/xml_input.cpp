@@ -985,8 +985,8 @@ struct documentation_file::state {
         for (auto const piece : part.text_pieces()) {
             joined += piece.chars();
         }
-        decoded_text const text = html_decoded(std::move(joined));
-        return markup_reader {text, image_root}.read();
+        decoded_text const decoded = html_decoded(std::move(joined));
+        return markup_reader {decoded, image_root}.read();
     }
 };
 
