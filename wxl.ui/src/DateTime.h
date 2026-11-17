@@ -44,8 +44,8 @@ struct optional_selector<wxl::DateTime> {
 
         static wxl::DateTime sentinel() noexcept { return wxl::DateTime{winrt_epoch}; }
 
-        static bool is_sentinel(wxl::DateTime const& held) noexcept {
-            return held.time_since_epoch() == winrt_epoch;
+        static bool is_sentinel(wxl::DateTime const& value) noexcept {
+            return value.time_since_epoch() == winrt_epoch;
         }
     };
 

@@ -91,8 +91,8 @@ public:
 
     /// A string, whatever allocator it carries: std::basic_string keeps the zero.
     template <typename Alloc>
-    constexpr basic_zstring_view(const std::basic_string<CharT, Traits, Alloc>& chars) noexcept
-        : ptr_(chars.c_str()), size_(chars.size()) {}
+    constexpr basic_zstring_view(const std::basic_string<CharT, Traits, Alloc>& text) noexcept
+        : ptr_(text.c_str()), size_(text.size()) {}
 
     /// Constructs a view over the null-terminated `wchar_t` string \p chars. On Windows the
     /// `wchar_t` units are the same 16 bits as `char16_t`, and the pointer cast is the
@@ -101,13 +101,13 @@ public:
         requires std::same_as<CharT, char16_t>
         : basic_zstring_view(reinterpret_cast<const char16_t*>(chars)) {}
 
-    /// Constructs a view over the characters of the `wchar_t` string \p chars, which keeps a
+    /// Constructs a view over the characters of the `wchar_t` string \p text, which keeps a
     /// null terminator after them. Available only when `CharT` is `char16_t`.
     template <typename Alloc>
     basic_zstring_view(
-        const std::basic_string<wchar_t, std::char_traits<wchar_t>, Alloc>& chars) noexcept
+        const std::basic_string<wchar_t, std::char_traits<wchar_t>, Alloc>& text) noexcept
         requires std::same_as<CharT, char16_t>
-        : ptr_(reinterpret_cast<const char16_t*>(chars.c_str())), size_(chars.size()) {}
+        : ptr_(reinterpret_cast<const char16_t*>(text.c_str())), size_(text.size()) {}
 
     /// The terminated wchar_t view as the char16_t one, with the terminator it
     /// carries: the same seam, one level up.
@@ -212,8 +212,8 @@ public:
 
     /// The doors that have looked, or need not: the promise is theirs, and the
     /// key is what keeps it from being made anywhere else.
-    constexpr basic_zstring_view(impl::terminated, const_pointer chars, size_type count) noexcept
-        : ptr_(chars), size_(count) {}
+    constexpr basic_zstring_view(impl::terminated, const_pointer chars, size_type size) noexcept
+        : ptr_(chars), size_(size) {}
 
 private:
     static constexpr size_type length_of(const_pointer chars) noexcept {
@@ -242,21 +242,21 @@ using zstring_view = basic_zstring_view<char16_t>;
 /// silent where it is used. Every other door pays nothing.
 template <typename CharT, typename Traits>
 constexpr basic_zstring_view<CharT, Traits> assume_terminated(
-    std::basic_string_view<CharT, Traits> chars) noexcept {
-    if (chars.data() == nullptr) {
-        ensure(chars.empty() && "a view over nothing has to be empty");
+    std::basic_string_view<CharT, Traits> text) noexcept {
+    if (text.data() == nullptr) {
+        ensure(text.empty() && "a view over nothing has to be empty");
         return {};
     }
 
-    ensure(chars.data()[chars.size()] == CharT{} &&
+    ensure(text.data()[text.size()] == CharT{} &&
            "assume_terminated on a view with no zero after it");
-    return basic_zstring_view<CharT, Traits>(impl::terminated{}, chars.data(), chars.size());
+    return basic_zstring_view<CharT, Traits>(impl::terminated{}, text.data(), text.size());
 }
 
 /// The seam: a wstring_view that is terminated, as a zstring_view.
-inline zstring_view assume_terminated(std::wstring_view chars) noexcept {
+inline zstring_view assume_terminated(std::wstring_view text) noexcept {
     return assume_terminated(
-        std::u16string_view(reinterpret_cast<const char16_t*>(chars.data()), chars.size()));
+        std::u16string_view(reinterpret_cast<const char16_t*>(text.data()), text.size()));
 }
 
 }  // export
