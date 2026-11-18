@@ -18,6 +18,21 @@ project(
     LANGUAGES CXX
 )
 
+if(MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "19.53.36911")
+    file(TO_NATIVE_PATH "${CMAKE_CURRENT_LIST_DIR}/tools/install-msvc.ps1" _wxl_msvc_installer)
+    set(_wxl_msvc_install_path_argument "")
+    if(CMAKE_CXX_COMPILER MATCHES "^(.*)/VC/Tools/MSVC/[^/]+/bin/[^/]+/[^/]+/cl\\.exe$")
+        set(_wxl_msvc_install_path_argument " -InstallPath \"${CMAKE_MATCH_1}\"")
+    endif()
+    message(FATAL_ERROR
+        "wxl requires MSVC 19.53.36911 or newer (MSVC toolset 14.53.36911); "
+        "the selected compiler is ${CMAKE_CXX_COMPILER_VERSION}.\n"
+        "Install the required toolset with:\n"
+        "  pwsh -NoProfile -File \"${_wxl_msvc_installer}\"${_wxl_msvc_install_path_argument}\n"
+        "Then configure again with MSVC 14.53 or newer."
+    )
+endif()
+
 # The version of the commit, WXL_PACKAGE_VERSION: project() names the last
 # release, and the number of commits since its tag is the fourth part
 # (cmake/wxl_package_version.cmake). WXL_VERSION below says which builds carry
