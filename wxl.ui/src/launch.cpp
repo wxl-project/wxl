@@ -57,7 +57,7 @@ struct App : winrt::Microsoft::UI::Xaml::ApplicationT<
         // From here on a WinRT object can be made; before, and after Start
         // returns, an attempt to make one is the mistake the check in
         // resolve_activation_factory names.
-        ::wxl::Application::set_launched(true);
+        Application::set_launched(true);
 
         // What holds content of XAML outside its windows -- the windows of wxl's own -- is closed
         // when the queue of XAML begins to shut down (impl/xaml_holders.h): its ShutdownStarting
@@ -68,10 +68,10 @@ struct App : winrt::Microsoft::UI::Xaml::ApplicationT<
         // devices stops only their replacement. Neither call throws; a handler of Closing or Closed
         // that does ends in std::terminate, as from the window's procedure itself.
         auto const queue = dispatching::DispatcherQueue::GetForCurrentThread();
-        if (!queue) wxl::core::abort("wxl: the XAML application launched with no dispatcher queue");
+        if (!queue) core::abort("wxl: the XAML application launched with no dispatcher queue");
         static_cast<void>(queue.ShutdownStarting([](auto&&, auto&&) noexcept {
-            ::wxl::Application::set_loop_running(false);
-            ::wxl::impl::xaml_holders::close_all();
+            Application::set_loop_running(false);
+            xaml_holders::close_all();
         }));
 
         // Without a XAML application definition nothing has merged the
@@ -101,7 +101,7 @@ struct App : winrt::Microsoft::UI::Xaml::ApplicationT<
         // The application has built and shown its windows by now, so this
         // is the moment a window that carries no icon can be given the one
         // in the executable -- see Application::apply_icon().
-        ::wxl::Application::apply_icon();
+        Application::apply_icon();
     }
 
     // A control building its own template asks the application to resolve the
