@@ -1,0 +1,5 @@
+// A profile that extends a name no profile has, neither beside it nor in --profiles-dir:
+// the run stops and names both files it looked for.
+{
+    "extends": ["no-such-profile"]
+}

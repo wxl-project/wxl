@@ -38,7 +38,7 @@ struct raw_pointer_sentinel {
     static constexpr bool empty_is_nullptr = true;
 
     static constexpr T* sentinel() noexcept { return nullptr; }
-    static constexpr bool is_sentinel(T* value) noexcept { return value == nullptr; }
+    static constexpr bool is_sentinel(T* held) noexcept { return held == nullptr; }
 };
 
 }  // namespace impl
@@ -60,7 +60,7 @@ struct optional_selector {
 
 /// The type that represents an optional `T`, as selected by `wxl::core::optional_selector`.
 template <typename T>
-using nullable = typename optional_selector<T>::nullable;
+using nullable = optional_selector<T>::nullable;
 
 /// Represents an optional value whose empty state is a sentinel value of `T`, named by
 /// `TSentinel`, so the object is the size of `T`.
@@ -682,8 +682,8 @@ template <std::signed_integral T>
 struct integral_min_sentinel {
     static constexpr T sentinel() noexcept { return std::numeric_limits<T>::min(); }
 
-    static constexpr bool is_sentinel(T value) noexcept {
-        return value == std::numeric_limits<T>::min();
+    static constexpr bool is_sentinel(T held) noexcept {
+        return held == std::numeric_limits<T>::min();
     }
 };
 
@@ -696,8 +696,8 @@ template <std::unsigned_integral T>
 struct integral_max_sentinel {
     static constexpr T sentinel() noexcept { return std::numeric_limits<T>::max(); }
 
-    static constexpr bool is_sentinel(T value) noexcept {
-        return value == std::numeric_limits<T>::max();
+    static constexpr bool is_sentinel(T held) noexcept {
+        return held == std::numeric_limits<T>::max();
     }
 };
 
@@ -715,7 +715,7 @@ template <std::floating_point T>
 struct quiet_nan_sentinel {
     static constexpr T sentinel() noexcept { return std::numeric_limits<T>::quiet_NaN(); }
 
-    static constexpr bool is_sentinel(T value) noexcept { return value != value; }
+    static constexpr bool is_sentinel(T held) noexcept { return held != held; }
 };
 
 // A null exception_ptr already means "no exception", so the holder's empty

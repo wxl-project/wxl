@@ -101,8 +101,8 @@ public:
 
     // The light.
     void shadow(double value) const;
-    void azimuth(double value) const;
-    void elevation(double value) const;
+    void azimuth(float value) const;
+    void elevation(float value) const;
     void lampColor(Color value) const;
     void ambientColor(Color value) const;
     void castBlur(float value) const;

@@ -88,17 +88,34 @@
 # restores in locked mode: its configure resolves the versions the lock file of
 # the wxl tree records and does not write that file.
 #
+# A project that takes an installed wxl (find_package(wxl)) restores too: the
+# configuration of the package (cmake/wxl-config.cmake.in) includes this file
+# with _WXL_PACKAGES_INSTALLED_PINS naming the pins it was installed with,
+# share/wxl/packages.json, which wxl_write_restored_pins() writes from the
+# restore of the tree: every pin of tools/packages.json held at exactly the
+# version that restore resolved, since the archives of wxl were compiled against
+# the projection of those versions. The restore of such a project has no lock
+# file to write or to follow -- every version it references is exact -- so it
+# runs without one, and a RestoreLockedMode of the environment, which is about a
+# lock file, is set aside.
+#
+# The helper project, the projection and the list are in the build directory of
+# the project that restores (PROJECT_BINARY_DIR): the wxl tree's own, which a
+# project that adds the tree has as a directory of its build, or the project's
+# that takes an installed wxl.
+#
 # Defined here:
 #
 #   WXL_UPDATE_PACKAGES
-#       a cache option, OFF by default; ON makes one configure the update.
+#       a cache option of the wxl tree, OFF by default; ON makes one configure
+#       the update.
 #
 #   WXL_NUGET_FLAT_CONTAINER
-#       a cache variable, the flat container of the NuGet source the update
-#       chooses the versions of prerelease pins from, by default nuget.org's,
-#       https://api.nuget.org/v3-flatcontainer. The restore takes the packages
-#       from the sources of the NuGet configuration, and the two have to hold
-#       the same versions.
+#       a cache variable of the wxl tree, the flat container of the NuGet source
+#       the update chooses the versions of prerelease pins from, by default
+#       nuget.org's, https://api.nuget.org/v3-flatcontainer. The restore takes
+#       the packages from the sources of the NuGet configuration, and the two
+#       have to hold the same versions.
 #
 #   Microsoft::CppWinRT
 #       an INTERFACE IMPORTED GLOBAL target over the projection, the C++/WinRT
@@ -112,6 +129,11 @@
 #   wxl_restored_packages_file(<variable>)
 #       sets <variable> to the path of the list of the restore,
 #       <build>/wxl.packages/restored-packages.json.
+#
+#   wxl_write_restored_pins(<file>)
+#       writes the pins of the wxl tree into <file>, each held at exactly the
+#       version its restore resolved: what an installed wxl restores
+#       (cmake/wxl_install.cmake installs it as share/wxl/packages.json).
 #
 # What this relies on -- the developer environment, the component of the
 # installation, the Windows SDK, the restore result, the response files the
@@ -127,11 +149,14 @@ include("${_WXL_PACKAGES_SCRIPT_DIR}/wxl_nuget_version.cmake")
 include("${_WXL_PACKAGES_SCRIPT_DIR}/wxl_restored_packages.cmake")
 
 # A one-shot switch, unset by a successful update (above); a failed update
-# leaves it set, and the next configure tries again.
-option(WXL_UPDATE_PACKAGES
-    "Update the NuGet packages once, rewriting tools/packages.lock.json; unset when done" OFF)
-set(WXL_NUGET_FLAT_CONTAINER "https://api.nuget.org/v3-flatcontainer" CACHE STRING
-    "The NuGet flat container the update chooses the versions of prerelease pins from")
+# leaves it set, and the next configure tries again. The tree's alone: a project
+# that takes an installed wxl has no pins of its own to update.
+if(NOT DEFINED _WXL_PACKAGES_INSTALLED_PINS)
+    option(WXL_UPDATE_PACKAGES
+        "Update the NuGet packages once, rewriting tools/packages.lock.json; unset when done" OFF)
+    set(WXL_NUGET_FLAT_CONTAINER "https://api.nuget.org/v3-flatcontainer" CACHE STRING
+        "The NuGet flat container the update chooses the versions of prerelease pins from")
+endif()
 
 # The oldest Windows SDK the tree builds against. The developer environment
 # selects the newest installed one, and the configure stops when that is older.
@@ -238,9 +263,9 @@ function(_wxl_packages_environment out_msbuild out_sdk out_vc_tools)
 endfunction()
 
 # The pins as pairs of a package id and its minimum version: the "packages" of
-# tools/packages.json, an input of the configure.
-function(_wxl_packages_pins out_pins)
-    set(manifest_file "${_WXL_PACKAGES_TREE}/tools/packages.json")
+# `manifest_file` -- tools/packages.json of the tree, or the pins an installed
+# wxl was installed with -- an input of the configure.
+function(_wxl_packages_pins out_pins manifest_file)
     file(READ "${manifest_file}" manifest)
     string(JSON count ERROR_VARIABLE error LENGTH "${manifest}" packages)
     if(error)
@@ -475,6 +500,151 @@ function(_wxl_packages_check_response file projection_native)
     endforeach()
 endfunction()
 
+# One MSBuild run on the helper project of the directory `helper`, its result
+# and what it printed in `out_result` and `out_output`, the arguments after
+# `msbuild` added to its command line: -restore restores in an evaluation of
+# its own, then the targets run on the project evaluated anew with the restored
+# packages. The targets are separated by a comma, which MSBuild accepts as well
+# as a semicolon, so that the argument stays one in CMake. The whole log is
+# <helper>/msbuild.log.
+function(_wxl_packages_msbuild out_result out_output msbuild helper)
+    file(TO_NATIVE_PATH "${helper}/wxl.packages.vcxproj" project_native)
+    file(TO_NATIVE_PATH "${helper}/msbuild.log" log_native)
+    message(STATUS "NuGet packages and the C++/WinRT projection: ${helper}/wxl.packages.vcxproj")
+    execute_process(
+        COMMAND "${msbuild}" "${project_native}"
+                -restore
+                -t:ResolveReferences,CppWinRTMakeProjections
+                -nologo -noAutoResponse -nodeReuse:false -verbosity:minimal
+                "-fileLoggerParameters:LogFile=${log_native};Verbosity=normal;Encoding=UTF-8"
+                ${ARGN}
+        WORKING_DIRECTORY "${helper}"
+        RESULT_VARIABLE result
+        OUTPUT_VARIABLE output
+        ERROR_VARIABLE output)
+    set(${out_result} "${result}" PARENT_SCOPE)
+    set(${out_output} "${output}" PARENT_SCOPE)
+endfunction()
+
+# What the restore in the directory `helper` made, checked and handed out: the
+# response files of the projection, the list of the restore and the headers of
+# the projection, then the target Microsoft::CppWinRT. `count` packages were
+# restored by the pins of `source`, which the message names.
+function(_wxl_packages_projection helper sdk count source)
+    set(int "${helper}/int")
+    set(projection "${helper}/projection")
+    file(TO_NATIVE_PATH "${projection}" projection_native)
+
+    # The response files are $(IntDir)$(MSBuildProjectFile).cppwinrt_*.rsp: the
+    # platform projection reads the Windows SDK, the reference projection reads
+    # the packages and refers to the SDK.
+    set(response "${int}/wxl.packages.vcxproj")
+    _wxl_packages_check_response("${response}.cppwinrt_plat.rsp" "${projection_native}" -in)
+    _wxl_packages_check_response("${response}.cppwinrt_ref.rsp" "${projection_native}" -in -ref)
+    set(restored_list "${helper}/restored-packages.json")
+    _wxl_packages_write_list("${restored_list}" "${sdk}" "${response}.cppwinrt_plat.rsp")
+    set_property(GLOBAL PROPERTY _WXL_RESTORED_PACKAGES "${restored_list}")
+    # The response files are the outputs of the projection targets, so MSBuild
+    # skips a projection whose response file is newer than its inputs, whether
+    # or not the headers are still there.
+    foreach(header base.h Windows.Foundation.h Microsoft.UI.Xaml.h)
+        if(NOT EXISTS "${projection}/winrt/${header}")
+            message(FATAL_ERROR
+                "The C++/WinRT projection in ${projection} has no winrt/${header}. MSBuild skips "
+                "the projection targets while their response files in ${int} are newer than their "
+                "inputs: delete ${int} and configure again.")
+        endif()
+    endforeach()
+
+    # The headers, and the language level C++/WinRT needs.
+    add_library(Microsoft::CppWinRT INTERFACE IMPORTED GLOBAL)
+    set_target_properties(Microsoft::CppWinRT PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${projection}"
+        INTERFACE_COMPILE_FEATURES cxx_std_17)
+
+    message(STATUS
+        "NuGet packages: ${count} restored (${source}), listed in ${restored_list}; C++/WinRT "
+        "projection: ${projection}")
+endfunction()
+
+# The restore of a project that takes an installed wxl, in the directory
+# `helper`: the pins of `pins_file`, which the package was installed with, each
+# held at exactly one version and referenced as it is written, restored without
+# a lock file (see the top of this file). A pin the restore did not resolve at
+# its version stops the configure.
+function(_wxl_packages_installed pins_file helper msbuild sdk vc_tools)
+    if(NOT EXISTS "${pins_file}")
+        message(FATAL_ERROR
+            "The installed wxl has no ${pins_file}, the NuGet packages its archives were built "
+            "against. Install wxl anew from a build with WXL_INSTALL=ON.")
+    endif()
+    _wxl_packages_pins(pins "${pins_file}")
+
+    set(WXL_PACKAGES_REFERENCES "")
+    list(LENGTH pins length)
+    math(EXPR last "${length} - 1")
+    foreach(i RANGE 0 ${last} 2)
+        math(EXPR j "${i} + 1")
+        list(GET pins ${i} id)
+        list(GET pins ${j} pin)
+        wxl_nuget_pin(held "${pin}")
+        if(NOT held_FORM STREQUAL "exact")
+            message(FATAL_ERROR
+                "${pins_file} pins ${id} at \"${pin}\", not at exactly one version in brackets: "
+                "an installed wxl restores the versions its archives were built against and no "
+                "other. Install wxl anew from a build with WXL_INSTALL=ON.")
+        endif()
+        string(APPEND WXL_PACKAGES_REFERENCES
+            "    <PackageReference Include=\"${id}\" Version=\"${pin}\" />\n")
+    endforeach()
+    set(WXL_PACKAGES_VC_TOOLS_VERSION "${vc_tools}")
+    set(WXL_PACKAGES_WINDOWS_SDK_VERSION "${sdk}")
+    set(WXL_PACKAGES_WITH_LOCK_FILE false)
+    set(WXL_PACKAGES_LOCK_FILE "")
+    file(TO_NATIVE_PATH "${helper}/int" WXL_PACKAGES_INT_DIR)
+    file(TO_NATIVE_PATH "${helper}/projection" WXL_PACKAGES_PROJECTION_DIR)
+    set(project "${helper}/wxl.packages.vcxproj")
+    configure_file("${_WXL_PACKAGES_SCRIPT_DIR}/wxl_packages.vcxproj.in" "${project}" @ONLY)
+
+    # RestoreLockedMode of the environment, as on CI, is about a lock file, and
+    # this restore has none: on the command line it overrides the environment.
+    _wxl_packages_msbuild(result output "${msbuild}" "${helper}" -p:RestoreLockedMode=false)
+    if(NOT result EQUAL 0)
+        message(FATAL_ERROR
+            "MSBuild failed (${result}) on ${project}, restoring the NuGet packages the installed "
+            "wxl was built against (${pins_file}) or building the C++/WinRT projection.\n"
+            "${output}\nThe whole log: ${helper}/msbuild.log")
+    endif()
+    if(output MATCHES "warning")
+        message(WARNING "MSBuild on ${project} reported warnings (the whole log: ${helper}/msbuild.log):\n${output}")
+    endif()
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${pins_file}")
+
+    _wxl_packages_read_assets("${helper}/obj/project.assets.json" count)
+    foreach(i RANGE 0 ${last} 2)
+        math(EXPR j "${i} + 1")
+        list(GET pins ${i} id)
+        list(GET pins ${j} pin)
+        wxl_nuget_pin(held "${pin}")
+        string(TOLOWER "${id}" lower)
+        get_property(restored GLOBAL PROPERTY _WXL_NUGET_PACKAGE_${lower} SET)
+        if(NOT restored)
+            message(FATAL_ERROR "The restore of ${project} did not resolve ${id}, which the helper project references.")
+        endif()
+        get_property(version GLOBAL PROPERTY _WXL_NUGET_PACKAGE_VERSION_${lower})
+        string(TOLOWER "${version}" restored_lower)
+        string(TOLOWER "${held_VERSION}" held_lower)
+        if(NOT restored_lower STREQUAL held_lower)
+            message(FATAL_ERROR
+                "The restore of ${project} resolved ${id} ${version}, and the installed wxl was "
+                "built against ${held_VERSION} (${pins_file}): the restore kept the result of an "
+                "earlier one. Delete ${helper}/obj and configure again.")
+        endif()
+    endforeach()
+
+    _wxl_packages_projection("${helper}" "${sdk}" "${count}" "${pins_file}")
+endfunction()
+
 function(_wxl_packages)
     if(TARGET Microsoft::CppWinRT)
         message(FATAL_ERROR
@@ -484,20 +654,27 @@ function(_wxl_packages)
             "(find_package(cppwinrt) and its package) and link wxl's Microsoft::CppWinRT.")
     endif()
 
-    # The wxl tree is the top-level project, or a project adds it as a
-    # subdirectory or through FetchContent: PROJECT_IS_TOP_LEVEL of the root's
-    # project(), which every directory of the tree shares. Included from
-    # anywhere else -- a project that includes this file itself, ahead of the
-    # root -- the variable would be about that project, which would take the
-    # restore of a tree on its own and write the lock file of wxl; so the file
-    # stops there.
-    if(NOT PROJECT_NAME STREQUAL "wxl-project")
+    # The pins of an installed wxl, which its configuration names; or the wxl
+    # tree, the top-level project or added by a project as a subdirectory or
+    # through FetchContent: PROJECT_IS_TOP_LEVEL of the root's project(), which
+    # every directory of the tree shares. Included from anywhere else -- a
+    # project that includes this file itself, ahead of the root -- the variable
+    # would be about that project, which would take the restore of a tree on
+    # its own and write the lock file of wxl; so the file stops there.
+    set(installed FALSE)
+    if(DEFINED _WXL_PACKAGES_INSTALLED_PINS)
+        set(installed TRUE)
+    elseif(NOT PROJECT_NAME STREQUAL "wxl-project")
         message(FATAL_ERROR
             "cmake/wxl_packages.cmake is included by the project ${PROJECT_NAME}, outside the "
             "wxl tree ${_WXL_PACKAGES_TREE}. The packages are restored by the root of the tree: "
-            "add it (add_subdirectory(<wxl>) or FetchContent) instead of including the file.")
+            "add it (add_subdirectory(<wxl>) or FetchContent) instead of including the file, or "
+            "find_package(wxl) of an installed wxl.")
     endif()
     set(wxl_is_top_level ${PROJECT_IS_TOP_LEVEL})
+    if(installed)
+        set(wxl_is_top_level FALSE)
+    endif()
 
     # The tree is configured without a toolchain file. A cache that still names
     # vcpkg's would load it into every configure of the build directory.
@@ -512,15 +689,23 @@ function(_wxl_packages)
     endif()
 
     _wxl_packages_environment(msbuild sdk vc_tools)
-    _wxl_packages_pins(pins)
 
-    set(helper "${CMAKE_BINARY_DIR}/wxl.packages")
+    set(helper "${PROJECT_BINARY_DIR}/wxl.packages")
     set(project "${helper}/wxl.packages.vcxproj")
     set(int "${helper}/int")
     set(projection "${helper}/projection")
     set(log "${helper}/msbuild.log")
-    set(lock "${_WXL_PACKAGES_TREE}/tools/packages.lock.json")
     _wxl_packages_check_path("The build directory" "${helper}")
+
+    if(installed)
+        _wxl_packages_installed("${_WXL_PACKAGES_INSTALLED_PINS}" "${helper}" "${msbuild}" "${sdk}"
+            "${vc_tools}")
+        return()
+    endif()
+
+    _wxl_packages_pins(pins "${_WXL_PACKAGES_TREE}/tools/packages.json")
+    set_property(GLOBAL PROPERTY _WXL_PACKAGES_PINS "${pins}")
+    set(lock "${_WXL_PACKAGES_TREE}/tools/packages.lock.json")
     _wxl_packages_check_path("The lock file" "${lock}")
 
     # Locked mode. NuGet reads RestoreLockedMode as an MSBuild property: from the
@@ -693,6 +878,7 @@ function(_wxl_packages)
     endif()
     set(WXL_PACKAGES_VC_TOOLS_VERSION "${vc_tools}")
     set(WXL_PACKAGES_WINDOWS_SDK_VERSION "${sdk}")
+    set(WXL_PACKAGES_WITH_LOCK_FILE true)
     file(TO_NATIVE_PATH "${lock}" WXL_PACKAGES_LOCK_FILE)
     file(TO_NATIVE_PATH "${int}" WXL_PACKAGES_INT_DIR)
     file(TO_NATIVE_PATH "${projection}" WXL_PACKAGES_PROJECTION_DIR)
@@ -700,13 +886,6 @@ function(_wxl_packages)
     # projection targets take the project file and its imports as inputs
     # ($(MSBuildAllProjects)), so an unchanged project keeps them up to date.
     configure_file("${_WXL_PACKAGES_SCRIPT_DIR}/wxl_packages.vcxproj.in" "${project}" @ONLY)
-
-    # One MSBuild run: -restore restores in an evaluation of its own, then the
-    # targets run on the project evaluated anew with the restored packages. The
-    # targets are separated by a comma, which MSBuild accepts as well as a
-    # semicolon, so that the argument stays one in CMake.
-    file(TO_NATIVE_PATH "${project}" project_native)
-    file(TO_NATIVE_PATH "${log}" log_native)
 
     # A lock file newer than the last restore -- one that came with a pull, its
     # references unchanged -- is applied anew. NuGet skips a restore whose
@@ -744,18 +923,7 @@ function(_wxl_packages)
         endif()
     endif()
 
-    message(STATUS "NuGet packages and the C++/WinRT projection: ${project}")
-    execute_process(
-        COMMAND "${msbuild}" "${project_native}"
-                -restore
-                -t:ResolveReferences,CppWinRTMakeProjections
-                -nologo -noAutoResponse -nodeReuse:false -verbosity:minimal
-                "-fileLoggerParameters:LogFile=${log_native};Verbosity=normal;Encoding=UTF-8"
-                ${lock_arguments} ${update_arguments}
-        WORKING_DIRECTORY "${helper}"
-        RESULT_VARIABLE result
-        OUTPUT_VARIABLE output
-        ERROR_VARIABLE output)
+    _wxl_packages_msbuild(result output "${msbuild}" "${helper}" ${lock_arguments} ${update_arguments})
     if(NOT result EQUAL 0 AND WXL_UPDATE_PACKAGES)
         # The lock file is put back with a new time, so that it is newer than
         # obj/project.nuget.cache of the failed restore and the next ordinary
@@ -847,36 +1015,7 @@ function(_wxl_packages)
         endif()
     endforeach()
 
-    # The response files are $(IntDir)$(MSBuildProjectFile).cppwinrt_*.rsp: the
-    # platform projection reads the Windows SDK, the reference projection reads
-    # the packages and refers to the SDK.
-    cmake_path(GET project FILENAME project_file)
-    _wxl_packages_check_response("${int}/${project_file}.cppwinrt_plat.rsp" "${WXL_PACKAGES_PROJECTION_DIR}" -in)
-    _wxl_packages_check_response("${int}/${project_file}.cppwinrt_ref.rsp" "${WXL_PACKAGES_PROJECTION_DIR}" -in -ref)
-    set(restored_list "${helper}/restored-packages.json")
-    _wxl_packages_write_list("${restored_list}" "${sdk}" "${int}/${project_file}.cppwinrt_plat.rsp")
-    set_property(GLOBAL PROPERTY _WXL_RESTORED_PACKAGES "${restored_list}")
-    # The response files are the outputs of the projection targets, so MSBuild
-    # skips a projection whose response file is newer than its inputs, whether
-    # or not the headers are still there.
-    foreach(header base.h Windows.Foundation.h Microsoft.UI.Xaml.h)
-        if(NOT EXISTS "${projection}/winrt/${header}")
-            message(FATAL_ERROR
-                "The C++/WinRT projection in ${projection} has no winrt/${header}. MSBuild skips "
-                "the projection targets while their response files in ${int} are newer than their "
-                "inputs: delete ${int} and configure again.")
-        endif()
-    endforeach()
-
-    # The headers, and the language level C++/WinRT needs.
-    add_library(Microsoft::CppWinRT INTERFACE IMPORTED GLOBAL)
-    set_target_properties(Microsoft::CppWinRT PROPERTIES
-        INTERFACE_INCLUDE_DIRECTORIES "${projection}"
-        INTERFACE_COMPILE_FEATURES cxx_std_17)
-
-    message(STATUS
-        "NuGet packages: ${count} restored (${lock}), listed in ${restored_list}; C++/WinRT projection: "
-        "${projection}")
+    _wxl_packages_projection("${helper}" "${sdk}" "${count}" "${lock}")
 
     if(WXL_UPDATE_PACKAGES)
         message(STATUS
@@ -898,6 +1037,43 @@ function(wxl_nuget_package_dir variable id)
     endif()
     get_property(dir GLOBAL PROPERTY _WXL_NUGET_PACKAGE_${lower})
     set(${variable} "${dir}" PARENT_SCOPE)
+endfunction()
+
+function(wxl_write_restored_pins file)
+    get_property(pins GLOBAL PROPERTY _WXL_PACKAGES_PINS)
+    if(pins STREQUAL "")
+        message(FATAL_ERROR
+            "wxl_write_restored_pins(${file}): no restore of the wxl tree to write the pins of; the "
+            "tree restores the packages when WXL_TOOLS is ON.")
+    endif()
+    set(entries "")
+    set(separator "")
+    list(LENGTH pins length)
+    math(EXPR last "${length} - 1")
+    foreach(i RANGE 0 ${last} 2)
+        list(GET pins ${i} id)
+        string(TOLOWER "${id}" lower)
+        get_property(version GLOBAL PROPERTY _WXL_NUGET_PACKAGE_VERSION_${lower})
+        _wxl_packages_json_string(id_json "${id}")
+        _wxl_packages_json_string(version_json "[${version}]")
+        string(APPEND entries
+            "${separator}        { \"id\": ${id_json}, \"version\": ${version_json} }")
+        set(separator ",\n")
+    endforeach()
+    string(CONCAT text
+        "{\n"
+        "    \"comment\": \"The NuGet packages wxl was built against, each held at the version the "
+        "restore of its build resolved. find_package(wxl) restores them for the project that "
+        "takes wxl (cmake/wxl_packages.cmake).\",\n"
+        "    \"packages\": [\n${entries}\n    ]\n"
+        "}\n")
+    set(written "")
+    if(EXISTS "${file}")
+        file(READ "${file}" written)
+    endif()
+    if(NOT written STREQUAL text)
+        file(WRITE "${file}" "${text}")
+    endif()
 endfunction()
 
 function(wxl_restored_packages_file variable)

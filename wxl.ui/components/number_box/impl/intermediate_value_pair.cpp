@@ -44,7 +44,7 @@ struct intermediate_revoker : core::sta_refcounted {
 // box's own NumberFormatter -- the parser the box will use itself when it
 // commits, so the field sees what Value is about to become, in the box's own
 // locale. Text that is not a number yet ("-", "1e") parses to nothing, and
-// nothing is NaN, the box's own word for an empty field.
+// the field is empty, as for an empty box.
 //
 // The template is applied once the box is in the tree, so the inner box is
 // found on Loaded, and once: a box unloaded and loaded again keeps its
@@ -52,7 +52,8 @@ struct intermediate_revoker : core::sta_refcounted {
 // inner box holding the outer would be a cycle -- and the field by address,
 // which the guard makes safe. The direction is input: the pair's own is, and
 // bind_property refuses every other form on it before it gets here.
-void apply_bind_intermediate_value(NumberBox const& control, core::observable<double>& model,
+void apply_bind_intermediate_value(NumberBox const& control,
+                                   core::observable<core::nullable<double>>& model,
                                    bind_direction) {
     using Args = typename event_adder<EventKey::Loaded>::template args_t<NumberBox>;
     using winrt::Windows::Globalization::NumberFormatting::INumberParser;
@@ -81,11 +82,12 @@ void apply_bind_intermediate_value(NumberBox const& control, core::observable<do
                                  xaml::Controls::TextChangedEventArgs const&) {
                     auto const number =
                         parser.ParseDouble(sender.as<xaml::Controls::TextBox>().Text());
-                    model.set(number ? number.Value() : std::numeric_limits<double>::quiet_NaN());
+                    model.set(number ? core::nullable<double>{number.Value()}
+                                     : core::nullable<double>{});
                 });
         });
 
-    model.watch_for_binding([revoker = std::move(revoker)](double const&) noexcept {});
+    model.watch_for_binding([revoker = std::move(revoker)](core::nullable<double> const&) noexcept {});
 }
 
 }  // namespace wxl::impl

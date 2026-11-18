@@ -9,10 +9,6 @@ import std;
 namespace wxl::core {
 namespace {
 
-// Eight bytes at a time. Real text is mostly ASCII even when it is Russian --
-// the spaces, the punctuation and the digits are -- and a word with no high
-// bit set needs no decoding at all.
-constexpr std::uint64_t high_bits = 0x8080808080808080ull;
 constexpr std::uint64_t low_bits = 0x0101010101010101ull;
 
 /// One per byte that continues a sequence (10xxxxxx). Shifting a bit down to
@@ -29,10 +25,8 @@ constexpr std::uint64_t lead4_marks(std::uint64_t word) noexcept {
     return (word >> 7) & (word >> 6) & (word >> 5) & (word >> 4) & ~(word >> 3) & low_bits;
 }
 
-constexpr std::size_t word_size = sizeof(std::uint64_t);
-
 // The same eight bytes read as four UTF-16 units.
-constexpr std::size_t wide_step = word_size / sizeof(wchar_t);
+constexpr std::size_t wide_step = impl::word_size / sizeof(wchar_t);
 
 constexpr std::uint64_t lane_ones = 0x0001000100010001ull;
 constexpr std::uint64_t lane_high = 0x8000800080008000ull;
@@ -44,12 +38,6 @@ constexpr std::uint64_t lane_high = 0x8000800080008000ull;
 /// away first, so no lane here ever holds one.
 constexpr std::size_t zero_lanes(std::uint64_t lanes) noexcept {
     return static_cast<std::size_t>(std::popcount((lanes - lane_ones) & ~lanes & lane_high));
-}
-
-std::uint64_t load_word(const char* at) noexcept {
-    std::uint64_t word = 0;
-    std::memcpy(&word, at, word_size);
-    return word;
 }
 
 /// The code point of a sequence whose length is already known. The lead byte
@@ -321,7 +309,7 @@ namespace {
 // over-long forms (E0, F0), surrogates (ED) and code points above U+10FFFF (F4).
 std::size_t maximal_subpart(const std::string_view broken) noexcept {
     const auto lead = static_cast<unsigned char>(broken.front());
-    std::size_t size = 0;
+    std::size_t size;
     unsigned char low = 0x80;
     unsigned char high = 0xBF;
 

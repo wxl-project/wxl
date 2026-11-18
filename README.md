@@ -114,7 +114,7 @@
 ```cpp
 struct Equation : sta_refcounted
 {
-    observable<double> a{blank}, b{blank}, c{blank};
+    observable<nullable<double>> a, b, c;
     // Три числа на входе -> автоматический вызов solve при любой правке
     observable<Answer> answer{a, b, c, solve};
 };
@@ -158,7 +158,7 @@ TextBox {
   build tools» с компонентом «C++ WinUI app development build tools». Пакеты
   NuGet и проекцию cppwinrt настройка получает от MSBuild этой установки
 - **Windows SDK:** 10.0.26100.0 или новее
-- **Сборка:** CMake (версии 4.3 / 4.4) и Ninja
+- **Сборка:** CMake (версии 4.5 или новее) и Ninja
 - **Окружение:** PowerShell 7 (`pwsh`)
 - **.NET SDK 10:** для сборки утилиты `winxl`, которая устанавливает среду
   выполнения; самой утилите .NET на машине не нужен
@@ -187,9 +187,11 @@ build\x64-dynamic\samples\Quadratic\Debug\sample.quadratic.exe
 
 Подробный разбор каждого шага автоматизации, поддерживаемые ключи
 конфигурации CMake и запуск модульных тестов описаны в
-[docs/building.md](docs/building.md). Собственный проект подключает корень
-дерева `wxl` — `add_subdirectory` или `FetchContent` — и задаёт ключи языка
-`wxl` до него (см. [«Подключение wxl»](docs/building.md#подключение-wxl)).
+[docs/building.md](docs/building.md). Собственный проект берёт `wxl` из пакета
+`WinXL` (`find_package(wxl)` в CMake или `PackageReference` в MSBuild) либо
+подключает корень дерева `wxl` — `add_subdirectory` или `FetchContent` — и
+задаёт ключи языка `wxl` до него (см.
+[«Подключение wxl»](docs/building.md#подключение-wxl)).
 
 ## Состав репозитория
 
@@ -200,7 +202,7 @@ build\x64-dynamic\samples\Quadratic\Debug\sample.quadratic.exe
 | `wxl.core/src/fmt`, `logging` | `text_builder` и форматирование строк поверх библиотеки `fmt`. Подсистема логирования. |
 | `wxl.core/src/xml`, `json` | Легковесные парсеры форматов XML и JSON. |
 | `wxl.core/src/html` | Синтаксический разбор подмножества HTML для визуального компонента `HtmlBlock`. |
-| **`wxl.bb`** / **`wxl.rsdn`** / **`wxl.highlight`** | Модули разбора разметки BB-code и RSDN в то же дерево для `BbBlock`, `RsdnBlock`. Подсистема подсветки синтаксиса `wxl.highlight`. |
+| **`wxl.bb`** / **`wxl.rsdn`** / **`wxl.highlight`** | Модули разбора разметки BB-code и RSDN в то же дерево для `BbBlock`, `RsdnBlock`. Подсистема подсветки синтаксиса `wxl.highlight`, её показ — `CodeBlock`. |
 | **`wxl.gen.*`** | Исходный код генератора проекций `winui-srcgen` (`wxl.gen`, `wxl.gen.common`) и графический интерфейс для визуального редактирования профилей генерации `wxl.gen.ui` (запуск через `run-gen-ui.cmd`). |
 | **`wxl.ui`** | Графический стек **WinUI** без XAML: публичные объектные обёртки, декларативный DSL-синтаксис, управление окнами, привязки данных и визуальные эффекты. |
 | **Вспомогательные** | `samples` — демонстрационные проекты; `sandbox` — изоляция экспериментальных механизмов **WinUI**; `wxl.test` — инфраструктура модульного тестирования; `cmake`, `tools`, `docs` — сценарии сборки, автоматизации и исходные файлы документации. |

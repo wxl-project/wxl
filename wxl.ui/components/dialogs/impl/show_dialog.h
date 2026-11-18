@@ -41,8 +41,8 @@ async::task<> await_answer(async::task<R> answer) {
 /// here, before any frame is made; under a token cancelled already the dialog is not shown,
 /// and the wait ends at once.
 template <class Dialog>
-[[nodiscard]] async::task<> show_dialog(Dialog const& dialog, async::cancellation_token token) {
-    if (!async::detail::cancellation_state_of(token))
+[[nodiscard]] async::task<> show_dialog(Dialog const& dialog, async::stop_token token) {
+    if (!token.stop_possible())
         core::abort(
             "wxl: showDialog under a token nobody can cancel -- a dialog only the reader "
             "can close would keep its wait alive at the exit");

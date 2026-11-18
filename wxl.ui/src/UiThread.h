@@ -85,8 +85,8 @@ public:
 
     /// The same under a cancellation token: once it is cancelled the wait
     /// ends with async::operation_canceled_exception.
-    [[nodiscard]] static impl::cancelable_event_wait<Idle, async::cancellation_token> onIdle(
-        async::cancellation_token token);
+    [[nodiscard]] static impl::stoppable_event_wait<Idle, async::stop_token> onIdle(
+        async::stop_token token);
 
     /// Whether the calling thread is the UI thread, which is the STA thread
     /// (async::sta_thread).
@@ -139,7 +139,7 @@ public:
     }
 
     /// Cancelled by the token of onIdle(token)
-    /// (async::detail::cancelable_awaiter): a wait that is
+    /// (async::detail::stoppable_awaiter): a wait that is
     /// suspended leaves its idle turn -- which finds nobody when it comes -- and
     /// is resumed by the queue's next turn of any priority; one that has not
     /// begun never suspends.
@@ -168,10 +168,10 @@ inline UiThread::Idle UiThread::onIdle() {
     return {};
 }
 
-inline impl::cancelable_event_wait<UiThread::Idle, async::cancellation_token> UiThread::onIdle(
-    async::cancellation_token token) {
+inline impl::stoppable_event_wait<UiThread::Idle, async::stop_token> UiThread::onIdle(
+    async::stop_token token) {
     ensureCurrent();
-    return impl::cancelable_event_wait<Idle, async::cancellation_token>{std::move(token)};
+    return impl::stoppable_event_wait<Idle, async::stop_token>{std::move(token)};
 }
 
 }  // namespace wxl

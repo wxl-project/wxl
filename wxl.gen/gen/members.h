@@ -102,10 +102,6 @@ struct member_info {
     // this method of the projection, `SetTitleBar`.
     std::string method_call;
 
-    // Its value is a class narrower than the method's parameter, named by
-    // the profile -- which is what lets the tag build one from braces.
-    bool braced = false;
-
     // The form with a token of an asynchronous method: its last parameter, the token, is wxl's and
     // not the projection's -- the call is made without it, and the operation stands under it
     // (result.from_winrt is the operation's from_winrt_cancelable).
@@ -125,7 +121,7 @@ std::size_t projection_arity(member_info const& member);
 // The name of the token a form with one takes last: `token`, and `cancellation` where the
 // method has a parameter `token` of its own -- a name of the projection's, which is not wxl's to
 // change. Throws when the method has both.
-std::string cancellation_parameter_name(std::vector<param_info> const& params);
+std::string stop_parameter_name(std::vector<param_info> const& params);
 
 // What a member cannot be generated for, so the trimming stays visible
 // instead of a member simply not being there.

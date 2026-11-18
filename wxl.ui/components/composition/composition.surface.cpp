@@ -25,9 +25,9 @@ using namespace wxl::dsl;
 }
 
 // The theme of everything the window shows, said on the window as on Window, and read back.
-[[maybe_unused]] void composition_window_theme(core::observable<ElementTheme>& theme) {
+[[maybe_unused]] void composition_window_theme(core::observable<ElementTheme>& chosen) {
     CompositionWindow const window{requestedTheme = ElementTheme::Dark};
-    CompositionWindow const bound{requestedTheme = BindOutput{theme}};
+    CompositionWindow const bound{requestedTheme = BindOutput{chosen}};
     window.requestedTheme(ElementTheme::Default);
     ElementTheme const shown = bound.actualTheme();
     (void)shown;
@@ -35,25 +35,29 @@ using namespace wxl::dsl;
 
 // wxl's own window written the same way: a handle, so every member is const
 // and the tags apply to it; its title bar is placed by the window itself, so
-// it is built right in the braces; its own events take the same tags, and a
-// copy captured by a lambda is the same window.
+// it is built right in the braces -- `titleBar =` takes any element, as on
+// Window. A lone TitleBar written unnamed goes to the title bar here, by its
+// type, where on Window it is the content like any other element. Its own
+// events take the same tags, and a copy captured by a lambda is the same
+// window.
 [[maybe_unused]] void composition_window(TitleBar const& built, Grid const& page,
-                                         async::cancellation_token token) {
+                                         async::stop_token token) {
     CompositionWindow window{
         title = L"App",
         minSize = {820, 560},
         extendsContentIntoTitleBar = true,
-        titleBar = {leftHeader = TextBlock{L"App"}, rightHeader = Button{L"Sign in"}},
+        titleBar = TitleBar{leftHeader = TextBlock{L"App"}, rightHeader = Button{L"Sign in"}},
         zoomFactor = 1.25,
         onClosing +=
         [](Object const&, WindowClosingEventArgs& args) { args.cancel(!args.cancel()); },
         onClosed += [] {},
         onGeometryChanged += [] {},
         onClientSizeChanged += [](Object const&, ClientSize const& client) { (void)client.scale; },
-        onKeyDown += [](Object const&, VirtualKey const& key) { (void)key; },
+        onKeyDown += [](Object const&, VirtualKey const& pressed) { (void)pressed; },
         page,
     };
     CompositionWindow routed{built, page};
+    CompositionWindow const gridded{titleBar = page};
     CompositionWindow const legacy{L"App", SizeInt32{820, 560}};
 
     // The scene's background is a tag as well: a colour, or a picture with the
@@ -93,7 +97,7 @@ static_assert(!loads_background_without_a_token<BackgroundImage> &&
 
 // A texture from the cache, under a token as every operation of the platform's.
 [[maybe_unused]] async::task<CompositionDrawingSurface> cached_texture(
-    TextureCache& cache, async::cancellation_token token) {
+    TextureCache& cache, async::stop_token token) {
     return cache.getAsync(std::filesystem::path{L"C:/Pictures/photo.png"}, std::move(token));
 }
 
@@ -125,7 +129,7 @@ struct WatchesTheWindow {
     void moved() noexcept {}
     void sized(ClientSize const& client) noexcept { (void)client.scale; }
     void closing(WindowClosingEventArgs& args) noexcept { args.cancel(true); }
-    void keyPressed(VirtualKey const& key) noexcept { (void)key; }
+    void keyPressed(VirtualKey const& pressed) noexcept { (void)pressed; }
 
     void placed(CompositionWindow const& window) {
         EventToken token = window.add_onGeometryChanged([] {});
@@ -155,10 +159,10 @@ struct WatchesTheWindow {
 // translation unit names the pointer without parsing Direct2D at all.
 void own_drawing(Compositor const& compositor, FrameworkElement const& host, XamlRoot const& root) {
     auto const scale = static_cast<float>(root.rasterizationScale());
-    auto const width = static_cast<float>(host.actualWidth());
-    auto const height = static_cast<float>(host.actualHeight());
-    SizeInt32 const wanted{static_cast<int32_t>(width * scale),
-                           static_cast<int32_t>(height * scale)};
+    auto const w = static_cast<float>(host.actualWidth());
+    auto const h = static_cast<float>(host.actualHeight());
+    SizeInt32 const wanted{static_cast<int32_t>(w * scale),
+                           static_cast<int32_t>(h * scale)};
 
     DrawingSurface page{compositor, wanted};
     page.resize(wanted);
@@ -177,20 +181,20 @@ void own_drawing(Compositor const& compositor, FrameworkElement const& host, Xam
 
     SpriteVisual sprite = compositor.createSpriteVisual();
     sprite.brush(page.brush());
-    sprite.size({width, height});
+    sprite.size({w, h});
 
     // The brush has a transform of its own, over the picture it paints: one
     // drawn surface turned, moved or scaled inside the sprite, in the
     // sprite's own units. Matrix3x2 is a wxl type like the vectors, and a
     // braced literal is the whole of writing one.
     CompositionSurfaceBrush turned = page.brush();
-    turned.centerPoint({width / 2, height / 2});
+    turned.centerPoint({w / 2, h / 2});
     turned.rotationAngleInDegrees(180.0f);
     turned.rotationAngle(3.14159265f);
     turned.scale({1, 1});
     turned.offset({0, 0});
     turned.anchorPoint({0, 0});
-    turned.transformMatrix({-1, 0, 0, -1, width, height});
+    turned.transformMatrix({-1, 0, 0, -1, w, h});
     Matrix3x2 const placed = turned.transformMatrix();
     (void)placed;
     ElementCompositionPreview::setElementChildVisual(host, sprite);
@@ -220,21 +224,21 @@ void device_replaced(Compositor const& compositor) {
 // whole, and the parts to keep named when the rest can go. The device is the same as a
 // DrawingSurface's, and so is its loss.
 void own_drawing_in_parts(Compositor const& compositor, FrameworkElement const& host) {
-    VirtualDrawingSurface text{compositor, SizeInt32{640, 60000}};
-    text.resize(SizeInt32{640, 80000});
-    SizeInt32 const pixels = text.size();
-    std::int32_t const most = text.maxUpdateSide();
+    VirtualDrawingSurface strip{compositor, SizeInt32{640, 60000}};
+    strip.resize(SizeInt32{640, 80000});
+    SizeInt32 const pixels = strip.size();
+    std::int32_t const most = strip.maxUpdateSide();
 
     RectInt32 const part{0, 40000, pixels.width, most < 1024 ? most : 1024};
     bool const drew =
-        text.draw(part, [](ID2D1DeviceContext*) { DrawingSurface::throwIfDeviceLost(0); });
+        strip.draw(part, [](ID2D1DeviceContext*) { DrawingSurface::throwIfDeviceLost(0); });
     (void)drew;
     RectInt32 const kept[] = {part};
-    text.trim(kept);
-    text.trim({});
+    strip.trim(kept);
+    strip.trim({});
 
     SpriteVisual sprite = compositor.createSpriteVisual();
-    sprite.brush(text.brush());
+    sprite.brush(strip.brush());
     sprite.size({640.0f, 80000.0f});
     ElementCompositionPreview::setElementChildVisual(host, sprite);
 }

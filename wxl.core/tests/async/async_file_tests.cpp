@@ -508,7 +508,7 @@ task<> asks_whether_exists(path file_path, bool& out) {
     out = co_await async_file::exists(file_path);
 }
 
-task<> cancelable_reads_whole(path file_path, cancellation_token token, std::string& out,
+task<> cancelable_reads_whole(path file_path, stop_token token, std::string& out,
                               bool& cancelled) {
     try {
         out = co_await async_file::read_all(file_path, token);
@@ -517,7 +517,7 @@ task<> cancelable_reads_whole(path file_path, cancellation_token token, std::str
     }
 }
 
-task<> cancelable_writes_whole(path file_path, std::string bytes, cancellation_token token,
+task<> cancelable_writes_whole(path file_path, std::string bytes, stop_token token,
                                bool& cancelled) {
     try {
         co_await async_file::write_all(file_path, std::move(bytes), token);
@@ -526,7 +526,7 @@ task<> cancelable_writes_whole(path file_path, std::string bytes, cancellation_t
     }
 }
 
-task<> cancelable_asks_whether_exists(path file_path, cancellation_token token, bool& out) {
+task<> cancelable_asks_whether_exists(path file_path, stop_token token, bool& out) {
     out = co_await async_file::exists(file_path, token);
 }
 
@@ -636,7 +636,7 @@ TEST_F(AsyncFileTest, ReadAllUnderATokenReadsUntilAskedAndStartsNothingAfter) {
 
     given_a_file(L"data.bin", content);
 
-    cancellation_source source;
+    stop_source source;
     std::string got;
     bool cancelled = false;
 
@@ -646,7 +646,7 @@ TEST_F(AsyncFileTest, ReadAllUnderATokenReadsUntilAskedAndStartsNothingAfter) {
     EXPECT_EQ(got, content);
     EXPECT_FALSE(cancelled);
 
-    source.cancel();
+    source.request_stop();
 
     std::string again;
     task<> asked = cancelable_reads_whole(root_ / L"data.bin", source.token(), again, cancelled);
@@ -661,8 +661,8 @@ TEST_F(AsyncFileTest, ReadAllUnderATokenReadsUntilAskedAndStartsNothingAfter) {
 TEST_F(AsyncFileTest, WriteAllUnderACancelledTokenLeavesTheFileAsItWas) {
     given_a_file(L"state.txt", "the old state");
 
-    cancellation_source source;
-    source.cancel();
+    stop_source source;
+    source.request_stop();
 
     bool cancelled = false;
 
@@ -688,12 +688,12 @@ TEST_F(AsyncFileTest, WriteAllCancelledThenRepeatedNeverMeetsTheFirstWrite) {
     for (int round = 0; round < 8; ++round) {
         SCOPED_TRACE(std::format("round {}", round));
 
-        cancellation_source source;
+        stop_source source;
         bool cancelled = false;
 
         task<> writing =
             cancelable_writes_whole(root_ / L"state.txt", first, source.token(), cancelled);
-        source.cancel();
+        source.request_stop();
         sta_loop::run_until(writing);
 
         // The answer came after the body let go: nothing of the first write is still out.
@@ -717,7 +717,7 @@ TEST_F(AsyncFileTest, AReadCancelledHoldingItsFileIsWaitedForBeforeTheNextSave) 
 
     const path name = root_ / L"state.txt";
     hevent opened{true}, gate{true};
-    cancellation_source source;
+    stop_source source;
     const orphans_drained_on_exit drained(gate);
 
     task<std::string> reading = detail::async_call_waiting_for_body(
@@ -737,7 +737,7 @@ TEST_F(AsyncFileTest, AReadCancelledHoldingItsFileIsWaitedForBeforeTheNextSave) 
         source.token());
 
     opened.wait();
-    source.cancel();
+    source.request_stop();
     sta_loop::run_pending();
 
     EXPECT_FALSE(reading.done()) << "the wait did not wait for the body holding the file";
@@ -755,7 +755,7 @@ TEST_F(AsyncFileTest, AReadCancelledHoldingItsFileIsWaitedForBeforeTheNextSave) 
 TEST_F(AsyncFileTest, ExistsUnderATokenAnswersLikeThePlainOne) {
     given_a_file(L"here.bin", "x");
 
-    cancellation_source source;
+    stop_source source;
     bool is_file = false, is_nothing = true;
 
     sta_loop::run_until(

@@ -136,7 +136,12 @@ function(wxl_add_executable target)
 
     add_executable(${target} WIN32 ${A_UNPARSED_ARGUMENTS})
 
-    target_link_libraries(${target} PRIVATE ${A_UI})
+    # wxl::core beside the library, which links it already: the headers an
+    # application includes import wxl.core, and with an installed wxl CMake
+    # builds the module of an imported target for a target that names that
+    # target in its own link libraries -- reached through the interface of the
+    # library of the profile, it was not built for the application.
+    target_link_libraries(${target} PRIVATE ${A_UI} wxl::core)
 
     wxl_target_manifest(${target})
     wxl_set_target_folders(${target})

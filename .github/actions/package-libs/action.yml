@@ -1,0 +1,44 @@
+# The libraries of the package WinXL from one build directory of the tree,
+# installed into stage/ at the root of the tree: what the job libs of
+# package.yml does between the checkout and the upload, and what the CI of an
+# application that builds WinXL from a checkout of wxl does the same way.
+#
+#   preset   x64-dynamic (the CRT in a DLL) or x64-static (the static CRT)
+#   version  the version of the commit (cmake/wxl_package_version.cmake)
+#
+# The tree is the one this action is in, wherever it is checked out: the step
+# works at its root. The job gives the environment the workflows of the
+# tree give: DEVCMD and VCVARS for the developer environment of MSVC 14.53 and
+# the WinUI build tools, installed before, NUGET_PACKAGES and
+# RestoreLockedMode for the restore of the configure.
+#
+# Debug and Release are built and installed, with the debugging information in
+# the objects of the archives (/Z7, CMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded)
+# -- a package has no place for the .pdb files of a compiler. Only the targets
+# the install takes are built: wxl.core, fmt.module, wxl.highlight, wxl.bb,
+# wxl.rsdn, wxl.ui.common and winui-srcgen. The steps are those of
+# tools/package/build.ps1 -Step Libs, which a machine runs as well: configure
+# in build/<preset>, check that every compile takes /Z7 and none /Zi, build
+# and install.
+name: package-libs
+description: The libraries of WinXL from one build directory, installed into stage/ at the root of the tree.
+
+inputs:
+  preset:
+    description: The configure preset, x64-dynamic or x64-static.
+    required: true
+  version:
+    description: The version of the commit, which the install carries.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Configure, check, build and install
+      shell: pwsh
+      working-directory: ${{ github.action_path }}/../../..
+      env:
+        PRESET: ${{ inputs.preset }}
+        WXL_PACKAGE_VERSION: ${{ inputs.version }}
+      run: |
+        & "$env:GITHUB_ACTION_PATH/../../../tools/package/build.ps1" -Step Libs -Preset $env:PRESET -Version $env:WXL_PACKAGE_VERSION

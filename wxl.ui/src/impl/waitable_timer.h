@@ -45,7 +45,7 @@ class waitable_timer : event_wait
 public:
     /// \param timer one-shot and stopped: restart() starts it, a tick and signal() stop it.
     /// \param token the token every wait on this timer is registered with; none by default.
-    explicit waitable_timer(Timer timer, async::cancellation_token token = {})
+    explicit waitable_timer(Timer timer, async::stop_token token = {})
         : timer_(std::move(timer)), token_(std::move(token)) {
         tick_ = timer_.add([this](auto&&...) { tick(); });
     }
@@ -124,7 +124,7 @@ public:
         /// Takes the signal, if that is what ended the wait. Otherwise the application is
         /// going down, and the wait ends as every wait of wxl does then. A cancelled token
         /// never gets here: the wait under it answers that itself
-        /// (async::detail::cancelable_wait, await_canceled() below).
+        /// (async::detail::stoppable_wait, await_stopped() below).
         void await_resume() {
             armed_ = false;
 
@@ -133,7 +133,7 @@ public:
             timer_->throw_ended();
         }
 
-        /// Cancelled by the token (async::detail::cancelable_awaiter): a wait that is
+        /// Cancelled by the token (async::detail::stoppable_awaiter): a wait that is
         /// suspended is resumed by the queue's next turn, or by a tick or signal() if
         /// one comes first -- never by cancel() itself; one that has not begun never
         /// suspends.
@@ -147,7 +147,7 @@ public:
 
         /// What the wait gives when its token was cancelled: nothing, as a tick gives
         /// nothing.
-        void await_canceled() noexcept {}
+        void await_stopped() noexcept {}
 
     private:
         waitable_timer* timer_;
@@ -158,10 +158,10 @@ public:
         bool canceled_ = false;
     };
 
-    using awaiter = cancelable_event_wait<wait, async::detail::cancellation_state*>;
+    using awaiter = stoppable_event_wait<wait, async::detail::stop_state*>;
 
     awaiter operator co_await() noexcept {
-        return awaiter{async::detail::cancellation_state_of(token_), *this};
+        return awaiter{async::detail::stop_state_of(token_), *this};
     }
 
     // Waiting writes down who is waiting, so a const timer cannot be awaited.
@@ -179,7 +179,7 @@ private:
 
     Timer timer_;
     EventToken tick_;
-    async::cancellation_token token_;
+    async::stop_token token_;
 
     /// The latch: the time was up, or the owner said so, and no wait has taken it yet.
     bool signaled_ = false;

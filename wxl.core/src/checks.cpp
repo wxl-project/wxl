@@ -156,7 +156,7 @@ std::terminate_handler set_terminate_with_reason() noexcept {
     return std::set_terminate(&terminate_with_reason);
 }
 
-[[noreturn]] void terminate_with_exception(const std::exception_ptr error) noexcept {
+[[noreturn]] void terminate_with_exception(const std::exception_ptr& error) noexcept {
     static_cast<void>(set_terminate_with_reason());
 
     if (error) {

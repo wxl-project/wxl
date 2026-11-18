@@ -1,9 +1,12 @@
 # Reads a profile chain and its component manifests, printing one line per item
 # CMake needs: chain component names, and for each selected component after the closure
-# over dependencies, its directory, sources, schema and surface fragments and libraries.
+# over dependencies, its directory, sources, surface fragment and libraries.
 #
-# Usage: Read-ProfileComponents.ps1 -Profile <path> [-ComponentDir <dir>] ...
+# Usage: Read-ProfileComponents.ps1 -Profile <path> [-ProfilesDir <dir>] [-ComponentDir <dir>] ...
 #        powershell.exe -NoProfile -File Read-ProfileComponents.ps1 -Profile ...
+#
+# -ProfilesDir is the generator's own profiles directory (winui-srcgen --profiles-dir), where a
+# bare name in "extends" is looked for when the referring profile has no such file beside it.
 #
 # Compatible with Windows PowerShell 5.1: no `?.`, `??`, ternary, `&&`.
 # Output format: <type>:<value>, one per line. CMake parses it with regex.
@@ -12,13 +15,13 @@
 #   component:<name>   - a selected component (after the closure over dependencies)
 #   dir:<path>         - the component directory for the preceding component
 #   source:<path>      - a source file (relative to component dir)
-#   schema:<path>      - the component's schema fragment (relative to component dir)
 #   surface:<path>     - the component's surface test fragment (relative to component dir)
 #   library:<target>   - a CMake library target
 
 param(
     [Parameter(Mandatory=$true)]
     [string]$Profile,
+    [string]$ProfilesDir = '',
     [string[]]$ComponentDir = @()
 )
 
@@ -74,14 +77,22 @@ function Read-JsonWithComments([string]$Path) {
 
 # Where a profile named in "extends" lives, as the generator resolves it: a reference
 # with a directory part or an extension is a path relative to the referring profile's
-# directory; a bare name is <name>.winxl-profile beside it.
+# directory; a bare name is <name>.winxl-profile beside it, or, when there is none there
+# and -ProfilesDir is given, the file of that name in -ProfilesDir. A bare name found in
+# neither stops the script with both files named.
 function Resolve-Reference([string]$Reference, [string]$Referrer) {
     $dir = Split-Path $Referrer -Parent
     if ([IO.Path]::IsPathRooted($Reference)) { return $Reference }
     if ($Reference.Contains('/') -or $Reference.Contains('\') -or [IO.Path]::HasExtension($Reference)) {
         return Join-Path $dir $Reference
     }
-    return Join-Path $dir ($Reference + '.winxl-profile')
+    $file = $Reference + '.winxl-profile'
+    $beside = Join-Path $dir $file
+    if (-not $ProfilesDir -or (Test-Path -LiteralPath $beside -PathType Leaf)) { return $beside }
+    $packaged = Join-Path $ProfilesDir $file
+    if (Test-Path -LiteralPath $packaged -PathType Leaf) { return $packaged }
+    throw ("${Referrer}: profile '$Reference' named in extends is not found: not beside it " +
+           "($beside) and not in the profiles directory ($packaged)")
 }
 
 # The chain, each profile after those it extends, loaded once; a profile that extends
@@ -182,9 +193,6 @@ foreach ($name in $selected) {
         foreach ($src in $comp.sources) {
             Write-Output "source:$src"
         }
-    }
-    if ($comp.schema) {
-        Write-Output "schema:$($comp.schema)"
     }
     if ($comp.surface) {
         Write-Output "surface:$($comp.surface)"

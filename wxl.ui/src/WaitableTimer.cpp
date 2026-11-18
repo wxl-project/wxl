@@ -56,7 +56,7 @@ void dispatcher_timer::stop() const { projected(timer_).Stop(); }
 
 }  // namespace impl
 
-WaitableTimer::WaitableTimer(std::chrono::milliseconds interval, async::cancellation_token token)
+WaitableTimer::WaitableTimer(std::chrono::milliseconds interval, async::stop_token token)
     : impl::waitable_timer<impl::dispatcher_timer>(impl::dispatcher_timer{one_shot(interval)},
                                                    std::move(token)) {}
 

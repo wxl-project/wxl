@@ -77,7 +77,6 @@ endif()
 # It imports nothing, so there is nothing to scan for -- and scanning would
 # hand it the std module it never asks for.
 set_target_properties(wxl.ui.scene-winrt-benchmark PROPERTIES
-    CXX_MODULE_STD OFF
     CXX_SCAN_FOR_MODULES OFF)
 
 _wxl_scene_benchmark(wxl.ui.scene-winrt-benchmark)

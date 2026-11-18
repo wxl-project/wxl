@@ -62,7 +62,7 @@ Brush const& brush_at(int index, ElementTheme theme);
 template <int Index>
 struct brush_of {
     operator Brush const&() const { return brush_at(Index); }
-    Brush const& operator()(ElementTheme theme) const { return brush_at(Index, theme); }
+    Brush const& operator()(ElementTheme named) const { return brush_at(Index, named); }
 };
 
 // An element that has a theme of its own and says when it changes -- which is

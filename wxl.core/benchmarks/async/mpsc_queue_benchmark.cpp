@@ -136,7 +136,7 @@ struct batch_stats {
     }
 
     double average_batch() const noexcept {
-        return batches ? double(items) / double(batches) : 0.0;
+        return batches ? static_cast<double>(items) / static_cast<double>(batches) : 0.0;
     }
 };
 
@@ -211,7 +211,7 @@ run_result interleaved_round_trip(node* nodes, unsigned count) {
 template <class Queue>
 run_result mpsc_run(unsigned writers, unsigned per_writer, node* nodes, batch_stats* stats) {
     Queue queue;
-    const std::uint64_t total = std::uint64_t(writers) * per_writer;
+    const std::uint64_t total = static_cast<std::uint64_t>(writers) * per_writer;
 
     std::latch gate(writers + 1);
     std::vector<std::jthread> producers;
@@ -219,7 +219,7 @@ run_result mpsc_run(unsigned writers, unsigned per_writer, node* nodes, batch_st
 
     for (unsigned w = 0; w < writers; ++w) {
         producers.emplace_back([&, w] {
-            node* const mine = nodes + std::size_t(w) * per_writer;
+            node* const mine = nodes + static_cast<std::size_t>(w) * per_writer;
             gate.arrive_and_wait();
             for (unsigned i = 0; i < per_writer; ++i) queue.push_one(mine + i);
         });
@@ -268,7 +268,7 @@ run_result push_storm(unsigned writers, unsigned per_writer, node* nodes) {
 
     for (unsigned w = 0; w < writers; ++w) {
         pushers.emplace_back([&, w] {
-            node* const mine = nodes + std::size_t(w) * per_writer;
+            node* const mine = nodes + static_cast<std::size_t>(w) * per_writer;
             gate.arrive_and_wait();
             for (unsigned i = 0; i < per_writer; ++i) {
                 if constexpr (strong)
@@ -292,7 +292,7 @@ run_result push_storm(unsigned writers, unsigned per_writer, node* nodes) {
 // Reporting.
 
 double ns_per_item(double ms, std::uint64_t items) noexcept {
-    return items ? ms * 1e6 / double(items) : 0.0;
+    return items ? ms * 1e6 / static_cast<double>(items) : 0.0;
 }
 
 std::unique_ptr<node[]> make_nodes(std::uint64_t count) {
@@ -352,7 +352,7 @@ void bench_single_threaded(unsigned count, int repeats) {
 }
 
 void bench_mpsc(unsigned writers, unsigned per_writer, int repeats) {
-    const std::uint64_t total = std::uint64_t(writers) * per_writer;
+    const std::uint64_t total = static_cast<std::uint64_t>(writers) * per_writer;
     const auto nodes = make_nodes(total);
     node* const n = nodes.get();
     const std::uint64_t want = expected_checksum(total);
@@ -415,7 +415,7 @@ void bench_backlog(unsigned count, int repeats) {
 }
 
 void bench_push_storm(unsigned writers, unsigned per_writer, int repeats) {
-    const std::uint64_t total = std::uint64_t(writers) * per_writer;
+    const std::uint64_t total = static_cast<std::uint64_t>(writers) * per_writer;
     const auto nodes = make_nodes(total);
     node* const n = nodes.get();
 

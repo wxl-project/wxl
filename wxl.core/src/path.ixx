@@ -115,10 +115,10 @@ public:
         return *this;
     }
 
-    /// Returns \p left with the component \p right appended, as `operator/=` appends it.
-    inline friend path operator/(path left, view_type right) {
-        left /= right;
-        return left;
+    /// Returns \p lhs with the component \p rhs appended, as `operator/=` appends it.
+    inline friend path operator/(path lhs, view_type rhs) {
+        lhs /= rhs;
+        return lhs;
     }
 
     /// The last component, or the whole path when there is no separator in it.
@@ -147,8 +147,8 @@ public:
     /// Windows compares file names case-insensitively, and a program that needs
     /// that asks the system (`CompareStringOrdinal`) rather than this class,
     /// which has no business knowing the rules of a particular volume.
-    inline friend bool operator==(const path& left, const path& right) noexcept {
-        return left.text_ == right.text_;
+    inline friend bool operator==(const path& lhs, const path& rhs) noexcept {
+        return lhs.text_ == rhs.text_;
     }
 
     /// The separator that `operator/=` inserts: a backslash.

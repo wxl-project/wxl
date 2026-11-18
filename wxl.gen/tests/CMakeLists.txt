@@ -2,6 +2,7 @@ wxl_add_gtest(wxl.gen.tests
     SRC
         doc_language_test.cpp
         documentation_ids_test.cpp
+        dsl_test.cpp
         emit_test.cpp
         generate_test.cpp
         group_namespaces_test.cpp
@@ -126,6 +127,56 @@ foreach(_wxl_gen_case IN ITEMS pair-with-an-unknown-key pair-under-an-event-of-a
     add_test(NAME winui-srcgen.${_wxl_gen_case}.fails COMMAND ${_wxl_gen_command})
     set_tests_properties(winui-srcgen.${_wxl_gen_case}.fails PROPERTIES WILL_FAIL TRUE)
 endforeach()
+
+# A command line the run cannot carry out stops it with a message that says what is
+# wrong, and the run fails: an option it does not know, an option without its value,
+# a language of the documentation without the documentation, no output directory, a
+# metadata file or a table of symbols named and not there, and profiles that leave
+# nothing to read or nothing to walk.
+function(_wxl_gen_refusal name message)
+    add_test(NAME winui-srcgen.${name}.message COMMAND winui-srcgen ${ARGN})
+    set_tests_properties(winui-srcgen.${name}.message PROPERTIES
+        PASS_REGULAR_EXPRESSION "${message}")
+    add_test(NAME winui-srcgen.${name}.fails COMMAND winui-srcgen ${ARGN})
+    set_tests_properties(winui-srcgen.${name}.fails PROPERTIES WILL_FAIL TRUE)
+endfunction()
+set(_wxl_gen_base --profile "${CMAKE_CURRENT_SOURCE_DIR}/../profiles/base.winxl-profile")
+set(_wxl_gen_run
+    --packages "${_wxl_gen_restored_packages}" --out "${CMAKE_CURRENT_BINARY_DIR}/run-refused"
+    --types "${CMAKE_CURRENT_SOURCE_DIR}/../profiles/types.json")
+_wxl_gen_refusal(unknown-argument "unknown argument: --sauce" ${_wxl_gen_base} --sauce)
+_wxl_gen_refusal(option-without-value "--profile needs a value" --profile)
+_wxl_gen_refusal(doc-language-without-docs "--doc-language needs --docs"
+    ${_wxl_gen_base} --doc-language en)
+_wxl_gen_refusal(no-output-directory "no output directory: pass --out <dir>"
+    ${_wxl_gen_base} --packages "${_wxl_gen_restored_packages}")
+_wxl_gen_refusal(missing-winmd "no such metadata file: .*no-such\\.winmd"
+    ${_wxl_gen_base} ${_wxl_gen_run} ${_wxl_gen_component_args}
+    --winmd "${CMAKE_CURRENT_BINARY_DIR}/no-such.winmd")
+_wxl_gen_refusal(missing-symbols "cannot open: .*no-such-symbols\\.json"
+    ${_wxl_gen_base} ${_wxl_gen_run}
+    --symbols "${CMAKE_CURRENT_BINARY_DIR}/no-such-symbols.json")
+_wxl_gen_refusal(nothing-to-read "no metadata to read: the profiles name no packages"
+    --profile "${CMAKE_CURRENT_SOURCE_DIR}/profiles/nothing-to-read.winxl-profile" ${_wxl_gen_run})
+_wxl_gen_refusal(nothing-to-walk "no roots to walk: the profiles list no types"
+    --profile "${CMAKE_CURRENT_SOURCE_DIR}/profiles/nothing-to-walk.winxl-profile" ${_wxl_gen_run})
+
+# A bare name in "extends" that is not beside its profile is the profile of --profiles-dir, as
+# the build hands it over (cmake/wxl_ui_profile.cmake): a profile of these tests extends base
+# and is generated as base is, with the chain of base; a name in neither place stops the run with
+# both files named.
+set(_wxl_gen_profiles_dir --profiles-dir "${CMAKE_CURRENT_SOURCE_DIR}/../profiles")
+add_test(NAME winui-srcgen.extends-from-profiles-dir
+    COMMAND winui-srcgen
+        --profile "${CMAKE_CURRENT_SOURCE_DIR}/profiles/extends-base.winxl-profile"
+        --packages "${_wxl_gen_restored_packages}" --out "${CMAKE_CURRENT_BINARY_DIR}/extends-base"
+        --types "${CMAKE_CURRENT_SOURCE_DIR}/../profiles/types.json"
+        --symbols "${CMAKE_CURRENT_SOURCE_DIR}/../profiles/fluent-symbols.json"
+        ${_wxl_gen_profiles_dir} ${_wxl_gen_component_args} --parts 1)
+_wxl_gen_refusal(extends-nowhere
+    "extends-nowhere\\.winxl-profile: profile 'no-such-profile' named in extends is not found: not beside it \\(.*tests.profiles.no-such-profile\\.winxl-profile\\) and not in the profiles directory \\(.*profiles.no-such-profile\\.winxl-profile\\)"
+    --profile "${CMAKE_CURRENT_SOURCE_DIR}/profiles/extends-nowhere.winxl-profile" ${_wxl_gen_run}
+    ${_wxl_gen_profiles_dir})
 
 # Every test above runs the winui-srcgen executable, and the setup of the
 # documentation site's test (docs.language, docs/CMakeLists.txt) builds the site's

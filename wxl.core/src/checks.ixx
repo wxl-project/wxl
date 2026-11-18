@@ -134,7 +134,7 @@ std::terminate_handler set_terminate_with_reason() noexcept;
  * The handler is set for the calling thread first, so that a thread wxl did not start --
  * a console's loop, a test -- names it too.
  */
-[[noreturn]] void terminate_with_exception(std::exception_ptr error) noexcept;
+[[noreturn]] void terminate_with_exception(const std::exception_ptr& error) noexcept;
 
 }  // namespace impl
 

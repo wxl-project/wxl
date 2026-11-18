@@ -147,7 +147,7 @@ consteval GridLength grid_lengths_parse_entry(Char const* first, Char const* las
         if (whole > (1ull << 53)) grid_lengths_entry_has_too_many_digits();
     };
     for (; first != last && grid_lengths_is_digit(*first); ++first) take(*first);
-    double power = 1;
+    double divisor = 1;
     if (first != last) {
         if (*first != Char('.')) grid_lengths_entry_is_not_a_length();
         ++first;
@@ -156,10 +156,10 @@ consteval GridLength grid_lengths_parse_entry(Char const* first, Char const* las
             if (!grid_lengths_is_digit(*first)) grid_lengths_entry_is_not_a_length();
             if (fraction_digits > 22) grid_lengths_entry_has_too_many_digits();
             take(*first);
-            power *= 10;
+            divisor *= 10;
         }
     }
-    return {static_cast<double>(whole) / power, star ? GridUnitType::Star : GridUnitType::Pixel};
+    return {static_cast<double>(whole) / divisor, star ? GridUnitType::Star : GridUnitType::Pixel};
 }
 
 // The one parse of a text: each entry in turn, into the array of exactly that many lengths.
@@ -173,16 +173,16 @@ consteval GridLength grid_lengths_parse_entry(Char const* first, Char const* las
 // initializer -- it reports a read of an uninitialized symbol.
 template <values Text>
 consteval std::array<GridLength, grid_lengths_count<Text>()> grid_lengths_parse() {
-    if (!is_character<grid_lengths_char<Text>> || std::size(Text.items) != Text.count + 2) {
+    if (!core::character<grid_lengths_char<Text>> || std::size(Text.items) != Text.count + 2) {
         grid_lengths_text_is_not_a_string_literal();
     }
     std::array<GridLength, grid_lengths_count<Text>()> lengths{};
-    auto const* const text = Text.items;
-    std::size_t entry = 0;
+    auto const* const chars = Text.items;
+    std::size_t index = 0;
     std::size_t start = 0;
     for (std::size_t at = 0; at <= Text.count; ++at) {
-        if (at == Text.count || text[at] == grid_lengths_char<Text>(',')) {
-            lengths[entry++] = grid_lengths_parse_entry(text + start, text + at);
+        if (at == Text.count || chars[at] == grid_lengths_char<Text>(',')) {
+            lengths[index++] = grid_lengths_parse_entry(chars + start, chars + at);
             start = at + 1;
         }
     }

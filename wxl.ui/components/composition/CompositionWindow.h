@@ -52,7 +52,7 @@
 //         title = L"Пример",
 //         minSize = {820, 560},
 //         extendsContentIntoTitleBar = true,
-//         titleBar = {leftHeader = ..., content = ..., rightHeader = ...},
+//         titleBar = TitleBar {leftHeader = ..., content = ..., rightHeader = ...},
 //         onClosed += [] { ... },
 //         page,
 //     };
@@ -215,8 +215,8 @@ public:
     /// отменённым `token` вызов не делает ничего. Конец окна (WM_DESTROY) отменяет
     /// загрузку и забывает её, а уничтоженное окно загрузку не начинает:
     /// winrt::hresult_error RO_E_CLOSED.
-    void backgroundAsync(BackgroundImage const& image, async::cancellation_token token) const;
-    void backgroundAsync(std::filesystem::path const& image, async::cancellation_token token) const;
+    void backgroundAsync(BackgroundImage const& image, async::stop_token token) const;
+    void backgroundAsync(std::filesystem::path const& image, async::stop_token token) const;
 
     /// Куда приложение цепляет собственные визуалы -- над задним фоном, под
     /// островом. Контейнер во всё окно, ресайзится вместе с ним.
@@ -250,7 +250,8 @@ public:
     UIElement content() const;
 
     /// Безымянный элемент в скобках окна -- его содержимое; безымянный
-    /// TitleBar -- его заголовок, как у генерируемого Window.
+    /// TitleBar -- его заголовок: заголовок это окно ставит на место само, и в
+    /// содержимом TitleBar не стоит.
     void setPositional(UIElement const& value) const { content(value); }
     void setPositional(TitleBar const& value) const { titleBar(value); }
 
@@ -283,7 +284,7 @@ public:
     // окно. В отличие от Window, элемент ставит на место само окно -- строкой
     // над содержимым, -- поэтому он и пишется прямо в скобках окна:
     //
-    //     titleBar = {leftHeader = ..., content = ..., rightHeader = ...}
+    //     titleBar = TitleBar {leftHeader = ..., content = ..., rightHeader = ...}
     //
     // Кнопки окна рядом с ним рисует тоже окно, в XAML: встроенным стилем
     // WindowCaptionButton, высотой полосы заголовка и с её масштабом --

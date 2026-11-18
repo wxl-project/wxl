@@ -589,7 +589,7 @@ struct Editor::Data {
         }
         // Член, который класс объявляет и сам, и в служебном интерфейсе, —
         // один член.
-        auto const members = [&counted](closure const& walk) {
+        auto const member_count = [&counted](closure const& walk) {
             ptrdiff_t count = 0;
             for (auto&& [type, names] : walk.members) {
                 count += counted(type) ? static_cast<ptrdiff_t>(names.size()) : 0;
@@ -599,7 +599,7 @@ struct Editor::Data {
         auto const keys = [](closure const& walk) {
             return static_cast<ptrdiff_t>(walk.property_names.size() + walk.event_names.size());
         };
-        cost.members = members(then) - members(now);
+        cost.members = member_count(then) - member_count(now);
         cost.keys = keys(then) - keys(now);
         return costs.emplace(key, std::move(cost)).first->second;
     }
@@ -2834,7 +2834,8 @@ intrusive_ptr<Editor> Editor::open(std::filesystem::path const& prof, std::files
     // решило её восстановление NuGet, редактор их не выводит.
     auto const restored = load_restored_packages(packages);
 
-    // Каталог компонентов даёт вызывающий (main.cpp: по умолчанию wxl.ui/components дерева).
+    // Каталог компонентов даёт вызывающий (main.cpp: по умолчанию wxl.ui/components дерева
+    // или share/wxl/components пакета).
     component_search search;
     if (!componentDir.empty()) {
         search.directories.push_back(componentDir);

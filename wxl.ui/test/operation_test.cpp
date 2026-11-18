@@ -37,8 +37,8 @@
 namespace {
 
 using winrt::Windows::Foundation::AsyncStatus;
-using wxl::async::cancellation_source;
-using wxl::async::cancellation_token;
+using wxl::async::stop_source;
+using wxl::async::stop_token;
 using wxl::async::live_frames;
 using wxl::async::operation_canceled_exception;
 using wxl::async::task;
@@ -534,7 +534,7 @@ TEST(OperationTaskTest, ATaskMoves) {
 TEST(OperationUnderTokenTest, NobodyCancellingItTheAnswerIsTheOperationsOwn) {
     fake_operation<int> op;
     fake_dispatcher dispatcher;
-    cancellation_source source;
+    stop_source source;
     int converted = 0;
     int made = 0;
     log_t log;
@@ -556,7 +556,7 @@ TEST(OperationUnderTokenTest, NobodyCancellingItTheAnswerIsTheOperationsOwn) {
     EXPECT_EQ(op.held(), 1);
 
     // Gone, the producer has left the token's event: cancelling reaches nobody.
-    source.cancel();
+    source.request_stop();
     EXPECT_EQ(dispatcher.posted(), 0u);
     EXPECT_EQ(op.cancels(), 0);
 }
@@ -564,7 +564,7 @@ TEST(OperationUnderTokenTest, NobodyCancellingItTheAnswerIsTheOperationsOwn) {
 TEST(OperationUnderTokenTest, CancellingPostsATurnThatAsksTheOperationToStopAndEndsTheWait) {
     fake_operation<int> op;
     fake_dispatcher dispatcher;
-    cancellation_source source;
+    stop_source source;
     int converted = 0;
     int made = 0;
     log_t log;
@@ -575,7 +575,7 @@ TEST(OperationUnderTokenTest, CancellingPostsATurnThatAsksTheOperationToStopAndE
                        begins(op, made), dispatcher, counted(converted), source.token()),
                    log);
 
-        source.cancel();
+        source.request_stop();
         EXPECT_EQ(op.cancels(), 0) << "the runtime is not asked inside the cancel";
         EXPECT_TRUE(log.empty()) << "cancelling resumes nobody";
         EXPECT_EQ(dispatcher.posted(), 1u) << "the turn that asks and answers";
@@ -600,7 +600,7 @@ TEST(OperationUnderTokenTest, CancellingPostsATurnThatAsksTheOperationToStopAndE
 TEST(OperationUnderTokenTest, ACompletionPostedBeforeTheCancellationIsTheAnswer) {
     fake_operation<int> op;
     fake_dispatcher dispatcher;
-    cancellation_source source;
+    stop_source source;
     int converted = 0;
     int made = 0;
     log_t log;
@@ -613,7 +613,7 @@ TEST(OperationUnderTokenTest, ACompletionPostedBeforeTheCancellationIsTheAnswer)
 
         // Answered on the platform's side, not yet on this thread's.
         op.complete(7);
-        source.cancel();
+        source.request_stop();
         EXPECT_EQ(dispatcher.posted(), 2u);
 
         EXPECT_EQ(dispatcher.run(), 2u);
@@ -630,7 +630,7 @@ TEST(OperationUnderTokenTest, ACompletionPostedBeforeTheCancellationIsTheAnswer)
 TEST(OperationUnderTokenTest, AnOperationThatEndsInsideCancelIsAnsweredOnce) {
     fake_operation<int> op;
     fake_dispatcher dispatcher;
-    cancellation_source source;
+    stop_source source;
     int converted = 0;
     int made = 0;
     log_t log;
@@ -643,7 +643,7 @@ TEST(OperationUnderTokenTest, AnOperationThatEndsInsideCancelIsAnsweredOnce) {
                        begins(op, made), dispatcher, counted(converted), source.token()),
                    log);
 
-        source.cancel();
+        source.request_stop();
         EXPECT_EQ(dispatcher.posted(), 1u) << "the turn alone: nothing is asked inside the cancel";
 
         // The turn asks, the platform ends inside the asking and posts its completion, and the
@@ -661,12 +661,12 @@ TEST(OperationUnderTokenTest, AnOperationThatEndsInsideCancelIsAnsweredOnce) {
 TEST(OperationUnderTokenTest, UnderATokenCancelledAlreadyNothingIsStarted) {
     fake_operation<int> op;
     fake_dispatcher dispatcher;
-    cancellation_source source;
+    stop_source source;
     int converted = 0;
     int made = 0;
     log_t log;
 
-    source.cancel();
+    source.request_stop();
 
     auto pending = start_cancelable_winrt_on_dispatcher<std::string>(
         begins(op, made), dispatcher, counted(converted), source.token());
@@ -690,7 +690,7 @@ TEST(OperationUnderTokenTest, UnderATokenOfNobodyItIsTheFormWithoutOne) {
     {
         auto const waiting =
             awaits(start_cancelable_winrt_on_dispatcher<std::string>(
-                       begins(op, made), dispatcher, counted(converted), cancellation_token{}),
+                       begins(op, made), dispatcher, counted(converted), stop_token{}),
                    log);
         op.complete(7);
         dispatcher.run();
@@ -705,7 +705,7 @@ TEST(OperationUnderTokenTest, UnderATokenOfNobodyItIsTheFormWithoutOne) {
 TEST(OperationUnderTokenTest, ATaskLetGoUnderATokenGoesAndTheTokenReachesItNoMore) {
     fake_operation<int> op;
     fake_dispatcher dispatcher;
-    cancellation_source source;
+    stop_source source;
     int converted = 0;
     int made = 0;
     log_t log;
@@ -721,7 +721,7 @@ TEST(OperationUnderTokenTest, ATaskLetGoUnderATokenGoesAndTheTokenReachesItNoMor
     EXPECT_EQ(op.held(), 1) << "let go, the producer goes at once";
 
     // Gone, it has left the token's event: the cancel posts nothing.
-    source.cancel();
+    source.request_stop();
     EXPECT_EQ(dispatcher.posted(), 0u);
     EXPECT_EQ(op.cancels(), 1);
 
@@ -734,7 +734,7 @@ TEST(OperationUnderTokenTest, ATaskLetGoUnderATokenGoesAndTheTokenReachesItNoMor
 TEST(OperationUnderTokenTest, ATaskLetGoWhileTheTurnAsksIsNotTouchedAfterwards) {
     fake_operation<int> op;
     fake_dispatcher dispatcher;
-    cancellation_source source;
+    stop_source source;
     int converted = 0;
     int made = 0;
 
@@ -746,7 +746,7 @@ TEST(OperationUnderTokenTest, ATaskLetGoWhileTheTurnAsksIsNotTouchedAfterwards) 
     // lets the task go, and the producer with it, inside the turn.
     op.when_cancelled([&pending] { pending.reset(); });
 
-    source.cancel();
+    source.request_stop();
     EXPECT_EQ(dispatcher.run(), 1u);
     EXPECT_EQ(pending, nullptr);
     EXPECT_EQ(op.cancels(), 1);
@@ -768,7 +768,7 @@ struct fake_dialog {
     bool refuses = false;
     mutable int shown = 0;  ///< calls of the platform's ShowAsync
 
-    task<int> showAsync(cancellation_token token) const {
+    task<int> showAsync(stop_token token) const {
         return start_cancelable_winrt_on_dispatcher<int>(
             [this] {
                 ++shown;
@@ -781,7 +781,7 @@ struct fake_dialog {
 
 TEST(ShowDialogTest, TheWaitForTheAnswerIsAFrameUnderWayUntilTheAnswerComes) {
     fake_dialog dialog;
-    cancellation_source source;
+    stop_source source;
     [[maybe_unused]] std::size_t before = 0;
     if constexpr (wxl::async::detail::checked) before = live_frames();
 
@@ -807,20 +807,20 @@ TEST(ShowDialogTest, TheWaitForTheAnswerIsAFrameUnderWayUntilTheAnswerComes) {
     EXPECT_EQ(dialog.op.held(), 1) << "the producer went with the frame";
 
     // Gone, the wait is registered with the token no more.
-    source.cancel();
+    source.request_stop();
     EXPECT_EQ(dialog.dispatcher.posted(), 0u);
     EXPECT_EQ(dialog.op.cancels(), 0);
 }
 
 TEST(ShowDialogTest, CancellingTheTokenClosesTheDialogAndTheFrameEndsOnTheNextTurn) {
     fake_dialog dialog;
-    cancellation_source source;
+    stop_source source;
     [[maybe_unused]] std::size_t before = 0;
     if constexpr (wxl::async::detail::checked) before = live_frames();
 
     task<> waiting = show_dialog(dialog, source.token());
 
-    source.cancel();
+    source.request_stop();
     EXPECT_EQ(dialog.op.cancels(), 0) << "cancelling only posts the turn";
     if constexpr (wxl::async::detail::checked) {
         EXPECT_EQ(live_frames(), before + 1) << "and resumes nobody";
@@ -848,7 +848,7 @@ TEST(ShowDialogTest, CancellingTheTokenClosesTheDialogAndTheFrameEndsOnTheNextTu
 // producer goes with the frame, and its completion finds nobody.
 TEST(ShowDialogTest, DroppingTheWaitClosesTheDialog) {
     fake_dialog dialog;
-    cancellation_source source;
+    stop_source source;
     [[maybe_unused]] std::size_t before = 0;
     if constexpr (wxl::async::detail::checked) before = live_frames();
 
@@ -872,12 +872,12 @@ TEST(ShowDialogTest, DroppingTheWaitClosesTheDialog) {
 TEST(ShowDialogTest, ADialogThatCompletesInsideItsCancelEndsTheFrameOnce) {
     fake_dialog dialog;
     dialog.op.ends_when_cancelled();  // a ContentDialog whose popup is gone already
-    cancellation_source source;
+    stop_source source;
     [[maybe_unused]] std::size_t before = 0;
     if constexpr (wxl::async::detail::checked) before = live_frames();
 
     task<> waiting = show_dialog(dialog, source.token());
-    source.cancel();
+    source.request_stop();
 
     // The turn asks; the completion the asking raises is posted behind it, and finds the frame
     // gone.
@@ -893,7 +893,7 @@ TEST(ShowDialogTest, ADialogThatCompletesInsideItsCancelEndsTheFrameOnce) {
 TEST(ShowDialogTest, ARefusalIsThrownToTheCallerAndLeavesNothingRunning) {
     fake_dialog dialog;
     dialog.refuses = true;
-    cancellation_source source;
+    stop_source source;
     [[maybe_unused]] std::size_t before = 0;
     if constexpr (wxl::async::detail::checked) before = live_frames();
 
@@ -911,18 +911,18 @@ TEST(ShowDialogTest, ARefusalIsThrownToTheCallerAndLeavesNothingRunning) {
     EXPECT_EQ(dialog.op.held(), 1) << "no producer either";
 
     // Nothing is registered with the token.
-    source.cancel();
+    source.request_stop();
     EXPECT_EQ(dialog.dispatcher.posted(), 0u);
     EXPECT_EQ(dialog.op.cancels(), 0);
 }
 
 TEST(ShowDialogTest, UnderATokenCancelledAlreadyTheDialogIsNotShownAndNothingIsLeft) {
     fake_dialog dialog;
-    cancellation_source source;
+    stop_source source;
     [[maybe_unused]] std::size_t before = 0;
     if constexpr (wxl::async::detail::checked) before = live_frames();
 
-    source.cancel();
+    source.request_stop();
     task<> waiting = show_dialog(dialog, source.token());
 
     EXPECT_EQ(dialog.shown, 0) << "the call is not made";
@@ -940,7 +940,7 @@ void without_a_dialog() { _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORT
 
 void show_under_a_token_of_nobody(fake_dialog const& dialog) {
     without_a_dialog();
-    task<> waiting = show_dialog(dialog, cancellation_token{});
+    task<> waiting = show_dialog(dialog, stop_token{});
 }
 
 TEST(ShowDialogDeathTest, UnderATokenNobodyCanCancelTheCallStops) {

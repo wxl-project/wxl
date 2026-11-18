@@ -139,7 +139,7 @@ public:
     void color(Color value) const;
     void constantAttenuation(float value) const;
     void linearAttenuation(float value) const;
-    void strokeThickness(float value) const;
+    void strokeThickness(double value) const;
     void cornerRadius(CornerRadius value) const;
 
 private:

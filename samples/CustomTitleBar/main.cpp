@@ -43,7 +43,7 @@ wxl::Teardown wxl_launched() {
         title = L"wxl: свой заголовок окна",
         minSize = {640, 400},
         extendsContentIntoTitleBar = true,
-        titleBar = {
+        titleBar = TitleBar{
             background = brushes.SolidBackgroundFillColor.Secondary,
             leftHeader = TextBlock{L"wxl", vAlign.center, Margin{12, 0, 0, 0}},
             content = TextBox{placeholderText = L"Поиск", width = 320.0, vAlign.center},

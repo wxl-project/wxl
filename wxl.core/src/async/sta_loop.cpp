@@ -35,7 +35,7 @@ bool sta_loop::is_back(const async_op* op) noexcept {
     return false;
 }
 
-bool sta_loop::wait_until_back(async_op* op) noexcept {
+bool sta_loop::wait_until_back(const async_op* op) noexcept {
     sta_signal& signal = from_worker_.wakeup();
 
     // In the driven mode an armed trigger is a callback the next handover owes the
@@ -66,7 +66,7 @@ bool sta_loop::wait_until_back(async_op* op) noexcept {
     return owed;
 }
 
-void sta_loop::take_if_next(async_op* op) noexcept {
+void sta_loop::take_if_next(const async_op* op) noexcept {
     auto at = from_worker_reader_.look_ahead();
 
     if (async_op** const next = from_worker_reader_.peek(at); !next || *next != op) return;

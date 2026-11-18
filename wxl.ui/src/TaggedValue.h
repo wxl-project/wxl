@@ -48,7 +48,7 @@ public:
     using value_t = T;
     static constexpr auto tag = Tag;
 
-    explicit constexpr TaggedValue(T value) noexcept : value_(value) {}
+    explicit constexpr TaggedValue(T raw) noexcept : value_(raw) {}
 
     constexpr operator T() const noexcept { return value_; }
 

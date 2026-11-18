@@ -72,7 +72,7 @@ using namespace wxl::dsl;
         vAlign.center,
     };
 
-    TextBlock text{
+    TextBlock line{
         L"WinUI in C++ Without XAML!",
         hAlign.center,
     };
@@ -136,12 +136,12 @@ using namespace wxl::dsl;
 // there only where the elements are text.
 [[maybe_unused]] void iterated_children() {
     StackPanel keypad{
-        [](iterate<L"789"> key) {
+        [](iterate<L"789"> digit) {
             return Button{
-                key.text(),
+                digit.text(),
                 onClick +=
-                [key](Object const&, RoutedEventArgs&) {
-                    wchar_t const pressed = key;
+                [digit](Object const&, RoutedEventArgs&) {
+                    wchar_t const pressed = digit;
                     (void)pressed;
                 },
             };
@@ -170,7 +170,7 @@ using namespace wxl::dsl;
     static_assert(from_value.count == 1 && from_value.items[from_value.count] == L'\0');
 
     static constexpr int spans[]{1, 2, 4};
-    Grid layout{
+    Grid table{
         ColumnDefinitions<u"*,*,*,*">,
         [](iterate<0, 1, 2> at) { return TextBlock{L"head", column = at}; },
         [](iterate<spans> span) { return TextBlock{L"body", row = 1, columnSpan = span}; },
@@ -203,32 +203,33 @@ using namespace wxl::dsl;
 
     OverlappedPresenter const presenter = OverlappedPresenter::create();
     presenter.preferredMinimumWidth(600);
-    core::nullable<int32_t> const width = presenter.preferredMinimumWidth();
+    core::nullable<int32_t> const smallest = presenter.preferredMinimumWidth();
     presenter.preferredMaximumWidth({});
     window.appWindow().setPresenter(presenter);
-    (void)width;
+    (void)smallest;
 }
 
 // A method written as a tag: Window.SetTitleBar takes one argument and hands
-// nothing back, and the profile narrows it to the TitleBar control -- so the
-// tag takes one built, builds one from braces, and a lone TitleBar inside the
-// window's braces is routed to it by type. The button colours are nullable:
-// empty hands the colour back to the system.
-[[maybe_unused]] void window_title_bar(Window const& window, TitleBar const& built) {
+// nothing back, so the tag takes what the method takes -- any element, a
+// TitleBar control built in place or a plain Grid alike. The button colours
+// are nullable: empty hands the colour back to the system.
+[[maybe_unused]] void window_title_bar(Window const& window, TitleBar const& built,
+                                       Grid const& grid) {
     Window assigned{extendsContentIntoTitleBar = true, titleBar = built};
-    Window braced{
+    Window inPlace{
         extendsContentIntoTitleBar = true,
-        titleBar = {leftHeader = TextBlock{L"App"}, rightHeader = Button{L"Sign in"}},
+        titleBar = TitleBar{leftHeader = TextBlock{L"App"}, rightHeader = Button{L"Sign in"}},
     };
-    Window routed{built};
+    Window gridded{titleBar = grid};
     window.titleBar(built);
+    window.titleBar(grid);
 
     AppWindowTitleBar const bar = window.appWindow().titleBar();
     bar.preferredHeightOption(TitleBarHeightOption::Tall);
     bar.buttonBackgroundColor(colors.transparent);
     bar.buttonHoverBackgroundColor({});
-    core::nullable<Color> const background = bar.buttonBackgroundColor();
-    (void)background;
+    core::nullable<Color> const buttonBack = bar.buttonBackgroundColor();
+    (void)buttonBack;
 }
 
 // One reading of a member for every spelling: const or not, noexcept or not.
@@ -310,7 +311,7 @@ static_assert(impl::iterating<decltype([](repeat<3>) noexcept { return Button{};
         background = brushes.Card.BackgroundFillColor.Default,
         borderBrush = brushes.Card.StrokeColorDefault,
     };
-    TextBlock text{L"secondary", foreground = brushes.Text.FillColor.Secondary};
+    TextBlock secondary{L"secondary", foreground = brushes.Text.FillColor.Secondary};
 }
 
 // A synthetic property with two homes: the same text is the hover hint
@@ -337,7 +338,7 @@ static_assert(impl::iterating<decltype([](repeat<3>) noexcept { return Button{};
 // A named framework resource, reached as a path and routed by its type: a
 // Style can only be the Style property.
 [[maybe_unused]] void named_style() {
-    TextBlock title{
+    TextBlock heading{
         L"WinUI in C++ Without XAML!",
         styles.TextBlock.Title,
         hAlign.center,
@@ -445,8 +446,8 @@ Preset const stamp{
 
     Border given{borderBrush = ink};
 
-    SolidColorBrush const brush = ink.build();
-    Border same{borderBrush = brush};
+    SolidColorBrush const built = ink.build();
+    Border same{borderBrush = built};
 
     constexpr Preset inkLook{color = rgb(124, 135, 104)};
     SolidColorBrush worn{inkLook};
@@ -458,9 +459,9 @@ Preset const stamp{
 [[maybe_unused]] void preset_fits_by_its_members() {
     constexpr Preset wide{fontSize = 18.0, hAlign.stretch};
 
-    Button key{L"7", wide};
-    TextBox entry{wide};
-    TextBlock label{wide};
+    Button seven{L"7", wide};
+    TextBox box{wide};
+    TextBlock note{wide};
 }
 
 // A binding written on a property, in the one form its shape allows. Bind
@@ -486,6 +487,7 @@ struct BoundModel : core::sta_refcounted {
     core::observable<int> row;
     core::observable<double> amount;
     core::observable<float> level;
+    core::observable<core::nullable<double>> entry;
     core::observable<Reading> reading;
 };
 }  // namespace
@@ -499,6 +501,8 @@ struct BoundModel : core::sta_refcounted {
     ComboBox{selectedIndex = Bind{model->row}};  // Selector's pair
     NumberBox{value = Bind{model->amount}};
     NumberBox{value = Bind{model->level}};  // a double property binds a float as well
+    NumberBox{value = Bind{model->entry}};  // and a nullable double: an empty box is empty
+    Slider{value = Bind{model->entry}};
     CheckBox{isChecked = Bind{model->busy}};  // ToggleButton's pair
     ToggleButton{isChecked = Bind{model->busy}};
     RadioButtons{selectedIndex = Bind{model->row}};
@@ -523,7 +527,8 @@ struct BoundModel : core::sta_refcounted {
     TextBox{text = BindInput{model->name}};
     ToggleSwitch{isOn = BindInput{model->busy}};
     ComboBox{selectedIndex = BindInput{model->row}};
-    NumberBox{intermediateValue = BindInput{model->amount}};  // input alone: the number as typed
+    NumberBox{value = BindInput{model->entry}};
+    NumberBox{intermediateValue = BindInput{model->entry}};  // input alone: the number as typed
     CheckBox{isChecked = BindInput{model->busy}};
     CheckBox{isChecked = BindOutput{model->busy}};
 
@@ -558,10 +563,125 @@ struct BoundModel : core::sta_refcounted {
     ScrollViewer{schema::ScrollViewer::verticalOffset = Bind{model->amount}};
 }
 
+// A number is taken as the property's own type, converted at the `=`: a float
+// property takes a float and an int literal, a double one widens both, and a
+// binding keeps its field's type. A narrowing -- `rotation = 0.4` -- is a
+// warning on the line that writes it, which no assertion here can see.
+[[maybe_unused]] void numbers_take_the_property_type() {
+    auto const model = core::make_refcounted<BoundModel>();
+
+    Border{rotation = 0.4f};
+    Border{rotation = 2};
+    TextBlock{fontSize = 0.4f};
+    TextBlock{fontSize = 2};
+    Border{rotation = BindOutput{model->level}};
+    TextBlock{fontSize = BindOutput{model->level}};
+
+    static_assert(std::same_as<decltype(rotation = 2), impl::setter_op<PropertyKey::Rotation, float>>);
+    static_assert(
+        std::same_as<decltype(fontSize = 0.4f), impl::setter_op<PropertyKey::FontSize, double>>);
+}
+
+template <typename Tag, typename Value>
+concept assignable = requires(Tag const& tag, Value value) { tag = value; };
+
+// A character and a truth value convert to a number, and are never meant as one:
+// a tag of a number refuses both.
+static_assert(!assignable<decltype(fontSize), char>);
+static_assert(!assignable<decltype(rotation), char16_t>);
+static_assert(!assignable<decltype(fontSize), bool>);
+static_assert(!assignable<decltype(rotation), bool>);
+
+// A tag of a truth value takes a truth value alone: a number, a character and a
+// pointer each convert to one, and none of them is meant as one.
+static_assert(assignable<decltype(isEnabled), bool>);
+static_assert(std::same_as<decltype(isEnabled = true), impl::setter_op<PropertyKey::IsEnabled, bool>>);
+static_assert(!assignable<decltype(isEnabled), double>);
+static_assert(!assignable<decltype(isEnabled), int>);
+static_assert(!assignable<decltype(isEnabled), char>);
+static_assert(!assignable<decltype(isEnabled), char16_t const*>);
+
+// A name the classes declare with different types takes each of them: opacity
+// is a double on a UIElement and a float on a Visual. A number written as one
+// of them is taken as that one; an integer is a conversion away from both, so
+// it is kept as it is and the setter of the object converts it. A truth value
+// is refused, a conversion away from both alike, and so is a character.
+[[maybe_unused]] void numbers_on_a_name_of_several_types() {
+    auto const model = core::make_refcounted<BoundModel>();
+    float const level = 0.5f;
+    double const amount = 0.5;
+
+    Border{opacity = 1};
+    Border{opacity = 0.5};
+    Border{opacity = 0.5f};
+    Border{opacity = level};
+    Border{opacity = amount};
+    Border{opacity = BindOutput{model->amount}};
+
+    constexpr PropertyKey prop = PropertyKey::Opacity;
+    static_assert(std::same_as<decltype(opacity = 1), impl::setter_op<prop, int>>);
+    static_assert(std::same_as<decltype(opacity = 0.5), impl::setter_op<prop, double>>);
+    static_assert(std::same_as<decltype(opacity = 0.5f), impl::setter_op<prop, float>>);
+    static_assert(std::same_as<decltype(opacity = level), impl::setter_op<prop, float>>);
+    static_assert(std::same_as<decltype(opacity = amount), impl::setter_op<prop, double>>);
+    static_assert(std::same_as<decltype(opacity = BindOutput{model->level}),
+                               impl::setter_op<prop, BindOutput<float>>>);
+    static_assert(!assignable<decltype(opacity), bool>);
+    static_assert(!assignable<decltype(opacity), char>);
+    static_assert(!assignable<decltype(opacity), char16_t>);
+}
+
+// What is not a number goes to the setter as written. Content is an Object on a
+// ContentControl and a UIElement on a Flyout, and a template given to it is still
+// the template in the op: the object is built where the op is applied, not at
+// the `=`.
+[[maybe_unused]] void objects_on_a_name_of_several_types() {
+    Button{content = Template<Border>{}};
+    Flyout{content = Template<Border>{}};
+
+    static_assert(std::same_as<decltype(content = Template<Border>{}),
+                               impl::setter_op<PropertyKey::Content, Template<Border>>>);
+}
+
+// A list with a brush in it takes a colour as the tag of a brush does. No name of
+// the profiles is such a list, so the tag is written here.
+inline constexpr impl::property_tag<PropertyKey::Background, impl::one_of<Brush, double>>
+    brushOrNumber{};
+
+[[maybe_unused]] void colours_on_a_list_with_a_brush() {
+    Border{brushOrNumber = rgb(16, 18, 21)};
+
+    static_assert(std::same_as<decltype(brushOrNumber = rgb(16, 18, 21)),
+                               impl::setter_op<PropertyKey::Background, impl::solid_color_brush>>);
+}
+
+template <typename Obj, typename Value>
+concept placement_takes = requires(Obj const& object, Value const& value) {
+    impl::property_setter<PropertyKey::Placement>::set(object, value);
+};
+
+// Placement is a FlyoutPlacementMode on a flyout and a PlacementMode on a
+// tooltip, and its values are written once: a name both have is one value the
+// setter of either takes as its own, a name one of them has is that one's. The
+// other refuses it.
+[[maybe_unused]] void values_on_a_name_of_several_enumerations() {
+    MenuFlyout{placement = placement.bottom};
+    ToolTip{placement = placement.bottom};
+    MenuFlyout{placement = placement.full};
+    ToolTip{placement = placement.mouse};
+
+    static_assert(static_cast<FlyoutPlacementMode>(placement.bottom) == FlyoutPlacementMode::Bottom);
+    static_assert(static_cast<PlacementMode>(placement.bottom) == PlacementMode::Bottom);
+    static_assert(placement.full == FlyoutPlacementMode::Full);
+    static_assert(placement.mouse == PlacementMode::Mouse);
+    static_assert(placement_takes<ToolTip, std::remove_cvref_t<decltype(placement.bottom)>>);
+    static_assert(!placement_takes<ToolTip, std::remove_cvref_t<decltype(placement.full)>>);
+}
+
 // Copy construction must not be hijacked by the variadic constructor -- the
 // single-argument case is what the constraint on it exists for.
-[[maybe_unused]] void copying(Button const& source) {
-    Button copy = source;
+[[maybe_unused]] void copying(Button const& original) {
+    Button copy = original;
     Button moved{Button{}};
     (void)copy;
     (void)moved;
@@ -572,9 +692,9 @@ struct BoundModel : core::sta_refcounted {
 // from the exclusion the copy constructor needs, and only the pointed-to
 // type tells the two apart.
 [[maybe_unused]] void singleUnnamedString() {
-    TextBlock caption{L"the only argument"};
+    TextBlock only{L"the only argument"};
     Button action{L"Click"};
-    (void)caption;
+    (void)only;
     (void)action;
 }
 
@@ -586,8 +706,8 @@ struct BoundModel : core::sta_refcounted {
     app.move({120, 80});
     app.moveAndResize({120, 80, 1000, 700});
     app.title(L"wxl");
-    SizeInt32 const size = app.size();
-    (void)size;
+    SizeInt32 const measured = app.size();
+    (void)measured;
 }
 
 // Timing and the UI thread, both reached through the window's dispatcher.
@@ -617,9 +737,9 @@ struct BoundModel : core::sta_refcounted {
 }
 
 // The procedural side of the same members: ordinary calls, all const.
-[[maybe_unused]] void procedural(TextBlock const& text, Button const& button) {
-    text.text(L"changed");
-    hstring const current = text.text();
+[[maybe_unused]] void procedural(TextBlock const& block, Button const& button) {
+    block.text(L"changed");
+    hstring const current = block.text();
     button.content(L"Click");
     EventToken token = button.add_onClick([](Object const&, RoutedEventArgs&) {});
     button.remove_onClick(token);
@@ -636,8 +756,8 @@ struct BoundModel : core::sta_refcounted {
 // changing one is not.
 [[maybe_unused]] void event_arguments(Button const& button, ListView const& list) {
     button.add_onClick([](Object const&, RoutedEventArgs& args) {
-        Object const source = args.originalSource();
-        (void)source;
+        Object const origin = args.originalSource();
+        (void)origin;
     });
 
     button.add_onKeyDown([](Object const&, KeyRoutedEventArgs& args) {
@@ -715,7 +835,7 @@ static_assert(std::is_same_v<decltype(&PointerRoutedEventArgs::getCurrentPoint),
 // wxl can write nullable<T> without asking: a type nobody has given a
 // sentinel still does not compile.
 [[maybe_unused]] void projected_nullables(ToggleButton const& toggle, ScrollViewer const& scroll,
-                                          TimePicker const& time, DatePicker const& date) {
+                                          TimePicker const& time, DatePicker const& picker) {
     toggle.isChecked(true);
     toggle.isChecked({});
     core::nullable<bool> const checked = toggle.isChecked();
@@ -730,7 +850,7 @@ static_assert(std::is_same_v<decltype(&PointerRoutedEventArgs::getCurrentPoint),
     // A length of time empties into the maximum it never counts to; a point
     // in time into WinRT's own zero, the year 1601, which no picker offers.
     time.selectedTime(core::duration{std::chrono::hours{9}});
-    core::nullable<DateTime> const picked = date.selectedDate();
+    core::nullable<DateTime> const picked = picker.selectedDate();
     static_assert(sizeof(core::nullable<core::duration>) == sizeof(core::duration));
     static_assert(sizeof(core::nullable<DateTime>) == sizeof(DateTime));
     (void)picked;
@@ -776,11 +896,11 @@ static_assert(std::is_same_v<decltype(&PointerRoutedEventArgs::getCurrentPoint),
     crop.rightInset(60.0f);
     sheet.clip(crop);
 
-    DropShadow shadow = compositor.createDropShadow();
-    shadow.blurRadius(24.0f);
-    shadow.opacity(0.35f);
-    shadow.offset({-8, 4, 0});
-    sheet.shadow(shadow);
+    DropShadow drop = compositor.createDropShadow();
+    drop.blurRadius(24.0f);
+    drop.opacity(0.35f);
+    drop.offset({-8, 4, 0});
+    sheet.shadow(drop);
 
     // The sheen: a gradient whose opacity is animated rather than redrawn.
     CompositionLinearGradientBrush sheen = compositor.createLinearGradientBrush();
@@ -797,13 +917,13 @@ static_assert(std::is_same_v<decltype(&PointerRoutedEventArgs::getCurrentPoint),
     fade.delayTime(std::chrono::milliseconds{80});
     fade.insertKeyFrame(1.0f, 1.0f, compositor.createLinearEasingFunction());
 
-    Vector3KeyFrameAnimation rise = compositor.createVector3KeyFrameAnimation();
-    rise.duration(std::chrono::milliseconds{200});
-    rise.insertKeyFrame(0.0f, Vector3{0, 12, 0});
-    rise.insertKeyFrame(1.0f, Vector3{0, 0, 0});
+    Vector3KeyFrameAnimation lift = compositor.createVector3KeyFrameAnimation();
+    lift.duration(std::chrono::milliseconds{200});
+    lift.insertKeyFrame(0.0f, Vector3{0, 12, 0});
+    lift.insertKeyFrame(1.0f, Vector3{0, 0, 0});
 
     sheet.startAnimation(L"Opacity", fade);
-    sheet.startAnimation(L"Offset", rise);
+    sheet.startAnimation(L"Offset", lift);
 
     Visual hosted = ElementCompositionPreview::getElementVisual(host);
     hosted.opacity(1.0f);
@@ -839,14 +959,14 @@ void handing_work_over(DispatcherQueue const& queue) {
     (void)soon;
 
     UiThread const ui = UiThread::current();
-    auto const background = [ui](std::wstring found) {
+    auto const worker = [ui](std::wstring found) {
         ui.post([found = std::move(found)] { (void)found; });
     };
-    background(L"a file");
+    worker(L"a file");
 }
 
 // A wait for a quiet moment on the UI thread's queue, which nobody names.
-async::task<> after_a_quiet_moment(async::cancellation_token token) {
+async::task<> after_a_quiet_moment(async::stop_token token) {
     WaitableTimer timer{std::chrono::milliseconds{1500}, std::move(token)};
     timer.restart();
     co_await timer;
@@ -1014,15 +1134,15 @@ concept declares_snaps_to_tag = requires { typename T::SnapsToTag; };
 // Every element of it is compiled by the generated schema_surface.cpp beside
 // this file; what is here is the part a generator cannot write down -- what
 // it is *for*, and the one thing it can do that the flat vocabulary cannot.
-[[maybe_unused]] void the_schema_names_the_class(LinearGradientBrush const& brush) {
+[[maybe_unused]] void the_schema_names_the_class(LinearGradientBrush const& gradient) {
     namespace x = dsl::schema;
 
-    // Two classes declare StartPoint with different types, so the flat tag
-    // has none and `startPoint = {0, 0}` cannot compile through it: a braced
-    // list initialises a parameter of a known type, and template deduction
-    // never gives it one. Through the class the type is known again.
-    impl::apply_argument(brush, x::LinearGradientBrush::startPoint = {0.0f, 0.0f});
-    impl::apply_argument(brush, x::LinearGradientBrush::endPoint = Point{1.0f, 1.0f});
+    // Two classes declare StartPoint with different types, Point and Vector2,
+    // so the flat tag takes both and `startPoint = {0, 0}` cannot compile
+    // through it: the braced list fits either. Through the class the type is
+    // one again.
+    impl::apply_argument(gradient, x::LinearGradientBrush::startPoint = {0.0f, 0.0f});
+    impl::apply_argument(gradient, x::LinearGradientBrush::endPoint = Point{1.0f, 1.0f});
 
     // And it is the same op the bare name produces, so the two forms mix
     // inside one set of braces.
@@ -1059,11 +1179,11 @@ concept declares_snaps_to_tag = requires { typename T::SnapsToTag; };
     core::function const type = [](wchar_t) {};
 
     Grid{
-        [type](iterate<L"789"> key) {
+        [type](iterate<L"789"> digit) {
             return Button{
-                key.text(),
-                column = key.index,
-                onClick += [type, symbol = key.value] { type(symbol); },
+                digit.text(),
+                column = digit.index,
+                onClick += [type, symbol = digit.value] { type(symbol); },
             };
         },
     };
@@ -1078,8 +1198,8 @@ concept declares_snaps_to_tag = requires { typename T::SnapsToTag; };
 // member goes; a member that starts a coroutine keeps its task in a field.
 struct HandlersAsMembers {
     void clicked(Button const& self, RoutedEventArgs& args) {
-        Object const source = args.originalSource();
-        (void)source;
+        Object const origin = args.originalSource();
+        (void)origin;
         self.isEnabled(false);
     }
     void toggled(ToggleSwitch const& self) { self.isOn(false); }
@@ -1128,12 +1248,12 @@ static_assert(!impl::droppable_result<bool> && !impl::droppable_result<async::ta
 static_assert([] {
     struct Probe {
         int sender = 0;
-        constexpr void take(int const& from, int& args) {
-            sender = from;
+        constexpr void take(int const& sent, int& args) {
+            sender = sent;
             args = 2;
         }
-        constexpr void keep(int const& from, int& args) noexcept {
-            sender += from;
+        constexpr void keep(int const& sent, int& args) noexcept {
+            sender += sent;
             args += 3;
         }
     };
@@ -1300,8 +1420,8 @@ static_assert(Relief::under(rgb(200, 60, 30), lampAtLeft, 1.3, 2.0) == rgb(164, 
 namespace {
 constexpr auto leftUp = Direction::from_angles(120, 60);
 constexpr auto overhead = Direction::from_angles(45, 90);
-constexpr bool close_to(double value, double expected) {
-    return value - expected < 1e-6 && expected - value < 1e-6;
+constexpr bool close_to(double actual, double expected) {
+    return actual - expected < 1e-6 && expected - actual < 1e-6;
 }
 }  // namespace
 static_assert(close_to(leftUp.x, -0.25) && close_to(leftUp.y, -0.433013) &&
@@ -1426,8 +1546,7 @@ static_assert(std::is_same_v<decltype(on_event<EventKey::Click>(std::declval<But
 // The two forms differ in one thing and say so in their result: the bare wait
 // hands back the args, the answering one hands back either the args or the
 // reason there are none. A reference cannot be the value of an expected, so
-// it travels wrapped; the error side is a nullable exception_ptr, whose empty
-// state is a null pointer and therefore costs nothing.
+// it travels wrapped; the other side is the stop reason.
 using key_wait_t = decltype(on_event<EventKey::KeyDown>(std::declval<Button const&>()));
 
 static_assert(
@@ -1435,11 +1554,16 @@ static_assert(
                    KeyRoutedEventArgs&>);
 static_assert(std::is_same_v<decltype(std::declval<key_wait_t&>().next().await_resume()),
                              std::expected<std::reference_wrapper<KeyRoutedEventArgs>,
-                                           core::nullable<std::exception_ptr>>>);
+                                           async::stop_reason>>);
 
-// And the empty error state really is free: a null exception_ptr is what
-// "cancelled, and that is all there is to say" is spelled as.
-static_assert(sizeof(core::nullable<std::exception_ptr>) == sizeof(std::exception_ptr));
+// And the reason costs no more than the error it may carry: stopped by request
+// is a null exception_ptr.
+static_assert(sizeof(async::stop_reason) == sizeof(std::exception_ptr));
+
+// A string is not a stop reason until it is asked to be one.
+static_assert(!std::is_convertible_v<char const*, async::stop_reason>);
+static_assert(!std::is_convertible_v<std::string_view, async::stop_reason>);
+static_assert(std::is_constructible_v<async::stop_reason, char const*>);
 
 // Awaiting writes down who is waiting, so the proxy has to be non-const.
 // Only the positive half is assertable: the const overload is deleted rather
@@ -1452,15 +1576,15 @@ static_assert(requires(click_wait_t& proxy) { proxy.operator co_await(); });
 // byte it had: its awaiter is the pointer and two flags it can be cancelled
 // through, and the idle wait the size it was.
 using cancelable_click_wait_t = decltype(on_event<EventKey::Click>(
-    std::declval<Button const&>(), std::declval<async::cancellation_token>()));
+    std::declval<Button const&>(), std::declval<async::stop_token>()));
 using cancelable_key_wait_t = decltype(on_event<EventKey::KeyDown>(
-    std::declval<Button const&>(), std::declval<async::cancellation_token>()));
+    std::declval<Button const&>(), std::declval<async::stop_token>()));
 
 static_assert(
     std::is_same_v<cancelable_click_wait_t,
-                   impl::cancelable_event_awaitable<impl::keyed_event<EventKey::Click, Button>>>);
+                   impl::stoppable_event_awaitable<impl::keyed_event<EventKey::Click, Button>>>);
 static_assert(std::is_same_v<decltype(onClick(std::declval<Button const&>(),
-                                              std::declval<async::cancellation_token>())),
+                                              std::declval<async::stop_token>())),
                              cancelable_click_wait_t>);
 static_assert(!std::is_move_constructible_v<cancelable_click_wait_t>);
 
@@ -1473,9 +1597,9 @@ static_assert(std::is_same_v<decltype(std::declval<cancelable_key_wait_t&>().nex
 
 static_assert(sizeof(click_wait_t::awaiter) == 2 * sizeof(void*));
 static_assert(sizeof(cancelable_click_wait_t) ==
-              sizeof(click_wait_t) + sizeof(async::cancellation_token));
-static_assert(async::detail::cancelable_awaiter<click_wait_t::awaiter>);
-static_assert(async::detail::cancelable_awaiter<UiThread::Idle>);
+              sizeof(click_wait_t) + sizeof(async::stop_token));
+static_assert(async::detail::stoppable_awaiter<click_wait_t::awaiter>);
+static_assert(async::detail::stoppable_awaiter<UiThread::Idle>);
 static_assert(sizeof(UiThread::Idle) == sizeof(impl::event_wait) +
                                             sizeof(core::intrusive_ptr<impl::idle_link>) +
                                             sizeof(void*));
@@ -1493,7 +1617,7 @@ struct probe_task {
     };
 };
 
-[[maybe_unused]] probe_task awaiting_an_event(Button button, TextBlock text) {
+[[maybe_unused]] probe_task awaiting_an_event(Button button, TextBlock block) {
     // Kept in a variable: one subscription, waited on as many times as the
     // loop goes round.
     auto clicks = on_event<EventKey::Click>(button);
@@ -1505,13 +1629,13 @@ struct probe_task {
         // Answering the framework from inside a coroutine, which is the one
         // thing this whole shape has to keep possible: the handler resumes
         // the frame before it returns, so Handled set here is set in time.
-        KeyRoutedEventArgs& key = co_await on_event<EventKey::KeyDown>(button);
-        key.handled(true);
+        KeyRoutedEventArgs& keyArgs = co_await on_event<EventKey::KeyDown>(button);
+        keyArgs.handled(true);
 
         // And as a temporary: one wait, subscribed and unsubscribed by the
         // full expression it is written in. The temporary outlives the
         // suspension inside it, which is what makes this legal.
-        Object const& sender = co_await on_event<EventKey::LayoutUpdated>(text);
+        Object const& sender = co_await on_event<EventKey::LayoutUpdated>(block);
         static_cast<void>(sender);
 
         // The same wait named by its own two members instead of by a key --
@@ -1531,20 +1655,20 @@ struct probe_task {
         RoutedEventArgs& owned = co_await schema::Button::onClick(button);
         static_cast<void>(owned);
 
-        // The answering form, for a body that must let nothing escape. An
-        // empty error side is a plain cancellation; a full one carries what
-        // went wrong, so nothing is lost by not throwing.
+        // The answering form, for a body that must let nothing escape. Stopped
+        // by request is the plain end; stopped by an error carries what went
+        // wrong, so nothing is lost by not throwing.
         if (auto const got = co_await on_event<EventKey::KeyUp>(button).next()) {
             got->get().handled(true);
-        } else if (got.error()) {
-            std::rethrow_exception(*got.error());
+        } else if (got.error().stopped_due_to_error()) {
+            std::rethrow_exception(got.error().error());
         }
     }
 }
 
 // The same waits under a cancellation token, given last -- and the idle wait
 // beside them, with and without one.
-[[maybe_unused]] probe_task awaiting_under_a_token(Button button, async::cancellation_token token) {
+[[maybe_unused]] probe_task awaiting_under_a_token(Button button, async::stop_token token) {
     auto clicks = on_event<EventKey::Click>(button, token);
     RoutedEventArgs& args = co_await clicks;
     static_cast<void>(args);
@@ -1571,11 +1695,11 @@ struct probe_task {
 static_assert(std::is_same_v<decltype(std::declval<ContentDialog const&>().showAsync()),
                              async::task<ContentDialogResult>>);
 static_assert(std::is_same_v<decltype(std::declval<ContentDialog const&>().showAsync(
-                                 std::declval<async::cancellation_token>())),
+                                 std::declval<async::stop_token>())),
                              async::task<ContentDialogResult>>);
 
 [[maybe_unused]] async::task<bool> asking_under_a_token(ContentDialog dialog,
-                                                        async::cancellation_token token) {
+                                                        async::stop_token token) {
     co_return co_await dialog.showAsync(std::move(token)) == ContentDialogResult::Primary;
 }
 
@@ -1584,30 +1708,30 @@ static_assert(std::is_same_v<decltype(std::declval<ContentDialog const&>().showA
 // tuple, none as nothing -- as values, but for a reference to non-const, the channel the
 // coroutine answers through.
 using count_wait_t = decltype(on_event(std::declval<core::event<void(int)>&>(),
-                                       std::declval<async::cancellation_token>()));
+                                       std::declval<async::stop_token>()));
 
 static_assert(std::is_same_v<decltype(std::declval<count_wait_t&>().await_resume()), int>);
 static_assert(std::is_same_v<decltype(on_event(std::declval<core::event<void(int&) noexcept>&>(),
-                                               std::declval<async::cancellation_token>())
+                                               std::declval<async::stop_token>())
                                           .await_resume()),
                              int&>);
 static_assert(
     std::is_same_v<decltype(on_event(std::declval<core::event<void(std::u16string const&, int)>&>(),
-                                     std::declval<async::cancellation_token>())
+                                     std::declval<async::stop_token>())
                                 .await_resume()),
                    std::tuple<std::u16string, int>>);
 static_assert(
     std::is_same_v<decltype(on_event(std::declval<core::event<void(std::u16string const&)>&>(),
-                                     std::declval<async::cancellation_token>())
+                                     std::declval<async::stop_token>())
                                 .await_resume()),
                    std::u16string>);
 static_assert(std::is_same_v<decltype(on_event(std::declval<core::event<void()>&>(),
-                                               std::declval<async::cancellation_token>())
+                                               std::declval<async::stop_token>())
                                           .await_resume()),
                              void>);
 static_assert(!std::is_move_constructible_v<count_wait_t>);
 static_assert(
-    async::detail::cancelable_awaiter<impl::core_event_wait<core::event<void(int)>, int>>);
+    async::detail::stoppable_awaiter<impl::core_event_wait<core::event<void(int)>, int>>);
 
 // A reference to const comes as a copy, so a type whose copy would be sliced to its static
 // type -- or that has none -- is refused where the wait is made, with a static_assert that says
@@ -1625,12 +1749,12 @@ static_assert(!impl::invocation_answerable<sliced_answer const&>);
 [[maybe_unused]] probe_task awaiting_an_event_of_the_model(
     core::event<void(int)>& counted,
     core::event<void(std::u16string const&, int) noexcept>& renamed, core::event<void()>& reset,
-    async::cancellation_token token) {
+    async::stop_token token) {
     int const count = co_await on_event(counted, token);
     static_cast<void>(count);
 
-    auto const [name, times] = co_await on_event(renamed, token);
-    static_cast<void>(name);
+    auto const [who, times] = co_await on_event(renamed, token);
+    static_cast<void>(who);
     static_cast<void>(times);
 
     co_await on_event(reset, token);
@@ -1668,16 +1792,17 @@ struct Board {
 [[maybe_unused]] void bound_lists(Board& board) {
     using namespace ::wxl;
     using namespace ::wxl::dsl;
-    auto const row = [](core::u16_text const& word) { return TextBlock{text = word}; };
+    auto const line = [](core::u16_text const& word) { return TextBlock{text = word}; };
 
-    ListView{itemsSource = BindOutput{board.words, row}};
-    GridView{itemsSource = BindOutput{board.words, row}};
-    ItemsRepeater{itemsSource = BindOutput{board.words, row}};
+    ListView{itemsSource = BindOutput{board.words, line}};
+    GridView{itemsSource = BindOutput{board.words, line}};
+    ItemsRepeater{itemsSource = BindOutput{board.words, line}};
     ItemsView{itemsSource = BindOutput{board.words, [](core::u16_text const& word) {
                                            return ItemContainer{child = TextBlock{text = word}};
                                        }}};
-    ListView{itemsSource = BindOutput{board.shown(), row}};  // read-only: only the model changes it
-    ListView{schema::ItemsControl::itemsSource = BindOutput{board.words, row}};
+    // read-only: only the model changes it
+    ListView{itemsSource = BindOutput{board.shown(), line}};
+    ListView{schema::ItemsControl::itemsSource = BindOutput{board.words, line}};
 
     ListView{
         isItemClickEnabled = true,
@@ -1695,8 +1820,8 @@ struct Board {
         },
         selectedIndex = Bind{board.chosen},
     };
-    ListView{itemsSource = BindOutput{board.words, row}, selectedIndex = BindInput{board.chosen}};
-    GridView{itemsSource = BindOutput{board.words, row}, selectedIndex = BindOutput{board.chosen}};
+    ListView{itemsSource = BindOutput{board.words, line}, selectedIndex = BindInput{board.chosen}};
+    GridView{itemsSource = BindOutput{board.words, line}, selectedIndex = BindOutput{board.chosen}};
     FlipView{selectedIndex = Bind{board.chosen}};
     ComboBox{selectedIndex = Bind{board.chosen}};
 }

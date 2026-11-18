@@ -1,6 +1,6 @@
 {
     "name": "extended",
-    "description": "Everything in the base profile plus the modern WinUI controls with no WinForms counterpart: dialogs, info bars, command/menu bars, pickers, shapes and the richer button family, and the markup blocks (HTML, BB, RSDN). Exists both as the next step up from base and as the exercise of profile composition -- it adds to base rather than restating it.",
+    "description": "Everything in the base profile plus the modern WinUI controls with no WinForms counterpart: dialogs, info bars, command/menu bars, pickers, shapes and the richer button family, the markup blocks (HTML, BB, RSDN), the highlighted code block and the cards (Card, SettingsCard, SettingsExpander). Exists both as the next step up from base and as the exercise of profile composition -- it adds to base rather than restating it.",
     "extends": [
         "base"
     ],
@@ -8,6 +8,8 @@
 
     "components": [
         "bb",
+        "code",
+        "controls",
         "markup",
         "number_box",
         "rsdn"
@@ -53,12 +55,10 @@
             ]
         },
         "Microsoft.UI.Xaml.Window": {
-            "comment": "Everything base asks for, plus SetTitleBar written as a tag. It is a method in WinRT -- one argument, nothing handed back -- so without this it could be called and never written in braces. Narrowed to the TitleBar control, which is what a title bar with anything interactive in it has to be (it cuts the Passthrough regions), and which lets the tag build one from braces: `titleBar = { leftHeader = ..., content = ... }`. Window.SetTitleBar needs the element to stand in the window's content, so on this window the tag names an element placed there.",
-            "setterMethods": {
-                "SetTitleBar": {
-                    "type": "Microsoft.UI.Xaml.Controls.TitleBar"
-                }
-            }
+            "comment": "Everything base asks for, plus SetTitleBar written as a tag. It is a method in WinRT -- one argument, nothing handed back -- so without this it could be called and never written in braces. The tag takes any UIElement, as the method does; a title bar with anything interactive in it is the TitleBar control (it cuts the Passthrough regions), written by its class: `titleBar = TitleBar { leftHeader = ..., content = ... }`. Window.SetTitleBar needs the element to stand in the window's content, so on this window the tag names an element placed there.",
+            "setterMethods": [
+                "SetTitleBar"
+            ]
         },
         "Microsoft.UI.Windowing.AppWindowTitleBar": {
             "comment": "The window's own title bar, which a XAML window shares with its AppWindow: whether the client area runs up into it, how tall the caption buttons the system draws over that area are, and how much room they take on either side. Window.ExtendsContentIntoTitleBar is a wrapper over the property of the same name here; PreferredHeightOption and the insets have no wrapper at all, so an application reaches them through Window.appWindow. The button colours are IReference<Color>, nullable<Color> on this side, and an empty one hands the colour back to the system.",

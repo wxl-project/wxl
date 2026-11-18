@@ -13,7 +13,7 @@ using namespace wxl::dsl;
 // Tabs at the bottom of a window and the dialog that answers by events: both
 // are here so that a change to the profile or to showDialog's signature stops
 // this translation unit rather than an application.
-[[maybe_unused]] void tabs_and_dialogs(Window const& window, async::cancellation_token token) {
+[[maybe_unused]] void tabs_and_dialogs(Window const& window, async::stop_token token) {
     SelectorBar tabs{
         hAlign.center,
         onSelectionChanged += [](Object const&, SelectorBarSelectionChangedEventArgs&) {},

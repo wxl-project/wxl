@@ -45,6 +45,7 @@ public:
     /// \param name The name of this part alone; the full name is built by
     ///             joining the parent's to it with a dot.
     /// \param parent The facility this one is part of, or nullptr for a root.
+    /// \param level The initial level this part of the program is logged at.
     inline explicit facility(std::string_view name, const facility* parent = nullptr,
                              severity level = severity::info)
         : full_name_(parent ? std::string(parent->full_name()) + '.' + std::string(name)

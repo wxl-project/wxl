@@ -3,7 +3,7 @@
 // внизу раскрывающийся «Source code» с кнопкой копирования.
 //
 // Введение оригинал даёт статичным TextBlock, исходник — SampleCodePresenter;
-// здесь введение — HtmlBlock, исходник — RsdnBlock с подсветкой, как в Effects.
+// здесь введение — HtmlBlock, исходник — CodeBlock с подсветкой.
 // Вкладок языка нет: у оригинала XAML и C#, здесь всё без альтернатив C++.
 
 #include "Pages.h"
@@ -14,19 +14,6 @@ using namespace wxl;
 using namespace wxl::dsl;
 
 namespace {
-
-// Код на плоском фоне, как в SampleCodePresenter: подложку карточки,
-// отступы и подъём, которые тема даёт `<pre>`, здесь убираем.
-MarkupTheme flatCode() {
-    MarkupTheme theme;
-    theme.preMargin = Thickness {0};
-    theme.prePadding = Thickness {0};
-    theme.preRadius = 0;
-    theme.preElevation = 0;
-    theme.preBackground = colors.transparent;
-    theme.preBorderColor = colors.transparent;
-    return theme;
-}
 
 // Кнопка копирования кода: после щелчка значок — галочка, пока указатель не
 // ушёл с кнопки.
@@ -111,9 +98,8 @@ wxl::FrameworkElement gallery::controlExample(ExampleParts const& parts) {
         });
     }
 
-    auto code = RsdnBlock {isTextSelectionEnabled = true, Padding {16, 12, 56, 12}};
-    code.theme(flatCode());
-    code.rsdn(L"[code=cpp]" + source + L"[/code]");
+    auto code = CodeBlock {isTextSelectionEnabled = true, Padding {17, 13, 57, 13}};
+    code.code(u"cpp", source);
 
     return StackPanel {
         Margin {0, 16, 0, 0},

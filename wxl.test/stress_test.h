@@ -20,13 +20,13 @@ namespace wxl::core {
 #define STRESS_TEST_CASE(suite_name, test_name) \
     static void WXL_TEST_NAME(suite_name, test_name)(unit_test_tracer &); \
     STRESS_TEST_BODY(suite_name, test_name) \
-    static void WXL_TEST_NAME(suite_name, test_name)(unit_test_tracer & tracer)
+    static void WXL_TEST_NAME(suite_name, test_name)([[maybe_unused]] unit_test_tracer & tracer)
 
 // Defines a stress test body with the signature: static void test_name(unit_test_tracer& tracer, size_t number_of_elements)
 #define STRESS_TEST_CASE_EX(suite_name, test_name) \
     static void WXL_TEST_NAME(suite_name, test_name)(unit_test_tracer &, size_t); \
     STRESS_TEST_BODY(suite_name, test_name) \
-    static void WXL_TEST_NAME(suite_name, test_name)(unit_test_tracer & tracer, size_t number_of_elements)
+    static void WXL_TEST_NAME(suite_name, test_name)([[maybe_unused]] unit_test_tracer & tracer, size_t number_of_elements)
 
 inline constexpr duration big_timeout = duration::from_ms(5000);
 

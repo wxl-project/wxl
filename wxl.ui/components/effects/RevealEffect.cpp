@@ -339,7 +339,11 @@ void BorderLight::diffuseAmount(float value) const { impl_->set_diffuse(value); 
 void BorderLight::color(Color value) const { impl_->set_color(value); }
 void BorderLight::constantAttenuation(float value) const { impl_->set_constant_attenuation(value); }
 void BorderLight::linearAttenuation(float value) const { impl_->set_linear_attenuation(value); }
-void BorderLight::strokeThickness(float value) const { impl_->set_thickness(value); }
+// The public type is Shape's, double; the value is kept as the float the
+// composition draws with, as Windows.Foundation.Rect keeps its doubles.
+void BorderLight::strokeThickness(double value) const {
+    impl_->set_thickness(static_cast<float>(value));
+}
 void BorderLight::cornerRadius(CornerRadius value) const {
     impl_->set_corner(static_cast<float>(value.topLeft));
 }

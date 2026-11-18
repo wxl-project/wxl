@@ -130,11 +130,11 @@ TEST(documentation_ids, the_form_with_a_token_keeps_the_methods_id) {
 TEST(documentation_ids, the_token_of_a_form_with_one_keeps_out_of_the_methods_names) {
     auto const param = [](std::string name) { return gen::param_info{std::move(name), {}}; };
 
-    EXPECT_EQ(gen::cancellation_parameter_name({}), "token");
-    EXPECT_EQ(gen::cancellation_parameter_name({param("placement")}), "token");
-    EXPECT_EQ(gen::cancellation_parameter_name({param("token")}), "cancellation");
-    EXPECT_EQ(gen::cancellation_parameter_name({param("token"), param("options")}), "cancellation");
-    EXPECT_THROW(gen::cancellation_parameter_name({param("token"), param("cancellation")}),
+    EXPECT_EQ(gen::stop_parameter_name({}), "token");
+    EXPECT_EQ(gen::stop_parameter_name({param("placement")}), "token");
+    EXPECT_EQ(gen::stop_parameter_name({param("token")}), "cancellation");
+    EXPECT_EQ(gen::stop_parameter_name({param("token"), param("options")}), "cancellation");
+    EXPECT_THROW(gen::stop_parameter_name({param("token"), param("cancellation")}),
                  std::runtime_error);
 }
 

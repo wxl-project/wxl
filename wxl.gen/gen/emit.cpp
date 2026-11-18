@@ -600,9 +600,9 @@ std::string interface_field_name(std::string_view interface_name) {
     return member_name(without_interface_prefix(interface_name)) + '_';
 }
 
-std::string winrt_namespace(std::string_view metadata_namespace) {
+std::string winrt_namespace(std::string_view namespace_name) {
     std::string result{"winrt::"};
-    for (auto&& c : metadata_namespace) {
+    for (auto&& c : namespace_name) {
         if (c == '.') {
             result += "::";
         } else {
@@ -612,8 +612,8 @@ std::string winrt_namespace(std::string_view metadata_namespace) {
     return result;
 }
 
-std::string winrt_type_name(std::string_view metadata_namespace, std::string_view name) {
-    if (metadata_namespace == "Windows.Foundation.Numerics") {
+std::string winrt_type_name(std::string_view namespace_name, std::string_view name) {
+    if (namespace_name == "Windows.Foundation.Numerics") {
         static constexpr std::pair<std::string_view, std::string_view> spelled[] = {
             {"Vector2", "float2"},      {"Vector3", "float3"},       {"Vector4", "float4"},
             {"Matrix3x2", "float3x2"},  {"Matrix4x4", "float4x4"},   {"Plane", "plane"},
@@ -621,15 +621,15 @@ std::string winrt_type_name(std::string_view metadata_namespace, std::string_vie
         };
         for (auto&& [metadata, cpp] : spelled) {
             if (name == metadata) {
-                return std::format("{}::{}", winrt_namespace(metadata_namespace), cpp);
+                return std::format("{}::{}", winrt_namespace(namespace_name), cpp);
             }
         }
     }
-    return std::format("{}::{}", winrt_namespace(metadata_namespace), name);
+    return std::format("{}::{}", winrt_namespace(namespace_name), name);
 }
 
-std::string winrt_include(std::string_view metadata_namespace) {
-    return std::format("<winrt/{}.h>", metadata_namespace);
+std::string winrt_include(std::string_view namespace_name) {
+    return std::format("<winrt/{}.h>", namespace_name);
 }
 
 }  // namespace gen

@@ -11,11 +11,11 @@
 //
 //     WaitableTimer timer{1500ms, source.token()};   // on the UI thread
 //
-//     async::task<> writes(WaitableTimer& timer, async::cancellation_token token) {
+//     async::task<> writes(WaitableTimer& timer, async::stop_token token) {
 //         do {
 //             co_await timer;
 //             co_await save();
-//         } while (!token.is_canceled());
+//         } while (!token.stop_requested());
 //     }
 //
 //     timer.restart();   // a change: the interval begins again from now
@@ -75,7 +75,7 @@ public:
     /// A one-shot timer of the UI thread's queue, made on that thread and stopped until
     /// restart(). The token, given last as everywhere in wxl, is the one every wait on the
     /// timer is registered with.
-    explicit WaitableTimer(std::chrono::milliseconds interval, async::cancellation_token token = {});
+    explicit WaitableTimer(std::chrono::milliseconds interval, async::stop_token token = {});
 };
 
 }  // namespace wxl

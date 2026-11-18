@@ -120,10 +120,10 @@ public:
     using allocator = t_allocator;
 
     /// Initialize the Pool this desired average number of items in the pool.
-    explicit pool(size_t preferred_size = 256, const allocator& allocator_arg = allocator())
+    explicit pool(size_t preferred_size = 256, const allocator& alloc = allocator())
         : preferred_size_(preferred_size),
           underflow_counter_(-static_cast<ssize_t>(preferred_size)),
-          allocator_(allocator_arg) {}
+          allocator_(alloc) {}
 
     virtual ~pool() { free_elements(); }
 

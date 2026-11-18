@@ -119,7 +119,7 @@ TextureCache::TextureCache(Compositor const& compositor)
 TextureCache::~TextureCache() = default;
 
 async::task<CompositionDrawingSurface> TextureCache::getAsync(std::filesystem::path const& image,
-                                                              async::cancellation_token token) {
+                                                              async::stop_token token) {
     // До первого co_await: путь -- ссылка вызывающего. Кадр держит кэш: устройство
     // и карта переживают выброшенную обёртку.
     std::wstring const key = image.wstring();
@@ -128,7 +128,7 @@ async::task<CompositionDrawingSurface> TextureCache::getAsync(std::filesystem::p
     for (;;) {
         // Под отменённым токеном ничего не начинается: ни устройство wxl, ни переход
         // на новое устройство Win2D, ни загрузка, ни её повтор.
-        token.throw_if_canceled();
+        token.throw_if_stop_requested();
         impl::rendering_device::ensure();
         impl->follow();
 

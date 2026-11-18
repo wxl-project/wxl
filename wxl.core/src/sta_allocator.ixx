@@ -18,12 +18,12 @@ export namespace wxl::core {
 /// it folds, and the instruction itself at run time. MSVC's std::countl_zero tests the processor
 /// (__isa_available) before lzcnt, and does not fold even a constant through that test; the
 /// intrinsic is the one instruction, which every processor this library runs on has.
-constexpr uint32_t leading_zeros(uint32_t value) noexcept {
-    if (std::is_constant_evaluated()) return std::countl_zero(value);
+constexpr uint32_t leading_zeros(uint32_t word) noexcept {
+    if consteval { return std::countl_zero(word); }
 #if defined(_MSC_VER) && !defined(__clang__)
-    return __lzcnt(value);
+    return __lzcnt(word);
 #else
-    return std::countl_zero(value);
+    return std::countl_zero(word);
 #endif
 }
 

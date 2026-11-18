@@ -17,13 +17,20 @@ constexpr std::string_view usage = R"(winui-srcgen -- generates wxl wrappers fro
   winui-srcgen --profile <file.winxl-profile> [--profile <file.winxl-profile>]...
                --packages <restored-packages.json> --out <dir> [--parts <n>]
                [--winmd <file.winmd>]... [--types <file.json>]
-               [--docs [--doc-language <code>]]
+               [--symbols <file.json>] [--docs [--doc-language <code>]]
                [--component-dir <dir>]... [--component <name>]...
-               [--common-dir <dir>]
+               [--common-dir <dir>] [--profiles-dir <dir>]
 
   --profile      Input profile; may be repeated. Profiles say which NuGet
                  packages to read, which types are the roots of the
                  dependency walk, and which of their members take part.
+  --profiles-dir The generator's own profiles (wxl.gen/profiles, or the copy
+                 an installed wxl ships), where a bare name in "extends" is
+                 looked for when the profile that names it has no such file
+                 beside it -- so a profile outside that directory extends
+                 full or base. A name found in neither stops the run with
+                 both files named; a path in "extends" is only ever relative
+                 to the profile. Without it, only the file beside is read.
   --packages     What the NuGet restore of the build resolved: every package
                  with its version and directory, and the Windows SDK of the
                  build's projection with its .winmd files. The configure of
@@ -46,7 +53,11 @@ constexpr std::string_view usage = R"(winui-srcgen -- generates wxl wrappers fro
   --types        What wxl implements itself: the types it supplies by hand,
                  the ones it already has an equivalent of, and the properties
                  carrying a tag (default: types.json beside the first profile).
-  --docs         Write the metadata's documentation into the generated
+  --symbols      The names of the icon font's glyphs, which FluentSymbol
+                 spells (default: fluent-symbols.json beside the first
+                 profile, read when it is there). A file named here that is
+                 not there stops the run.
+  --docs        Write the metadata's documentation into the generated
                  headers as /// comments. Windows types are documented from
                  the reference of the Windows SDK the --packages list names,
                  Windows App SDK types from the .xml beside their .winmd,
@@ -110,8 +121,13 @@ struct options {
     std::filesystem::path out_dir;
     std::size_t parts = 1;
     std::filesystem::path packages;
+    std::filesystem::path profiles_dir;  // empty: a bare name is looked for beside its referrer only
     std::filesystem::path type_map;
     std::filesystem::path symbols;
+    // Whether --symbols named the file: a file named is read whether or not it is there, so
+    // that a missing one stops the run; the default beside the first profile is read only
+    // when it is there.
+    bool symbols_named = false;
     bool docs = false;
     // The entry of documentation_languages --doc-language named, English when
     // --docs names none; null without --docs.
@@ -167,6 +183,9 @@ options parse_options(int argc, wchar_t** argv) {
             opts.packages = value(i, argument);
         } else if (argument == L"--types") {
             opts.type_map = value(i, argument);
+        } else if (argument == L"--symbols") {
+            opts.symbols = value(i, argument);
+            opts.symbols_named = true;
         } else if (argument == L"--winmd") {
             opts.extra_metadata.emplace_back(value(i, argument));
         } else if (argument == L"--docs") {
@@ -181,6 +200,8 @@ options parse_options(int argc, wchar_t** argv) {
             opts.build_components.push_back(text_value(i, argument));
         } else if (argument == L"--common-dir") {
             opts.search.common_directory = value(i, argument);
+        } else if (argument == L"--profiles-dir") {
+            opts.profiles_dir = value(i, argument);
         } else {
             throw std::runtime_error(std::format("unknown argument: {}", text_of(argument)));
         }
@@ -253,12 +274,12 @@ int wmain(int argc, wchar_t** argv) {
 
         auto const types = load_type_map(opts.type_map);
         std::vector<symbol> symbols;
-        if (std::filesystem::is_regular_file(opts.symbols)) {
+        if (opts.symbols_named || std::filesystem::is_regular_file(opts.symbols)) {
             symbols = load_symbol_names(opts.symbols);
         }
 
         auto profiles = resolve_profiles(opts.profiles, load_restored_packages(opts.packages),
-                                         opts.search);
+                                         opts.search, opts.profiles_dir);
         if (!opts.search.directories.empty()) {
             check_build_components(profiles, opts.build_components);
         }

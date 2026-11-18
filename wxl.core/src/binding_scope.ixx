@@ -1,7 +1,3 @@
-module;
-
-#include "abi.h"
-
 export module wxl.core:binding_scope;
 
 import :function;
@@ -51,7 +47,7 @@ private:
 /// A binding's watch made while a scope was open: the callback and its link in one node
 /// of the field's event, so collecting it costs no allocation of its own. `Body` is the
 /// event's callback node, from which the call signature is read.
-template <class Event, class Fn, class Body = typename Event::func_t>
+template <class Event, class Fn, class Body = Event::func_t>
 class linked_watch;
 
 template <class Event, class Fn, class... Args, template <class> class Base>

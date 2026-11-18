@@ -71,7 +71,7 @@ public:
 
     /// Returns \p element to the owner through its `put()`. \p element must not be null; this
     /// is asserted in debug builds.
-    void operator()(typename t_owner_type::element_type* element) const {
+    void operator()(t_owner_type::element_type* element) const {
         assert(element);
         owner_->put(element);
     }

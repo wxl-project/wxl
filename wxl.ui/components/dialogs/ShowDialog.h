@@ -60,11 +60,11 @@ class Window;
 /// \throw the platform's refusal, when the dialog cannot be shown.
 [[nodiscard("the dialog closes with the task: keep it where the dialog's owner keeps its tasks")]]
 async::task<> showDialog(ContentDialog const& dialog, Window const& host,
-                         async::cancellation_token token);
+                         async::stop_token token);
 
 /// The same, over the island `host` is in.
 [[nodiscard("the dialog closes with the task: keep it where the dialog's owner keeps its tasks")]]
 async::task<> showDialog(ContentDialog const& dialog, UIElement const& host,
-                         async::cancellation_token token);
+                         async::stop_token token);
 
 }  // namespace wxl

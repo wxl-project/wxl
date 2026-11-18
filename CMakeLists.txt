@@ -7,14 +7,9 @@
 # of this project and are not configured or added on their own.
 #
 # Every CMake script the tree uses lives in cmake/ next to this file.
-cmake_minimum_required(VERSION 4.3)
-
-# Opens CMake's experimental `import std;` gate, which wxl.core's module build
-# needs. Only the top-level project can open it, and only before project().
-# CMAKE_CXX_MODULE_STD below is the request; this is the permission, and CMake
-# refuses the request without it ("requires toolchain support, but it was not
-# provided").
-include(cmake/wxl_import_std_gate.cmake)
+# 4.5: the first CMake that gives `import std;` to every C++ target scanned for
+# modules, without an experimental gate.
+cmake_minimum_required(VERSION 4.5)
 
 project(
     wxl-project VERSION 0.1.0
@@ -22,6 +17,12 @@ project(
     #HOMEPAGE_URL ""
     LANGUAGES CXX
 )
+
+# The version of the commit, WXL_PACKAGE_VERSION: project() names the last
+# release, and the number of commits since its tag is the fourth part
+# (cmake/wxl_package_version.cmake). WXL_VERSION below says which builds carry
+# it.
+include(cmake/wxl_package_version.cmake)
 
 set(WXL_LOCAL_SOURCE_DIR "" CACHE PATH
     "Directory with local copies of the dependencies, one subdirectory per dependency")
@@ -64,6 +65,86 @@ else()
     wxl_check_language_options()
 endif()
 
+# ---- The format of the debugging information ----
+# CMake compiles the `std` module, and the modules of a target for an importer
+# with other options, in copies of the module's target it makes at generate
+# time: @cmake_cxx_std@synth_<n>, <target>@synth_<n>. A copy takes
+# MSVC_DEBUG_INFORMATION_FORMAT from its model (cmTarget::CopyCxxModulesProperties,
+# read at v4.5.0); a copy of the imported @cmake_cxx_std, which
+# CMAKE_MSVC_DEBUG_INFORMATION_FORMAT does not initialize, has none and takes
+# CMAKE_MSVC_DEBUG_INFORMATION_FORMAT_DEFAULT of its directory. A copy is an
+# interface library with no PDB of its own: with /Zi it compiles with /Fd"" and
+# writes vc<version>.pdb in the build directory, and copies compiled at once
+# stop on it (C1041).
+#
+# So the format asked for -- the variable, or the default without it -- becomes
+# a generator expression, which CMake evaluates for each target
+# (cmLocalGenerator::GetMSVCDebugFormatName): a target of the tree gets the
+# format as it is, and a copy, the only interface library that compiles, the
+# debugging information in its objects (/Z7) whenever any is asked for -- the
+# objects of the `std` module go into wxl.core. Both are set for this directory
+# and those below it, so a project that adds the tree keeps its own. An empty
+# default is CMP0141 OLD in such a project, where CMake reads no property.
+if(NOT "${CMAKE_MSVC_DEBUG_INFORMATION_FORMAT_DEFAULT}" STREQUAL "")
+    if(DEFINED CMAKE_MSVC_DEBUG_INFORMATION_FORMAT)
+        set(_wxl_format "${CMAKE_MSVC_DEBUG_INFORMATION_FORMAT}")
+    else()
+        set(_wxl_format "${CMAKE_MSVC_DEBUG_INFORMATION_FORMAT_DEFAULT}")
+    endif()
+    set(_wxl_format "$<IF:$<STREQUAL:$<TARGET_PROPERTY:TYPE>,INTERFACE_LIBRARY>,$<$<BOOL:${_wxl_format}>:Embedded>,${_wxl_format}>")
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT_DEFAULT "${_wxl_format}")
+    if(DEFINED CMAKE_MSVC_DEBUG_INFORMATION_FORMAT)
+        set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "${_wxl_format}")
+    endif()
+    unset(_wxl_format)
+endif()
+
+# ---- Reproducible builds ----
+# WXL_REPRODUCIBLE_BUILD: the objects, archives and executables the tree makes
+# are the same bytes whenever the same sources are built with the same toolset,
+# whatever the directories and the time -- all but the profile editor, whose
+# link MSVC 14.53 does not repeat (docs/building.md, "Пакет WinXL"). The builds
+# of the package WinXL turn it on (tools/package/build.ps1, which
+# .github/actions/package-libs and package-tools run), so that the package made again from a commit has the hash of
+# the first, which an application's NuGet lock file can then hold. Off in a
+# working tree, where a debugger finds the sources by the paths the objects
+# carry.
+#
+# /experimental:deterministic stamps no time into an object and makes the
+# compiler honour /pathmap, which it ignores without it (MSVC 14.53; /Brepro
+# alone does not). The maps rename, in the debugging information of /Z7, in
+# __FILE__ and in std::source_location, the build directory to \wxl.build, the
+# local copies of the dependencies (WXL_LOCAL_SOURCE_DIR) to \wxl.local and the
+# tree to \wxl: the build directory first, since it may lie inside the tree and
+# the first map that matches wins. In CMAKE_CXX_FLAGS and not in the compile
+# options of the directory: those reach the export of the modules
+# (IMPORTED_CXX_MODULES_COMPILE_OPTIONS), and an application would build the
+# modules with the maps of this build; the flags of the language reach every
+# C++ compile of the tree, the `std` module among them, and nothing else. /Brepro
+# makes lib.exe write -1 for the time of each member of an archive, where it
+# writes the time of the archive otherwise, and gives an executable a hash in
+# place of the time of the link; the linker of winxl gets it from
+# cmake/wxl_winxl.cmake.
+if(PROJECT_IS_TOP_LEVEL)
+    option(WXL_REPRODUCIBLE_BUILD
+        "Build objects, archives and executables that depend on the sources and the toolset only." OFF)
+    if(WXL_REPRODUCIBLE_BUILD)
+        set(_wxl_maps "${CMAKE_BINARY_DIR}=\\wxl.build")
+        if(_wxl_local_source_dir)
+            list(APPEND _wxl_maps "${_wxl_local_source_dir}=\\wxl.local")
+        endif()
+        list(APPEND _wxl_maps "${CMAKE_SOURCE_DIR}=\\wxl")
+        string(APPEND CMAKE_CXX_FLAGS " /experimental:deterministic")
+        foreach(_wxl_map IN LISTS _wxl_maps)
+            file(TO_NATIVE_PATH "${_wxl_map}" _wxl_map)
+            string(APPEND CMAKE_CXX_FLAGS " \"/pathmap:${_wxl_map}\"")
+        endforeach()
+        string(APPEND CMAKE_EXE_LINKER_FLAGS " /Brepro")
+        string(APPEND CMAKE_SHARED_LINKER_FLAGS " /Brepro")
+        string(APPEND CMAKE_STATIC_LINKER_FLAGS " /Brepro")
+    endif()
+endif()
+
 # ---- No link-time optimization ----
 # Measured on this tree, and the measurement went the other way from what one
 # expects. The STA pool gets *faster* without /GL -- 28.4 against 31.7 ns per
@@ -104,6 +185,27 @@ option(WXL_SANDBOX "Build the sandbox (sandbox/)." ${_wxl_own})
 # wxl.ui; the two benches of the XML reader in wxl.core and of wxl.gen.common
 # are built with the tree itself, and in a project that adds wxl with this key.
 option(WXL_BUILD_BENCHMARKS "Build the benchmark executables." OFF)
+
+# Install and export rules, for find_package(wxl CONFIG) against an installed
+# prefix (cmake/wxl_install.cmake, included below, after the directories that
+# make the targets it installs). Off by default: a consumer's `cmake --install`
+# should not start dropping wxl's archives and module sources into its prefix
+# unless it asks for it.
+option(WXL_INSTALL "Generate install and export rules for wxl." OFF)
+
+# WXL_VERSION, the version a build carries: the definition wxl.core compiles in
+# (public, so an application reads it too), what winxl --version prints. The
+# version of the commit in a build that is installed or is given its version
+# with -DWXL_PACKAGE_VERSION, as the builds of a package are; the release the
+# tree names otherwise. The version of the commit changes with every commit,
+# and every unit that imports wxl.core is compiled with the definition, so in a
+# working build directory a configure after a pull would rebuild all of them for
+# a number nothing there reads.
+if(WXL_INSTALL OR NOT "$CACHE{WXL_PACKAGE_VERSION}" STREQUAL "")
+    set(WXL_VERSION "${WXL_PACKAGE_VERSION}")
+else()
+    set(WXL_VERSION "${PROJECT_VERSION}")
+endif()
 
 if(WXL_UI AND NOT WXL_TOOLS)
     message(FATAL_ERROR
@@ -181,6 +283,11 @@ if(WXL_TESTS)
     # leaves them.
     add_test(NAME language-options
         COMMAND "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/wxl_language_test.cmake")
+
+    # The build of wxl's archives a configuration of an application links, read
+    # off its CMAKE_MSVC_RUNTIME_LIBRARY (cmake/wxl_runtime_library.cmake).
+    add_test(NAME runtime-library
+        COMMAND "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/wxl_runtime_library_test.cmake")
 
     # NuGet versions as cmake/wxl_nuget_version.cmake reads and orders them, and
     # the version a pin of tools/packages.json admits out of the index of a
@@ -284,6 +391,13 @@ if(WXL_UI)
 
     # Визуальный редактор профилей wxl.gen -- приложение на wxl.ui.
     add_subdirectory(wxl.gen.ui)
+endif()
+
+# Install and export rules (WXL_INSTALL, above): wxl.core with the fmt module it
+# imports, and wxl.ui.common when WXL_UI builds it. After the directories that
+# make those targets.
+if(WXL_INSTALL)
+    include(cmake/wxl_install.cmake)
 endif()
 
 if(WXL_SAMPLES)

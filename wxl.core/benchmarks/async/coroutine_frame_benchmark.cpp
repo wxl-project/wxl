@@ -70,8 +70,8 @@ volatile unsigned g_sink = 0;
 char g_scratch[1024];
 
 __declspec(noinline) void touch(char* buffer, std::size_t size) {
-    buffer[0] = char(g_sink);
-    g_sink = unsigned(buffer[size - 1]) + 1;
+    buffer[0] = static_cast<char>(g_sink);
+    g_sink = static_cast<unsigned>(buffer[size - 1]) + 1;
 }
 
 // Frames that really were allocated, and how big the last one was. Both promise
@@ -345,7 +345,7 @@ measurement run_eternal(unsigned count) {
 
 void report(const char* what, const measurement& m, const measurement& floor, unsigned count) {
     std::printf("%-36s %10.2f %12.2f %12.2f %10zu\n", what, m.ns, m.ns - floor.ns,
-                double(m.frames) / count, m.frame_size);
+                static_cast<double>(m.frames) / count, m.frame_size);
 }
 
 }  // namespace

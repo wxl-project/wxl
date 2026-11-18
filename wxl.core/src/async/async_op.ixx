@@ -5,7 +5,7 @@ module;
 
 export module wxl.core:async.async_op;
 
-import :async.cancellation;
+import :async.stop_token;
 import :async.coroutine_checks;
 import :noncopyable;
 import :sta_allocator;
@@ -105,7 +105,7 @@ private:
 /// both, over the fields here. What differs is what the owner letting go does, one call
 /// through the virtual table (`release()`): an operation is deleted or given up, a
 /// coroutine still in flight is stopped. A request to end early reaches only an operation -- one
-/// made in the form with a token (`detail::cancelable_operation`); a coroutine
+/// made in the form with a token (`detail::stoppable_operation`); a coroutine
 /// ends by the token it was given, by its own code.
 ///
 /// The answer is what happened to the operation, since nothing orders a request against
@@ -461,26 +461,26 @@ protected:
         : Base(std::forward<Args>(args)...) {}
 
 public:
-    inline static void* operator new([[maybe_unused]] std::size_t size) {
+    inline static void* operator new([[maybe_unused]] std::size_t bytes) {
         static_assert(std::is_final_v<Derived>, "pooled: the producer must be final");
-        assert(size == sizeof(Derived));
+        assert(bytes == sizeof(Derived));
 
         if constexpr (sizeof(Derived) <= core::sta_memory_pool::MaxBlockSize)
             return core::sta_memory_pool::alloc<sizeof(Derived)>();
         else
-            return core::sta_memory_pool::alloc(size);
+            return core::sta_memory_pool::alloc(bytes);
     }
 
     /// Sized, and the only form: were the form without the size declared too, a delete would
     /// choose that one, and the size would go unchecked.
-    inline static void operator delete(void* mem, [[maybe_unused]] std::size_t size) noexcept {
+    inline static void operator delete(void* mem, [[maybe_unused]] std::size_t bytes) noexcept {
         static_assert(std::is_final_v<Derived>, "pooled: the producer must be final");
-        assert(size == sizeof(Derived));
+        assert(bytes == sizeof(Derived));
 
         if constexpr (sizeof(Derived) <= core::sta_memory_pool::MaxBlockSize)
             core::sta_memory_pool::free<sizeof(Derived)>(mem);
         else
-            core::sta_memory_pool::free(mem, size);
+            core::sta_memory_pool::free(mem, bytes);
     }
 };
 
@@ -637,6 +637,9 @@ public:
     explicit async_op_f(Fn2&& fn) : fn_(std::forward<Fn2>(fn)) {}
 
 protected:
+    // Unreachable only for a body that always throws.
+#pragma warning(push)
+#pragma warning(disable : 4702)
     bool execute() override {
         if constexpr (std::is_void_v<R>)
             fn_();
@@ -645,6 +648,7 @@ protected:
 
         return true;
     }
+#pragma warning(pop)
 
 private:
     Fn fn_;
@@ -831,36 +835,36 @@ namespace detail {
 /// Made only under a token that has a source and is not cancelled yet: under one cancelled
 /// already the forms make nothing at all.
 template <class Op>
-class cancelable_operation final : public pooled<cancelable_operation<Op>, Op>
+class stoppable_operation final : public pooled<stoppable_operation<Op>, Op>
 {
-    using base = pooled<cancelable_operation, Op>;
+    using base = pooled<stoppable_operation, Op>;
 
 public:
     template <class... Args>
-    inline explicit cancelable_operation(cancellation_token token, Args&&... args)
+    inline explicit stoppable_operation(stop_token token, Args&&... args)
         : base(std::forward<Args>(args)...), token_(std::move(token)), registration_(*this) {
-        coro_check(!cancellation_state_of(token_)->canceled(),
-                   "cancelable_operation: made under a token cancelled already",
+        coro_check(!stop_state_of(token_)->stop_requested(),
+                   "stoppable_operation: made under a token cancelled already",
                    detail::site::current());
 
-        registration_.register_with(*cancellation_state_of(token_));
+        registration_.register_with(*stop_state_of(token_));
     }
 
     /// Out of the event before the token goes.
-    inline ~cancelable_operation() override {
-        registration_.unregister(*cancellation_state_of(token_));
+    inline ~stoppable_operation() override {
+        registration_.unregister(*stop_state_of(token_));
     }
 
 private:
     /// The token was cancelled: an operation still out and still its task's is asked to stop;
     /// one back already or given up is left as it is. Resumes nobody.
-    inline void on_token_canceled() noexcept {
+    inline void on_stop_requested() noexcept {
         if (!this->ready() && !this->abandoned()) this->cancel();
     }
 
-    cancellation_token token_;
+    stop_token token_;
     /// The operation's place in the token's event.
-    cancellation_registration<&cancelable_operation::on_token_canceled> registration_;
+    stop_registration<&stoppable_operation::on_stop_requested> registration_;
 };
 
 }  // namespace detail

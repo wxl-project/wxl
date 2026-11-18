@@ -1,7 +1,3 @@
-module;
-
-#include "abi.h"
-
 export module wxl.core:weak_link;
 
 import :intrusive_ptr;

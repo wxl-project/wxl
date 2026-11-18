@@ -27,8 +27,9 @@ struct Settings {
     // Документация Windows SDK на английском, а не на языке интерфейса.
     wxl::core::observable<bool> englishDocumentation {false};
 
-    // Кегль сведений справа внизу.
-    wxl::core::observable<double> detailsFontSize {16.0};
+    // Кегль сведений справа внизу. Пуст, пока пусто поле настроек: пустое поле —
+    // не кегль, и до числа в нём ничего не меняется.
+    wxl::core::observable<wxl::core::nullable<double>> detailsFontSize {16.0};
 
     // Как виден фокус с клавиатуры — номер в wxl::FocusLook: рамка системы,
     // подъём, свечение.

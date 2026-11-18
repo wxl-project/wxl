@@ -112,7 +112,7 @@ properties through declarative bindings.
 ```cpp
 struct Equation : sta_refcounted
 {
-    observable<double> a{blank}, b{blank}, c{blank};
+    observable<nullable<double>> a, b, c;
     // Three input numbers -> solve is called automatically on every edit
     observable<Answer> answer{a, b, c, solve};
 };
@@ -157,7 +157,7 @@ To build the library and the sample projects, you will need:
   build tools". The configure gets the NuGet packages and the cppwinrt
   projection from the MSBuild of that installation
 - **Windows SDK:** 10.0.26100.0 or newer
-- **Build:** CMake (version 4.3 / 4.4) and Ninja
+- **Build:** CMake (version 4.5 or newer) and Ninja
 - **Environment:** PowerShell 7 (`pwsh`)
 - **.NET SDK 10:** to build the `winxl` utility, which installs the runtime;
   the utility itself needs no .NET on the machine
@@ -186,9 +186,10 @@ build\x64-dynamic\samples\Quadratic\Debug\sample.quadratic.exe
 
 A detailed walkthrough of each automation step, the supported CMake
 configuration options and running the unit tests are covered in
-[docs/building.md](docs/building.md). Your own project adds the root of the
-`wxl` tree — `add_subdirectory` or `FetchContent` — and sets the language
-options of `wxl` before it (see
+[docs/building.md](docs/building.md). Your own project takes `wxl` from the
+`WinXL` package (`find_package(wxl)` in CMake or a `PackageReference` in
+MSBuild), or adds the root of the `wxl` tree — `add_subdirectory` or
+`FetchContent` — and sets the language options of `wxl` before it (see
 [«Подключение wxl»](docs/building.md#подключение-wxl), in Russian).
 
 ## Repository layout
@@ -200,7 +201,7 @@ options of `wxl` before it (see
 | `wxl.core/src/fmt`, `logging` | `text_builder` and string formatting on top of the `fmt` library. The logging subsystem. |
 | `wxl.core/src/xml`, `json` | Lightweight parsers for XML and JSON. |
 | `wxl.core/src/html` | Parsing of the HTML subset for the `HtmlBlock` visual component. |
-| **`wxl.bb`** / **`wxl.rsdn`** / **`wxl.highlight`** | Modules parsing BB-code and RSDN markup into the same tree for `BbBlock`, `RsdnBlock`. The `wxl.highlight` syntax highlighting subsystem. |
+| **`wxl.bb`** / **`wxl.rsdn`** / **`wxl.highlight`** | Modules parsing BB-code and RSDN markup into the same tree for `BbBlock`, `RsdnBlock`. The `wxl.highlight` syntax highlighting subsystem, shown by `CodeBlock`. |
 | **`wxl.gen.*`** | Source code of the `winui-srcgen` projection generator (`wxl.gen`, `wxl.gen.common`) and `wxl.gen.ui`, a GUI for visually editing code generation profiles (launched via `run-gen-ui.cmd`). |
 | **`wxl.ui`** | The **WinUI** graphics stack without XAML: public object wrappers, the declarative DSL syntax, window management, data binding and visual effects. |
 | **Auxiliary** | `samples` — sample projects; `sandbox` — isolated experiments with **WinUI** mechanisms; `wxl.test` — unit testing infrastructure; `cmake`, `tools`, `docs` — build and automation scripts and documentation sources. |

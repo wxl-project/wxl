@@ -188,7 +188,7 @@ struct promise_returns {
     /// By value rather than by forwarding reference: `co_return {}` and
     /// `co_return name_of_a_local` both have to work, and the move this costs an
     /// rvalue is nothing next to the operation the coroutine just awaited.
-    inline void return_value(R value) { producer->keep_value(std::move(value)); }
+    inline void return_value(R result) { producer->keep_value(std::move(result)); }
 
     coroutine_op<R>* producer = nullptr;
 };
@@ -214,15 +214,15 @@ public:
     /// and over. The pool asserts the thread in debug builds, so a frame made anywhere else
     /// is caught here. Counted by a build that checks: a frame is alive from here to operator
     /// delete.
-    inline static void* operator new(std::size_t size) {
-        void* const frame = core::sta_memory_pool::alloc(size);
+    inline static void* operator new(std::size_t bytes) {
+        void* const frame = core::sta_memory_pool::alloc(bytes);
         if constexpr (detail::checked) ++task_frames::live;
         return frame;
     }
 
-    inline static void operator delete(void* frame, std::size_t size) noexcept {
+    inline static void operator delete(void* frame, std::size_t bytes) noexcept {
         if constexpr (detail::checked) --task_frames::live;
-        core::sta_memory_pool::free(frame, size);
+        core::sta_memory_pool::free(frame, bytes);
     }
 
     /// Makes the producer -- the second allocation of a call, from the same pool -- which

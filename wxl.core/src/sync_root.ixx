@@ -33,7 +33,7 @@ public:
     sync_root() noexcept = default;
 
 protected:
-    ~sync_root() = default;
+    ~sync_root() override = default;
 };
 
 /// The type that holds a counted, non-null reference to a `wxl::core::sync_root`.

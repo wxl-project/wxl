@@ -38,14 +38,22 @@ macro(_wxl_doxygen_pins)
     # compiles, so the Linux build renders this tree without MSVC or anything of
     # the toolchain -- which is what lets the site be built where the code
     # cannot.
+    #
+    # Each archive has two hosts, the release on GitHub and doxygen.nl, which
+    # serve the same bytes. The download moves on to the next URL when an
+    # archive fails its hash, and doxygen.nl sometimes serves a corrupt one
+    # several times in a row; a second host turns that into a slower download
+    # instead of a failed configure.
     if(WIN32)
         set(WXL_DOXYGEN_URL
+            "https://github.com/doxygen/doxygen/releases/download/Release_1_18_0/doxygen-1.18.0.windows.x64.bin.zip"
             "https://www.doxygen.nl/files/doxygen-1.18.0.windows.x64.bin.zip")
         set(WXL_DOXYGEN_SHA256
             "e84f54cfd49ef06b0b16536056dbec0c496323de28abcce53a4269463de35eaf")
         set(WXL_DOXYGEN_FETCHED_EXECUTABLE "doxygen.exe")
     elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
         set(WXL_DOXYGEN_URL
+            "https://github.com/doxygen/doxygen/releases/download/Release_1_18_0/doxygen-1.18.0.linux.bin.tar.gz"
             "https://www.doxygen.nl/files/doxygen-1.18.0.linux.bin.tar.gz")
         set(WXL_DOXYGEN_SHA256
             "14fa81bdc34171edb5f1f02b1d60e74802f0439b77fa44e592565d517d72df90")
@@ -97,7 +105,7 @@ function(wxl_doxygen_bootstrap)
         message(STATUS "Doxygen ${DOXYGEN_VERSION}: ${_doxygen}")
     elseif(WXL_DOXYGEN_URL)
         FetchContent_Declare(wxl_doxygen
-            URL "${WXL_DOXYGEN_URL}"
+            URL ${WXL_DOXYGEN_URL}
             URL_HASH "SHA256=${WXL_DOXYGEN_SHA256}"
             DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
         FetchContent_MakeAvailable(wxl_doxygen)
@@ -118,7 +126,7 @@ function(wxl_doxygen_bootstrap)
     # Generated with the default configuration on purpose: what varies between
     # sites (title, search box, tree) sits in Doxygen's own $placeholders and is
     # resolved per page at build time, so one header serves every site.
-    set(_scratch "${CMAKE_BINARY_DIR}/docs/.header")
+    set(_scratch "${PROJECT_BINARY_DIR}/docs/.header")
     file(MAKE_DIRECTORY "${_scratch}")
     execute_process(
         COMMAND "${_doxygen}" -w html header.html footer.html style.css
@@ -160,7 +168,7 @@ function(wxl_doxygen_bootstrap)
     string(APPEND _mermaid "</script>")
     string(REPLACE "$mermaidjs" "${_mermaid}" _html "${_html}")
 
-    set(_header "${CMAKE_BINARY_DIR}/docs/header.html")
+    set(_header "${PROJECT_BINARY_DIR}/docs/header.html")
     file(WRITE "${_header}" "${_html}")
 
     set(WXL_DOXYGEN_EXECUTABLE "${_doxygen}"
@@ -230,7 +238,6 @@ function(wxl_doxygen_tree_inputs input_var exclude_var images_var root)
         "*/test/*"
         "*/bench/*"
         "*/benchmarks/*"
-        "*/packaging/*"
         "*/tools/*"
         "*/wxl.core/src/*/README.md"
         PARENT_SCOPE)
@@ -284,7 +291,7 @@ function(wxl_add_doxygen_site target)
     wxl_doxygen_bootstrap()
 
     if(NOT A_OUTPUT)
-        set(A_OUTPUT "${CMAKE_BINARY_DIR}/docs/${target}")
+        set(A_OUTPUT "${PROJECT_BINARY_DIR}/docs/${target}")
     endif()
     if(NOT A_LANGUAGE)
         set(A_LANGUAGE English)
@@ -317,7 +324,7 @@ function(wxl_add_doxygen_site target)
     set(DOXY_GENERATE_TAGFILE "${A_TAGFILE}")
     set(DOXY_HTML_HEADER      "${WXL_DOXYGEN_HTML_HEADER}")
     set(DOXY_MERMAID_JS_URL   "${WXL_DOXYGEN_MERMAID_JS_URL}")
-    set(DOXY_WARN_LOGFILE     "${CMAKE_BINARY_DIR}/docs/${target}.warnings.log")
+    set(DOXY_WARN_LOGFILE     "${PROJECT_BINARY_DIR}/docs/${target}.warnings.log")
 
     _wxl_doxygen_quote(DOXY_HTML_EXTRA_STYLESHEET
         "${WXL_DOXYGEN_THEME_DIR}/doxygen-awesome.css"
@@ -330,7 +337,7 @@ function(wxl_add_doxygen_site target)
     endforeach()
     _wxl_doxygen_quote(DOXY_HTML_EXTRA_FILES ${_extra_files})
 
-    set(_doxyfile "${CMAKE_BINARY_DIR}/docs/${target}.Doxyfile")
+    set(_doxyfile "${PROJECT_BINARY_DIR}/docs/${target}.Doxyfile")
     configure_file("${WXL_DOXYGEN_CMAKE_DIR}/Doxyfile.in" "${_doxyfile}" @ONLY)
 
     # No OUTPUT/DEPENDS pair: a stale site is worse than a redundant two-second

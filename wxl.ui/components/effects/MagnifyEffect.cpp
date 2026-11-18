@@ -191,13 +191,15 @@ void MagnifyEffect::scale(Size value) const {
     impl_->changed();
 }
 
-void MagnifyEffect::maximum(float value) const {
-    impl_->maximum = value;
+// The public type is RangeBase's, double; the value is kept as the float the
+// composition scales by, as Windows.Foundation.Rect keeps its doubles.
+void MagnifyEffect::maximum(double value) const {
+    impl_->maximum = static_cast<float>(value);
     impl_->changed();
 }
 
-void MagnifyEffect::minimum(float value) const {
-    impl_->minimum = value;
+void MagnifyEffect::minimum(double value) const {
+    impl_->minimum = static_cast<float>(value);
     impl_->changed();
 }
 

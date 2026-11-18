@@ -57,7 +57,8 @@ class file_output : public log_output
 public:
     /// \param path Name of the file as the caller wants it; every rotation
     ///             decorates this name rather than replacing it.
-    explicit file_output(const std::filesystem::path& path, file_options options = {});
+    /// \param options Severity band, rotation and history settings of the file.
+    explicit file_output(const std::filesystem::path& path, const file_options& options = {});
 
     ~file_output() override;
 

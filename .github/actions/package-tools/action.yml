@@ -1,0 +1,41 @@
+# The tool set of the package WinXL: the generator winui-srcgen, the profile
+# editor wxl.gen.ui and the utility winxl, built in the x64-static build
+# directory -- the CRT linked statically (CMakePresets.json) -- in Release,
+# run, tested and collected into artifact/wxl-tools-x64 at the root of the
+# tree: what the job of tools.yml does between the checkout and the upload,
+# and what the CI of an application that builds WinXL from a checkout of wxl
+# does the same way.
+#
+#   version  the version the tools carry (cmake/wxl_package_version.cmake),
+#            which winxl --version prints
+#
+# The tree is the one this action is in, wherever it is checked out: the step
+# works at its root. The job gives the environment the workflows of the
+# tree give: DEVCMD and VCVARS for the developer environment of MSVC 14.53 and
+# the WinUI build tools, installed before, NUGET_PACKAGES and
+# RestoreLockedMode for the restore of the configure. winxl is published by
+# the .NET SDK 10 of the runner image (windows-2025 lists 10.0 SDKs among its
+# .NET Core tools); cmake/wxl_winxl.cmake stops the configure if it is missing.
+#
+# The steps are those of tools/package/build.ps1 -Step Tools, which a machine
+# runs as well: configure build/x64-static, build, start each executable once
+# (winxl --version must print the version), run the tests of the generator and
+# of its common library, and collect the executables.
+name: package-tools
+description: The tool set of WinXL, built, run, tested and collected into artifact/wxl-tools-x64 at the root of the tree.
+
+inputs:
+  version:
+    description: The version the tools carry, which winxl --version prints.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Configure, build, run, test and collect
+      shell: pwsh
+      working-directory: ${{ github.action_path }}/../../..
+      env:
+        WXL_PACKAGE_VERSION: ${{ inputs.version }}
+      run: |
+        & "$env:GITHUB_ACTION_PATH/../../../tools/package/build.ps1" -Step Tools -Version $env:WXL_PACKAGE_VERSION

@@ -35,15 +35,24 @@ using namespace editor;
 
 namespace {
 
-// Профиль, который открывается по умолчанию, — из дерева исходников, где
-// лежат профили генератора.
-std::filesystem::path defaultProfile() {
-    return std::filesystem::path {u8"" WXL_GEN_PROFILES} / u8"base.winxl-profile";
-}
+// Профили генератора и компоненты, которые редактор открывает по умолчанию.
+// Установленный редактор — тот, у которого на два уровня выше своего каталога
+// есть share/wxl/profiles (пакет WinXL: bin/wxl.gen.ui рядом с share/wxl), —
+// открывает их оттуда; собранный в рабочем дереве — из дерева исходников.
+struct DefaultDirectories {
+    std::filesystem::path profiles;
+    std::filesystem::path components;
+};
 
-// Каталог компонентов по умолчанию: wxl.ui/components дерева сборки.
-std::filesystem::path defaultComponentDir() {
-    return std::filesystem::path {u8"" WXL_GEN_COMPONENTS};
+DefaultDirectories defaultDirectories() {
+    auto const installed =
+        core::environment::application_folder().parent_path().parent_path() / u8"share" / u8"wxl";
+#ifdef WXL_GEN_PROFILES
+    if (!std::filesystem::is_directory(installed / u8"profiles")) {
+        return {std::filesystem::path {u8"" WXL_GEN_PROFILES}, std::filesystem::path {u8"" WXL_GEN_COMPONENTS}};
+    }
+#endif
+    return {installed / u8"profiles", installed / u8"components"};
 }
 
 // Список пакетов восстановления той сборки, из которой редактор запускают, —
@@ -65,7 +74,7 @@ LaunchArguments launchArguments() {
             throw std::runtime_error(std::format(
                 "unknown argument: {}. wxl.gen.ui takes --packages "
                 "<build>/wxl.packages/restored-packages.json and, to override the components "
-                "of the tree, --component-dir <dir>",
+                "it opens, --component-dir <dir>",
                 core::unicode::repaired(argument).to_utf8().chars()));
         }
         if (++at == arguments.size()) {
@@ -166,8 +175,9 @@ wxl::Teardown wxl_launched() {
     core::intrusive_ptr<Editor> document;
     try {
         auto const arguments = launchArguments();
-        document = Editor::open(defaultProfile(), arguments.packages,
-                                arguments.componentDir.empty() ? defaultComponentDir()
+        auto const directories = defaultDirectories();
+        document = Editor::open(directories.profiles / u8"base.winxl-profile", arguments.packages,
+                                arguments.componentDir.empty() ? directories.components
                                                                : arguments.componentDir);
     } catch (std::exception const& error) {
         auto window = Window {
@@ -220,9 +230,11 @@ wxl::Teardown wxl_launched() {
     // Значок строки — перед первым словом сведений, как в дереве. Разметка
     // разбирается под кегль блока, поэтому новый кегль разбирает её заново.
     // Наблюдатели настроек и сведений держат редактор и настройки простыми
-    // указателями: живут они столько же, сколько окно, — до Teardown.
+    // указателями: живут они столько же, сколько окно, — до Teardown. Пока поле
+    // кегля пусто, сведения строятся под кегль, который у блока уже есть.
     auto const showInfo = [details, preferences = settings.get()](Description const& info) {
-        double const size = preferences->detailsFontSize.get();
+        auto const chosen = preferences->detailsFontSize.get();
+        double const size = chosen ? *chosen : details.fontSize();
         details.fontSize(size);
         details.lineHeight(std::round(size * 22.0 / 16.0));
         if (!info.icon) {
@@ -266,7 +278,10 @@ wxl::Teardown wxl_launched() {
         editor->englishDocumentation(english);
         saveSettings(*raw);
     });
-    settings->detailsFontSize.on_change([raw = settings.get(), editor = document.get(), showInfo](double) noexcept {
+    // Опустевшее поле кегля не меняет ничего: ни сведений, ни реестра.
+    settings->detailsFontSize.on_change([raw = settings.get(), editor = document.get(), showInfo](
+                                            core::nullable<double> const& size) noexcept {
+        if (!size) return;
         showInfo(editor->info.get());
         saveSettings(*raw);
     });
@@ -377,7 +392,7 @@ wxl::Teardown wxl_launched() {
     // Левая часть — по ширине дерева: самая широкая строка, рамка и поле.
     // Граница перетаскивается и дальше, до следующей подгонки.
     left->wantedWidth.on_change([editorView](double width) noexcept {
-        editorView.openPaneLength(static_cast<float>(std::clamp(std::ceil(width) + 14.0, 240.0, 900.0)));
+        editorView.openPaneLength(std::clamp(std::ceil(width) + 14.0, 240.0, 900.0));
     });
 
     // Настройки — страницей, на месте редактора, как у NavigationView принято.
@@ -535,8 +550,8 @@ wxl::Teardown wxl_launched() {
     // Раскрытая панель — по самому длинному пункту: отступ под значок, текст и
     // поле справа.
     double longest = 0;
-    for (zstring_view const label : {typesTab, resourcesTab, settingsName}) {
-        TextBlock const text {label};
+    for (zstring_view const tab : {typesTab, resourcesTab, settingsName}) {
+        TextBlock const text {tab};
         text.measure({std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()});
         longest = std::max(longest, static_cast<double>(text.desiredSize().width));
     }
@@ -583,7 +598,7 @@ wxl::Teardown wxl_launched() {
         // Mica, как у Gallery: заголовок и панель навигации прозрачны, сквозь
         // них виден материал.
         systemBackdrop = MicaBackdrop {},
-        titleBar = {
+        titleBar = TitleBar {
             title = BindOutput {document->title},
             // Стрелка на месте всегда, как в Gallery; возвращаться некуда — она
             // неактивна.

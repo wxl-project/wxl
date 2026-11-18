@@ -1,15 +1,15 @@
 #pragma once
 
 // Заголовки, которые нужны каждому файлу образца: декларативная поверхность,
-// готовые панели и карточка, блоки разметки (введение — HTML, код — RSDN с
-// подсветкой) и точка входа.
+// готовые панели и карточка, блок разметки введения, блок кода с подсветкой и
+// точка входа.
 
 #include "ui.h"
 #include "Bind.h"
 #include "Card.h"
 #include "Panels.h"
 #include "HtmlBlock.h"
-#include "RsdnBlock.h"
+#include "CodeBlock.h"
 #include "launch.h"
 #include "MagnifyEffect.h"
 #include "AvailableSizeLayout.h"

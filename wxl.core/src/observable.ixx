@@ -69,7 +69,7 @@ public:
     bool remove_change(event_token& token) { return changed_.remove(token); }
 
     /// The same for a watch built into its subscriber, by its node: a change_watch.
-    bool remove_change(typename changed_event::func_t& node) { return changed_.remove(node); }
+    bool remove_change(changed_event::func_t& node) { return changed_.remove(node); }
 
     /// Watches for changes on behalf of a binding, the field keeping the watch
     /// rather than handing a token back. This is not a convenience over
@@ -100,8 +100,8 @@ public:
 
 protected:
     observable() = default;
-    /// Constructs an observable that holds \p value.
-    explicit observable(T value) : value_(std::move(value)) {}
+    /// Constructs an observable that holds \p initial.
+    explicit observable(T initial) : value_(std::move(initial)) {}
     ~observable() = default;
 
     /// The current value.
@@ -179,8 +179,8 @@ class observable : public impl::readonly_observable<T>
 
 public:
     observable() = default;
-    /// Constructs a field that holds \p value.
-    explicit observable(T value) : readonly(std::move(value)) {}
+    /// Constructs a field that holds \p initial.
+    explicit observable(T initial) : readonly(std::move(initial)) {}
 
     /// Constructs a field that follows other fields from the start: its value is `fn` --
     /// the last argument -- of the values of the sources, computed here and again on every
@@ -188,7 +188,7 @@ public:
     /// from the fields beside it:
     ///
     ///     struct Equation : sta_refcounted {
-    ///         observable<double> a{blank}, b{blank}, c{blank};
+    ///         observable<nullable<double>> a, b, c;
     ///         observable<Answer> answer{a, b, c, solve};
     ///     };
     ///
@@ -208,11 +208,11 @@ public:
     /// The bindings hear first, the application after: by the time a watcher
     /// added through on_change runs -- to save the model, say -- the controls
     /// already show what it is saving.
-    void set(T value) {
+    void set(T next) {
         if constexpr (std::equality_comparable<T>) {
-            if (this->value_ == value) return;
+            if (this->value_ == next) return;
         }
-        this->value_ = std::move(value);
+        this->value_ = std::move(next);
         this->bound_(this->value_);
         this->changed_(this->value_);
     }
@@ -357,10 +357,10 @@ concept change_listener = requires(Owner& owner, Argument change) {
 template <class Observed, auto Listener>
 class change_watch final : public Observed::changed_event::func_t
 {
-    using event_t = typename Observed::changed_event;
-    using func_t = typename event_t::func_t;
-    using argument_t = typename impl::change_argument<func_t>::type;
-    using owner_t = typename impl::member_owner<decltype(Listener)>::type;
+    using event_t = Observed::changed_event;
+    using func_t = event_t::func_t;
+    using argument_t = impl::change_argument<func_t>::type;
+    using owner_t = impl::member_owner<decltype(Listener)>::type;
 
 public:
     /// A watch on `field`, calling the listener on `owner` at each change. The node is put on

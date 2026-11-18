@@ -120,7 +120,7 @@ model analyze(closure const& cl, profile_set const& profiles, type_map const& ty
 
     gen::analyze_tags(types, m);
     gen::analyze_enums_and_structs(kinds, cl, types, docs, m);
-    auto const index = gen::analyze_classes(kinds, cl, types, docs, m);
+    auto const index = gen::analyze_classes(kinds, cl, types, profiles.components, docs, m);
     gen::analyze_event_args(kinds, cl, index, docs, m);
 
     // The dictionaries are read once and the writers pick what they know:

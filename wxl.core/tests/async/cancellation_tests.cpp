@@ -31,12 +31,12 @@ using namespace wxl::async;
 namespace {
 
 // A source or a token that may not be there is one pointer, as each itself is: the empty value is
-// the null state (detail::cancellation_sentinel) -- for a source the one it is moved into, for a
+// the null state (detail::stop_sentinel) -- for a source the one it is moved into, for a
 // token the one a default token has -- and the sentinel reads the object as that pointer.
-static_assert(sizeof(cancellation_source) == sizeof(void*));
-static_assert(sizeof(nullable<cancellation_source>) == sizeof(cancellation_source));
-static_assert(sizeof(cancellation_token) == sizeof(void*));
-static_assert(sizeof(nullable<cancellation_token>) == sizeof(cancellation_token));
+static_assert(sizeof(stop_source) == sizeof(void*));
+static_assert(sizeof(nullable<stop_source>) == sizeof(stop_source));
+static_assert(sizeof(stop_token) == sizeof(void*));
+static_assert(sizeof(nullable<stop_token>) == sizeof(stop_token));
 
 /// What the operations of one test saw and did, kept outside them: an operation is deleted
 /// whenever its turn comes, and the test looks afterwards.
@@ -105,21 +105,21 @@ task<std::size_t> start_read(probe& p, std::span<std::byte> into) {
 
 /// The same read under a token, in the form the operations of this module take one --
 /// `async_file::read_all(path, token)` -- and the same task.
-task<std::size_t> start_read(probe& p, std::span<std::byte> into, cancellation_token token) {
+task<std::size_t> start_read(probe& p, std::span<std::byte> into, stop_token token) {
     return sta_loop::async_run<gated_read>(std::move(token), p, into);
 }
 
 /// Three links, the token passed down by hand; the bottom one reads into its frame.
-task<std::size_t> bottom(probe& p, cancellation_token token) {
+task<std::size_t> bottom(probe& p, stop_token token) {
     std::byte buf[16]{};
     co_return co_await start_read(p, buf, token);
 }
 
-task<std::size_t> middle(probe& p, cancellation_token token) {
+task<std::size_t> middle(probe& p, stop_token token) {
     co_return co_await bottom(p, token);
 }
 
-task<std::size_t> top(probe& p, cancellation_token token) { co_return co_await middle(p, token); }
+task<std::size_t> top(probe& p, stop_token token) { co_return co_await middle(p, token); }
 
 /// Undoes what the chain did: an operation of its own, under no token.
 task<> roll_back(probe& undo, std::vector<std::string>& log) {
@@ -130,7 +130,7 @@ task<> roll_back(probe& undo, std::vector<std::string>& log) {
 
 /// Catches the cancellation, cleans up with a co_await -- after the handler, since C++
 /// allows no co_await inside one -- and passes it on.
-task<std::size_t> middle_that_rolls_back(probe& p, probe& undo, cancellation_token token,
+task<std::size_t> middle_that_rolls_back(probe& p, probe& undo, stop_token token,
                                          std::vector<std::string>& log) {
     std::exception_ptr failure;
 
@@ -149,7 +149,7 @@ task<std::size_t> middle_that_rolls_back(probe& p, probe& undo, cancellation_tok
 task<std::size_t> joins(task<std::size_t>& read) { co_return co_await read; }
 
 /// Was given the token and does not use it: its read cannot be interrupted.
-task<std::size_t> deaf(probe& p, cancellation_token) {
+task<std::size_t> deaf(probe& p, stop_token) {
     std::byte buf[16]{};
     const std::size_t got = co_await start_read(p, buf);
 
@@ -164,7 +164,7 @@ task<> handed_off(probe& p, std::size_t& got, bool& ended) {
     ended = true;
 }
 
-task<> cancelable_handed_off(probe& p, cancellation_token token, bool& canceled) {
+task<> cancelable_handed_off(probe& p, stop_token token, bool& canceled) {
     std::byte buf[16]{};
 
     try {
@@ -176,7 +176,7 @@ task<> cancelable_handed_off(probe& p, cancellation_token token, bool& canceled)
 
 /// The chain's own read goes out first, then those of the work it hands to `others`, which
 /// outlive it: the worker takes them in turn.
-task<std::size_t> hands_off_two(probe& own, probe& unasked, probe& asking, cancellation_token token,
+task<std::size_t> hands_off_two(probe& own, probe& unasked, probe& asking, stop_token token,
                                 std::vector<task<>>& others, std::size_t& unasked_got,
                                 bool& unasked_ended, bool& asking_canceled) {
     task<std::size_t> own_read = bottom(own, token);
@@ -199,15 +199,15 @@ struct parked {
 
 /// Waits on its own awaiter, and asks its token itself once the wait is over: what the
 /// application does where wxl has no form with a token.
-task<int> asks_its_token_itself(std::coroutine_handle<>& slot, cancellation_token token) {
+task<int> asks_its_token_itself(std::coroutine_handle<>& slot, stop_token token) {
     const int got = co_await parked{slot};
-    token.throw_if_canceled();
+    token.throw_if_stop_requested();
     co_return got;
 }
 
 /// Starts the read under the token, keeps it, waits for something else first, and only
 /// then awaits the read.
-task<std::size_t> keeps_the_read(probe& p, cancellation_token token,
+task<std::size_t> keeps_the_read(probe& p, stop_token token,
                                  std::coroutine_handle<>& slot) {
     std::byte buf[16]{};
     task<std::size_t> read = start_read(p, buf, std::move(token));
@@ -217,7 +217,7 @@ task<std::size_t> keeps_the_read(probe& p, cancellation_token token,
 }
 
 /// Moves the read into a container before awaiting it there.
-task<std::size_t> moves_the_read(probe& p, cancellation_token token) {
+task<std::size_t> moves_the_read(probe& p, stop_token token) {
     std::byte buf[16]{};
     std::vector<task<std::size_t>> reads;
 
@@ -247,13 +247,13 @@ bool ends_cancelled(Task& t) {
 // climbs to the top.
 TEST(CancellationTest, TheRequestReachesTheOperationAtTheBottomOfAChain) {
     probe p;
-    cancellation_source source;
+    stop_source source;
     task<std::size_t> chain = top(p, source.token());
 
     p.started.wait();
     EXPECT_FALSE(chain.done());
 
-    source.cancel();
+    source.request_stop();
 
     EXPECT_EQ(p.canceled, 1);
     EXPECT_FALSE(chain.done()) << "cancel() resumed the chain itself";
@@ -273,11 +273,11 @@ TEST(CancellationTest, AChainCleansUpAfterItselfWithACoAwaitAndEndsByItself) {
     undo.gate.set();
 
     std::vector<std::string> log;
-    cancellation_source source;
+    stop_source source;
     task<std::size_t> chain = middle_that_rolls_back(p, undo, source.token(), log);
 
     p.started.wait();
-    source.cancel();
+    source.request_stop();
 
     sta_loop::run_until([&] { return chain.done(); });
 
@@ -294,7 +294,7 @@ TEST(CancellationTest, AChainCleansUpAfterItselfWithACoAwaitAndEndsByItself) {
 // is given up the usual way.
 TEST(CancellationTest, SweepingDestroysOnlyWhatHasNotEnded) {
     probe listens, does_not;
-    cancellation_source source;
+    stop_source source;
 
     std::vector<task<std::size_t>> owned;
     owned.push_back(top(listens, source.token()));
@@ -302,7 +302,7 @@ TEST(CancellationTest, SweepingDestroysOnlyWhatHasNotEnded) {
 
     // One worker: the second read is reached once the first has come back.
     listens.started.wait();
-    source.cancel();
+    source.request_stop();
 
     sta_loop::run_until([&] { return owned[0].done(); });
 
@@ -337,10 +337,10 @@ TEST(CancellationTest, ARequestBeforeTheWorkerReachesTheReadKeepsItFromRunning) 
     auto holds_the_worker = start_read(ahead, ahead_buf);
     ahead.started.wait();
 
-    cancellation_source source;
+    stop_source source;
     task<std::size_t> chain = top(p, source.token());
 
-    source.cancel();
+    source.request_stop();
 
     EXPECT_EQ(p.made, 1);
     EXPECT_EQ(p.canceled, 1);
@@ -360,17 +360,17 @@ TEST(CancellationTest, CancellingAChainThatHasEndedDoesNothing) {
     probe p;
     p.gate.set();
 
-    cancellation_source source;
+    stop_source source;
     task<std::size_t> chain = top(p, source.token());
 
     sta_loop::run_until([&] { return chain.done(); });
 
-    source.cancel();
-    source.cancel();
+    source.request_stop();
+    source.request_stop();
 
     EXPECT_EQ(p.canceled, 0);
     EXPECT_EQ(chain.result(), 16u);
-    EXPECT_TRUE(source.is_canceled());
+    EXPECT_TRUE(source.stop_requested());
 }
 
 // Work the chain started and handed to another owner is not the chain's: without the token it
@@ -382,12 +382,12 @@ TEST(CancellationTest, WorkHandedOffIsNotCancelledUnlessItTookTheToken) {
     bool unasked_ended = false, asking_canceled = false;
     std::vector<task<>> others;
 
-    cancellation_source source;
+    stop_source source;
     task<std::size_t> chain = hands_off_two(own, unasked, asking, source.token(), others,
                                             unasked_got, unasked_ended, asking_canceled);
 
     own.started.wait();
-    source.cancel();
+    source.request_stop();
 
     EXPECT_EQ(own.canceled, 1);
     EXPECT_EQ(asking.canceled, 1);
@@ -412,7 +412,7 @@ TEST(CancellationTest, WorkHandedOffIsNotCancelledUnlessItTookTheToken) {
 // leaves the token's event as it goes: asking afterwards reaches nothing that is gone.
 TEST(CancellationTest, AFrameDestroyedWhileWaitingLeavesTheToken) {
     probe p;
-    cancellation_source source;
+    stop_source source;
     {
         task<std::size_t> chain = top(p, source.token());
         p.started.wait();
@@ -420,7 +420,7 @@ TEST(CancellationTest, AFrameDestroyedWhileWaitingLeavesTheToken) {
 
     EXPECT_EQ(p.canceled, 1) << "the read was given up";
 
-    source.cancel();
+    source.request_stop();
 
     EXPECT_EQ(p.canceled, 1);
     EXPECT_EQ(p.alive, 0);
@@ -431,18 +431,18 @@ TEST(CancellationTest, AFrameDestroyedWhileWaitingLeavesTheToken) {
 // no sooner; past the wait it ends with the cancellation, by its own code.
 TEST(CancellationTest, AnAwaiterOfTheApplicationIsNotReachedTheCoroutineAsksItself) {
     std::coroutine_handle<> slot;
-    cancellation_source source;
+    stop_source source;
     task<int> waits = asks_its_token_itself(slot, source.token());
 
     ASSERT_TRUE(slot);
-    source.cancel();
+    source.request_stop();
     EXPECT_FALSE(waits.done());
 
     slot.resume();
     EXPECT_TRUE(ends_cancelled(waits));
 
     // Without a request it is the value; a token that is nobody's is never cancelled.
-    task<int> unowned = asks_its_token_itself(slot, cancellation_token{});
+    task<int> unowned = asks_its_token_itself(slot, stop_token{});
     slot.resume();
     EXPECT_EQ(unowned.result(), 7);
 }
@@ -455,7 +455,7 @@ TEST(CancellationTest, TheFormWithATokenAnswersLikeThePlainOne) {
     probe p;
     p.gate.set();
 
-    cancellation_source source;
+    stop_source source;
     task<std::size_t> chain = top(p, source.token());
 
     sta_loop::run_until([&] { return chain.done(); });
@@ -469,8 +469,8 @@ TEST(CancellationTest, TheFormWithATokenAnswersLikeThePlainOne) {
 // once, without a trip to the worker.
 TEST(CancellationTest, UnderACancelledTokenTheFormWithATokenStartsNothing) {
     probe p;
-    cancellation_source source;
-    source.cancel();
+    stop_source source;
+    source.request_stop();
 
     task<std::size_t> chain = top(p, source.token());
 
@@ -487,11 +487,11 @@ TEST(CancellationTest, AnOperationBackBeforeItsCoAwaitKeepsItsAnswerAfterTheRequ
     p.gate.set();
 
     std::byte buf[16]{};
-    cancellation_source source;
+    stop_source source;
     task<std::size_t> read = start_read(p, buf, source.token());
     sta_loop::run_until([&] { return read.done(); });
 
-    source.cancel();
+    source.request_stop();
 
     EXPECT_EQ(p.canceled, 0);
     EXPECT_EQ(p.wrote, 1);
@@ -509,14 +509,14 @@ TEST(CancellationTest, AnOperationDoneOnTheWorkerKeepsItsAnswerWhenCancelledOnIt
     p.gate.set();
 
     std::byte buf[16]{};
-    cancellation_source source;
+    stop_source source;
     task<std::size_t> read = start_read(p, buf, source.token());
 
     // Written, so the body is over; the loop has not taken the read back.
     while (p.wrote == 0) std::this_thread::yield();
     EXPECT_FALSE(read.done());
 
-    source.cancel();
+    source.request_stop();
     EXPECT_EQ(p.canceled, 1);
 
     sta_loop::run_until([&] { return read.done(); });
@@ -534,7 +534,7 @@ TEST(CancellationTest, AKeptOperationUnderATokenIsAwaitedLater) {
         probe p;
         p.gate.set();
 
-        cancellation_source source;
+        stop_source source;
         task<std::size_t> chain = keeps_the_read(p, source.token(), slot);
 
         ASSERT_TRUE(slot);
@@ -550,7 +550,7 @@ TEST(CancellationTest, AKeptOperationUnderATokenIsAwaitedLater) {
     {
         probe p;
 
-        nullable<cancellation_source> source(std::in_place);
+        nullable<stop_source> source(std::in_place);
         task<std::size_t> chain = keeps_the_read(p, source->token(), slot);
 
         p.started.wait();
@@ -570,11 +570,11 @@ TEST(CancellationTest, AKeptOperationUnderATokenIsAwaitedLater) {
     // moment it is made, awaited or not -- and the co_await that comes later waits for it
     // to come back and ends with the cancellation.
     probe p;
-    cancellation_source source;
+    stop_source source;
     task<std::size_t> chain = keeps_the_read(p, source.token(), slot);
 
     p.started.wait();
-    source.cancel();
+    source.request_stop();
     EXPECT_EQ(p.canceled, 1);
 
     slot.resume();
@@ -593,7 +593,7 @@ TEST(CancellationTest, AnOperationUnderATokenMovesBeforeItIsAwaited) {
         probe p;
         p.gate.set();
 
-        cancellation_source source;
+        stop_source source;
         task<std::size_t> chain = moves_the_read(p, source.token());
 
         sta_loop::run_until([&] { return chain.done(); });
@@ -601,11 +601,11 @@ TEST(CancellationTest, AnOperationUnderATokenMovesBeforeItIsAwaited) {
     }
 
     probe p;
-    cancellation_source source;
+    stop_source source;
     task<std::size_t> chain = moves_the_read(p, source.token());
 
     p.started.wait();
-    source.cancel();
+    source.request_stop();
     EXPECT_EQ(p.canceled, 1);
 
     sta_loop::run_until([&] { return chain.done(); });
@@ -619,7 +619,7 @@ TEST(CancellationTest, AFrameDestroyedOnAKeptReadLeavesTheToken) {
     {
         probe p;
         std::coroutine_handle<> slot;
-        cancellation_source source;
+        stop_source source;
         {
             task<std::size_t> chain = keeps_the_read(p, source.token(), slot);
             p.started.wait();
@@ -628,7 +628,7 @@ TEST(CancellationTest, AFrameDestroyedOnAKeptReadLeavesTheToken) {
         EXPECT_EQ(p.canceled, 1) << "the read was given up";
         sta_loop::run_until([&] { return p.alive == 0; });
 
-        source.cancel();
+        source.request_stop();
         EXPECT_EQ(p.canceled, 1);
     }
 
@@ -637,19 +637,19 @@ TEST(CancellationTest, AFrameDestroyedOnAKeptReadLeavesTheToken) {
     // time. The read's token, the last holder of the state, answers that it is cancelled.
     probe p;
     std::coroutine_handle<> slot;
-    nullable<cancellation_source> source(std::in_place);
+    nullable<stop_source> source(std::in_place);
     {
         task<std::size_t> chain = keeps_the_read(p, source->token(), slot);
 
         p.started.wait();
         slot.resume();
 
-        const cancellation_token kept = source->token();
+        const stop_token kept = source->token();
         source.reset();
 
         EXPECT_EQ(p.canceled, 1) << "the source went and the read it held was not cancelled";
-        EXPECT_TRUE(kept.is_canceled()) << "a token outliving its source is not cancelled";
-        EXPECT_FALSE(static_cast<bool>(detail::cancellation_state_of(kept)->event()))
+        EXPECT_TRUE(kept.stop_requested()) << "a token outliving its source is not cancelled";
+        EXPECT_FALSE(static_cast<bool>(detail::stop_state_of(kept)->event()))
             << "the cancelled read is still registered with the event";
     }
 
@@ -665,7 +665,7 @@ TEST(CancellationTest, ManyUnderOneTokenLeaveInAnyOrderAndTheRestAreCancelled) {
     middle.gate.set();
 
     std::byte a[16]{}, b[16]{}, c[16]{};
-    cancellation_source source;
+    stop_source source;
 
     task<std::size_t> one = start_read(first, a, source.token());
     task<std::size_t> two = start_read(middle, b, source.token());
@@ -679,7 +679,7 @@ TEST(CancellationTest, ManyUnderOneTokenLeaveInAnyOrderAndTheRestAreCancelled) {
     two = task<std::size_t>(detail::canceled_task<std::size_t>());
     EXPECT_EQ(middle.alive, 0);
 
-    source.cancel();
+    source.request_stop();
 
     EXPECT_EQ(first.canceled, 0);
     EXPECT_EQ(middle.canceled, 0);
@@ -697,7 +697,7 @@ TEST(CancellationTest, ManyUnderOneTokenLeaveInAnyOrderAndTheRestAreCancelled) {
 // ---- The loop's calls under a token, for the operations of this module -----------------
 
 /// A body on the worker, kept behind a read that holds the worker, counting its runs.
-task<int> counts_on_the_worker(int& runs, cancellation_token token) {
+task<int> counts_on_the_worker(int& runs, stop_token token) {
     co_return co_await sta_loop::async_call([&runs] { return ++runs; }, std::move(token));
 }
 
@@ -710,10 +710,10 @@ TEST(CancellationTest, ALambdaOnTheWorkerCancelledBeforeItIsReachedNeverRuns) {
     ahead.started.wait();
 
     int runs = 0;
-    cancellation_source source;
+    stop_source source;
     task<int> counted = counts_on_the_worker(runs, source.token());
 
-    source.cancel();
+    source.request_stop();
     ahead.gate.set();
     sta_loop::run_until([&] { return counted.done() && holds_the_worker.done(); });
 
@@ -721,7 +721,7 @@ TEST(CancellationTest, ALambdaOnTheWorkerCancelledBeforeItIsReachedNeverRuns) {
     EXPECT_EQ(runs, 0);
 
     // And without a request the same form answers what the body made.
-    cancellation_source fresh;
+    stop_source fresh;
     task<int> again = counts_on_the_worker(runs, fresh.token());
     sta_loop::run_until([&] { return again.done(); });
     EXPECT_EQ(again.result(), 1);
@@ -738,8 +738,8 @@ TEST(CancellationTest, ALambdaOnTheWorkerCancelledBeforeItIsReachedNeverRuns) {
 // the very same object -- one thrown inside each call would be an exception of its own. The
 // cancellation is thrown only where it is read.
 TEST(CancellationTest, UnderACancelledTokenTheCallAnswersWithoutThrowing) {
-    cancellation_source source;
-    source.cancel();
+    stop_source source;
+    source.request_stop();
 
     int runs = 0;
     task<int> refused = sta_loop::async_call([&runs] { return ++runs; }, source.token());
@@ -767,7 +767,7 @@ TEST(CancellationTest, UnderACancelledTokenTheCallAnswersWithoutThrowing) {
 }
 
 /// Awaits a call under `token` and says whether the co_await threw the cancellation.
-task<bool> awaits_the_cancellation(cancellation_token token) {
+task<bool> awaits_the_cancellation(stop_token token) {
     try {
         (void)co_await sta_loop::async_call([] { return 1; }, std::move(token));
     } catch (const operation_canceled_exception&) {
@@ -780,8 +780,8 @@ task<bool> awaits_the_cancellation(cancellation_token token) {
 // The co_await of a task body finds the answer there and does not suspend: it throws the
 // cancellation at once, and the body ends before the call that started it returns.
 TEST(CancellationTest, UnderACancelledTokenTheCoAwaitThrowsTheCancellationAtOnce) {
-    cancellation_source source;
-    source.cancel();
+    stop_source source;
+    source.request_stop();
 
     task<bool> body = awaits_the_cancellation(source.token());
 
@@ -793,7 +793,7 @@ TEST(CancellationTest, UnderACancelledTokenTheCoAwaitThrowsTheCancellationAtOnce
 // worker, it never runs, and the co_await ends with the cancellation without waiting for it;
 // under a token cancelled already it is not made.
 TEST(CancellationTest, TheOrphanableFormTakesTheTokenToo) {
-    cancellation_source source;
+    stop_source source;
 
     task<int> ran = sta_loop::async_call(orphanable, [] { return 5; }, source.token());
     sta_loop::run_until([&] { return ran.done(); });
@@ -809,7 +809,7 @@ TEST(CancellationTest, TheOrphanableFormTakesTheTokenToo) {
     task<int> canceled =
         sta_loop::async_call(orphanable, [&runs] { return ++runs; }, source.token());
 
-    source.cancel();
+    source.request_stop();
     ahead.gate.set();
     sta_loop::run_until([&] { return canceled.done() && holds_the_worker.done(); });
 
@@ -856,9 +856,9 @@ private:
 // never runs and answers the cancellation the worker wrote for it, and one never cancelled its
 // value. Taken back with nobody waiting, each is there for the co_await still to come.
 TEST(CancellationTest, AnOperationCancelledWhileOutComesBackWithWhatHappenedToIt) {
-    using op = detail::cancelable_operation<carried_by_hand>;
+    using op = detail::stoppable_operation<carried_by_hand>;
 
-    cancellation_source source;
+    stop_source source;
 
     auto* const done_first = new op(source.token(), 3);
     task<int> done_first_task(std::unique_ptr<async_op_t<int>>{done_first});
@@ -868,7 +868,7 @@ TEST(CancellationTest, AnOperationCancelledWhileOutComesBackWithWhatHappenedToIt
 
     EXPECT_TRUE(done_first->packaged_execute());
 
-    source.cancel();
+    source.request_stop();
 
     EXPECT_TRUE(not_reached->packaged_execute());
     EXPECT_EQ(not_reached->runs, 0) << "an operation cancelled before the worker reached it ran";
@@ -882,7 +882,7 @@ TEST(CancellationTest, AnOperationCancelledWhileOutComesBackWithWhatHappenedToIt
     EXPECT_TRUE(not_reached_task.done());
     EXPECT_TRUE(ends_cancelled(not_reached_task));
 
-    cancellation_source fresh;
+    stop_source fresh;
     auto* const plain = new op(fresh.token(), 4);
     task<int> plain_task(std::unique_ptr<async_op_t<int>>{plain});
 
@@ -910,7 +910,7 @@ TEST(CancellationTest, AnOrphanGivenUpAndThenAskedStillGoesWhenItComesBack) {
     hevent started{true}, gate{true};
     std::atomic<bool> finished{false};
     int alive = 0;
-    cancellation_source source;
+    stop_source source;
     const orphans_drained_on_exit drained(gate);
 
     {
@@ -927,7 +927,7 @@ TEST(CancellationTest, AnOrphanGivenUpAndThenAskedStillGoesWhenItComesBack) {
         started.wait();
     }
 
-    source.cancel();
+    source.request_stop();
     EXPECT_EQ(alive, 1) << "an orphan given up is deleted only when it comes back";
 
     gate.set();
@@ -988,7 +988,7 @@ void take_back_what_was_sent() {
 // co_await ends with what it made.
 TEST(CancellationTest, ABodyOnTheWorkerCancelledWhileItRunsAnswersWhatItMade) {
     hevent started{true}, gate{true};
-    cancellation_source source;
+    stop_source source;
 
     task<int> made = sta_loop::async_call(
         [&started, &gate] {
@@ -999,7 +999,7 @@ TEST(CancellationTest, ABodyOnTheWorkerCancelledWhileItRunsAnswersWhatItMade) {
         source.token());
 
     started.wait();
-    source.cancel();
+    source.request_stop();
     gate.set();
 
     sta_loop::run_until([&] { return made.done(); });
@@ -1016,7 +1016,7 @@ TEST(CancellationTest, AnOrphanCancelledWhileItRunsAnswersTheCancellationWhateve
 
         hevent started{true}, gate{true};
         bool saw_stop_requested = false;
-        cancellation_source source;
+        stop_source source;
         const orphans_drained_on_exit drained(gate);
 
         task<int> reading = sta_loop::async_call(
@@ -1036,7 +1036,7 @@ TEST(CancellationTest, AnOrphanCancelledWhileItRunsAnswersTheCancellationWhateve
             source.token());
 
         started.wait();
-        source.cancel();
+        source.request_stop();
 
         sta_loop::run_until([&] { return reading.done(); });
         EXPECT_EQ(answer_of(reading), "cancelled");
@@ -1054,7 +1054,7 @@ TEST(CancellationTest, AnOrphanCancelledWhileItRunsAnswersTheCancellationWhateve
 TEST(CancellationTest, AFailureOfTheBodysOwnStaysTheAnswerOnTheWorkerOnly) {
     {
         hevent started{true}, gate{true};
-        cancellation_source source;
+        stop_source source;
 
         task<int> failing = sta_loop::async_call(
             [&started, &gate]() -> int {
@@ -1065,7 +1065,7 @@ TEST(CancellationTest, AFailureOfTheBodysOwnStaysTheAnswerOnTheWorkerOnly) {
             source.token());
 
         started.wait();
-        source.cancel();
+        source.request_stop();
         gate.set();
 
         sta_loop::run_until([&] { return failing.done(); });
@@ -1074,7 +1074,7 @@ TEST(CancellationTest, AFailureOfTheBodysOwnStaysTheAnswerOnTheWorkerOnly) {
     }
 
     hevent started{true}, gate{true};
-    cancellation_source source;
+    stop_source source;
     const orphans_drained_on_exit drained(gate);
 
     task<int> refused = sta_loop::async_call(
@@ -1087,7 +1087,7 @@ TEST(CancellationTest, AFailureOfTheBodysOwnStaysTheAnswerOnTheWorkerOnly) {
         source.token());
 
     started.wait();
-    source.cancel();
+    source.request_stop();
     gate.set();
 
     sta_loop::run_until([&] { return refused.done(); });
@@ -1104,7 +1104,7 @@ TEST(CancellationTest, AnOrphanCancelledAndThenGivenUpLetsGoOfWhatItMakesAtOnce)
     hevent started{true}, gate{true};
     std::atomic<int> alive{0};
     std::atomic<bool> made{false};
-    cancellation_source source;
+    stop_source source;
     const orphans_drained_on_exit drained(gate);
 
     {
@@ -1121,7 +1121,7 @@ TEST(CancellationTest, AnOrphanCancelledAndThenGivenUpLetsGoOfWhatItMakesAtOnce)
             source.token());
 
         started.wait();
-        source.cancel();
+        source.request_stop();
     }
 
     gate.set();
@@ -1145,8 +1145,8 @@ TEST(CancellationTest, UnderATokenOfNobodyTheFormIsThePlainOne) {
     p.gate.set();
 
     std::byte buf[16]{};
-    task<std::size_t> read = start_read(p, buf, cancellation_token{});
-    task<int> lambda = sta_loop::async_call([] { return 9; }, cancellation_token{});
+    task<std::size_t> read = start_read(p, buf, stop_token{});
+    task<int> lambda = sta_loop::async_call([] { return 9; }, stop_token{});
 
     sta_loop::run_until([&] { return read.done() && lambda.done(); });
 
@@ -1160,8 +1160,8 @@ namespace {
 
 /// Whether anybody is registered with the event of a token's state: an operation, a wait, a source
 /// made under the token.
-bool anybody_registered(const cancellation_token& token) {
-    return static_cast<bool>(detail::cancellation_state_of(token)->event());
+bool anybody_registered(const stop_token& token) {
+    return static_cast<bool>(detail::stop_state_of(token)->event());
 }
 
 /// The thread's queue, as a wait of wxl.ui sees it: a cancelled wait hands its coroutine here
@@ -1194,12 +1194,12 @@ struct queued_awaiter {
 };
 
 /// A wait of wxl under a token over that awaiter: what the event waits of wxl.ui are made of.
-class queued_wait : public detail::cancelable_wait<queued_wait>
+class queued_wait : public detail::stoppable_wait<queued_wait>
 {
-    friend detail::cancelable_wait<queued_wait>;
+    friend detail::stoppable_wait<queued_wait>;
 
 public:
-    queued_wait(turns& queue, std::coroutine_handle<>& slot, cancellation_token token) noexcept
+    queued_wait(turns& queue, std::coroutine_handle<>& slot, stop_token token) noexcept
         : token_(std::move(token)), awaiter_{.queue = &queue, .slot = &slot} {}
 
     queued_wait(const queued_wait&) = delete;
@@ -1210,15 +1210,15 @@ public:
 private:
     queued_awaiter& awaiter() noexcept { return awaiter_; }
 
-    detail::cancellation_state* state() const noexcept {
-        return detail::cancellation_state_of(token_);
+    detail::stop_state* state() const noexcept {
+        return detail::stop_state_of(token_);
     }
 
-    cancellation_token token_;
+    stop_token token_;
     queued_awaiter awaiter_;
 };
 
-task<> waits_its_turn(turns& queue, std::coroutine_handle<>& slot, cancellation_token token,
+task<> waits_its_turn(turns& queue, std::coroutine_handle<>& slot, stop_token token,
                       std::string& ended) {
     try {
         co_await queued_wait{queue, slot, std::move(token)};
@@ -1235,16 +1235,16 @@ task<> waits_its_turn(turns& queue, std::coroutine_handle<>& slot, cancellation_
 // nobody there, ended through the loop.
 TEST(CancellationTest, CancellingTheParentCancelsTheChild) {
     probe p;
-    cancellation_source parent;
-    cancellation_source child(parent.token());
+    stop_source parent;
+    stop_source child(parent.token());
     task<std::size_t> chain = top(p, child.token());
 
     p.started.wait();
-    EXPECT_FALSE(child.is_canceled());
+    EXPECT_FALSE(child.stop_requested());
 
-    parent.cancel();
+    parent.request_stop();
 
-    EXPECT_TRUE(child.is_canceled());
+    EXPECT_TRUE(child.stop_requested());
     EXPECT_EQ(p.canceled, 1);
     EXPECT_FALSE(chain.done()) << "cancel() resumed the chain itself";
 
@@ -1260,8 +1260,8 @@ TEST(CancellationTest, CancellingTheParentCancelsTheChild) {
 // which cancels nobody.
 TEST(CancellationTest, CancellingTheChildLeavesTheParentAlone) {
     probe under_parent, under_child;
-    cancellation_source parent;
-    cancellation_source child(parent.token());
+    stop_source parent;
+    stop_source child(parent.token());
 
     {
         std::byte a[16]{}, b[16]{};
@@ -1269,10 +1269,10 @@ TEST(CancellationTest, CancellingTheChildLeavesTheParentAlone) {
         under_parent.started.wait();
         task<std::size_t> childs = start_read(under_child, b, child.token());
 
-        child.cancel();
+        child.request_stop();
 
-        EXPECT_TRUE(child.is_canceled());
-        EXPECT_FALSE(parent.is_canceled());
+        EXPECT_TRUE(child.stop_requested());
+        EXPECT_FALSE(parent.stop_requested());
         EXPECT_EQ(under_child.canceled, 1);
         EXPECT_EQ(under_parent.canceled, 0);
 
@@ -1286,9 +1286,9 @@ TEST(CancellationTest, CancellingTheChildLeavesTheParentAlone) {
 
     EXPECT_TRUE(anybody_registered(parent.token())) << "the child left the parent's event early";
 
-    parent.cancel();
+    parent.request_stop();
 
-    EXPECT_TRUE(child.is_canceled());
+    EXPECT_TRUE(child.stop_requested());
     EXPECT_EQ(under_child.canceled, 1);
     EXPECT_FALSE(anybody_registered(child.token()));
 
@@ -1301,12 +1301,12 @@ TEST(CancellationTest, CancellingTheChildLeavesTheParentAlone) {
 // Under a parent cancelled already the child is born cancelled and registered nowhere; under a
 // token of nobody it is a source like any other.
 TEST(CancellationTest, UnderACancelledParentTheChildIsBornCancelled) {
-    cancellation_source parent;
-    parent.cancel();
+    stop_source parent;
+    parent.request_stop();
 
-    cancellation_source child(parent.token());
+    stop_source child(parent.token());
 
-    EXPECT_TRUE(child.is_canceled());
+    EXPECT_TRUE(child.stop_requested());
     EXPECT_FALSE(anybody_registered(parent.token()))
         << "the child is registered with an event that has fired";
 
@@ -1316,10 +1316,10 @@ TEST(CancellationTest, UnderACancelledParentTheChildIsBornCancelled) {
     EXPECT_TRUE(ends_cancelled(chain));
     EXPECT_EQ(p.made, 0);
 
-    cancellation_source unowned(cancellation_token{});
-    EXPECT_FALSE(unowned.is_canceled());
-    unowned.cancel();
-    EXPECT_TRUE(unowned.is_canceled());
+    stop_source unowned(stop_token{});
+    EXPECT_FALSE(unowned.stop_requested());
+    unowned.request_stop();
+    EXPECT_TRUE(unowned.stop_requested());
 }
 
 // A child that goes before the parent is cancelled takes its callback out of the parent's
@@ -1327,34 +1327,34 @@ TEST(CancellationTest, UnderACancelledParentTheChildIsBornCancelled) {
 // nothing that is gone. The child's source going is the child cancelled: a token of it held
 // past that answers so.
 TEST(CancellationTest, AChildGoneBeforeTheParentIsCancelledLeavesItsEvent) {
-    cancellation_source parent;
+    stop_source parent;
 
     {
-        cancellation_source child(parent.token());
+        stop_source child(parent.token());
         EXPECT_TRUE(anybody_registered(parent.token()));
     }
     EXPECT_FALSE(anybody_registered(parent.token()));
 
     {
-        cancellation_source child(parent.token());
-        child.cancel();
+        stop_source child(parent.token());
+        child.request_stop();
     }
     EXPECT_FALSE(anybody_registered(parent.token()));
 
-    std::unique_ptr<wxl::test::sta_box<cancellation_token>> token;
+    std::unique_ptr<wxl::test::sta_box<stop_token>> token;
     {
-        cancellation_source child(parent.token());
-        token = std::make_unique<wxl::test::sta_box<cancellation_token>>(child.token());
+        stop_source child(parent.token());
+        token = std::make_unique<wxl::test::sta_box<stop_token>>(child.token());
     }
-    EXPECT_TRUE(token->value.is_canceled())
+    EXPECT_TRUE(token->value.stop_requested())
         << "the child's source went and its token is not cancelled";
-    EXPECT_FALSE(parent.is_canceled());
+    EXPECT_FALSE(parent.stop_requested());
     EXPECT_TRUE(anybody_registered(parent.token())) << "the child left while its token was held";
     token.reset();
     EXPECT_FALSE(anybody_registered(parent.token()));
 
-    parent.cancel();
-    EXPECT_TRUE(parent.is_canceled());
+    parent.request_stop();
+    EXPECT_TRUE(parent.stop_requested());
 }
 
 // Three generations: cancelling the middle one cancels the youngest and not the eldest, and
@@ -1362,14 +1362,14 @@ TEST(CancellationTest, AChildGoneBeforeTheParentIsCancelledLeavesItsEvent) {
 // fire inside a fire, resuming nobody.
 TEST(CancellationTest, ThreeGenerations) {
     {
-        cancellation_source eldest;
-        cancellation_source middle(eldest.token());
-        cancellation_source youngest(middle.token());
+        stop_source eldest;
+        stop_source middle(eldest.token());
+        stop_source youngest(middle.token());
 
-        middle.cancel();
+        middle.request_stop();
 
-        EXPECT_FALSE(eldest.is_canceled());
-        EXPECT_TRUE(youngest.is_canceled());
+        EXPECT_FALSE(eldest.stop_requested());
+        EXPECT_TRUE(youngest.stop_requested());
     }
 
     // A read under no token keeps the worker, so the three wait in its queue behind it.
@@ -1378,18 +1378,18 @@ TEST(CancellationTest, ThreeGenerations) {
     task<std::size_t> holds_the_worker = start_read(ahead, ahead_buf);
     ahead.started.wait();
 
-    cancellation_source eldest;
-    cancellation_source middle(eldest.token());
-    cancellation_source youngest(middle.token());
+    stop_source eldest;
+    stop_source middle(eldest.token());
+    stop_source youngest(middle.token());
 
     task<std::size_t> under_eldest = top(e, eldest.token());
     task<std::size_t> under_middle = top(m, middle.token());
     task<std::size_t> under_youngest = top(y, youngest.token());
 
-    eldest.cancel();
+    eldest.request_stop();
 
-    EXPECT_TRUE(middle.is_canceled());
-    EXPECT_TRUE(youngest.is_canceled());
+    EXPECT_TRUE(middle.stop_requested());
+    EXPECT_TRUE(youngest.stop_requested());
     EXPECT_EQ(e.canceled + m.canceled + y.canceled, 3);
     EXPECT_FALSE(under_eldest.done() || under_middle.done() || under_youngest.done())
         << "cancel() resumed a chain itself";
@@ -1413,13 +1413,13 @@ TEST(CancellationTest, ThreeGenerations) {
 // the parent's event by a plain pointer, and only the child holds the parent.
 TEST(CancellationTest, AChildHoldsItsParentsStateAfterTheParentsSourceGoes) {
     {
-        nullable<cancellation_source> parent(std::in_place);
-        nullable<cancellation_source> child(std::in_place, parent->token());
-        const cancellation_token parents_token = parent->token();
-        const cancellation_token childs_token = child->token();
+        nullable<stop_source> parent(std::in_place);
+        nullable<stop_source> child(std::in_place, parent->token());
+        const stop_token parents_token = parent->token();
+        const stop_token childs_token = child->token();
 
         parent.reset();
-        EXPECT_TRUE(child->is_canceled())
+        EXPECT_TRUE(child->stop_requested())
             << "the parent's source went and the child was not cancelled";
 
         probe p;
@@ -1428,15 +1428,15 @@ TEST(CancellationTest, AChildHoldsItsParentsStateAfterTheParentsSourceGoes) {
         EXPECT_EQ(p.made, 0);
 
         child.reset();
-        EXPECT_TRUE(parents_token.is_canceled());
-        EXPECT_TRUE(childs_token.is_canceled());
+        EXPECT_TRUE(parents_token.stop_requested());
+        EXPECT_TRUE(childs_token.stop_requested());
     }
 
     // What is registered with the child when the parent's source goes is cancelled, and comes back
     // with the cancellation.
     {
-        nullable<cancellation_source> parent(std::in_place);
-        cancellation_source child(parent->token());
+        nullable<stop_source> parent(std::in_place);
+        stop_source child(parent->token());
 
         probe p;
         task<std::size_t> chain = top(p, child.token());
@@ -1459,8 +1459,8 @@ TEST(CancellationTest, ManyChildrenUnderOneParentGoInEitherOrder) {
     for (const bool backwards : {false, true}) {
         SCOPED_TRACE(backwards ? "back to front" : "front to back");
 
-        cancellation_source parent;
-        std::vector<nullable<cancellation_source>> children(8);
+        stop_source parent;
+        std::vector<nullable<stop_source>> children(8);
 
         const std::size_t n = children.size();
         const auto nth = [&](std::size_t k) -> auto& {
@@ -1476,13 +1476,13 @@ TEST(CancellationTest, ManyChildrenUnderOneParentGoInEitherOrder) {
 
         for (auto& child : children) child.emplace(parent.token());
         for (std::size_t k = 0; k < n; k += 2) nth(k).reset();
-        nth(1)->cancel();
+        nth(1)->request_stop();
 
-        parent.cancel();
+        parent.request_stop();
 
         for (const auto& child : children) {
             if (child) {
-                EXPECT_TRUE(child->is_canceled());
+                EXPECT_TRUE(child->stop_requested());
             }
         }
 
@@ -1497,8 +1497,8 @@ TEST(CancellationTest, ManyChildrenUnderOneParentGoInEitherOrder) {
 TEST(CancellationTest, AWaitUnderTheChildIsCancelledWithTheParent) {
     turns queue;
     std::coroutine_handle<> slot;
-    cancellation_source parent;
-    cancellation_source child(parent.token());
+    stop_source parent;
+    stop_source child(parent.token());
 
     std::string came;
     task<> first = waits_its_turn(queue, slot, child.token(), came);
@@ -1510,7 +1510,7 @@ TEST(CancellationTest, AWaitUnderTheChildIsCancelledWithTheParent) {
     task<> second = waits_its_turn(queue, slot, child.token(), canceled);
     EXPECT_TRUE(anybody_registered(child.token()));
 
-    parent.cancel();
+    parent.request_stop();
 
     EXPECT_FALSE(second.done()) << "cancel() resumed the wait itself";
     ASSERT_EQ(queue.size(), 1u);
@@ -1540,19 +1540,19 @@ TEST(CancellationTest, TheParentsFireCancelsTheChildsOwnAndDestroysNobody) {
     std::coroutine_handle<> slot;
     std::string ended;
 
-    cancellation_source parent;
+    stop_source parent;
     std::byte buf[16]{};
     task<std::size_t> first = start_read(before, buf, parent.token());
 
-    nullable<cancellation_source> child(std::in_place, parent.token());
-    nullable<cancellation_source> grandchild(std::in_place, child->token());
+    nullable<stop_source> child(std::in_place, parent.token());
+    nullable<stop_source> grandchild(std::in_place, child->token());
 
     task<std::size_t> childs = top(under_child, child->token());
     task<> waits = waits_its_turn(queue, slot, child->token(), ended);
     task<std::size_t> grandchilds = top(under_grandchild, grandchild->token());
     task<std::size_t> last = top(after, parent.token());
 
-    parent.cancel();
+    parent.request_stop();
 
     EXPECT_EQ(before.canceled + under_child.canceled + under_grandchild.canceled + after.canceled,
               4);
@@ -1585,7 +1585,7 @@ TEST(CancellationTest, TheParentsFireCancelsTheChildsOwnAndDestroysNobody) {
 // cancel(), and the chain ends by itself with the cancellation.
 TEST(CancellationTest, ASourceThatGoesCancelsWhatIsRegisteredWithItsToken) {
     probe p;
-    nullable<cancellation_source> source(std::in_place);
+    nullable<stop_source> source(std::in_place);
     task<std::size_t> chain = top(p, source->token());
 
     p.started.wait();
@@ -1604,14 +1604,14 @@ TEST(CancellationTest, ASourceThatGoesCancelsWhatIsRegisteredWithItsToken) {
 // ...and a source made under its token, with what is registered with that one.
 TEST(CancellationTest, ASourceThatGoesCancelsTheSourcesUnderIt) {
     probe p;
-    nullable<cancellation_source> parent(std::in_place);
-    cancellation_source child(parent->token());
+    nullable<stop_source> parent(std::in_place);
+    stop_source child(parent->token());
     task<std::size_t> chain = top(p, child.token());
 
     p.started.wait();
     parent.reset();
 
-    EXPECT_TRUE(child.is_canceled());
+    EXPECT_TRUE(child.stop_requested());
     EXPECT_EQ(p.canceled, 1);
 
     sta_loop::run_until([&] { return chain.done(); });
@@ -1624,14 +1624,14 @@ TEST(CancellationTest, AMovedSourceCancelsNothingAndTheOneMovedFromDoesNothing) 
     probe p;
     p.gate.set();
 
-    nullable<cancellation_source> first(std::in_place);
+    nullable<stop_source> first(std::in_place);
     std::coroutine_handle<> slot;
     task<std::size_t> chain = keeps_the_read(p, first->token(), slot);
 
-    cancellation_source second(std::move(*first));
+    stop_source second(std::move(*first));
     first.reset();
 
-    EXPECT_FALSE(second.is_canceled());
+    EXPECT_FALSE(second.stop_requested());
     EXPECT_EQ(p.canceled, 0) << "moving the source, or the empty one going, cancelled the read";
 
     ASSERT_TRUE(slot);
@@ -1649,18 +1649,18 @@ TEST(CancellationTest, ASourceAssignedOverCancelsTheWorkItHeld) {
     std::byte buf[16]{};
 
     // The read under the source assigned over keeps the worker; the other waits behind it.
-    cancellation_source field;
+    stop_source field;
     task<std::size_t> overwritten = start_read(held, buf, field.token());
     held.started.wait();
 
-    cancellation_source next;
+    stop_source next;
     task<std::size_t> kept = top(taken, next.token());
 
     field = std::move(next);
 
     EXPECT_EQ(held.canceled, 1) << "the work of the source assigned over was not cancelled";
     EXPECT_EQ(taken.canceled, 0) << "the work taken over was cancelled";
-    EXPECT_FALSE(field.is_canceled());
+    EXPECT_FALSE(field.stop_requested());
 
     taken.gate.set();
     sta_loop::run_until([&] { return overwritten.done() && kept.done(); });
@@ -1669,9 +1669,9 @@ TEST(CancellationTest, ASourceAssignedOverCancelsTheWorkItHeld) {
     EXPECT_EQ(kept.result(), 16u);
 
     // A source moved onto itself stays as it is.
-    cancellation_source& same = field;
+    stop_source& same = field;
     field = std::move(same);
-    EXPECT_FALSE(field.is_canceled());
+    EXPECT_FALSE(field.stop_requested());
 }
 
 // A source cancelled already has nobody registered: its going asks nothing of anybody again --
@@ -1681,11 +1681,11 @@ TEST(CancellationTest, ASourceCancelledAlreadyDoesNothingAsItGoes) {
     probe p;
     task<std::size_t> chain;
     {
-        cancellation_source source;
+        stop_source source;
         chain = top(p, source.token());
         p.started.wait();
 
-        source.cancel();
+        source.request_stop();
         EXPECT_EQ(p.canceled, 1);
     }
     EXPECT_EQ(p.canceled, 1) << "the source cancelled already asked again as it went";
@@ -1694,12 +1694,12 @@ TEST(CancellationTest, ASourceCancelledAlreadyDoesNothingAsItGoes) {
     EXPECT_TRUE(ends_cancelled(chain));
 
     probe under_child;
-    nullable<cancellation_source> parent(std::in_place);
-    cancellation_source child(parent->token());
+    nullable<stop_source> parent(std::in_place);
+    stop_source child(parent->token());
     task<std::size_t> childs = top(under_child, child.token());
     under_child.started.wait();
 
-    child.cancel();
+    child.request_stop();
     EXPECT_EQ(under_child.canceled, 1);
     EXPECT_TRUE(anybody_registered(parent->token()))
         << "the child cancelled by itself left its parent's event";
@@ -1715,9 +1715,9 @@ namespace {
 
 /// Hands part of its work to another owner, under a source of its own in its frame, and fails
 /// before that work is done.
-task<> hands_off_and_fails(probe& p, cancellation_token token, std::vector<task<>>& others,
+task<> hands_off_and_fails(probe& p, stop_token token, std::vector<task<>>& others,
                            bool& handed_off_canceled) {
-    cancellation_source local(token);
+    stop_source local(token);
 
     others.push_back(cancelable_handed_off(p, local.token(), handed_off_canceled));
 
@@ -1733,14 +1733,14 @@ TEST(CancellationTest, AFrameUnwindingCancelsTheWorkOfItsOwnSource) {
     probe p;
     bool canceled = false;
     std::vector<task<>> others;
-    cancellation_source outer;
+    stop_source outer;
 
     task<> work = hands_off_and_fails(p, outer.token(), others, canceled);
 
     ASSERT_TRUE(work.done());
     EXPECT_THROW(work.result(), std::runtime_error);
     EXPECT_EQ(p.canceled, 1) << "the frame went and the work under its source was not cancelled";
-    EXPECT_FALSE(outer.is_canceled());
+    EXPECT_FALSE(outer.stop_requested());
 
     ASSERT_EQ(others.size(), 1u);
     sta_loop::run_until([&] { return others.front().done(); });
@@ -1766,33 +1766,33 @@ void report_failures_to_stderr() {
 
 // clang-format off: the test reads the line of the call as its own line + 1
 constexpr std::uint_least32_t line_of_the_foreign_cancel = std::source_location::current().line() + 1;
-void cancel_there(cancellation_source& source) { source.cancel(); }
+void cancel_there(stop_source& source) { source.request_stop(); }
 // clang-format on
 
 void cancel_from_another_thread() {
     report_failures_to_stderr();
 
-    cancellation_source source;
+    stop_source source;
     std::thread([&source] { cancel_there(source); }).join();
 }
 
 // clang-format off: the test reads the line of the call as its own line + 1
 constexpr std::uint_least32_t line_of_the_foreign_child = std::source_location::current().line() + 1;
-void make_a_child_there(cancellation_source& parent) { cancellation_source child(parent.token()); }
+void make_a_child_there(stop_source& parent) { stop_source child(parent.token()); }
 // clang-format on
 
 void make_a_child_on_another_thread() {
     report_failures_to_stderr();
 
-    cancellation_source parent;
+    stop_source parent;
     std::thread([&parent] { make_a_child_there(parent); }).join();
 }
 
 void ask_a_moved_from_source() {
     report_failures_to_stderr();
 
-    cancellation_source source;
-    cancellation_source taken(std::move(source));
+    stop_source source;
+    stop_source taken(std::move(source));
     (void)source.token();
 }
 
@@ -1824,12 +1824,12 @@ TEST_F(CancellationStrictDeathTest, TheReportNamesTheLineOfTheForeignCancel) {
     EXPECT_DEATH(
         cancel_from_another_thread(),
         std::format(
-            "cancellation_tests\\.cpp\\({}\\): cancellation_source: cancelled from a thread",
+            "cancellation_tests\\.cpp\\({}\\): stop_source: cancelled from a thread",
             line_of_the_foreign_cancel));
 }
 
 TEST_F(CancellationDeathTest, AMovedFromSourceIsNotAsked) {
-    EXPECT_DEATH(ask_a_moved_from_source(), "cancellation_source: empty -- moved from");
+    EXPECT_DEATH(ask_a_moved_from_source(), "stop_source: empty -- moved from");
 }
 
 TEST_F(CancellationDeathTest, AChildIsMadeOnItsCoroutinesThread) {
@@ -1840,32 +1840,32 @@ TEST_F(CancellationDeathTest, AChildIsMadeOnItsCoroutinesThread) {
 TEST_F(CancellationStrictDeathTest, TheReportNamesTheLineOfTheForeignChild) {
     EXPECT_DEATH(
         make_a_child_on_another_thread(),
-        std::format("cancellation_tests\\.cpp\\({}\\): cancellation_source: made under a token",
+        std::format("cancellation_tests\\.cpp\\({}\\): stop_source: made under a token",
                     line_of_the_foreign_child));
 }
 
-static_assert(sizeof(cancellation_token) == sizeof(void*));
+static_assert(sizeof(stop_token) == sizeof(void*));
 
 // One source is one right to the work: it moves and is not copied.
-static_assert(!std::is_copy_constructible_v<cancellation_source> &&
-              !std::is_copy_assignable_v<cancellation_source>);
-static_assert(std::is_nothrow_move_constructible_v<cancellation_source> &&
-              std::is_nothrow_move_assignable_v<cancellation_source>);
+static_assert(!std::is_copy_constructible_v<stop_source> &&
+              !std::is_copy_assignable_v<stop_source>);
+static_assert(std::is_nothrow_move_constructible_v<stop_source> &&
+              std::is_nothrow_move_assignable_v<stop_source>);
 
 // A token is not a source: a child is made by name, from its parent's token.
-static_assert(std::is_constructible_v<cancellation_source, cancellation_token>);
-static_assert(!std::is_convertible_v<cancellation_token, cancellation_source>);
+static_assert(std::is_constructible_v<stop_source, stop_token>);
+static_assert(!std::is_convertible_v<stop_token, stop_source>);
 
 // The form with a token is the same task: the token and the place in its event live in the
 // operation, and the plain form has neither.
 static_assert(sizeof(task<std::size_t>) == sizeof(void*));
-static_assert(std::is_same_v<decltype(start_read(std::declval<probe&>(), {}, cancellation_token{})),
+static_assert(std::is_same_v<decltype(start_read(std::declval<probe&>(), {}, stop_token{})),
                              task<std::size_t>>);
 static_assert(
-    std::is_same_v<decltype(sta_loop::async_call(std::declval<int (*)()>(), cancellation_token{})),
+    std::is_same_v<decltype(sta_loop::async_call(std::declval<int (*)()>(), stop_token{})),
                    task<int>>);
-static_assert(sizeof(detail::cancelable_operation<gated_read>) ==
-              sizeof(gated_read) + sizeof(cancellation_token) + 3 * sizeof(void*));
+static_assert(sizeof(detail::stoppable_operation<gated_read>) ==
+              sizeof(gated_read) + sizeof(stop_token) + 3 * sizeof(void*));
 
 // The loop's calls that send a body take a token, last; the call that answers in place takes
 // none -- its body has run before there is anything to cancel.
@@ -1873,15 +1873,15 @@ namespace {
 
 template <class Fn>
 concept answers_in_place_under_a_token =
-    requires(Fn fn, cancellation_token token) { sta_loop::call_here(fn, token); };
+    requires(Fn fn, stop_token token) { sta_loop::call_here(fn, token); };
 
 }  // namespace
 
 static_assert(!answers_in_place_under_a_token<int (*)()>);
 static_assert(std::is_same_v<decltype(sta_loop::async_call(orphanable, std::declval<int (*)()>(),
-                                                           cancellation_token{})),
+                                                           stop_token{})),
                              task<int>>);
 static_assert(std::is_same_v<decltype(sta_loop::async_call(
                                  orphanable, std::declval<int (*)(const orphan_state&)>(),
-                                 cancellation_token{})),
+                                 stop_token{})),
                              task<int>>);

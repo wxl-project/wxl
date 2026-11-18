@@ -36,12 +36,14 @@ struct Settings {
     wxl::core::observable<int> fontFamily{0};
 
     // The console font's base cell height in pixels (console fonts are sized in
-    // pixels, not points). A double, the NumberBox's own type; the console takes
-    // whole pixels, rounded by fontPixels().
-    wxl::core::observable<double> fontSize{18.0};
+    // pixels, not points). A nullable double: the NumberBox's own type, and empty
+    // while the box is -- an empty box is no size, and changes nothing until it
+    // holds a number. The console takes whole pixels, rounded by fontPixels().
+    wxl::core::observable<wxl::core::nullable<double>> fontSize{18.0};
 
-    // fontSize in whole pixels, the unit the console and the registry take.
-    int fontPixels() const;
+    // fontSize in whole pixels, the unit the console and the registry take;
+    // empty while fontSize is.
+    wxl::core::nullable<int> fontPixels() const;
 
     // The colour theme, by index into themeNames().
     wxl::core::observable<int> theme{0};

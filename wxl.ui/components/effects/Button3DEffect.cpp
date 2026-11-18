@@ -772,12 +772,14 @@ void Button3DEffect::shadow(double value) const {
     impl_->shadow = std::clamp(value, 0.0, 1.0);
     impl_->relight();
 }
-void Button3DEffect::azimuth(double value) const {
+// The public type is DistantDiffuseEffect's, float; the lighting math stays in
+// double.
+void Button3DEffect::azimuth(float value) const {
     impl_->azimuth = value;
     impl_->relight();
 }
-void Button3DEffect::elevation(double value) const {
-    impl_->elevation = std::clamp(value, 1.0, 90.0);
+void Button3DEffect::elevation(float value) const {
+    impl_->elevation = std::clamp(value, 1.0f, 90.0f);
     impl_->relight();
 }
 void Button3DEffect::lampColor(Color value) const {

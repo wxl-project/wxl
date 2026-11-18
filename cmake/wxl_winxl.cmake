@@ -82,6 +82,15 @@ cmake_path(NORMAL_PATH _wxl_winxl_source)
 set(_wxl_winxl_dir "${CMAKE_CURRENT_BINARY_DIR}/winxl")
 set(_wxl_winxl_exe "${_wxl_winxl_dir}/winxl.exe")
 
+# A reproducible build (WXL_REPRODUCIBLE_BUILD, the root CMakeLists.txt) is a
+# ContinuousIntegrationBuild of the SDK: the compiler maps the paths of the
+# sources and, by winxl.csproj, of the artifacts directory, and the linker gets
+# /Brepro and names the .pdb without its directory.
+set(_wxl_winxl_reproducible "")
+if(WXL_REPRODUCIBLE_BUILD)
+    set(_wxl_winxl_reproducible -p:ContinuousIntegrationBuild=true)
+endif()
+
 file(GLOB _wxl_winxl_sources CONFIGURE_DEPENDS
     "${_wxl_winxl_source}/*.cs" "${_wxl_winxl_source}/*.csproj"
     "${_wxl_winxl_source}/global.json")
@@ -92,11 +101,12 @@ add_custom_command(
             -c Release -r win-x64 --nologo
             --artifacts-path "${_wxl_winxl_dir}/artifacts"
             -o "${_wxl_winxl_dir}"
-            "-p:WxlVersion=${wxl-project_VERSION}"
+            "-p:WxlVersion=${WXL_VERSION}"
             -p:IlcUseEnvironmentalTools=true
+            ${_wxl_winxl_reproducible}
     DEPENDS ${_wxl_winxl_sources}
     WORKING_DIRECTORY "${_wxl_winxl_source}"
-    COMMENT "dotnet publish: winxl ${wxl-project_VERSION} -> ${_wxl_winxl_exe}"
+    COMMENT "dotnet publish: winxl ${WXL_VERSION} -> ${_wxl_winxl_exe}"
     VERBATIM)
 
 add_custom_target(winxl ALL

@@ -1,0 +1,74 @@
+# The tool set of a release: the generator winui-srcgen, the profile editor
+# wxl.gen.ui and the utility winxl, built in the x64-static build directory --
+# the CRT linked statically (CMakePresets.json) -- in Release, run, tested and
+# uploaded as the artifact wxl-tools-x64. Called by package.yml, whose package
+# carries these executables, and through it by release.yml and ci.yml; the
+# static build directory is built and checked only with the package (see
+# release.yml), and not on a pull request. The steps between the checkout and
+# the upload are the action .github/actions/package-tools, which the CI of an
+# application that builds WinXL from a checkout of wxl runs as well, and which
+# runs tools/package/build.ps1 -Step Tools.
+#
+# The toolset and the WinUI build tools are installed as in ci.yml, and the
+# restore of the configure runs in locked mode as there. winxl is published by
+# the .NET SDK 10 of the runner image (windows-2025 lists 10.0 SDKs among its
+# .NET Core tools); cmake/wxl_winxl.cmake stops the configure if it is missing.
+name: tools
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: The version the tools carry (cmake/wxl_package_version.cmake), which winxl --version prints.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  tools:
+    name: tools (Release)
+    runs-on: windows-2025
+    timeout-minutes: 90
+    env:
+      DEVCMD: C:\BuildToolsInsiders\Common7\Tools\VsDevCmd.bat
+      VCVARS: -vcvars_ver=14.53
+      # The global packages folder of the restore, as in ci.yml.
+      NUGET_PACKAGES: C:\nuget-packages
+      # The restore resolves the versions of tools/packages.lock.json and stops
+      # on a lock file that does not match the pins (see ci.yml).
+      RestoreLockedMode: true
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/cmake
+
+      # The same installation as ci.yml's: MSVC 14.53 and the WinUI build tools.
+      - name: Install MSVC 14.53 and the WinUI build tools
+        shell: pwsh
+        run: |
+          $boot = Join-Path $env:RUNNER_TEMP 'vs_buildtools.exe'
+          Invoke-WebRequest -Uri 'https://aka.ms/vs/insiders/vs_buildtools.exe' -OutFile $boot -UseBasicParsing
+          $p = Start-Process -FilePath $boot -WorkingDirectory $env:RUNNER_TEMP -Wait -PassThru -ArgumentList @(
+            '--installPath', 'C:\BuildToolsInsiders',
+            '--add', 'Microsoft.VisualStudio.Component.VC.Preview.Tools.x86.x64',
+            '--add', 'Microsoft.VisualStudio.Workload.UniversalBuildTools',
+            '--add', 'Microsoft.VisualStudio.ComponentGroup.WindowsAppDevelopment.VC.BuildTools',
+            '--quiet', '--wait', '--norestart', '--nocache')
+          "exit code $($p.ExitCode)"
+          Get-ChildItem 'C:\BuildToolsInsiders\VC\Tools\MSVC' | ForEach-Object { $_.Name }
+          if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { throw "Build Tools install failed: $($p.ExitCode)" }
+
+      # Configure, build, run, test and collect into artifact/wxl-tools-x64: the
+      # steps an application's CI takes as well, so they live in the action.
+      - uses: ./.github/actions/package-tools
+        with:
+          version: ${{ inputs.version }}
+
+      - name: Upload the tools
+        uses: actions/upload-artifact@v7
+        with:
+          name: wxl-tools-x64
+          path: artifact/wxl-tools-x64/
+          if-no-files-found: error

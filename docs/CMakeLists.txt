@@ -51,7 +51,7 @@ endif()
 set(_wrappers_step "")
 if(TARGET winui-srcgen)
     include("${CMAKE_CURRENT_SOURCE_DIR}/../cmake/wxl_ui_profile.cmake")
-    set(_wrappers "${CMAKE_BINARY_DIR}/docs/wrappers/wxl")
+    set(_wrappers "${PROJECT_BINARY_DIR}/docs/wrappers/wxl")
     set(_profile "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.gen/profiles/full.winxl-profile")
     set(_components "${CMAKE_CURRENT_SOURCE_DIR}/../wxl.ui/components")
     # The same chain the library of the profile is built from, which the generator checks.
@@ -101,7 +101,7 @@ set(_language_file "")
 if(_wrappers)
     set(_language_file "${_wrappers}/doc_language.txt")
 endif()
-set(_language_fragment "${CMAKE_BINARY_DIR}/docs/language.doxyfile")
+set(_language_fragment "${PROJECT_BINARY_DIR}/docs/language.doxyfile")
 add_custom_target(docs.language
     COMMAND "${CMAKE_COMMAND}"
             "-DWXL_DOCS_LANGUAGE_FILE=${_language_file}"
@@ -118,8 +118,8 @@ wxl_add_doxygen_site(docs
     PROJECT_NAME "wxl"
     STRIP_FROM   "${_tree}" ${_wrappers_root}
     MAINPAGE     "${_tree}/docs/index.md"
-    OUTPUT       "${CMAKE_BINARY_DIR}/docs/wxl"
-    TAGFILE      "${CMAKE_BINARY_DIR}/docs/wxl.tag"
+    OUTPUT       "${PROJECT_BINARY_DIR}/docs/wxl"
+    TAGFILE      "${PROJECT_BINARY_DIR}/docs/wxl.tag"
     INPUT        ${_input}
     EXCLUDE      ${_exclude}
     IMAGES       ${_images}

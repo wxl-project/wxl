@@ -118,8 +118,8 @@ struct Relief {
             // Along the arc the sine of the angle is the distance from the
             // top's edge, so a ring's angle is the arcsine of its place.
             double const place = 1.0 - (k + 0.5) / N;
-            double const angle = impl::arcsine(place * turn);
-            Edges const up = raised(albedo, lamp, impl::sine(angle) / impl::cosine(angle));
+            double const tilt = impl::arcsine(place * turn);
+            Edges const up = raised(albedo, lamp, impl::sine(tilt) / impl::cosine(tilt));
             rings[k] = rise < 0.0 ? Edges{up.farFromLamp, up.nearLamp} : up;
         }
         return rings;

@@ -23,8 +23,8 @@ import wxl.core;
 // carries its owner, so writing one class's member on another is refused by
 // name (impl::check_owner) instead of failing several expansions deeper. And
 // it carries the type *that class* declares the property with -- the flat tag
-// has to fall back to `void` wherever two classes disagree, and with it loses
-// the braced form, which is why `startPoint = {0, 0}` never worked through
+// takes the list of them wherever two classes disagree, and a braced list
+// fits more than one, which is why `startPoint = {0, 0}` never worked through
 // `dsl::` and works here.
 //
 // Everything emitted here is also exercised by the test file this same
@@ -175,11 +175,6 @@ std::string declare(schema::class_t const& owner, schema::member const& member,
         return property_anchor(member.key, {}, owner.name);
     }
 
-    if (member.braced) {
-        return std::format("::wxl::impl::braced_property_tag<::wxl::PropertyKey::{}, {}, ::wxl::{}>",
-                           member.key, qualified(member.type), owner.name);
-    }
-
     return property_anchor(member.key, member.type, owner.name);
 }
 
@@ -230,17 +225,103 @@ namespace wxl::dsl::schema {{
     std::print(file, "}}  // namespace wxl::dsl::schema\n");
 }
 
-// The value a test line hands the member. A property takes one of its own
-// type; an enum-typed one takes it through the anchor, which proves the
-// enumerators the anchor carries are reachable as well.
-std::string test_value(schema::class_t const& owner, schema::member const& member, dsl const& d) {
+// The enumerator a test line hands an enum-typed member, through the anchor,
+// which proves the enumerators the anchor carries are reachable as well. Any
+// other property takes a value of its own type, and gets nothing here.
+std::optional<std::string> test_enumerator(schema::class_t const& owner, schema::member const& member,
+                                           dsl const& d) {
     if (auto const values = d.enumerators.find(member.type);
         member.single_type && values != d.enumerators.end() && !values->second.empty()) {
         return std::format("::wxl::dsl::schema::{}::{}.{}", owner.name, member.name,
                            values->second.front().first);
     }
 
-    return "value";
+    return std::nullopt;
+}
+
+// The checks of the descriptions the components give of the classes they write by hand
+// (schema::check), each a static_assert naming the class and the member. What is asked of the
+// code is held in a concept over the class, so that a member that is not there makes the
+// concept false and the assertion says which -- a requirement written on the class itself would
+// be an error of its own, deep in the expression, instead.
+void write_description_checks(std::ostream& file, schema const& sch, std::size_t& lines) {
+    if (sch.checks.empty()) {
+        return;
+    }
+    // A value of exactly one type: U is deduced from the parameter the value initializes, without
+    // its reference and its const, and any U but T is refused -- a base T derives from, another
+    // number -- so a setter, or a collection's append, is called only when its parameter is T,
+    // by value or by const reference, and of several overloads only the one whose parameter is.
+    std::print(file, R"(// The classes the components describe, held to their descriptions (component.json).
+template <class T>
+struct exactly {{
+    template <class U>
+        requires std::same_as<U, T>
+    operator U() const;
+}};
+
+)");
+    using kind_t = schema::check::kind_t;
+    for (auto&& check : sch.checks) {
+        // An event is named as its tag is, so a property and an event of one name differ.
+        std::string const concept_name = std::format(
+            "{}_{}{}_described", check.owner, check.kind == kind_t::Event ? "on" : "",
+            check.member.empty() ? "base" : check.member);
+        std::string const said = std::format("wxl: the description of {}{}{} in its component.json",
+                                             check.owner, check.member.empty() ? "" : ".",
+                                             check.member);
+        switch (check.kind) {
+            case kind_t::Setter:
+                std::print(file, R"(template <class C>
+concept {0} = requires(C const& object, exactly<{1}> value) {{ object.{2}(value); }};
+static_assert({0}<::wxl::{3}>, "{4} says {5}, and no setter takes exactly that type");
+)",
+                           concept_name, qualified(check.type), member_name(check.member),
+                           check.owner, said, check.word);
+                break;
+            case kind_t::Bound:
+                std::print(file, R"(template <class C>
+concept {0} = requires(C const& object, ::wxl::core::observable<{1}>& field) {{
+    ::wxl::impl::property_binder<::wxl::PropertyKey::{2}, C>::bind(object, field, ::wxl::impl::bind_direction::input);
+}};
+static_assert({0}<::wxl::{3}>, "{4} says {5} bound, and no binder of the class binds a field of it");
+)",
+                           concept_name, qualified(check.type), check.member, check.owner, said,
+                           check.word);
+                break;
+            case kind_t::Collection:
+                std::print(file, R"(template <class C>
+concept {0} = requires(C const& object, exactly<{1}> item) {{ object.{2}().append(item); }};
+static_assert({0}<::wxl::{3}>, "{4} says a collection of {5}, and the class has no collection of exactly that type");
+)",
+                           concept_name, qualified(check.type), member_name(check.member),
+                           check.owner, said, check.word);
+                break;
+            case kind_t::Event:
+                std::print(file, R"(template <class C>
+concept {0} = std::same_as<::wxl::impl::event_args_of_t<decltype(&C::add_on{1})>, {2}>;
+static_assert({0}<::wxl::{3}>, "{4} says the event hands over {5}, and it does not");
+)",
+                           concept_name, check.member, qualified(check.type), check.owner, said,
+                           check.word);
+                break;
+            case kind_t::Base:
+                std::print(file,
+                           "static_assert(std::derived_from<::wxl::{0}, {1}>, \"{2} says the base "
+                           "{3}, and the class does not derive from it\");\n",
+                           check.owner, qualified(check.type), said, check.word);
+                break;
+            case kind_t::Value:
+                std::print(file, R"(template <class E>
+concept {0} = requires {{ E::{1}; }};
+static_assert({0}<::wxl::{2}>, "{3} names a value the enumeration does not have");
+)",
+                           concept_name, check.member, check.owner, said);
+                break;
+        }
+        ++lines;
+    }
+    std::print(file, "\n");
 }
 
 void write_schema_test(std::filesystem::path const& path, schema const& sch, dsl const& d,
@@ -251,7 +332,11 @@ void write_schema_test(std::filesystem::path const& path, schema const& sch, dsl
     std::print(file, "{}", banner);
     write_include(file, "../Bind.h", "../");
     write_include(file, "schema.h", "../");
+    for (auto&& include : sch.includes) {
+        write_include(file, include, "../");
+    }
     std::print(file, "\nnamespace {{\n\n");
+    write_description_checks(file, sch, lines);
 
     for (auto&& klass : sch.classes) {
         if (klass.members.empty()) {
@@ -291,13 +376,20 @@ void write_schema_test(std::filesystem::path const& path, schema const& sch, dsl
                                    klass.name, member.name, object, qualified(member.type));
                         break;
                     }
-                    std::print(file, R"([[maybe_unused]] void {0}_{1}_assigned({2}, {4} value) {{
-    ::wxl::impl::apply_argument(object, {3} = {5});
+                    if (auto const enumerator = test_enumerator(klass, member, d)) {
+                        std::print(file, R"([[maybe_unused]] void {0}_{1}_assigned({2}) {{
+    ::wxl::impl::apply_argument(object, {3} = {4});
 }}
 )",
-                               klass.name, member.name, object, path_to,
-                               member.type.empty() ? "::wxl::Object" : qualified(member.type),
-                               test_value(klass, member, d));
+                                   klass.name, member.name, object, path_to, *enumerator);
+                        break;
+                    }
+                    std::print(file, R"([[maybe_unused]] void {0}_{1}_assigned({2}, {3} value) {{
+    ::wxl::impl::apply_argument(object, {4} = value);
+}}
+)",
+                               klass.name, member.name, object,
+                               member.type.empty() ? "::wxl::Object" : qualified(member.type), path_to);
                     break;
 
                 // Bound in the direction its pair takes: the one line that

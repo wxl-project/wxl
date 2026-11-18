@@ -21,8 +21,8 @@
 
 namespace {
 
-using wxl::async::cancellation_source;
-using wxl::async::cancellation_token;
+using wxl::async::stop_source;
+using wxl::async::stop_token;
 using wxl::async::operation_canceled_exception;
 using wxl::async::task;
 using wxl::core::event;
@@ -34,7 +34,7 @@ std::string ending(operation_canceled_exception const& e) {
 }
 
 /// Waits for the next count, and logs it or how the wait ended.
-task<> takes_count(event<void(int)>& counted, cancellation_token token,
+task<> takes_count(event<void(int)>& counted, stop_token token,
                    std::vector<std::string>& log) {
     try {
         int const count = co_await wxl::on_event(counted, std::move(token));
@@ -46,7 +46,7 @@ task<> takes_count(event<void(int)>& counted, cancellation_token token,
 
 /// Takes counts until the wait ends. An invocation made between two waits -- from here,
 /// once a count is taken -- reaches nobody.
-task<> counts_on(event<void(int)>& counted, cancellation_token token, std::vector<int>& seen) {
+task<> counts_on(event<void(int)>& counted, stop_token token, std::vector<int>& seen) {
     while (true) {
         int const count = co_await wxl::on_event(counted, token);
         seen.push_back(count);
@@ -56,7 +56,7 @@ task<> counts_on(event<void(int)>& counted, cancellation_token token, std::vecto
 }
 
 /// Answers through the reference the event passes, inside the call.
-task<> answers(event<void(int&) noexcept>& asked, cancellation_token token) {
+task<> answers(event<void(int&) noexcept>& asked, stop_token token) {
     int& answer = co_await wxl::on_event(asked, std::move(token));
     answer = 42;
 }
@@ -64,7 +64,7 @@ task<> answers(event<void(int&) noexcept>& asked, cancellation_token token) {
 /// Several arguments come as a tuple, none as nothing. A reference to const comes as a copy,
 /// so what the coroutine keeps lives past its next suspension and the raiser's string.
 task<> takes_rename_then_reset(event<void(std::string const&, int)>& renamed, event<void()>& reset,
-                               cancellation_token token, std::vector<std::string>& log) {
+                               stop_token token, std::vector<std::string>& log) {
     auto const [name, times] = co_await wxl::on_event(renamed, token);
 
     co_await wxl::on_event(reset, token);
@@ -80,7 +80,7 @@ struct copy_count {
     int* copies;
 };
 
-task<> takes_by_value(event<void(copy_count)>& passed, cancellation_token token) {
+task<> takes_by_value(event<void(copy_count)>& passed, stop_token token) {
     copy_count const taken = co_await wxl::on_event(passed, std::move(token));
     static_cast<void>(taken);
 }
@@ -88,7 +88,7 @@ task<> takes_by_value(event<void(copy_count)>& passed, cancellation_token token)
 /// Kept in a variable, ended by its token; the invocation that comes first resumes it into the
 /// cancellation, and its handler ends the event, from inside the event's own call.
 task<> holds_the_wait_then_ends_the_event(std::unique_ptr<event<void(int)>>& owner,
-                                          cancellation_token token, std::vector<std::string>& log) {
+                                          stop_token token, std::vector<std::string>& log) {
     {
         auto wait = wxl::on_event(*owner, std::move(token));
         try {
@@ -104,7 +104,7 @@ task<> holds_the_wait_then_ends_the_event(std::unique_ptr<event<void(int)>>& own
 
 /// Kept in a variable and ended by going down: it has left the event by the time the coroutine
 /// hears so.
-task<> holds_the_wait_through_going_down(event<void(int)>& counted, cancellation_token token,
+task<> holds_the_wait_through_going_down(event<void(int)>& counted, stop_token token,
                                          std::vector<std::string>& log) {
     auto wait = wxl::on_event(counted, std::move(token));
     try {
@@ -117,7 +117,7 @@ task<> holds_the_wait_through_going_down(event<void(int)>& counted, cancellation
 
 /// The wait kept in a variable and awaited twice. It leaves the event as it resumes; ended by
 /// its token, it leaves only with the variable, and an invocation before that resumes nothing.
-task<> holds_the_wait(event<void(int)>& counted, cancellation_token token,
+task<> holds_the_wait(event<void(int)>& counted, stop_token token,
                       std::vector<std::string>& log) {
     auto wait = wxl::on_event(counted, std::move(token));
 
@@ -134,7 +134,7 @@ task<> holds_the_wait(event<void(int)>& counted, cancellation_token token,
     }
 }
 
-using token = cancellation_token;
+using token = stop_token;
 
 static_assert(
     std::is_same_v<
@@ -160,7 +160,7 @@ static_assert(
     std::is_same_v<decltype(wxl::on_event(std::declval<event<void()>&>(), token{}).await_resume()),
                    void>);
 static_assert(
-    wxl::async::detail::cancelable_awaiter<wxl::impl::core_event_wait<event<void(int)>, int>>);
+    wxl::async::detail::stoppable_awaiter<wxl::impl::core_event_wait<event<void(int)>, int>>);
 
 /// A reference to const is answered by copy: a type that would be sliced, or cannot be copied, is
 /// refused by a static_assert on this concept where the wait is made.
@@ -204,7 +204,7 @@ protected:
 // of the subscription after it.
 TEST_F(CoreEventWaitTest, TheInvocationResumesTheWaitInsideTheCall) {
     event<void(int)> counted;
-    cancellation_source source;
+    stop_source source;
     std::vector<std::string> log;
 
     task<> waiting = takes_count(counted, source.token(), log);
@@ -219,7 +219,7 @@ TEST_F(CoreEventWaitTest, TheInvocationResumesTheWaitInsideTheCall) {
     EXPECT_FALSE(static_cast<bool>(counted)) << "the wait did not leave the event";
 
     // And it left the token's event: the request reaches nobody.
-    source.cancel();
+    source.request_stop();
     EXPECT_FALSE(wxl::impl::event_wait_test::canceled_posted());
 }
 
@@ -228,7 +228,7 @@ TEST_F(CoreEventWaitTest, TheInvocationResumesTheWaitInsideTheCall) {
 // of the signature. A reference to const is a copy, which outlives the raiser's temporary and the
 // coroutine's next suspension.
 TEST_F(CoreEventWaitTest, TheArgumentsComeAsTheEventPassesThem) {
-    cancellation_source source;
+    stop_source source;
 
     event<void(int&) noexcept> asked;
     task<> answering = answers(asked, source.token());
@@ -260,7 +260,7 @@ TEST_F(CoreEventWaitTest, TheArgumentsComeAsTheEventPassesThem) {
 // is the one the event makes for its callback.
 TEST_F(CoreEventWaitTest, AnArgumentByValueIsMovedOut) {
     event<void(copy_count)> passed;
-    cancellation_source source;
+    stop_source source;
     int copies = 0;
 
     task<> taking = takes_by_value(passed, source.token());
@@ -275,7 +275,7 @@ TEST_F(CoreEventWaitTest, AnArgumentByValueIsMovedOut) {
 // inside the coroutine the outer invocation resumed -- is not queued for the next wait.
 TEST_F(CoreEventWaitTest, AnInvocationBetweenWaitsReachesNobody) {
     event<void(int)> counted;
-    cancellation_source source;
+    stop_source source;
     std::vector<int> seen;
 
     task<> counting = counts_on(counted, source.token(), seen);
@@ -284,7 +284,7 @@ TEST_F(CoreEventWaitTest, AnInvocationBetweenWaitsReachesNobody) {
     counted(3);
     EXPECT_EQ(seen, (std::vector<int>{1, 3}));
 
-    source.cancel();
+    source.request_stop();
     wxl::impl::event_wait::resume_canceled();
 
     ASSERT_TRUE(counting.done());
@@ -297,7 +297,7 @@ TEST_F(CoreEventWaitTest, AnInvocationBetweenWaitsReachesNobody) {
 // is not its.
 TEST_F(CoreEventWaitTest, AWaitKeptInAVariableTakesOnlyTheInvocationsItWaitsFor) {
     event<void(int)> counted;
-    cancellation_source source;
+    stop_source source;
     std::vector<std::string> log;
 
     task<> holding = holds_the_wait(counted, source.token(), log);
@@ -306,7 +306,7 @@ TEST_F(CoreEventWaitTest, AWaitKeptInAVariableTakesOnlyTheInvocationsItWaitsFor)
     EXPECT_EQ(log, (std::vector<std::string>{"1", "left"}));
     EXPECT_TRUE(static_cast<bool>(counted)) << "the second wait is not subscribed";
 
-    source.cancel();
+    source.request_stop();
     wxl::impl::event_wait::resume_canceled();
 
     ASSERT_TRUE(holding.done());
@@ -320,12 +320,12 @@ TEST_F(CoreEventWaitTest, AWaitKeptInAVariableTakesOnlyTheInvocationsItWaitsFor)
 // call, and the wait, when its variable goes, has nothing to leave.
 TEST_F(CoreEventWaitTest, HeldWaitCancelledThenEventDestroyedInsideItsCall) {
     auto owner = std::make_unique<event<void(int)>>();
-    cancellation_source source;
+    stop_source source;
     std::vector<std::string> log;
 
     task<> holding = holds_the_wait_then_ends_the_event(owner, source.token(), log);
 
-    source.cancel();
+    source.request_stop();
     (*owner)(1);
 
     ASSERT_TRUE(holding.done());
@@ -337,7 +337,7 @@ TEST_F(CoreEventWaitTest, HeldWaitCancelledThenEventDestroyedInsideItsCall) {
 // Two waits on one event: one invocation resumes both, in the order they began.
 TEST_F(CoreEventWaitTest, OneInvocationResumesEveryWaitStandingInIt) {
     event<void(int)> counted;
-    cancellation_source source;
+    stop_source source;
     std::vector<std::string> log;
 
     task<> first = takes_count(counted, source.token(), log);
@@ -355,12 +355,12 @@ TEST_F(CoreEventWaitTest, OneInvocationResumesEveryWaitStandingInIt) {
 // the wait is still the event's, and the turn ends it with the cancellation.
 TEST_F(CoreEventWaitTest, ACancelledWaitEndsOnTheQueuesTurn) {
     event<void(int)> counted;
-    cancellation_source source;
+    stop_source source;
     std::vector<std::string> log;
 
     task<> waiting = takes_count(counted, source.token(), log);
 
-    source.cancel();
+    source.request_stop();
 
     EXPECT_FALSE(waiting.done()) << "cancel() resumed the coroutine itself";
     EXPECT_TRUE(wxl::impl::event_wait_test::canceled_posted());
@@ -377,12 +377,12 @@ TEST_F(CoreEventWaitTest, ACancelledWaitEndsOnTheQueuesTurn) {
 // cancellation, its arguments unread -- and the turn then finds nobody.
 TEST_F(CoreEventWaitTest, AnInvocationBeforeTheTurnEndsTheCancelledWait) {
     event<void(int)> counted;
-    cancellation_source source;
+    stop_source source;
     std::vector<std::string> log;
 
     task<> waiting = takes_count(counted, source.token(), log);
 
-    source.cancel();
+    source.request_stop();
     counted(5);
 
     ASSERT_TRUE(waiting.done());
@@ -397,8 +397,8 @@ TEST_F(CoreEventWaitTest, AnInvocationBeforeTheTurnEndsTheCancelledWait) {
 // subscribe, and asks the queue for nothing.
 TEST_F(CoreEventWaitTest, UnderATokenCancelledAlreadyTheWaitEndsAtOnce) {
     event<void(int)> counted;
-    cancellation_source source;
-    source.cancel();
+    stop_source source;
+    source.request_stop();
 
     std::vector<std::string> log;
     task<> waiting = takes_count(counted, source.token(), log);
@@ -415,7 +415,7 @@ TEST_F(CoreEventWaitTest, UnderATokenCancelledAlreadyTheWaitEndsAtOnce) {
 // reaches nobody, and the request asks for no turn.
 TEST_F(CoreEventWaitTest, AFrameDestroyedWhileWaitingLeavesTheEventAndTheToken) {
     event<void(int)> counted;
-    cancellation_source source;
+    stop_source source;
     std::vector<std::string> log;
 
     {
@@ -426,7 +426,7 @@ TEST_F(CoreEventWaitTest, AFrameDestroyedWhileWaitingLeavesTheEventAndTheToken) 
     EXPECT_FALSE(static_cast<bool>(counted));
 
     counted(1);
-    source.cancel();
+    source.request_stop();
 
     EXPECT_TRUE(log.empty());
     EXPECT_FALSE(wxl::impl::event_wait_test::canceled_posted());
@@ -436,7 +436,7 @@ TEST_F(CoreEventWaitTest, AFrameDestroyedWhileWaitingLeavesTheEventAndTheToken) 
 // turn ends the wait as one whose event will not come.
 TEST_F(CoreEventWaitTest, AnEventClearedUnderTheWaitEndsItOnTheQueuesTurn) {
     event<void(int)> counted;
-    cancellation_source source;
+    stop_source source;
     std::vector<std::string> log;
 
     task<> waiting = takes_count(counted, source.token(), log);
@@ -452,7 +452,7 @@ TEST_F(CoreEventWaitTest, AnEventClearedUnderTheWaitEndsItOnTheQueuesTurn) {
     EXPECT_EQ(log, (std::vector<std::string>{"will not come"}));
 
     // The wait left the token as it ended.
-    source.cancel();
+    source.request_stop();
     EXPECT_FALSE(wxl::impl::event_wait_test::canceled_posted());
 }
 
@@ -460,7 +460,7 @@ TEST_F(CoreEventWaitTest, AnEventClearedUnderTheWaitEndsItOnTheQueuesTurn) {
 // out.
 TEST_F(CoreEventWaitTest, AnEventEndedUnderTheWaitEndsItOnTheQueuesTurn) {
     auto counted = std::make_unique<event<void(int)>>();
-    cancellation_source source;
+    stop_source source;
     std::vector<std::string> log;
 
     task<> waiting = takes_count(*counted, source.token(), log);
@@ -480,7 +480,7 @@ TEST_F(CoreEventWaitTest, AnEventEndedUnderTheWaitEndsItOnTheQueuesTurn) {
 // gone with the local event, reaches nothing after it.
 TEST_F(CoreEventWaitTest, AnInvocationOfTheEventSwappedIntoReachesTheWait) {
     event<void(int)> counted;
-    cancellation_source source;
+    stop_source source;
     std::vector<std::string> log;
 
     task<> waiting = takes_count(counted, source.token(), log);
@@ -500,7 +500,7 @@ TEST_F(CoreEventWaitTest, AnInvocationOfTheEventSwappedIntoReachesTheWait) {
 // Going down ends the wait with the rest, and a wait begun after that ends at once.
 TEST_F(CoreEventWaitTest, GoingDownEndsTheWait) {
     event<void(int)> counted;
-    cancellation_source source;
+    stop_source source;
     std::vector<std::string> log;
 
     task<> waiting = takes_count(counted, source.token(), log);

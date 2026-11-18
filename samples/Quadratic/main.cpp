@@ -38,15 +38,15 @@ struct Answer {
     bool operator==(Answer const&) const = default;
 };
 
-// Пустое поле NumberBox — это NaN, и текст, который числом ещё не стал, — тоже.
-constexpr double blank = std::numeric_limits<double>::quiet_NaN();
-
 // Корни через q = −(b + sign(b)·√D)/2 как q/a и c/q: без вычитания близких чисел,
 // которое съедает точность меньшего по модулю корня. При a = 0 уравнение линейное.
-Answer solve(double a, double b, double c) {
+// Пустой коэффициент — поле пусто или набранное числом ещё не стало — даёт прочерки.
+Answer solve(nullable<double> ka, nullable<double> kb, nullable<double> kc) {
     u16_text const none{u"—"};
 
-    if (std::isnan(a) || std::isnan(b) || std::isnan(c)) return {none, none, none};
+    if (!ka || !kb || !kc) return {none, none, none};
+
+    double const a = *ka, b = *kb, c = *kc;
 
     if (a == 0) {
         if (b != 0) return {none, toText(-c / b), none};
@@ -79,8 +79,9 @@ Answer solve(double a, double b, double c) {
 // Коэффициенты пишут поля ввода, ответы показывают поля вывода. Любая правка
 // коэффициента пересчитывает ответ, пока все три — числа. Коэффициенты объявлены
 // выше ответа: поля строятся в порядке объявления, а ответ при постройке читает их.
+// Коэффициент пуст, пока в поле нет числа, и пустым начинается.
 struct Equation : sta_refcounted {
-    observable<double> a{blank}, b{blank}, c{blank};
+    observable<nullable<double>> a, b, c;
     observable<Answer> answer{a, b, c, solve};
 };
 

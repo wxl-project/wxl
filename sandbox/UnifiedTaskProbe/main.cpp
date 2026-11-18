@@ -95,7 +95,7 @@ struct parked {
 
 __declspec(noinline) task<int> at_once(int i) { co_return i; }
 
-__declspec(noinline) task<int> at_once_under(int i, cancellation_token) { co_return i; }
+__declspec(noinline) task<int> at_once_under(int i, stop_token) { co_return i; }
 
 __declspec(noinline) task<int> paused(int depth, std::coroutine_handle<>* slot, int i) {
     if (depth > 1) co_return co_await paused(depth - 1, slot, i);
@@ -105,12 +105,12 @@ __declspec(noinline) task<int> paused(int depth, std::coroutine_handle<>* slot, 
 }
 
 __declspec(noinline) task<int> paused_under(int depth, std::coroutine_handle<>* slot, int i,
-                                            cancellation_token stop) {
+                                            stop_token stop) {
     if (depth > 1) co_return co_await paused_under(depth - 1, slot, i, stop);
 
     // Ожидание приложения, до которого wxl не дотягивается: токен корутина спрашивает сама.
     co_await parked{slot};
-    stop.throw_if_canceled();
+    stop.throw_if_stop_requested();
     co_return i;
 }
 
@@ -136,9 +136,9 @@ auto operation(int i) {
 /// стоит в событии токена, пока жива. У ответа, готового в вызове, такой формы нет: токен
 /// спрашивают до вызова, как его спрашивает код приложения.
 template <leaf kind>
-auto token_operation(int i, const cancellation_token& stop) {
+auto token_operation(int i, const stop_token& stop) {
     if constexpr (kind == leaf::here) {
-        stop.throw_if_canceled();
+        stop.throw_if_stop_requested();
         return sta_loop::call_here([i] { return i; });
     } else if constexpr (kind == leaf::call) {
         return sta_loop::async_call([i] { return i; }, stop);
@@ -156,7 +156,7 @@ __declspec(noinline) task<int> chain(int depth, int i) {
 
 /// Токен идёт вниз параметром, копией в каждый кадр, как его передаёт приложение.
 template <leaf kind>
-__declspec(noinline) task<int> chain_under(int depth, int i, cancellation_token stop) {
+__declspec(noinline) task<int> chain_under(int depth, int i, stop_token stop) {
     if (depth > 1) co_return co_await chain_under<kind>(depth - 1, i, stop);
 
     co_return co_await token_operation<kind>(i, stop);
@@ -311,7 +311,7 @@ void op_alone_row(const char* name, const settings& how) {
 }
 
 template <leaf loop_kind>
-void op_alone_row_under(const char* name, const settings& how, const cancellation_token& stop) {
+void op_alone_row_under(const char* name, const settings& how, const stop_token& stop) {
     const auto at_loop = [&stop](int i) { return token_operation<loop_kind>(i, stop); };
 
     timing here;
@@ -331,7 +331,7 @@ void chain_row(int depth, const settings& how) {
            fan_column(how, [depth](int i) { return chain<leaf::call>(depth, i); }));
 }
 
-void chain_row_under(int depth, const settings& how, const cancellation_token& stop) {
+void chain_row_under(int depth, const settings& how, const stop_token& stop) {
     char name[64];
     std::snprintf(name, sizeof name, "chain d=%d +token", depth);
 
@@ -358,7 +358,7 @@ void file_row(const char* name, const settings& how, long long each, const Make&
 
 constexpr int depths[] = {1, 2, 3, 5, 10};
 
-void task_table(const settings& how, const cancellation_token& stop) {
+void task_table(const settings& how, const stop_token& stop) {
     std::printf(
         "\ntask without the loop -- ns per iteration, "
         "median and best of %d rounds; n = %d\n\n",
@@ -388,7 +388,7 @@ void task_table(const settings& how, const cancellation_token& stop) {
     }
 }
 
-void op_table(const settings& how, const cancellation_token& stop) {
+void op_table(const settings& how, const stop_token& stop) {
     std::printf(
         "\noperation, and chains of coroutines down to one -- ns per iteration, "
         "median and best of %d rounds\n",
@@ -422,7 +422,7 @@ __declspec(noinline) task<bool> prepare(path file, std::string bytes) {
 }
 
 void file_table(const settings& how, const path& file, std::size_t size,
-                const cancellation_token& stop) {
+                const stop_token& stop) {
     std::printf(
         "\nfile by name, one at a time -- ns per iteration, "
         "median and best of %d rounds; n = %d\n\n",
@@ -439,7 +439,7 @@ void file_table(const settings& how, const path& file, std::size_t size,
              [&file, &stop](int) { return async_file::read_all(file, stop); });
 }
 
-void size_table(const path& file, const cancellation_token& stop) {
+void size_table(const path& file, const stop_token& stop) {
     const auto one = [] { return 1; };
 
     std::printf("\nsizes, bytes: what a call returns, unnamed\n\n");
@@ -494,7 +494,7 @@ constexpr int mixed_answer(int depth, int value) {
 /// То же с файлами под токеном: на каждом уровне операция под ним, на дне файл пишется,
 /// спрашивается и читается целиком.
 __declspec(noinline) task<std::string> files_under(int depth, path file, std::string text,
-                                                   cancellation_token stop) {
+                                                   stop_token stop) {
     co_await sta_loop::async_call([] { return 0; }, stop);
 
     if (depth > 1)
@@ -527,7 +527,7 @@ __declspec(noinline) task<int> throws_at_bottom(int depth, bool from_worker, int
 
 /// Цепочка, дно которой стоит под токеном на операции у воркера: тело говорит, что вошло,
 /// и ждёт ворот. Оборвать его нечем -- взятое воркером, оно договаривает.
-__declspec(noinline) task<int> waits_at_gate(int depth, cancellation_token stop,
+__declspec(noinline) task<int> waits_at_gate(int depth, stop_token stop,
                                              std::atomic<bool>* gate, std::atomic<bool>* entered,
                                              int* passed) {
     if (depth > 1) {
@@ -549,7 +549,7 @@ __declspec(noinline) task<int> waits_at_gate(int depth, cancellation_token stop,
 }
 
 /// Цепочка, дно которой спрашивает файл формой с токеном.
-__declspec(noinline) task<bool> asks_under(int depth, path file, cancellation_token stop,
+__declspec(noinline) task<bool> asks_under(int depth, path file, stop_token stop,
                                            int* passed) {
     if (depth > 1) {
         const bool below = co_await asks_under(depth - 1, std::move(file), stop, passed);
@@ -655,7 +655,7 @@ void checks(const path& chain_file) {
     }
 
     {
-        cancellation_source source;
+        stop_source source;
         const std::string text = "what was written comes back";
         std::string got;
 
@@ -696,7 +696,7 @@ void checks(const path& chain_file) {
 
         holding.wait(false);
 
-        cancellation_source source;
+        stop_source source;
         std::atomic<bool> gate{true}, entered{false};
         int passed = 0;
         bool canceled = false;
@@ -704,7 +704,7 @@ void checks(const path& chain_file) {
         task<int> waiting = waits_at_gate(10, source.token(), &gate, &entered, &passed);
         const bool suspended = !waiting.done();
 
-        source.cancel();
+        source.request_stop();
         held.store(false);
         held.notify_one();
 
@@ -724,7 +724,7 @@ void checks(const path& chain_file) {
     {
         // Тело на дне уже идёт: просьба его не обрывает, оно договаривает, и его результат --
         // ответ, который доходит до верха.
-        cancellation_source source;
+        stop_source source;
         std::atomic<bool> gate{false}, entered{false};
         int passed = 0;
         int got = 0;
@@ -733,7 +733,7 @@ void checks(const path& chain_file) {
         task<int> waiting = waits_at_gate(10, source.token(), &gate, &entered, &passed);
         entered.wait(false);
 
-        source.cancel();
+        source.request_stop();
         gate.store(true);
         gate.notify_one();
 
@@ -749,8 +749,8 @@ void checks(const path& chain_file) {
     }
 
     {
-        cancellation_source source;
-        source.cancel();
+        stop_source source;
+        source.request_stop();
         int passed = 0;
         bool canceled = false;
 
@@ -830,8 +830,8 @@ int main(int argc, char** argv) {
         const path file(file_name.c_str());
         const path chain_file(chain_file_name.c_str());
 
-        cancellation_source source;
-        const cancellation_token stop = source.token();
+        stop_source source;
+        const stop_token stop = source.token();
 
         size_table(file, stop);
         checks(chain_file);

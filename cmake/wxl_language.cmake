@@ -14,42 +14,33 @@
 #                                 and stops with the lines to add when it has
 #                                 not: the root does, when a project adds it
 #
-# The language level is C++23, required, without extensions, with the `std`
-# module (CMAKE_CXX_MODULE_STD) and with the sources scanned for imports
-# (CMAKE_CXX_SCAN_FOR_MODULES).
+# The language level is C++23, required, without extensions, with the sources
+# scanned for imports (CMAKE_CXX_SCAN_FOR_MODULES), which is what gives a
+# target the `std` module.
 #
 # Why one set for wxl and its consumers: a target that imports `std` gets the
-# module built for what affects its use, and how much that is depends on the
-# CMake release (Source/cmCxxModuleUsageEffects.cxx, read at v4.3.0, v4.4.0,
-# v4.4.1 and v4.4.4):
+# module built for what affects its use (Source/cmCxxModuleUsageEffects.cxx of
+# CMake, read at v4.5.0): a hash, per configuration, of the target's compile
+# options -- its own, its directory's and those it takes from what it links,
+# but not warning options (/w, /W, /external:) nor preprocessor ones (/D, /I,
+# /U) -- of its CXX_STANDARD, CXX_EXTENSIONS and CXX_STANDARD_REQUIRED, and of
+# its MSVC runtime library. Each distinct hash gets a copy of the module of its
+# own. Compile definitions and CMAKE_CXX_FLAGS are not hashed.
 #
-#   4.3    the hash of those effects is a constant: one copy of the module for
-#          every consumer.
-#   4.4.x  the hash covers, per configuration, the target's compile options --
-#          its own, its directory's and those it takes from what it links, but
-#          not warning options (/w, /W, /external:) and, from 4.4.1, not
-#          preprocessor ones (/D, /I, /U) -- and its CXX_STANDARD,
-#          CXX_EXTENSIONS and CXX_STANDARD_REQUIRED. Each distinct hash gets a
-#          copy of the module of its own. Compile definitions and
-#          CMAKE_CXX_FLAGS are not hashed.
-#
-# So under 4.4 every target that imports a wxl module hashes the same only when
-# all of them carry the same options and level, which directory options set
-# before the first target give them. Not a usage requirement of wxl::core:
-# wxl::core carries /Gw in Release only, so under 4.4 its consumers hash like
-# any other target in Debug and apart from them in Release. With these options
-# on the target too,
-# its consumers would differ from the rest in both configurations, and
-# differently in each; CMake 4.4.1 to 4.4.4 under Ninja Multi-Config makes the
-# Debug and the Release copy depend on each other and stops the generate step
-# on the cycle.
+# So every target that imports a wxl module shares one copy only when all of
+# them carry the same options and level, which directory options set before
+# the first target give them. Not a usage requirement of wxl::core: wxl::core
+# carries /Gw in Release only, so its consumers hash like any other target in
+# Debug and apart from them in Release. With these options on the target too,
+# its consumers would differ from the rest in both configurations, and the
+# `std` module would be built once more in each.
 #
 # The check verifies the mechanism this file prescribes, the COMPILE_OPTIONS of
 # the directory, and nothing else: options a project carries through
 # CMAKE_CXX_FLAGS (or CMAKE_CXX_FLAGS_INIT) reach the command line but not the
-# hash of 4.4, so such a project is still asked to add them as directory
-# options. The command line then carries them twice, and the directory options
-# are the spelling the comparison of 4.4 sees.
+# hash, so such a project is still asked to add them as directory options. The
+# command line then carries them twice, and the directory options are the
+# spelling the hash sees.
 #
 # /Zc:throwingNew tells the compiler that allocation functions follow the
 # standard: one that is not noexcept never returns null. The pool never does --
@@ -72,17 +63,20 @@
 
 set(WXL_LANGUAGE_OPTIONS /permissive- /utf-8 /Zc:throwingNew)
 
+# The language level, CMAKE_CXX_STANDARD: the version of the standard, without
+# extensions.
+set(WXL_CXX_STANDARD 23)
+
 # The warning level wxl's own targets, its samples and its sandbox are built at.
-# Not part of the language: warning options are not hashed by CMake 4.4, so a
+# Not part of the language: warning options are not hashed by CMake, so a
 # project that adds wxl keeps the level of its own, and the check above does not
 # ask for it.
-set(WXL_WARNING_OPTIONS /W3)
+set(WXL_WARNING_OPTIONS /W4)
 
 function(wxl_apply_language_options)
-    set(CMAKE_CXX_STANDARD 23 PARENT_SCOPE)
+    set(CMAKE_CXX_STANDARD ${WXL_CXX_STANDARD} PARENT_SCOPE)
     set(CMAKE_CXX_STANDARD_REQUIRED ON PARENT_SCOPE)
     set(CMAKE_CXX_EXTENSIONS OFF PARENT_SCOPE)
-    set(CMAKE_CXX_MODULE_STD 1 PARENT_SCOPE)
     set(CMAKE_CXX_SCAN_FOR_MODULES ON PARENT_SCOPE)
 
     if(WIN32)
@@ -110,10 +104,10 @@ function(wxl_check_language_options)
         endif()
     endif()
 
-    if(NOT CMAKE_CXX_STANDARD STREQUAL "23")
+    if(NOT CMAKE_CXX_STANDARD STREQUAL WXL_CXX_STANDARD)
         string(APPEND missing
-            "\n  CMAKE_CXX_STANDARD: \"${CMAKE_CXX_STANDARD}\", which is not 23")
-        string(APPEND lines "\n    set(CMAKE_CXX_STANDARD 23)")
+            "\n  CMAKE_CXX_STANDARD: \"${CMAKE_CXX_STANDARD}\", which is not ${WXL_CXX_STANDARD}")
+        string(APPEND lines "\n    set(CMAKE_CXX_STANDARD ${WXL_CXX_STANDARD})")
     endif()
     if(NOT CMAKE_CXX_STANDARD_REQUIRED)
         string(APPEND missing
@@ -124,11 +118,6 @@ function(wxl_check_language_options)
         string(APPEND missing
             "\n  CMAKE_CXX_EXTENSIONS: \"${CMAKE_CXX_EXTENSIONS}\", which is not set false")
         string(APPEND lines "\n    set(CMAKE_CXX_EXTENSIONS OFF)")
-    endif()
-    if(NOT CMAKE_CXX_MODULE_STD)
-        string(APPEND missing
-            "\n  CMAKE_CXX_MODULE_STD: \"${CMAKE_CXX_MODULE_STD}\", which is not true")
-        string(APPEND lines "\n    set(CMAKE_CXX_MODULE_STD 1)")
     endif()
     if(NOT CMAKE_CXX_SCAN_FOR_MODULES)
         string(APPEND missing

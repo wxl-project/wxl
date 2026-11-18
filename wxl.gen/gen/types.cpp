@@ -723,7 +723,15 @@ type_use map_element_type(std::string_view metadata_name) {
     if (metadata_name == "String") {
         return string_type();
     }
-    return unsupported(std::format("{} is not a metadata type, and not String", metadata_name));
+    if (metadata_name == "Object") {
+        return wrapper_type("Object", "winrt::Windows::Foundation::IInspectable", "../Object.h");
+    }
+    if (auto const* name = element_type_name(metadata_name)) {
+        return primitive(name);
+    }
+    return unsupported(
+        std::format("{} is not a metadata type, nor a type metadata names as an element",
+                    metadata_name));
 }
 
 std::string substitute(std::string_view expression, std::string_view argument) {
