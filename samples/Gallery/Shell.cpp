@@ -467,16 +467,7 @@ void onSelected(NavigationView const& sender, bool settingsSelected) {
     }
     auto const name = gallery::wide(selected.name());
     if (name == homeName) {
-        // The notifications of the application are shown by the shell once it knows the application.
-    if (AppNotificationManager::isSupported()) {
-        try {
-            AppNotificationManager::default_().register_();
-        } catch (...) {
-            // An application the shell cannot register shows no notifications; the page says nothing else.
-        }
-    }
-
-    show({Place::Home, {}}, true);
+        show({Place::Home, {}}, true);
     } else if (name == allControlsName) {
         show({Place::AllControls, {}}, true);
     } else if (name.starts_with(L"group:")) {
@@ -684,11 +675,7 @@ Window createMainWindow() {
 
     // The notifications of the application are shown by the shell once it knows the application.
     if (AppNotificationManager::isSupported()) {
-        try {
-            AppNotificationManager::default_().register_();
-        } catch (...) {
-            // An application the shell cannot register shows no notifications; the page says nothing else.
-        }
+        AppNotificationManager::default_().register_();
     }
 
     show({Place::Home, {}}, true);
@@ -749,10 +736,7 @@ void trackWindow(CompositionWindow const& window, std::shared_ptr<void> state) {
 
 void destroyMainWindow() {
     if (AppNotificationManager::isSupported()) {
-        try {
-            AppNotificationManager::default_().unregister();
-        } catch (...) {
-        }
+        AppNotificationManager::default_().unregister();
     }
     for (auto const& tracked : std::vector<Shell::TrackedComposition>(shell->compositionWindows)) {
         tracked.window.close();
