@@ -2,8 +2,8 @@ build/
 out/
 .vs/
 .vscode/
-_ReSharper.Caches/
 .sysprogside/
+_ReSharper.Caches/
 
 CMakeUserPresets.json
 

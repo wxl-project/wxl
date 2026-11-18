@@ -57,7 +57,9 @@ public:
     /// use is for each thread that waits on the same shared state to have a \e copy of a future.
     ///
     /// \throw std::logic_error if this instance does not refer to a shared state.
-    inline void wait() const { checked_state()->wait(); }
+    inline void wait() const {
+        checked_state()->wait();
+    }
 
     inline future_status wait_for(core::duration timeout) const {
         return checked_state()->wait_for(timeout);
@@ -71,7 +73,8 @@ protected:
 
     future_base(const future_base&) = default;
 
-    inline future_base(future_base&& other) noexcept : base(std::move(other)) {}
+    inline future_base(future_base&& other) noexcept
+        : base(std::move(other)) {}
 
     inline future_base& operator=(const future_base& other)  // Copy assign
     {
@@ -97,14 +100,17 @@ private:
 class future_accessor
 {
 public:
-    inline static const future_shared_state* state_of(const future_base& f) { return f.state(); }
+    inline static const future_shared_state* state_of(const future_base& f) {
+        return f.state();
+    }
 
     inline static const future_shared_state* checked_state_of(const future_base& f) {
         return f.checked_state();
     }
 
     inline static const future_shared_state* checked(const future_shared_state* state) {
-        if (state) return state;
+        if (state) [[likely]]
+            return state;
 
         throw_invalid_future();
     }
@@ -125,7 +131,7 @@ struct forward_value_func {
         : result_(result) {}
 
     void operator()(const state* by_state) noexcept {
-        if (by_state->id() == state_id::failed) {
+        if (by_state->id() == state_id::failed) [[unlikely]] {
             result_->set_exception(by_state);
             return;
         }
@@ -149,7 +155,7 @@ struct unwrap_func {
         : task_(std::move(task)), result_(result) {}
 
     void operator()(const state* by_state) noexcept {
-        if (by_state->id() == state_id::failed) {
+        if (by_state->id() == state_id::failed) [[unlikely]] {
             result_->set_exception(by_state);
             return;
         }
@@ -590,11 +596,13 @@ inline future<std::tuple<t_futures...>> when_all(const t_futures&... futures) {
 /// nothing to wait for, the result is ready at once.
 template <std::input_iterator t_iterator, std::sentinel_for<t_iterator> t_sentinel>
 inline future<void> when_any(t_iterator begin, t_sentinel end) {
-    if (begin == end) return make_ready_future();
+    if (begin == end) [[unlikely]]
+        return make_ready_future();
 
     detail::first_of first;
 
-    for (; begin != end; ++begin) first.add(detail::checked_state_of(*begin));
+    for (; begin != end; ++begin)
+        first.add(detail::checked_state_of(*begin));
 
     return first.get_future();
 }
