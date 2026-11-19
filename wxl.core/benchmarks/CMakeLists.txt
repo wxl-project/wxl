@@ -25,7 +25,7 @@ wxl_add_benchmark(wxl.core.sta-memory-pool-page-benchmark SOURCES sta_memory_poo
 target_link_libraries(wxl.core.sta-memory-pool-page-benchmark PRIVATE wxl::core)
 
 # The text half of the module: the transcoders against MultiByteToWideChar and
-# WideCharToMultiByte. What it found is in doc/unicode.md.
+# WideCharToMultiByte.
 wxl_add_benchmark(wxl.core.unicode-transcode-benchmark SOURCES unicode_transcode_benchmark.cpp)
 
 target_link_libraries(wxl.core.unicode-transcode-benchmark PRIVATE wxl::core)

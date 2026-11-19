@@ -59,9 +59,7 @@ using namespace wxl::async;
 namespace {
 
 // The alignas members below are meant to cost padding: that is what keeps the two sides'
-// counters on lines of their own. C4324 reports the padding at level 4, and the benchmark is
-// built with the tree's warnings as errors, so it is silenced here, where the padding is
-// known to be the point.
+// counters on lines of their own. C4324 reports that padding, which is the point.
 #pragma warning(push)
 #pragma warning(disable : 4324)  // structure was padded due to alignment specifier
 

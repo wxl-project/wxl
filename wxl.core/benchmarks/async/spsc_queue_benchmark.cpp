@@ -18,25 +18,23 @@
 // the two sides of a pair on different cores, every queue grown past the caches by its own
 // backlog first. What all of them share there is the L3 and the path to memory.
 //
-// The ring rows are the ring of blocks spsc_queue used to be (spsc_block_ring.h), there for
-// comparison only: a ring that never recycles a block and grows by one when the writer
-// catches up with the reader, so after a burst it keeps walking every block the burst made
-// it grow. It is what the claim about the queue's handover is measured against.
+// The ring rows are a ring of blocks (spsc_block_ring.h), there for comparison only: a ring that
+// never recycles a block and grows by one when the writer catches up with the reader, so after
+// a burst it keeps walking every block the burst made it grow. It is what the queue's handover
+// is measured against.
 //
 // The slots rows, in the table after a burst and in the many-queues one, are a ring of slots
 // in the manner of the Disruptor (spsc_slot_ring.h): one array of a size chosen in advance,
 // which never grows and never gives memory back, so the burst it takes is its whole
-// capacity. Three sizes, by the 12 MB L3 of the i7-8700K the claims were measured on: 1 MB
-// and 8 MB inside it, 16 MB past it. A fragmented heap changes nothing for a single
-// allocation, and that is expected.
+// capacity. Three sizes: 1 MB and 8 MB, which fit a typical L3, and 16 MB, which does not. A
+// fragmented heap changes nothing for a single allocation, and that is expected.
 //
-// The many-queues table asks the machine-wide question again with many queues per thread.
-// The hypothesis: on a busy machine, slot rings, each sweeping its whole array, wash the
-// shared L3 out between them, while spsc_queue, settled on two warm blocks per queue, keeps
-// its working set there -- and the machine as a whole moves more. The pairs and their pinning
-// are the machine-wide table's, but every pair has 8 queues of its own, 48 on the i7-8700K:
-// the writer puts one element into each in turn, the reader takes one from each in the same
-// order and spins on a queue that is empty. Nothing is grown beforehand -- spsc_queue grows
+// The many-queues table asks the machine-wide question again with many queues per thread:
+// slot rings, each sweeping its whole array, take the shared L3 between them, while
+// spsc_queue settles on two warm blocks per queue. The pairs and their pinning are the
+// machine-wide table's, but every pair has 8 queues of its own: the writer puts one element
+// into each in turn, the reader takes one from each in the same order and spins on a queue
+// that is empty. Nothing is grown beforehand -- spsc_queue grows
 // only as the traffic needs, a slot ring is made its size -- and the clock is the wall clock,
 // from a barrier after the warm-up to the last reader done.
 //
@@ -968,6 +966,11 @@ int main(int argc, char** argv) {
     const std::size_t pairs =
         positional.size() > 1 ? static_cast<std::size_t>(std::atoi(positional[1]))
                               : std::max<std::size_t>(1, std::thread::hardware_concurrency() / 2);
+
+    if (rounds <= 0 || pairs == 0) {
+        std::cerr << usage;
+        return 2;
+    }
 
     // How big a backlog grows the queue before anything is measured. It is an argument
     // because the answer to "does walking what a burst grew cost anything" depends on

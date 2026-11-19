@@ -23,8 +23,8 @@
 # code 1.
 [CmdletBinding()]
 param(
-    # The MSVC toolset, passed on to build.ps1.
-    [string]$Toolset = '14.53'
+    # The MSVC toolset, passed on to build.ps1; without it build.ps1 uses its own default.
+    [string]$Toolset
 )
 
 $ErrorActionPreference = 'Stop'
@@ -36,7 +36,8 @@ $config = 'Release'
 #
 # In this process: build.ps1 imports the Visual Studio environment into it, and
 # the compiler banner below is asked of the same toolset.
-& (Join-Path $PSScriptRoot 'build.ps1') -Config $config -BuildDir $buildDir -Toolset $Toolset `
+$toolsetArguments = if ($Toolset) { @('-Toolset', $Toolset) } else { @() }
+& (Join-Path $PSScriptRoot 'build.ps1') -Config $config -BuildDir $buildDir @toolsetArguments `
     -Target wxl.benchmarks -Define 'WXL_BUILD_BENCHMARKS=ON', 'WXL_BUILD_DOCS=OFF'
 if ($LASTEXITCODE -ne 0) { throw "The benchmarks did not build (exit code $LASTEXITCODE)." }
 
@@ -61,13 +62,14 @@ $os = Get-CimInstance Win32_OperatingSystem
 $ubr = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').UBR
 $power = (powercfg /getactivescheme | Out-String).Trim()
 
-# How busy the whole machine is: the load of every processor, each averaged by
-# Windows over the last second, and their mean. Asked a second after the
+# How busy the whole machine is: the load of every processor package, each
+# averaged by Windows over the last second, and their mean. Asked a second after the
 # previous benchmark has ended, so that the second it covers is not that
 # benchmark's own.
 function Get-MachineLoad {
     Start-Sleep -Seconds 1
     $loads = @(Get-CimInstance Win32_Processor | ForEach-Object { $_.LoadPercentage })
+    if ($loads.Count -eq 0 -or $loads -contains $null) { throw 'Windows did not report the processor load.' }
     [math]::Round(($loads | Measure-Object -Average).Average, 1)
 }
 

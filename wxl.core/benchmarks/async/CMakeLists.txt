@@ -6,8 +6,8 @@ wxl_add_benchmark(wxl.async.mpsc-queue-benchmark SOURCES mpsc_queue_benchmark.cp
 
 target_link_libraries(wxl.async.mpsc-queue-benchmark PRIVATE wxl::core)
 
-# spsc_queue against the ring of blocks it used to be and a ring of slots in the
-# manner of a Disruptor, both kept in the headers beside it for this comparison
+# spsc_queue against a ring of blocks that never recycles one and a ring of slots in
+# the manner of a Disruptor, both kept in the headers beside it for this comparison
 # only.
 wxl_add_benchmark(wxl.async.spsc-queue-benchmark
     SOURCES

@@ -1,10 +1,9 @@
 #pragma once
 
-// The ring of blocks wxl.async's spsc_queue used to be, kept here for comparison only: the
-// contender the queue of today is measured against, a ring that never recycles and grows when
-// it is full. It is not part of the library and nothing outside this benchmark uses it.
-//
-// The algorithm is that earlier spsc_queue's, text and all, under a name of its own.
+// A ring of blocks for one writing and one reading thread, kept here for comparison only: the
+// contender spsc_queue is measured against. Unlike it, the ring never recycles a block and
+// grows by one when the writer catches up with the reader. It is not part of the library and
+// nothing outside this benchmark uses it.
 
 #include <cassert>
 #include <cstddef>
@@ -22,44 +21,11 @@ namespace {
 #pragma warning(disable : 4324)  // structure was padded due to alignment specifier
 
 /// Unbounded queue for exactly one writing and one reading thread, made of blocks of
-/// `block_size` elements linked into a ring. Neither side ever waits: the writer fills the
-/// block it owns and steps to the next one, the reader walks behind it around the same
-/// ring, and a queue that has reached its working size stops allocating altogether.
-///
-/// **Recycling is not an operation.** The block the writer needs next is the one already
-/// linked after the block it has just filled, so there is no free list to put a drained
-/// block into and no link to rewrite -- `next_` is written once, when a block is spliced
-/// into the ring, and never again. The whole protocol between the threads is a single
-/// pointer: the reader publishes the block it is working on, and the writer takes the next
-/// one whenever that is not the block the reader is sitting on. When it is, the ring is
-/// full and grows by one block spliced in behind the writer.
-///
-/// **The block the writer may not take is the point of the design, not its price.** It is
-/// what keeps the two threads arbitrating at block granularity: were the writer allowed
-/// into the reader's block, the two would have to compare positions inside it, which means
-/// the reader publishing its index on every element read and the writer loading it on every
-/// element written. Data availability travels the other way and stays per element, because
-/// that direction is one-way and asks nobody for permission.
-///
-/// **No locked instruction anywhere on the running path.** Every value shared here has
-/// exactly one writer -- the writer's position in a block, and the reader's
-/// cursor -- so a release store and an acquire load carry all the ordering there is to
-/// carry, and neither of them is a read-modify-write. No cache line is ever taken
-/// exclusively for a CAS; on x86-64 the whole machinery is plain moves.
-///
-/// The queue **is** the writer: `write()` and `emplace()` belong to the producing thread
-/// and the cursor they advance is a field of the queue itself, so a producer that keeps the
-/// queue by value on its stack reaches its own state without a hop. The consumer's state is
-/// the same kind of object one level down -- a `reader` built from the queue, by value on
-/// the consuming thread's stack. There is one of each, and the second `reader` is an assert.
-///
-/// Teardown happens with the traffic stopped: the reader is destroyed once the writing
-/// thread is done with the queue, and the queue after the reader. Every block ever
-/// allocated is on the ring, and the queue frees all of them.
-///
-/// There is no signalling here on purpose. A consumer with nothing to read has to be woken
-/// by something the caller owns -- an event next to the queue, the way `shared_buffer`
-/// does it -- never by re-reading the queue on a timer.
+/// `block_size` elements linked into a ring. The writer fills its block and steps to the next
+/// one unless the reader is in it; then the ring is full and a block is spliced in. The reader
+/// walks behind the writer around the same ring. Each shared value has one writer, so a release
+/// store and an acquire load carry the ordering and no locked instruction runs. Teardown happens
+/// with the traffic stopped; the queue frees every block on the ring.
 template <class element_t, size_t block_size>
 class spsc_block_ring : public wxl::core::noncopyable
 {

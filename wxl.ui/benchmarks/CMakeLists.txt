@@ -16,10 +16,6 @@
 # (wxl_add_benchmark): among what it declares is that the process handles
 # per-monitor DPI itself, and a window bitmap-stretched on a scaled display
 # would be a different scene to measure.
-# The wxl half opens wxl::dsl at file scope, as an application does, so a local
-# named like a tag is expected there and C4459 says nothing about it.
-add_compile_options(/wd4459)
-
 function(_wxl_scene_benchmark target)
     # The bootstrapper and Win2D, from wxl itself: the benchmark is not made by
     # wxl_add_executable(), so it asks for the runtime by hand -- and by the
@@ -39,6 +35,10 @@ wxl_add_benchmark(wxl.ui.scene-wxl-benchmark
 )
 
 target_link_libraries(wxl.ui.scene-wxl-benchmark PRIVATE wxl::ui.full)
+
+# It opens wxl::dsl at file scope, as an application does, so a local named like a
+# tag is expected there and C4459 says nothing about it.
+target_compile_options(wxl.ui.scene-wxl-benchmark PRIVATE /wd4459)
 
 _wxl_scene_benchmark(wxl.ui.scene-wxl-benchmark)
 

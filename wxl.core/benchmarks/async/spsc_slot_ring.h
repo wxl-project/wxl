@@ -2,7 +2,7 @@
 
 // A ring of slots in the manner of the LMAX Disruptor, single producer and single consumer,
 // kept here for comparison only: the contender of a size chosen in advance against queues
-// that grow and give memory back. It is not part of the library and nothing outside this
+// that grow and recycle their blocks. It is not part of the library and nothing outside this
 // benchmark uses it.
 
 #include <cassert>

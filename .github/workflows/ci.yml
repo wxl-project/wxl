@@ -148,8 +148,8 @@ jobs:
       # consumers from the installed tree: install-ui and install-extended set
       # a timeout of their own, above the default the Test step gives, which
       # does not override it.
-      # The same rows build the benchmarks (WXL_BUILD_BENCHMARKS) and do not
-      # run them: so that they compile on every change.
+      # The same rows build the benchmarks (WXL_BUILD_BENCHMARKS) and do not run
+      # them: a change that breaks a benchmark must fail CI.
       - name: Configure
         shell: cmd
         run: |
