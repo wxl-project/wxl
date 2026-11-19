@@ -355,8 +355,10 @@ TEST(FunctionTest, AnOptionalResultTakesAValueAnOptionalOrNothing) {
 
 // The one way left to call nothing: dereference a nullable that is empty
 // without having asked. That is a mistake in the program, not a case to handle
-// -- there is no result to invent and nothing sensible to do -- so it names the
-// reason and aborts, in every build. See not_null's death test for the CRT
+// -- there is no result to invent and nothing sensible to do. Nothing checks it
+// on purpose, so that the call that is not a mistake pays nothing for the
+// check: the empty function is a null body pointer, the call goes through it,
+// and the process dies on the access. See not_null's death test for the CRT
 // settings.
 void call_an_empty_one() {
     _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE);
