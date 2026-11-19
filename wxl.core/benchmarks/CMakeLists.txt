@@ -1,51 +1,34 @@
 # Measurement tools, built only when WXL_BUILD_BENCHMARKS is on: each is a plain
 # executable timing itself, because what is compared here is a handful of
 # nanoseconds per operation and no test framework should be standing in that.
-# Each carries the manifest of wxl's executables (wxl_target_manifest).
+# Each is declared by wxl_add_benchmark() and carries the manifest of wxl's
+# executables.
 
-add_executable(wxl.core.sta-allocator-benchmark sta_allocator_benchmark.cpp)
+wxl_add_benchmark(wxl.core.sta-allocator-size-grid-benchmark SOURCES sta_allocator_size_grid_benchmark.cpp)
 
-target_link_libraries(wxl.core.sta-allocator-benchmark PRIVATE wxl::core)
+target_link_libraries(wxl.core.sta-allocator-size-grid-benchmark PRIVATE wxl::core)
 
-wxl_target_manifest(wxl.core.sta-allocator-benchmark)
-wxl_set_target_folders(wxl.core.sta-allocator-benchmark)
+wxl_add_benchmark(wxl.core.sta-allocator-nested-containers-benchmark SOURCES sta_allocator_nested_containers_benchmark.cpp)
 
-add_executable(wxl.core.sta-scenario-benchmark sta_allocator_scenario_benchmark.cpp)
+target_link_libraries(wxl.core.sta-allocator-nested-containers-benchmark PRIVATE wxl::core)
 
-target_link_libraries(wxl.core.sta-scenario-benchmark PRIVATE wxl::core)
+wxl_add_benchmark(wxl.core.sta-memory-pool-bump-benchmark SOURCES sta_memory_pool_bump_benchmark.cpp)
 
-wxl_target_manifest(wxl.core.sta-scenario-benchmark)
-wxl_set_target_folders(wxl.core.sta-scenario-benchmark)
+target_link_libraries(wxl.core.sta-memory-pool-bump-benchmark PRIVATE wxl::core)
 
-add_executable(wxl.core.sta-bump-only-benchmark sta_bump_only_benchmark.cpp)
+wxl_add_benchmark(wxl.core.sta-memory-pool-alloc-path-benchmark SOURCES sta_memory_pool_alloc_path_benchmark.cpp)
 
-target_link_libraries(wxl.core.sta-bump-only-benchmark PRIVATE wxl::core)
+target_link_libraries(wxl.core.sta-memory-pool-alloc-path-benchmark PRIVATE wxl::core)
 
-wxl_target_manifest(wxl.core.sta-bump-only-benchmark)
-wxl_set_target_folders(wxl.core.sta-bump-only-benchmark)
+wxl_add_benchmark(wxl.core.sta-memory-pool-page-benchmark SOURCES sta_memory_pool_page_benchmark.cpp)
 
-add_executable(wxl.core.sta-get-benchmark sta_allocator_get_benchmark.cpp)
-
-target_link_libraries(wxl.core.sta-get-benchmark PRIVATE wxl::core)
-
-wxl_target_manifest(wxl.core.sta-get-benchmark)
-wxl_set_target_folders(wxl.core.sta-get-benchmark)
-
-add_executable(wxl.core.page-allocation-benchmark page_allocation_benchmark.cpp)
-
-target_link_libraries(wxl.core.page-allocation-benchmark PRIVATE wxl::core)
-
-wxl_target_manifest(wxl.core.page-allocation-benchmark)
-wxl_set_target_folders(wxl.core.page-allocation-benchmark)
+target_link_libraries(wxl.core.sta-memory-pool-page-benchmark PRIVATE wxl::core)
 
 # The text half of the module: the transcoders against MultiByteToWideChar and
-# WideCharToMultiByte. What it found is in doc/unicode.md.
-add_executable(wxl.core.transcode-benchmark transcode_benchmark.cpp)
+# WideCharToMultiByte.
+wxl_add_benchmark(wxl.core.unicode-transcode-benchmark SOURCES unicode_transcode_benchmark.cpp)
 
-target_link_libraries(wxl.core.transcode-benchmark PRIVATE wxl::core)
-
-wxl_target_manifest(wxl.core.transcode-benchmark)
-wxl_set_target_folders(wxl.core.transcode-benchmark)
+target_link_libraries(wxl.core.unicode-transcode-benchmark PRIVATE wxl::core)
 
 # The benchmarks of the areas of the module, one directory each.
 add_subdirectory(fmt)

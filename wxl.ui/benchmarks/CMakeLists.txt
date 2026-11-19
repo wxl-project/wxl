@@ -12,17 +12,14 @@
 # reason a sample does: unpackaged, no WinUI class activates until the
 # framework package is resolved.
 
+# Both halves carry the manifest of wxl's executables, like every benchmark
+# (wxl_add_benchmark): among what it declares is that the process handles
+# per-monitor DPI itself, and a window bitmap-stretched on a scaled display
+# would be a different scene to measure.
 function(_wxl_scene_benchmark target)
-    # The manifest of wxl's executables, for both halves alike: among what it
-    # declares is that the process handles per-monitor DPI itself, and a window
-    # bitmap-stretched on a scaled display would be a different scene to measure.
-    wxl_target_manifest(${target})
-
-    wxl_set_target_folders(${target})
-
-    # The bootstrapper and Win2D, from wxl itself: the benchmark declares its
-    # own target rather than going through wxl_add_executable(), so it asks
-    # for the runtime by hand -- and by the same call.
+    # The bootstrapper and Win2D, from wxl itself: the benchmark is not made by
+    # wxl_add_executable(), so it asks for the runtime by hand -- and by the
+    # same call.
     wxl_target_runtime(${target})
 endfunction()
 
@@ -30,13 +27,18 @@ endfunction()
 #
 # An application as one written against wxl looks: it links the library of the
 # full profile and nothing else, and it never sees the cppwinrt projection.
-add_executable(wxl.ui.scene-wxl-benchmark
-    scene_shape.h
-    scene_report.h
-    scene_wxl.cpp
+wxl_add_benchmark(wxl.ui.scene-wxl-benchmark
+    SOURCES
+        scene_shape.h
+        scene_report.h
+        scene_wxl_benchmark.cpp
 )
 
 target_link_libraries(wxl.ui.scene-wxl-benchmark PRIVATE wxl::ui.full)
+
+# It opens wxl::dsl at file scope, as an application does, so a local named like a
+# tag is expected there and C4459 says nothing about it.
+target_compile_options(wxl.ui.scene-wxl-benchmark PRIVATE /wd4459)
 
 _wxl_scene_benchmark(wxl.ui.scene-wxl-benchmark)
 
@@ -46,10 +48,11 @@ _wxl_scene_benchmark(wxl.ui.scene-wxl-benchmark)
 # on its own, so this target wires up the same runtime dependencies wxl would
 # have wired up for it -- the projection headers, the bootstrapper, and the
 # WinRT runtime object library.
-add_executable(wxl.ui.scene-winrt-benchmark
-    scene_shape.h
-    scene_report.h
-    scene_winrt.cpp
+wxl_add_benchmark(wxl.ui.scene-winrt-benchmark
+    SOURCES
+        scene_shape.h
+        scene_report.h
+        scene_winrt_benchmark.cpp
 )
 
 target_compile_features(wxl.ui.scene-winrt-benchmark PRIVATE cxx_std_23)

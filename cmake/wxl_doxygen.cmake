@@ -236,7 +236,6 @@ function(wxl_doxygen_tree_inputs input_var exclude_var images_var root)
     set(${exclude_var}
         "*/tests/*"
         "*/test/*"
-        "*/bench/*"
         "*/benchmarks/*"
         "*/tools/*"
         "*/wxl.core/src/*/README.md"

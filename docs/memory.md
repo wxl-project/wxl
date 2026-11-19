@@ -59,8 +59,8 @@
 значительно уступал на непрерывных последовательных выделениях памяти и не
 давал преимуществ на реальной нагрузке. Стенда с вариантами в дереве нет.
 Текущий пул в абсолютных числах измеряет бенчмарк
-`wxl.core.sta-get-benchmark`, а сравнение с системной кучей печатают
-`wxl.core.sta-allocator-benchmark` и `wxl.core.sta-scenario-benchmark`.
+`wxl.core.sta-memory-pool-alloc-path-benchmark`, а сравнение с системной кучей печатают
+`wxl.core.sta-allocator-size-grid-benchmark` и `wxl.core.sta-allocator-nested-containers-benchmark`.
 Подробный разбор архитектуры приведён в
 [статье 2](https://habr.com/ru/articles/1082702/).
 

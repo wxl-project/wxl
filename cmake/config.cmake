@@ -25,6 +25,9 @@ include("${CMAKE_CURRENT_LIST_DIR}/wxl_helpers.cmake")
 # tree's own docs/ and the site of a project that adds wxl. Not installed with
 # the package, hence not among the helpers.
 include("${CMAKE_CURRENT_LIST_DIR}/wxl_doxygen.cmake")
+# The benchmarks of the tree (wxl_add_benchmark): measurement tools of wxl's own
+# build, not something a consumer declares, so they do not travel with the package.
+include("${CMAKE_CURRENT_LIST_DIR}/wxl_add_benchmark.cmake")
 # --- includes end ----
 
 set(CMAKE_MODULE_PATH ${_old_module_path})

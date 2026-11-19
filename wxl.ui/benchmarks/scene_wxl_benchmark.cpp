@@ -2,14 +2,18 @@
 // one expression, no element held in a variable, every property written
 // inside the braces of the element it belongs to.
 //
-// Its twin is scene_winrt.cpp, which builds the same scene through the
+// Its twin is scene_winrt_benchmark.cpp, which builds the same scene through the
 // cppwinrt projection by hand. What the pair measures is the cost of bringing
 // a window's worth of controls into existence -- activations, property
 // writes, event subscriptions -- and nothing else: the texts are made before
 // the stopwatch starts, and no theme resource is looked up.
 //
-// A console subsystem executable on purpose, unlike the samples: the window
-// still opens, and the table still has somewhere to go.
+// A console subsystem executable on purpose, unlike the samples: the table
+// has somewhere to go. Once it is printed the window is closed and the
+// benchmark exits, like every other; --keep-open activates the window instead
+// and leaves the scene on screen until it is closed.
+//
+// Usage: wxl.ui.scene-wxl-benchmark [--keep-open]
 
 // The benchmark's own headers first, and with them the standard headers they
 // use: every wxl header carries the wxl.core import, and MSVC takes no
@@ -410,6 +414,22 @@ int verify(std::vector<CardHandles> const& handles) {
 }  // namespace
 
 wxl::Teardown wxl_launched() {
+    // wxl owns the entry point; the arguments come from the process's command
+    // line, the program first.
+    auto const arguments = core::environment::command_line();
+    bool keepOpen = false;
+    for (std::size_t index = 1; index < arguments.size(); ++index) {
+        if (arguments[index] == L"--keep-open") {
+            keepOpen = true;
+        } else {
+            std::fputs("usage: wxl.ui.scene-wxl-benchmark [--keep-open]\n", stderr);
+            // No scene and no table; the one window made is closed at once, and
+            // with it the application ends, on the exit code the handler names.
+            Window{}.close();
+            return [](TeardownReason) -> std::optional<int> { return 2; };
+        }
+    }
+
     // Before anything is timed: the two texts that differ from card to card.
     // Formatting a number is not what this benchmark is about, and neither
     // side should be caught doing it with the stopwatch running.
@@ -429,8 +449,8 @@ wxl::Teardown wxl_launched() {
         runs.push_back(bench::milliseconds(finished - started));
     }
 
-    // The second measurement, on a scene of its own so that the window is
-    // left showing a scene nobody has written over. The tree, the handles
+    // The second measurement, on a scene of its own so that the window --
+    // kept with --keep-open -- shows a scene nobody has written over. The tree, the handles
     // into it and the brushes a pass hands out are all made before the
     // stopwatch starts: what is timed is property writes and nothing else.
     std::vector<double> passTimes;
@@ -451,9 +471,9 @@ wxl::Teardown wxl_launched() {
         checksPassed = verify(handles);
     }
 
-    // And once more for the window that stays on screen, timed the way the
-    // question is asked: from nothing to a window whose content is set,
-    // stopped on the line before activate().
+    // And once more for the window that stays on screen with --keep-open,
+    // timed the way the question is asked: from nothing to a window whose
+    // content is set, stopped on the line before activate().
     auto const started = bench::clock::now();
     auto const window = Window{
         title = bench::windowTitle,
@@ -465,6 +485,13 @@ wxl::Teardown wxl_launched() {
                        walk(window.content().try_as<Grid>()), bench::elements, bench::events);
     bench::reportPass(passTimes, bench::writesPerPass, bench::writesPerCard, checksPassed,
                       bench::sampledChecks);
+
+    // The table is out. Closing the last window ends the application, the
+    // way a WinUI3 application ends.
+    if (!keepOpen) {
+        window.close();
+        return {};
+    }
 
     auto const appWindow = window.appWindow();
     appWindow.resize({1560, 940});

@@ -53,6 +53,11 @@ import wxl.core;
 
 namespace {
 
+// The alignas mailbox below is meant to cost padding: that is what keeps the threads' slots
+// on lines of their own. C4324 reports that padding, which is the point.
+#pragma warning(push)
+#pragma warning(disable : 4324)  // structure was padded due to alignment specifier
+
 using wxl::core::sta_memory_pool;
 
 // What a job does: two calls on either side of the suspension, into a function the
@@ -347,6 +352,8 @@ void report(const char* what, const measurement& m, const measurement& floor, un
     std::printf("%-36s %10.2f %12.2f %12.2f %10zu\n", what, m.ns, m.ns - floor.ns,
                 static_cast<double>(m.frames) / count, m.frame_size);
 }
+
+#pragma warning(pop)
 
 }  // namespace
 

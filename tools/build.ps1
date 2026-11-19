@@ -34,6 +34,7 @@
 #   tools\build.ps1 -Define WXL_BUILD_BENCHMARKS=ON   # re-configure, then build
 #   tools\build.ps1 -UpdatePackages # update the NuGet packages and the lock file, then build
 #   tools\build.ps1 -Toolset 14.52  # another installed MSVC toolset; the default is pinned below
+#   tools\build.ps1 -BuildDir build\bench  # a build directory of its own (tools\bench.ps1 uses it)
 #
 # -Define takes a list: in PowerShell, -Define A=ON,B=OFF. From cmd.exe, where
 # `pwsh script.ps1` passes the commas on as text, run the script through
@@ -52,6 +53,12 @@ param(
     # switching is one value, not three files under Program Files. Ignored when
     # the script runs inside a developer prompt already -- that prompt chose.
     [string]$Toolset = '14.53',
+
+    # The build directory, relative to the tree's root or absolute. By default the
+    # preset's own, build\<preset>; another one keeps its own cache and outputs, so
+    # a tree configured differently there -- the benchmarks, in Release -- leaves
+    # the everyday one alone.
+    [string]$BuildDir,
 
     # Cache entries passed on to the configure step, without the -D. They stick
     # in CMakeCache.txt, so a later run without them keeps whatever was set.
@@ -72,10 +79,15 @@ if ($Configure -and $Target) { throw '-Configure stops before the build: -Target
 
 Import-VisualStudioEnvironment $Toolset
 
-$buildDir = Join-Path $root "build\$Preset"
+$buildDir = if ($BuildDir) {
+    if ([System.IO.Path]::IsPathRooted($BuildDir)) { $BuildDir } else { Join-Path $root $BuildDir }
+} else {
+    Join-Path $root "build\$Preset"
+}
 if ($Configure -or $Define -or $UpdatePackages -or
     -not (Test-Path (Join-Path $buildDir 'CMakeCache.txt'))) {
-    $configureArgs = @('--preset', $Preset, '-S', $root)
+    # -B after the preset: it overrides the preset's binaryDir and nothing else.
+    $configureArgs = @('--preset', $Preset, '-S', $root, '-B', $buildDir)
     foreach ($d in $Define) { $configureArgs += "-D$d" }
     if ($UpdatePackages) { $configureArgs += '-DWXL_UPDATE_PACKAGES=ON' }
     cmake @configureArgs

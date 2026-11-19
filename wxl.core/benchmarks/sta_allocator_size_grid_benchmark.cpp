@@ -4,7 +4,7 @@
 //
 // The shape here is allocate-everything-then-free-everything, which is the pool's easiest
 // case: the whole allocation phase runs off the bump cursor and the whole free phase pushes.
-// sta_allocator_scenario_benchmark.cpp is the counterpart where frees and allocations
+// sta_allocator_nested_containers_benchmark.cpp is the counterpart where frees and allocations
 // interleave, which is what real code does.
 #include <chrono>
 #include <cstddef>

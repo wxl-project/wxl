@@ -32,7 +32,7 @@
 // nanoseconds. The count is of C++ new only: what the runtime takes through HeapAlloc,
 // and what wxl takes from the STA pool, is not in it.
 //
-// Usage: wxl.async.winrt-coroutine-benchmark [rounds]
+// Usage: wxl.async.sta-loop-vs-winrt-benchmark [rounds]
 
 // The winrt headers first, and with them the standard library they pull in textually:
 // a standard header included after a module import is one MSVC has already seen

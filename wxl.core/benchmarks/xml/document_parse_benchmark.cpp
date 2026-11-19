@@ -5,7 +5,7 @@
 // rather than this repository, so its path is an argument. Any XML file works;
 // the numbers only mean something when the same one is used before and after.
 //
-// Usage: wxl.xml.bench <document.xml> [rounds]
+// Usage: wxl.xml.document-parse-benchmark <document.xml> [rounds]
 
 #include <chrono>
 #include <cstdio>
@@ -86,7 +86,7 @@ void report(const char* const name, const best_time& best, const std::size_t byt
 // wmain: the document's path comes in UTF-16, as the system hands it over.
 int wmain(int argc, wchar_t** argv) {
     if (argc < 2) {
-        std::puts("usage: wxl.xml.bench <document.xml> [rounds]\n"
+        std::puts("usage: wxl.xml.document-parse-benchmark <document.xml> [rounds]\n"
                   "\n"
                   "The reference document is WinUI's generic.xaml, e.g.\n"
                   "  <nuget>/microsoft.windowsappsdk.winui/2.3.2/lib/native/Microsoft.UI/Themes/generic.xaml");

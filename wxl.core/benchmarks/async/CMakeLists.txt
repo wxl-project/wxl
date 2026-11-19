@@ -1,72 +1,55 @@
 # Measurement tools, built only when WXL_BUILD_BENCHMARKS is on: each is a plain
 # executable timing itself, because what is compared here is a handful of
 # nanoseconds per element and no test framework should be standing in that.
-# Each carries the manifest of wxl's executables (wxl_target_manifest).
 
-add_executable(wxl.async.mpsc-queue-benchmark mpsc_queue_benchmark.cpp)
+wxl_add_benchmark(wxl.async.mpsc-queue-benchmark SOURCES mpsc_queue_benchmark.cpp)
 
 target_link_libraries(wxl.async.mpsc-queue-benchmark PRIVATE wxl::core)
 
-wxl_target_manifest(wxl.async.mpsc-queue-benchmark)
-wxl_set_target_folders(wxl.async.mpsc-queue-benchmark)
+# spsc_queue against a ring of blocks that never recycles one and a ring of slots in
+# the manner of a Disruptor, both kept in the headers beside it for this comparison
+# only.
+wxl_add_benchmark(wxl.async.spsc-queue-benchmark
+    SOURCES
+        spsc_queue_benchmark.cpp
+        spsc_block_ring.h
+        spsc_slot_ring.h
+)
 
-add_executable(wxl.async.spsc-queues-benchmark spsc_queues_benchmark.cpp)
+target_link_libraries(wxl.async.spsc-queue-benchmark PRIVATE wxl::core)
 
-target_link_libraries(wxl.async.spsc-queues-benchmark PRIVATE wxl::core)
-
-wxl_target_manifest(wxl.async.spsc-queues-benchmark)
-wxl_set_target_folders(wxl.async.spsc-queues-benchmark)
-
-add_executable(wxl.async.threaded-allocator-benchmark threaded_allocator_benchmark.cpp)
+wxl_add_benchmark(wxl.async.threaded-allocator-benchmark SOURCES threaded_allocator_benchmark.cpp)
 
 target_link_libraries(wxl.async.threaded-allocator-benchmark PRIVATE wxl::core)
 
-wxl_target_manifest(wxl.async.threaded-allocator-benchmark)
-wxl_set_target_folders(wxl.async.threaded-allocator-benchmark)
-
-add_executable(wxl.async.coroutine-frame-benchmark coroutine_frame_benchmark.cpp)
+wxl_add_benchmark(wxl.async.coroutine-frame-benchmark SOURCES coroutine_frame_benchmark.cpp)
 
 target_link_libraries(wxl.async.coroutine-frame-benchmark PRIVATE wxl::core)
 
-wxl_target_manifest(wxl.async.coroutine-frame-benchmark)
-wxl_set_target_folders(wxl.async.coroutine-frame-benchmark)
-
 # A co_await of one task from another, plain and under a cancellation token.
-add_executable(wxl.async.coroutine-chain-benchmark coroutine_chain_benchmark.cpp)
+wxl_add_benchmark(wxl.async.task-chain-benchmark SOURCES task_chain_benchmark.cpp)
 
-target_link_libraries(wxl.async.coroutine-chain-benchmark PRIVATE wxl::core)
-
-wxl_target_manifest(wxl.async.coroutine-chain-benchmark)
-wxl_set_target_folders(wxl.async.coroutine-chain-benchmark)
+target_link_libraries(wxl.async.task-chain-benchmark PRIVATE wxl::core)
 
 # The loop end to end: what one co_await costs through it, with the real sta_loop in the
 # first row and the variants beside it. synchronization.lib is WaitOnAddress, which the
 # address rows stand on.
-add_executable(wxl.async.sta-loop-benchmark sta_loop_benchmark.cpp)
+wxl_add_benchmark(wxl.async.sta-loop-benchmark SOURCES sta_loop_benchmark.cpp)
 
 target_link_libraries(wxl.async.sta-loop-benchmark PRIVATE wxl::core synchronization)
 
-wxl_target_manifest(wxl.async.sta-loop-benchmark)
-wxl_set_target_folders(wxl.async.sta-loop-benchmark)
-
 # The wake on its own: how long a thread takes to be woken, by primitive and by how long
 # it slept -- the number the loop's round trip is made of.
-add_executable(wxl.async.wake-latency-benchmark wake_latency_benchmark.cpp)
+wxl_add_benchmark(wxl.async.thread-wake-benchmark SOURCES thread_wake_benchmark.cpp)
 
-target_link_libraries(wxl.async.wake-latency-benchmark PRIVATE wxl::core synchronization)
-
-wxl_target_manifest(wxl.async.wake-latency-benchmark)
-wxl_set_target_folders(wxl.async.wake-latency-benchmark)
+target_link_libraries(wxl.async.thread-wake-benchmark PRIVATE wxl::core synchronization)
 
 # One writer and one reader through spsc_channel, mpsc_channel and the textbook ring under a
 # mutex and condition variables: latency at a steady pace, by the pause between elements, and
 # throughput at full speed.
-add_executable(wxl.async.channels-benchmark channels_benchmark.cpp)
+wxl_add_benchmark(wxl.async.channel-one-to-one-benchmark SOURCES channel_one_to_one_benchmark.cpp)
 
-target_link_libraries(wxl.async.channels-benchmark PRIVATE wxl::core)
-
-wxl_target_manifest(wxl.async.channels-benchmark)
-wxl_set_target_folders(wxl.async.channels-benchmark)
+target_link_libraries(wxl.async.channel-one-to-one-benchmark PRIVATE wxl::core)
 
 # The loop against the native scheme: the same round trip written the WinRT way --
 # resume_background() out, resume_foreground(DispatcherQueue) back, and the
@@ -75,19 +58,13 @@ wxl_set_target_folders(wxl.async.channels-benchmark)
 # itself (CreateDispatcherQueueController); runtimeobject.lib is what the cppwinrt
 # base links against. Microsoft::CppWinRT is the projection the top level of the
 # tree makes (cmake/wxl_packages.cmake).
-add_executable(wxl.async.winrt-coroutine-benchmark winrt_coroutine_benchmark.cpp)
+wxl_add_benchmark(wxl.async.sta-loop-vs-winrt-benchmark SOURCES sta_loop_vs_winrt_benchmark.cpp)
 
-target_link_libraries(wxl.async.winrt-coroutine-benchmark
+target_link_libraries(wxl.async.sta-loop-vs-winrt-benchmark
     PRIVATE wxl::core Microsoft::CppWinRT coremessaging.lib runtimeobject.lib)
-
-wxl_target_manifest(wxl.async.winrt-coroutine-benchmark)
-wxl_set_target_folders(wxl.async.winrt-coroutine-benchmark)
 
 # One read of a file, by how it is carried out: blocking on either thread, or overlapped
 # and finished through the port.
-add_executable(wxl.async.async-file-benchmark async_file_benchmark.cpp)
+wxl_add_benchmark(wxl.async.file-read-benchmark SOURCES file_read_benchmark.cpp)
 
-target_link_libraries(wxl.async.async-file-benchmark PRIVATE wxl::core)
-
-wxl_target_manifest(wxl.async.async-file-benchmark)
-wxl_set_target_folders(wxl.async.async-file-benchmark)
+target_link_libraries(wxl.async.file-read-benchmark PRIVATE wxl::core)

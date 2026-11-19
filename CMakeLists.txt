@@ -195,11 +195,11 @@ option(WXL_TOOLS "Build the generator: wxl.gen.common and wxl.gen (winui-srcgen)
 option(WXL_SAMPLES "Build the samples (samples/)." ${_wxl_own})
 option(WXL_SANDBOX "Build the sandbox (sandbox/)." ${_wxl_own})
 
-# Off by default: the benchmarks are measurement tools, run deliberately, and an
-# ordinary build has no reason to spend time on them. Those of wxl.core and
-# wxl.ui; the two benches of the XML reader in wxl.core and of wxl.gen.common
-# are built with the tree itself, and in a project that adds wxl with this key.
-option(WXL_BUILD_BENCHMARKS "Build the benchmark executables." OFF)
+# Off by default: the benchmarks are measurement tools, run deliberately
+# (tools\bench.ps1), and an ordinary build has no reason to spend time on them.
+# The one switch for every benchmark of the tree: those of wxl.core, of
+# wxl.gen.common and of wxl.ui, each declared by wxl_add_benchmark().
+option(WXL_BUILD_BENCHMARKS "Build the benchmark executables of the tree (tools/bench.ps1 runs them)." OFF)
 
 # Install and export rules, for find_package(wxl CONFIG) against an installed
 # prefix (cmake/wxl_install.cmake, included below, after the directories that

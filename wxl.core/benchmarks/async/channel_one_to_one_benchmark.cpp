@@ -43,7 +43,7 @@
 // medians came out in milliseconds, for every queue alike -- numbers about the scheduler, not
 // about any queue.
 //
-// Usage: wxl.async.channels-benchmark [samples [elements [rounds [tries [writer_cpu reader_cpu]]]]]
+// Usage: wxl.async.channel-one-to-one-benchmark [samples [elements [rounds [tries [writer_cpu reader_cpu]]]]]
 //        samples per latency round, elements per throughput round, attempts with the pause
 //        before sleeping
 
@@ -57,6 +57,11 @@ import wxl.core;
 using namespace wxl::async;
 
 namespace {
+
+// The alignas members below are meant to cost padding: that is what keeps the two sides'
+// counters on lines of their own. C4324 reports that padding, which is the point.
+#pragma warning(push)
+#pragma warning(disable : 4324)  // structure was padded due to alignment specifier
 
 using bench_clock = std::chrono::steady_clock;
 using nanoseconds = std::chrono::duration<double, std::nano>;
@@ -902,6 +907,8 @@ void ran_out_row(const char* channel, session<contender_t>& queue, const double 
 
     std::printf("  %-12s %-24s %10zu %10.0f\n", channel, queue.name(), count, mean);
 }
+
+#pragma warning(pop)
 
 }  // namespace
 
