@@ -44,11 +44,11 @@
 #include <utility>
 #include <vector>
 
+#include "Application.h"
 #include "Settings.h"
 #include "TrayIcon.h"
 #include "UiThread.h"
-#include "WindowHandle.h"
-#include "WindowModal.h"
+#include "WindowNative.h"
 #include "WindowShade.h"
 #include "launch.h"
 #include "settings_window.h"
@@ -342,8 +342,13 @@ public:
         settings_.minimizeOnClose.on_change([this](bool const&) noexcept { saveSettings(settings_); });
         // The base size: the console goes to it, and it becomes what Ctrl+0
         // returns to. This is the one setting the transient zoom does not touch.
-        settings_.fontSize.on_change([this](int const&) noexcept {
-            zoomSize_ = settings_.fontSize.get();
+        // An emptied box is no size: the console keeps the one it has, and so
+        // does the registry, until the box holds a number again.
+        settings_.fontSize.on_change([this](wxl::core::nullable<double> const&) noexcept {
+            auto const pixels = settings_.fontPixels();
+            if (!pixels) return;
+            baseSize_ = *pixels;
+            zoomSize_ = baseSize_;
             applyFont();
             saveSettings(settings_);
         });
@@ -368,8 +373,9 @@ public:
         // The saved look, put on the console before anything is shown in it.
         // The current size starts at the base -- a fresh run starts there,
         // whatever the last run's transient zoom left off at, which is why the
-        // zoom is not saved.
-        zoomSize_ = settings_.fontSize.get();
+        // zoom is not saved. The size read from the registry is a number.
+        baseSize_ = settings_.fontPixels().value();
+        zoomSize_ = baseSize_;
         applyFont();
         applyConsoleTheme(settings_.theme.get());
 
@@ -383,9 +389,8 @@ public:
         mouseHook_ = ::SetWindowsHookExW(WH_MOUSE_LL, &Trayed::mouseHook,
                                          ::GetModuleHandleW(nullptr), 0);
 
-        // Taken on this thread, where a wrapper may be touched; what is kept is
-        // the queue underneath, which the pool thread posts to.
-        ui_ = wxl::UiThread{wxl::DispatcherQueue::getForCurrentThread()};
+        // Taken on this thread; the pool thread posts to it.
+        ui_ = wxl::UiThread::current();
         ::SetConsoleCtrlHandler(&Trayed::onConsoleEvent, TRUE);
 
         createHost();
@@ -446,7 +451,7 @@ private:
     void createHost() {
         mainWindow_.emplace();
         mainWindow_->title(settings_.windowTitle.get());
-        host_ = reinterpret_cast<HWND>(wxl::window_handle(*mainWindow_));
+        host_ = reinterpret_cast<HWND>(wxl::WindowNative::handle(*mainWindow_));
         if (!host_) return;
 
         ::SetWindowSubclass(host_, &Trayed::hostSubclass, 0, reinterpret_cast<DWORD_PTR>(this));
@@ -671,7 +676,7 @@ private:
     void openSettings() {
         if (settingsWindow_) {
             // Already open -- raise it rather than build a second one.
-            if (HWND const hwnd = reinterpret_cast<HWND>(wxl::window_handle(*settingsWindow_))) {
+            if (HWND const hwnd = reinterpret_cast<HWND>(wxl::WindowNative::handle(*settingsWindow_))) {
                 ::SetForegroundWindow(hwnd);
             }
             return;
@@ -689,7 +694,7 @@ private:
         // A modal dialog of the main window: it disables the main window while
         // open and keeps itself off the taskbar. Still a real second window --
         // its own HWND and XamlRoot -- so the multi-window scenario stands.
-        if (mainWindow_) wxl::makeModalDialog(*settingsWindow_, *mainWindow_);
+        if (mainWindow_) wxl::WindowNative::makeModal(*settingsWindow_, *mainWindow_);
 
         settingsWindow_->add_onClosed([this](wxl::Object const&, auto&) {
             wxl::core::unsubscribe_all(settings_.minimizeOnClose, settings_.fontFamily,
@@ -727,10 +732,10 @@ private:
         applyFont();
     }
 
-    /// Back to the base size -- what Ctrl+0 does. The base is the settings' size,
-    /// the one the zoom never wrote to.
+    /// Back to the base size -- what Ctrl+0 does. The base is the settings' size
+    /// last applied, the one the zoom never wrote to.
     void zoomReset() {
-        zoomSize_ = settings_.fontSize.get();
+        zoomSize_ = baseSize_;
         applyFont();
     }
 
@@ -808,8 +813,9 @@ private:
     void quit() {
         stop();
 
-        // What ends the message loop wxl is running for the application.
-        ::PostQuitMessage(0);
+        // Whatever the window is doing: hidden in the tray, it is not closed, and XAML
+        // ends an application by itself only when its last window closes.
+        wxl::Application::exit();
     }
 
     void chooseEncoding(UINT codePage) {
@@ -903,6 +909,9 @@ private:
     // The console's current font height in pixels: the base until the zoom moves
     // it, and back to the base on Ctrl+0. Never saved -- the zoom is transient.
     int zoomSize_ = 18;
+    // The base size last applied: what Ctrl+0 returns to, kept while the
+    // settings' box is empty.
+    int baseSize_ = 18;
     HANDLE stopped_ = nullptr;
     HWINEVENTHOOK foregroundHook_ = nullptr;
     HHOOK keyboardHook_ = nullptr;

@@ -112,24 +112,11 @@
 со свойствами интерфейса через декларативные привязки.
 
 ```cpp
-class Equation : public noncopyable
+struct Equation : sta_refcounted
 {
-    observable<Answer> answer;
-
-public:
-    observable<double> a{blank}, b{blank}, c{blank};
-    observable<u16_text> D, x1, x2;
-
-    Equation() {
-        // Декларативное связывание: три числа на входе -> автоматический вызов solve
-        answer
-            .follow(a, b, c, solve)
-            .on_change([this](Answer const& answer) noexcept {
-                D.set(answer.D);
-                x1.set(answer.x1); // Обновление состояния -> автоматическое отображение в UI
-                x2.set(answer.x2);
-            });
-    }
+    observable<nullable<double>> a, b, c;
+    // Три числа на входе -> автоматический вызов solve при любой правке
+    observable<Answer> answer{a, b, c, solve};
 };
 
 // Пресет для унификации стилей ввода
@@ -147,7 +134,7 @@ NumberBox {
 // ...
 TextBox {
     output,
-    text = BindOutput {eq.D},
+    text = BindOutput {eq.answer, &Answer::D},
 },
 ```
 
@@ -165,58 +152,60 @@ TextBox {
 - **ОС:** Windows x64
 - **Инструменты компиляции:** Visual Studio 2026 (канал Insiders) с тулсетом
   MSVC версии 14.53.36911 или новее
-- **Сборка:** CMake (версии 4.3 / 4.4) и Ninja
+- **Средства WinUI:** в той же установке — рабочая нагрузка «WinUI application
+  development» с компонентом «C++ WinUI app development tools»; в Build Tools
+  для Visual Studio 2026 — рабочая нагрузка «WinUI application development
+  build tools» с компонентом «C++ WinUI app development build tools». Пакеты
+  NuGet и проекцию cppwinrt настройка получает от MSBuild этой установки
+- **Windows SDK:** 10.0.26100.0 или новее
+- **Сборка:** CMake (версии 4.5 или новее) и Ninja
 - **Окружение:** PowerShell 7 (`pwsh`)
-- **Управление зависимостями:** развёрнутый `vcpkg` с выполненной
-  однократной командой интеграции (`vcpkg integrate install`). Скрипты
-  сборки автоматически обнаружат менеджер пакетов через файл
-  `vcpkg.path.txt` или при явной передаче флага `-DVCPKG_ROOT=<путь>`.
+- **.NET SDK 10:** для сборки утилиты `winxl`, которая устанавливает среду
+  выполнения; самой утилите .NET на машине не нужен
 
 ### Пошаговое развёртывание
 
 Запустите сеанс `pwsh` из корневой директории склонированного репозитория и
-выполните следующие команды для подготовки окружения, генерации проекции и
-запуска примера:
+выполните следующие команды для сборки дерева и запуска примера:
 
 ```powershell
-# 1. Восстановление необходимых NuGet-пакетов (версии зафиксированы в tools/packages.json)
-pwsh -NoProfile -File tools\restore-packages.ps1
+# 1. Настройка и сборка всего дерева без сайта документации.
+#    Настройка восстанавливает пакеты NuGet (закрепления — tools/packages.json,
+#    результат — tools/packages.lock.json и список build\x64-dynamic\wxl.packages\restored-packages.json)
+#    и строит проекцию cppwinrt в каталоге сборки; сборка собирает генератор
+#    winui-srcgen, пишет им обёртки WinUI полного профиля в build\x64-dynamic\wxl.ui\full\wxl
+#    и компилирует их вместе с остальным; WXL_WINXL=ON собирает утилиту winxl
+tools\build.ps1 -Define WXL_BUILD_DOCS=OFF,WXL_WINXL=ON
 
-# 2. Генерация базовой проекции cppwinrt в каталог generated\
-pwsh -NoProfile -File tools\projection.ps1
+# 2. Развёртывание экспериментальной среды выполнения Windows App Runtime
+#    из пакета, который восстановила настройка
+build\x64-dynamic\winxl\winxl.exe runtime install --packages build\x64-dynamic\wxl.packages\restored-packages.json
 
-# 3. Развёртывание экспериментальной среды выполнения Windows App Runtime
-pwsh -NoProfile -File tools\install-runtime.ps1
-
-# 4. Сборка утилиты winui-srcgen без генерации сопутствующей документации
-tools\build.ps1 -Target winui-srcgen -Define WXL_BUILD_DOCS=OFF
-
-# 5. Запуск генератора для построения полного профиля обёрток WinUI
-build\x64\wxl.gen\Debug\winui-srcgen.exe --profile wxl.gen\profiles\full.json
-
-# 6. Конфигурация CMake и компиляция демонстрационного проекта Quadratic
-tools\build.ps1 -Configure -Target sample.quadratic
-
-# 7. Запуск скомпилированного приложения
-build\x64\samples\Quadratic\Debug\sample.quadratic.exe
+# 3. Запуск демонстрационного приложения Quadratic
+build\x64-dynamic\samples\Quadratic\Debug\sample.quadratic.exe
 ```
 
 Подробный разбор каждого шага автоматизации, поддерживаемые ключи
-конфигурации CMake, запуск модульных тестов и руководство по интеграции
-`wxl` в собственные проекты описаны в [docs/building.md](docs/building.md).
+конфигурации CMake и запуск модульных тестов описаны в
+[docs/building.md](docs/building.md). Собственный проект берёт `wxl` из пакета
+`WinXL` (`find_package(wxl)` в CMake или `PackageReference` в MSBuild) либо
+подключает корень дерева `wxl` — `add_subdirectory` или `FetchContent` — и
+задаёт ключи языка `wxl` до него (см.
+[«Подключение wxl»](docs/building.md#подключение-wxl)).
 
 ## Состав репозитория
 
 | Директория | Описание и состав модулей |
 | :--- | :--- |
-| **`wxl.core`** | Ядро библиотеки (модуль `wxl.core`): однопоточный пул памяти STA, механизмы подсчёта ссылок, реактивные контейнеры `observable`, событийная модель, поддержка UTF-8/UTF-16 текста с учётом графем, работа с файловой системой, оптимизированный контейнер `nullable`. |
-| **`wxl.async`** | Асинхронная подсистема: корутины `task`, диспетчер `sta_loop` с неблокирующим файловым I/O, механизмы отмены операций, низкоуровневые lock-free очереди, каналы обмена данными и примитивы синхронизации потоков. |
-| **`wxl.fmt`** / **`wxl.logging`** | Модули `text_builder` и форматирования строк, построенные поверх библиотеки `fmt`. Компоненты подсистемы логирования. |
-| **`wxl.xml`** / **`wxl.json`** | Легковесные парсеры форматов XML и JSON. |
-| **`wxl.html`** / смежные | Модули синтаксического разбора текстовой разметки HTML, BB-code и RSDN для визуальных компонентов `HtmlBlock`, `BbBlock`, `RsdnBlock`. Подсистема подсветки синтаксиса `wxl.highlight`. |
+| **`wxl.core`** | Ядро библиотеки — один модуль `wxl.core`, цель сборки `wxl::core`: однопоточный пул памяти STA, механизмы подсчёта ссылок, реактивные контейнеры `observable`, событийная модель, поддержка UTF-8/UTF-16 текста с учётом графем, работа с файловой системой, оптимизированный контейнер `nullable`. Области модуля лежат в подкаталогах `wxl.core/src` — ниже. |
+| `wxl.core/src/async` | Асинхронная подсистема: корутины `task`, диспетчер `sta_loop` с неблокирующим файловым I/O, механизмы отмены операций, низкоуровневые lock-free очереди, каналы обмена данными и примитивы синхронизации потоков. |
+| `wxl.core/src/fmt`, `logging` | `text_builder` и форматирование строк поверх библиотеки `fmt`. Подсистема логирования. |
+| `wxl.core/src/xml`, `json` | Легковесные парсеры форматов XML и JSON. |
+| `wxl.core/src/html` | Синтаксический разбор подмножества HTML для визуального компонента `HtmlBlock`. |
+| **`wxl.bb`** / **`wxl.rsdn`** / **`wxl.highlight`** | Модули разбора разметки BB-code и RSDN в то же дерево для `BbBlock`, `RsdnBlock`. Подсистема подсветки синтаксиса `wxl.highlight`, её показ — `CodeBlock`. |
 | **`wxl.gen.*`** | Исходный код генератора проекций `winui-srcgen` (`wxl.gen`, `wxl.gen.common`) и графический интерфейс для визуального редактирования профилей генерации `wxl.gen.ui` (запуск через `run-gen-ui.cmd`). |
 | **`wxl.ui`** | Графический стек **WinUI** без XAML: публичные объектные обёртки, декларативный DSL-синтаксис, управление окнами, привязки данных и визуальные эффекты. |
-| **Вспомогательные** | `samples` — демонстрационные проекты; `sandbox` — изоляция экспериментальных механизмов **WinUI**; `test-support` — инфраструктура модульного тестирования; `cmake`, `tools`, `docs` — сценарии сборки, автоматизации и исходные файлы документации. |
+| **Вспомогательные** | `samples` — демонстрационные проекты; `sandbox` — изоляция экспериментальных механизмов **WinUI**; `wxl.test` — инфраструктура модульного тестирования; `cmake`, `tools`, `docs` — сценарии сборки, автоматизации и исходные файлы документации. |
 
 ## Текущий статус и ограничения
 
@@ -251,8 +240,9 @@ build\x64\samples\Quadratic\Debug\sample.quadratic.exe
 ### Ограничения кодогенерации
 
 - **Состав профиля.** В **wxl** есть только те типы и члены **WinUI**, которые
-  перечислены в профиле `wxl.gen/profiles/full.json`. Чтобы добавить
-  недостающее, профиль дополняют и перегенерируют обёртки.
+  перечислены в профиле `wxl.gen/profiles/full.winxl-profile`. Чтобы
+  добавить недостающее, профиль дополняют; следующая сборка генерирует
+  обёртки сама.
 - **Наследование с переопределением (Overrides).** Собственный наследник
   класса **WinUI** с переопределёнными методами через интерфейсы
   `I<Class>Overrides` пока не поддерживается: прототип агрегации

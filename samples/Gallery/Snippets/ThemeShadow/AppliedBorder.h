@@ -1,5 +1,5 @@
 struct Model {
-    core::observable<double> depth{32};
+    core::observable<float> depth{32.0f};
 };
 auto const model = gallery::hold<Model>();
 
@@ -14,8 +14,8 @@ auto card = Border {
     CornerRadius {8},
     shadow = themeShadow,
     // The higher the card stands off the grid, the longer and softer the shadow.
-    translation = BindOutput {model->depth, [](double height) { return Vector3 {0, 0, static_cast<float>(height)}; }},
-    onLoaded = [themeShadow, castOnto](Border const&) { themeShadow.receivers().append(castOnto); },
+    translation = BindOutput {model->depth, [](float height) { return Vector3 {0, 0, height}; }},
+    onLoaded += [themeShadow, castOnto](Border const&) { themeShadow.receivers().append(castOnto); },
 };
 
 auto example = Grid {Padding {36}, castOnto, card};

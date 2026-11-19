@@ -46,22 +46,22 @@ struct Carving {
     core::observable<int> lightKind {0};
     core::observable<bool> diffuseOn {true};
     core::observable<bool> specularOn {true};
-    core::observable<double> ambientShare {0.25};
-    core::observable<double> diffuseConstant {1.0};
-    core::observable<double> specularConstant {0.5};
-    core::observable<double> specularExponent {24.0};
-    core::observable<double> azimuth {120.0};
-    core::observable<double> elevation {40.0};
-    core::observable<double> lightHeight {180.0};
-    core::observable<double> focus {4.0};
-    core::observable<double> cone {50.0};
+    core::observable<float> ambientShare {0.25f};
+    core::observable<float> diffuseConstant {1.0f};
+    core::observable<float> specularConstant {0.5f};
+    core::observable<float> specularExponent {24.0f};
+    core::observable<float> azimuth {120.0f};
+    core::observable<float> elevation {40.0f};
+    core::observable<float> lightHeight {180.0f};
+    core::observable<float> focus {4.0f};
+    core::observable<float> cone {50.0f};
     core::observable<Color> lightColor {rgb(255, 246, 232)};
 
     core::observable<int> profile {0};
-    core::observable<double> softness {5.0};
-    core::observable<double> surfaceScale {10.0};
-    core::observable<double> kernel {1.0};
-    core::observable<double> corner {22.0};
+    core::observable<float> softness {5.0f};
+    core::observable<float> surfaceScale {10.0f};
+    core::observable<float> kernel {1.0f};
+    core::observable<float> corner {22.0f};
     core::observable<bool> engraved {true};
     core::observable<Color> keyColor {rgb(68, 72, 79)};
     core::observable<Color> panelColor {rgb(42, 44, 49)};
@@ -126,7 +126,7 @@ struct Carving {
 
     D2D1_ROUNDED_RECT keyOutline(int index) const {
         float const left = lab::keyLeft(index % lab::keyColumns), top = lab::keyTop(index / lab::keyColumns);
-        float const radius = static_cast<float>(corner.get());
+        float const radius = corner.get();
         return {D2D1::RectF(left, top, left + lab::keySide, top + lab::keySide), radius, radius};
     }
 
@@ -137,8 +137,8 @@ struct Carving {
 
         ComPtr<ID2D1SolidColorBrush> full;
         ComPtr<ID2D1SolidColorBrush> sunk;
-        wxl::check_hresult(side->CreateSolidColorBrush(D2D1::ColorF(1.0f, 1.0f, 1.0f, 1.0f), &full));
-        wxl::check_hresult(side->CreateSolidColorBrush(D2D1::ColorF(1.0f, 1.0f, 1.0f, 0.6f), &sunk));
+        wxl::impl::check_hresult(side->CreateSolidColorBrush(D2D1::ColorF(1.0f, 1.0f, 1.0f, 1.0f), &full));
+        wxl::impl::check_hresult(side->CreateSolidColorBrush(D2D1::ColorF(1.0f, 1.0f, 1.0f, 0.6f), &sunk));
 
         for (int index = 0; index < lab::keyColumns * lab::keyRows; ++index) {
             D2D1_ROUNDED_RECT const outline = keyOutline(index);
@@ -153,10 +153,10 @@ struct Carving {
                     {1.0f, D2D1::ColorF(1.0f, 1.0f, 1.0f, dome ? 0.45f : 1.0f)},
                 };
                 ComPtr<ID2D1GradientStopCollection> collection;
-                wxl::check_hresult(side->CreateGradientStopCollection(stops, 2, &collection));
+                wxl::impl::check_hresult(side->CreateGradientStopCollection(stops, 2, &collection));
                 D2D1_POINT_2F const centre = D2D1::Point2F((outline.rect.left + outline.rect.right) / 2.0f,
                                                             (outline.rect.top + outline.rect.bottom) / 2.0f);
-                wxl::check_hresult(side->CreateRadialGradientBrush(
+                wxl::impl::check_hresult(side->CreateRadialGradientBrush(
                     D2D1::RadialGradientBrushProperties(centre, D2D1::Point2F(), lab::keySide * 0.72f,
                                                         lab::keySide * 0.72f),
                     collection.Get(), &slope));
@@ -176,7 +176,7 @@ struct Carving {
     void drawColors(ID2D1DeviceContext* side) {
         side->Clear(toColor(panelColor.get()));
         ComPtr<ID2D1SolidColorBrush> key;
-        wxl::check_hresult(side->CreateSolidColorBrush(toColor(keyColor.get()), &key));
+        wxl::impl::check_hresult(side->CreateSolidColorBrush(toColor(keyColor.get()), &key));
         for (int index = 0; index < lab::keyColumns * lab::keyRows; ++index) {
             side->FillRoundedRectangle(keyOutline(index), key.Get());
         }
@@ -191,55 +191,55 @@ struct Carving {
         ComPtr<ID2D1Device> device;
         context->GetDevice(&device);
         ComPtr<ID2D1DeviceContext> side;
-        wxl::check_hresult(device->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &side));
+        wxl::impl::check_hresult(device->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &side));
 
         D2D1_BITMAP_PROPERTIES1 const targetProperties = D2D1::BitmapProperties1(
             D2D1_BITMAP_OPTIONS_TARGET, D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED));
         ComPtr<ID2D1Bitmap1> heights;
         ComPtr<ID2D1Bitmap1> colors;
-        wxl::check_hresult(side->CreateBitmap(pixels, nullptr, 0, &targetProperties, &heights));
-        wxl::check_hresult(side->CreateBitmap(pixels, nullptr, 0, &targetProperties, &colors));
+        wxl::impl::check_hresult(side->CreateBitmap(pixels, nullptr, 0, &targetProperties, &heights));
+        wxl::impl::check_hresult(side->CreateBitmap(pixels, nullptr, 0, &targetProperties, &colors));
 
         side->SetTarget(heights.Get());
         side->BeginDraw();
         side->SetTransform(D2D1::Matrix3x2F::Scale(scale, scale));
         drawHeights(side.Get());
-        wxl::check_hresult(side->EndDraw());
+        wxl::impl::check_hresult(side->EndDraw());
 
         side->SetTarget(colors.Get());
         side->BeginDraw();
         side->SetTransform(D2D1::Matrix3x2F::Scale(scale, scale));
         drawColors(side.Get());
-        wxl::check_hresult(side->EndDraw());
+        wxl::impl::check_hresult(side->EndDraw());
         side->SetTarget(nullptr);
 
         auto const make = [&](REFCLSID id) {
             ComPtr<ID2D1Effect> effect;
-            wxl::check_hresult(context->CreateEffect(id, &effect));
+            wxl::impl::check_hresult(context->CreateEffect(id, &effect));
             return effect;
         };
 
         // Размытие края -- ширина кромки: чем шире переход альфы, тем положе склон.
         auto const blur = make(CLSID_D2D1GaussianBlur);
         blur->SetInput(0, heights.Get());
-        blur->SetValue(D2D1_GAUSSIANBLUR_PROP_STANDARD_DEVIATION, static_cast<float>(softness.get()) * scale);
+        blur->SetValue(D2D1_GAUSSIANBLUR_PROP_STANDARD_DEVIATION, softness.get() * scale);
         blur->SetValue(D2D1_GAUSSIANBLUR_PROP_BORDER_MODE, D2D1_BORDER_MODE_HARD);
 
         int const kind = lightKind.get();
         D2D1_VECTOR_3F const lamp = D2D1::Vector3F(lightX * scale, lightY * scale,
-                                                    static_cast<float>(lightHeight.get()) * scale);
+                                                    lightHeight.get() * scale);
         D2D1_VECTOR_3F const aimedAt = D2D1::Vector3F(lightX * scale, lightY * scale, 0.0f);
         D2D1_VECTOR_3F const tint = toVector(lightColor.get());
-        float const relief = static_cast<float>(surfaceScale.get()) * scale;
-        D2D1_VECTOR_2F const unit = D2D1::Vector2F(static_cast<float>(kernel.get()) * scale,
-                                                    static_cast<float>(kernel.get()) * scale);
+        float const relief = surfaceScale.get() * scale;
+        D2D1_VECTOR_2F const unit = D2D1::Vector2F(kernel.get() * scale,
+                                                    kernel.get() * scale);
         // Direct2D ведёт азимут от оси x к оси y, а она на экране смотрит вниз: лампа,
         // стоящая под углом сверху экрана, для него стоит под обратным углом.
-        float const turn = 360.0f - static_cast<float>(azimuth.get());
-        float const rise = static_cast<float>(elevation.get());
+        float const turn = 360.0f - azimuth.get();
+        float const rise = elevation.get();
 
         auto const diffuse = [&] {
-            float const share = static_cast<float>(diffuseConstant.get());
+            float const share = diffuseConstant.get();
             if (kind == 0) {
                 auto const effect = make(CLSID_D2D1DistantDiffuse);
                 effect->SetValue(D2D1_DISTANTDIFFUSE_PROP_AZIMUTH, turn);
@@ -262,8 +262,8 @@ struct Carving {
             auto const effect = make(CLSID_D2D1SpotDiffuse);
             effect->SetValue(D2D1_SPOTDIFFUSE_PROP_LIGHT_POSITION, lamp);
             effect->SetValue(D2D1_SPOTDIFFUSE_PROP_POINTS_AT, aimedAt);
-            effect->SetValue(D2D1_SPOTDIFFUSE_PROP_FOCUS, static_cast<float>(focus.get()));
-            effect->SetValue(D2D1_SPOTDIFFUSE_PROP_LIMITING_CONE_ANGLE, static_cast<float>(cone.get()));
+            effect->SetValue(D2D1_SPOTDIFFUSE_PROP_FOCUS, focus.get());
+            effect->SetValue(D2D1_SPOTDIFFUSE_PROP_LIMITING_CONE_ANGLE, cone.get());
             effect->SetValue(D2D1_SPOTDIFFUSE_PROP_DIFFUSE_CONSTANT, share);
             effect->SetValue(D2D1_SPOTDIFFUSE_PROP_SURFACE_SCALE, relief);
             effect->SetValue(D2D1_SPOTDIFFUSE_PROP_COLOR, tint);
@@ -272,8 +272,8 @@ struct Carving {
         };
 
         auto const specular = [&] {
-            float const share = static_cast<float>(specularConstant.get());
-            float const exponent = static_cast<float>(specularExponent.get());
+            float const share = specularConstant.get();
+            float const exponent = specularExponent.get();
             if (kind == 0) {
                 auto const effect = make(CLSID_D2D1DistantSpecular);
                 effect->SetValue(D2D1_DISTANTSPECULAR_PROP_AZIMUTH, turn);
@@ -298,8 +298,8 @@ struct Carving {
             auto const effect = make(CLSID_D2D1SpotSpecular);
             effect->SetValue(D2D1_SPOTSPECULAR_PROP_LIGHT_POSITION, lamp);
             effect->SetValue(D2D1_SPOTSPECULAR_PROP_POINTS_AT, aimedAt);
-            effect->SetValue(D2D1_SPOTSPECULAR_PROP_FOCUS, static_cast<float>(focus.get()));
-            effect->SetValue(D2D1_SPOTSPECULAR_PROP_LIMITING_CONE_ANGLE, static_cast<float>(cone.get()));
+            effect->SetValue(D2D1_SPOTSPECULAR_PROP_FOCUS, focus.get());
+            effect->SetValue(D2D1_SPOTSPECULAR_PROP_LIMITING_CONE_ANGLE, cone.get());
             effect->SetValue(D2D1_SPOTSPECULAR_PROP_SPECULAR_EXPONENT, exponent);
             effect->SetValue(D2D1_SPOTSPECULAR_PROP_SPECULAR_CONSTANT, share);
             effect->SetValue(D2D1_SPOTSPECULAR_PROP_SURFACE_SCALE, relief);
@@ -309,7 +309,7 @@ struct Carving {
         };
 
         // Цвет × (общий свет + рассеянный): произведение двух входов и доля первого.
-        float const ambient = static_cast<float>(ambientShare.get());
+        float const ambient = ambientShare.get();
         auto const lit = make(CLSID_D2D1ArithmeticComposite);
         lit->SetInput(0, colors.Get());
         if (diffuseOn.get()) {
@@ -355,8 +355,8 @@ lab::Experiment lab::direct2dPage() {
         vAlign.center,
         background = SolidColorBrush {color = rgb(24, 25, 28)},
         [model](Border const& host) { ElementCompositionPreview::setElementChildVisual(host, model->sprite); },
-        onLoaded = [model](Border const& self) { model->loaded(self.xamlRoot().rasterizationScale()); },
-        onPointerMoved =
+        onLoaded += [model](Border const& self) { model->loaded(self.xamlRoot().rasterizationScale()); },
+        onPointerMoved +=
             [model](Border const& self, PointerRoutedEventArgs& args) {
                 Point const place = args.getCurrentPoint(self).position();
                 model->lightAt(place.x, place.y);

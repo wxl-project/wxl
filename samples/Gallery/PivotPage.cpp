@@ -10,12 +10,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t basicHeader[] = {
-#include "Snippets/Pivot/BasicPivot.html.embed"
-};
-constexpr char8_t basicCode[] = {
-#include "Snippets/Pivot/BasicPivot.h.embed"
-};
+gallery::LazyLoadedText basicHeader{"Snippets/Pivot/BasicPivot.html"};
+gallery::LazyLoadedText basicCode{"Snippets/Pivot/BasicPivot.h"};
 
 FrameworkElement basic() {
 #include "Snippets/Pivot/BasicPivot.h"
@@ -29,6 +25,8 @@ FrameworkElement basic() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::pivotPage() {
+static wxl::FrameworkElement pivotPage() {
     return StackPanel {basic()};
 }
+
+REGISTER_GALLERY_PAGE(L"Pivot", pivotPage);

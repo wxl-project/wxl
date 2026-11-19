@@ -6,11 +6,11 @@
 # sandbox/WindowlessIslandProbe. sandbox.list-binding-windowless -- вопрос (е): XAML без Application::Start, поэтому
 # своя точка входа main и без wxl.ui, как sandbox/CppWinRTPanel; первая запускает её сама и вставляет её ответ в свой.
 wxl_add_executable(sandbox.list-binding-probe
+    UI wxl::ui.full
     main.cpp
     probes.cpp
 )
 
-target_include_directories(sandbox.list-binding-probe PRIVATE ${WXL_CPPWINRT_PROJECTION_DIR})
 target_link_libraries(sandbox.list-binding-probe PRIVATE Microsoft::CppWinRT runtimeobject.lib user32.lib)
 
 add_executable(sandbox.list-binding-windowless
@@ -20,7 +20,6 @@ add_executable(sandbox.list-binding-windowless
 )
 
 target_include_directories(sandbox.list-binding-windowless PRIVATE
-    ${WXL_CPPWINRT_PROJECTION_DIR}
     ${PROJECT_SOURCE_DIR}/wxl.ui/src
     ${PROJECT_SOURCE_DIR}/wxl.core/src
     ${WXL_WINDOWSAPPSDK_FOUNDATION_DIR}/include

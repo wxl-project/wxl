@@ -10,7 +10,7 @@ StackPanel {
         u"Наведи на меня",
         width = 170,
         height = 50,
-        MagnifyEffect {1.2},
+        MagnifyEffect {1.2f},
     },
 
     // Эталон с той же надписью: увеличен на те же 1.2 всегда. XAML перерисовывает

@@ -8,12 +8,10 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t colorCustomizationHeader[] = {
-#include "Snippets/AppWindowTitleBar/AppwindowtitlebarColorCustomization.html.embed"
-};
-constexpr char8_t colorCustomizationCode[] = {
-#include "Snippets/AppWindowTitleBar/AppwindowtitlebarColorCustomization.h.embed"
-};
+gallery::LazyLoadedText introText{"Snippets/AppWindowTitleBar/Intro.html"};
+
+gallery::LazyLoadedText colorCustomizationHeader{"Snippets/AppWindowTitleBar/AppwindowtitlebarColorCustomization.html"};
+gallery::LazyLoadedText colorCustomizationCode{"Snippets/AppWindowTitleBar/AppwindowtitlebarColorCustomization.h"};
 
 FrameworkElement colorCustomization() {
 #include "Snippets/AppWindowTitleBar/AppwindowtitlebarColorCustomization.h"
@@ -26,12 +24,8 @@ FrameworkElement colorCustomization() {
     });
 }
 
-constexpr char8_t extendHeader[] = {
-#include "Snippets/AppWindowTitleBar/ExtendingContentAppwindowtitlebarArea.html.embed"
-};
-constexpr char8_t extendCode[] = {
-#include "Snippets/AppWindowTitleBar/ExtendingContentAppwindowtitlebarArea.h.embed"
-};
+gallery::LazyLoadedText extendHeader{"Snippets/AppWindowTitleBar/ExtendingContentAppwindowtitlebarArea.html"};
+gallery::LazyLoadedText extendCode{"Snippets/AppWindowTitleBar/ExtendingContentAppwindowtitlebarArea.h"};
 
 FrameworkElement extend() {
 #include "Snippets/AppWindowTitleBar/ExtendingContentAppwindowtitlebarArea.h"
@@ -44,12 +38,8 @@ FrameworkElement extend() {
     });
 }
 
-constexpr char8_t themeHeightHeader[] = {
-#include "Snippets/AppWindowTitleBar/AppwindowtitlebarPreferredThemeHeight.html.embed"
-};
-constexpr char8_t themeHeightCode[] = {
-#include "Snippets/AppWindowTitleBar/AppwindowtitlebarPreferredThemeHeight.h.embed"
-};
+gallery::LazyLoadedText themeHeightHeader{"Snippets/AppWindowTitleBar/AppwindowtitlebarPreferredThemeHeight.html"};
+gallery::LazyLoadedText themeHeightCode{"Snippets/AppWindowTitleBar/AppwindowtitlebarPreferredThemeHeight.h"};
 
 FrameworkElement themeHeight() {
 #include "Snippets/AppWindowTitleBar/AppwindowtitlebarPreferredThemeHeight.h"
@@ -64,17 +54,9 @@ FrameworkElement themeHeight() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::appWindowTitleBarPage() {
+static wxl::FrameworkElement appWindowTitleBarPage() {
     return StackPanel {
-        RichTextBlock {
-            Margin {0, 8, 0, 0},
-            Paragraph {
-                Run {u"For the default title bar and basic scenarios, use the "},
-                Hyperlink {
-                    onClick = [](Object const&, HyperlinkClickEventArgs&) { navigate({Place::Item, L"TitleBar"}); },
-                    Run {u"TitleBar"},
-                },
-                Run {u" control."},
-            },
-        },colorCustomization(), extend(), themeHeight()};
+        gallery::prose(gallery::snippet(introText), Thickness {0, 8, 0, 0}), colorCustomization(), extend(), themeHeight()};
 }
+
+REGISTER_GALLERY_PAGE(L"AppWindowTitleBar", appWindowTitleBarPage);

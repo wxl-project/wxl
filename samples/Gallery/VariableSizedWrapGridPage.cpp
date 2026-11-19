@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t controlHeader[] = {
-#include "Snippets/VariableSizedWrapGrid/VariableSizedWrapGridControl.html.embed"
-};
-constexpr char8_t controlCode[] = {
-#include "Snippets/VariableSizedWrapGrid/VariableSizedWrapGridControl.h.embed"
-};
+gallery::LazyLoadedText controlHeader{"Snippets/VariableSizedWrapGrid/VariableSizedWrapGridControl.html"};
+gallery::LazyLoadedText controlCode{"Snippets/VariableSizedWrapGrid/VariableSizedWrapGridControl.h"};
 
 FrameworkElement control() {
 #include "Snippets/VariableSizedWrapGrid/VariableSizedWrapGridControl.h"
@@ -28,6 +24,8 @@ FrameworkElement control() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::variableSizedWrapGridPage() {
+static wxl::FrameworkElement variableSizedWrapGridPage() {
     return StackPanel {control()};
 }
+
+REGISTER_GALLERY_PAGE(L"VariableSizedWrapGrid", variableSizedWrapGridPage);

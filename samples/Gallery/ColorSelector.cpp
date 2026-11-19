@@ -7,10 +7,10 @@
 using namespace wxl;
 using namespace wxl::dsl;
 
-FrameworkElement gallery::colorSelector(core::observable<Color>& model, char16_t const* name) {
+FrameworkElement gallery::colorSelector(core::observable<Color>& model, std::u16string_view name) {
     return SplitButton {
         Margin {0, 2, 0, 8},
-        automationName = name,
+        automationName = core::assume_terminated(name),
         content = Border {
             width = 64,
             height = 32,

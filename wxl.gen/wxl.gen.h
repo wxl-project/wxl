@@ -1,6 +1,6 @@
 #pragma once
 
-// winui-srcgen -- the generator that reads WinUI3 metadata and writes wxl's
+// winui-srcgen -- the generator that reads WinUI metadata and writes wxl's
 // wrappers, as an ordinary library under the executable. The profiles and the
 // metadata walk it shares with the profile editor come from wxl.gen.common
 // through md.h; the rest is the output side:

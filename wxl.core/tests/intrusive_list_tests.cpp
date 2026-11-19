@@ -16,8 +16,7 @@ struct Item : intrusive_list_node<Item> {
 
 std::vector<int> values(const intrusive_list<Item>& list) {
     std::vector<int> result;
-    for (const Item& item : list)
-        result.push_back(item.value);
+    for (const Item& item : list) result.push_back(item.value);
     return result;
 }
 
@@ -177,7 +176,7 @@ TEST(IntrusiveListTest, ClearUnlinksEveryNode) {
     EXPECT_FALSE(b.linked());
 }
 
-TEST(IntrusiveListTest, NodesMoveBetweenListsWithoutACookie) {
+TEST(IntrusiveListTest, NodesMoveBetweenListsWithoutAToken) {
     intrusive_list<Item> from, to;
     Item a(1), b(2);
 

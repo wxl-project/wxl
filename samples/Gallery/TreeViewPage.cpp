@@ -2,7 +2,6 @@
 
 #include "Pages.h"
 #include "Shell.h"
-#include "StringList.h"
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 
 using namespace wxl;
@@ -10,12 +9,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t dragDropHeader[] = {
-#include "Snippets/TreeView/SimpleTreeviewDragDrop.html.embed"
-};
-constexpr char8_t dragDropCode[] = {
-#include "Snippets/TreeView/SimpleTreeviewDragDrop.h.embed"
-};
+gallery::LazyLoadedText dragDropHeader{"Snippets/TreeView/SimpleTreeviewDragDrop.html"};
+gallery::LazyLoadedText dragDropCode{"Snippets/TreeView/SimpleTreeviewDragDrop.h"};
 
 FrameworkElement dragDrop() {
 #include "Snippets/TreeView/SimpleTreeviewDragDrop.h"
@@ -27,12 +22,8 @@ FrameworkElement dragDrop() {
     });
 }
 
-constexpr char8_t multipleHeader[] = {
-#include "Snippets/TreeView/TreeviewMultiSelectionEnabled.html.embed"
-};
-constexpr char8_t multipleCode[] = {
-#include "Snippets/TreeView/TreeviewMultiSelectionEnabled.h.embed"
-};
+gallery::LazyLoadedText multipleHeader{"Snippets/TreeView/TreeviewMultiSelectionEnabled.html"};
+gallery::LazyLoadedText multipleCode{"Snippets/TreeView/TreeviewMultiSelectionEnabled.h"};
 
 FrameworkElement multiple() {
 #include "Snippets/TreeView/TreeviewMultiSelectionEnabled.h"
@@ -44,12 +35,8 @@ FrameworkElement multiple() {
     });
 }
 
-constexpr char8_t boundHeader[] = {
-#include "Snippets/TreeView/TreeviewDatabindingItemsource.html.embed"
-};
-constexpr char8_t boundCode[] = {
-#include "Snippets/TreeView/TreeviewDatabindingItemsource.h.embed"
-};
+gallery::LazyLoadedText boundHeader{"Snippets/TreeView/TreeviewDatabindingItemsource.html"};
+gallery::LazyLoadedText boundCode{"Snippets/TreeView/TreeviewDatabindingItemsource.h"};
 
 FrameworkElement bound() {
 #include "Snippets/TreeView/TreeviewDatabindingItemsource.h"
@@ -61,12 +48,8 @@ FrameworkElement bound() {
     });
 }
 
-constexpr char8_t selectorHeader[] = {
-#include "Snippets/TreeView/TreeviewItemtemplateselector.html.embed"
-};
-constexpr char8_t selectorCode[] = {
-#include "Snippets/TreeView/TreeviewItemtemplateselector.h.embed"
-};
+gallery::LazyLoadedText selectorHeader{"Snippets/TreeView/TreeviewItemtemplateselector.html"};
+gallery::LazyLoadedText selectorCode{"Snippets/TreeView/TreeviewItemtemplateselector.h"};
 
 FrameworkElement selector() {
 #include "Snippets/TreeView/TreeviewItemtemplateselector.h"
@@ -80,6 +63,8 @@ FrameworkElement selector() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::treeViewPage() {
+static wxl::FrameworkElement treeViewPage() {
     return StackPanel {dragDrop(), multiple(), bound(), selector()};
 }
+
+REGISTER_GALLERY_PAGE(L"TreeView", treeViewPage);

@@ -1,14 +1,13 @@
 #pragma once
 
 #include <coroutine>
-#include <memory>
 
-#include <wxl/Microsoft.UI.Dispatching.h>
 #include "impl/event_waits.h"
 
 // wxl::UiThread -- when work runs on the UI thread: post() hands it over from
 // another thread, and onIdle() lets a coroutine on the UI thread step aside for
-// what is more urgent.
+// what is more urgent. isCurrent() and ensureCurrent() tell whether the calling
+// thread is that thread.
 //
 // DispatcherQueue.tryEnqueue already takes a lambda: a delegate parameter is
 // projected as std::function of the delegate's own signature, so handing work
@@ -23,19 +22,19 @@
 // on a background thread races the count, and a first call there races the
 // cache. The queue underneath is agile and has none of these problems.
 //
-// So this is that queue, and nothing else: constructed on the UI thread from
-// the wrapper, held by a background thread, called from it.
+// So this is that queue, and nothing else: taken on the UI thread, held by a
+// background thread, called from it.
 //
-//     UiThread const ui{window.dispatcherQueue()};   // on the UI thread
+//     UiThread const ui = UiThread::current();   // on the UI thread
 //     ...
-//     ui.post([found = std::move(books)] { shelf.add(found); });   // anywhere
+//     ui.post([found = std::move(files)] { fileList.add(found); });   // anywhere
 //
 // The work is copied into the queue, as it must be: it runs after post() has
 // returned, so nothing it needs may be held by reference.
 //
 // `co_await UiThread::onIdle()` hands the UI thread back and resumes once it has
 // nothing more urgent: input, layout and rendering run first. Long work on the
-// UI thread is cut into steps this way, without a second thread:
+// UI thread is split into steps this way, without a second thread:
 //
 //     async::task<> index(Model& model) {
 //         while (model.step()) co_await UiThread::onIdle();
@@ -45,7 +44,7 @@
 //
 // Going down ends the wait the way it ends an event wait: the coroutine
 // resumes with async::operation_canceled_exception. So does a cancellation
-// token given last -- `co_await UiThread::onIdle(stop)` -- once it is
+// token given last -- `co_await UiThread::onIdle(token)` -- once it is
 // cancelled: the step in progress ends on the queue's next turn, without
 // waiting for the thread to be idle, and every later one ends at once.
 
@@ -55,13 +54,16 @@ struct IInspectable;
 
 namespace wxl {
 
-class UiThread {
+class UiThread
+{
 public:
     /// An empty handle: post() does nothing and says so. Exists so that an
     /// object can hold one before the window is up.
     UiThread() noexcept = default;
 
-    explicit UiThread(DispatcherQueue const& queue);
+    /// The queue of the UI thread, called on it. Called on another thread, or
+    /// on one with no queue, it stops the process.
+    static UiThread current();
 
     UiThread(UiThread const& other) noexcept;
     UiThread(UiThread&& other) noexcept;
@@ -83,14 +85,43 @@ public:
 
     /// The same under a cancellation token: once it is cancelled the wait
     /// ends with async::operation_canceled_exception.
-    [[nodiscard]] static impl::event_wait_under<Idle, async::cancellation_token> onIdle(
-        async::cancellation_token stop);
+    [[nodiscard]] static impl::stoppable_event_wait<Idle, async::stop_token> onIdle(
+        async::stop_token token);
+
+    /// Whether the calling thread is the UI thread, which is the STA thread
+    /// (async::sta_thread).
+    static bool isCurrent() noexcept { return async::sta_thread::is_current(); }
+
+    /// Stops the process when the calling thread is not the UI thread, which is the STA
+    /// thread: a call from another thread to what lives on the UI thread is a broken rule. The
+    /// report names the caller's line.
+    static void ensureCurrent(
+        std::source_location where = std::source_location::current()) noexcept {
+        async::sta_thread::ensure_current(where);
+    }
 
 private:
+    /// Adopts the reference it is given.
+    explicit UiThread(::IInspectable* queue) noexcept : queue_(queue) {}
+
     ::IInspectable* queue_ = nullptr;
 };
 
-class UiThread::Idle : impl::waiting_event {
+namespace impl {
+
+/// Where the queued resumption of an idle wait finds the wait: the wait while it is suspended, null
+/// once it has ended on the way down, been cancelled or gone. The queue's turn runs on the wait's
+/// own thread, and a queue that refuses it lets go of it there too, so the count is that thread's.
+struct idle_link final : core::sta_refcounted {
+    explicit idle_link(UiThread::Idle* idle) noexcept : wait(idle) {}
+
+    UiThread::Idle* wait;
+};
+
+}  // namespace impl
+
+class UiThread::Idle : impl::event_wait
+{
 public:
     Idle() = default;
     ~Idle();
@@ -98,24 +129,24 @@ public:
     Idle(Idle const&) = delete;
     Idle& operator=(Idle const&) = delete;
 
-    bool await_ready() const noexcept { return skipped_ || impl::events_closing(); }
+    bool await_ready() const noexcept { return skipped_ || impl::event_wait::closing(); }
     bool await_suspend(std::coroutine_handle<> waiter);
 
     void await_resume() const {
-        if (skipped_ || ended() || impl::events_closing()) {
+        if (skipped_ || ended() || impl::event_wait::closing()) {
             throw_ended();
         }
     }
 
-    /// Cancelled by the token of onIdle(stop)
-    /// (async::detail::cancellable_awaiter): a wait that is
+    /// Cancelled by the token of onIdle(token)
+    /// (async::detail::stoppable_awaiter): a wait that is
     /// suspended leaves its idle turn -- which finds nobody when it comes -- and
     /// is resumed by the queue's next turn of any priority; one that has not
     /// begun never suspends.
     void cancel() noexcept {
         if (waiting()) {
-            *self_ = nullptr;
-            impl::waiting_event::cancel();
+            self_->wait = nullptr;
+            impl::event_wait::cancel();
         } else {
             skipped_ = true;
         }
@@ -125,7 +156,7 @@ private:
     // The queued resumption finds the wait through this; a wait ended on the
     // way down, or cancelled, is gone by the time the queue gets to it, and
     // leaves it empty.
-    std::shared_ptr<Idle*> self_;
+    core::intrusive_ptr<impl::idle_link> self_;
 
     // Ended without suspending: the queue takes nothing more, or the wait was
     // cancelled before it began.
@@ -133,12 +164,14 @@ private:
 };
 
 inline UiThread::Idle UiThread::onIdle() {
+    ensureCurrent();
     return {};
 }
 
-inline impl::event_wait_under<UiThread::Idle, async::cancellation_token> UiThread::onIdle(
-    async::cancellation_token stop) {
-    return impl::event_wait_under<Idle, async::cancellation_token>{std::move(stop)};
+inline impl::stoppable_event_wait<UiThread::Idle, async::stop_token> UiThread::onIdle(
+    async::stop_token token) {
+    ensureCurrent();
+    return impl::stoppable_event_wait<Idle, async::stop_token>{std::move(token)};
 }
 
 }  // namespace wxl

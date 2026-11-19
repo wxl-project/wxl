@@ -6,24 +6,20 @@
 #include <wxl/Windows.Storage.h>
 #include <wxl/Windows.Storage.FileProperties.h>
 #include <wxl/Microsoft.Windows.Storage.Pickers.h>
-#include "PickerFileTypes.h"
+#include "FileTypeChoice.h"
 #include <wxl/Microsoft.UI.Content.h>
 
 #include <wxl/Microsoft.UI.Xaml.Media.Imaging.h>
 
-import wxl.async;
+import wxl.core;
 
 using namespace wxl;
 using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t singleHeader[] = {
-#include "Snippets/StoragePickers/StoragePickersPickSingleFile.html.embed"
-};
-constexpr char8_t singleCode[] = {
-#include "Snippets/StoragePickers/StoragePickersPickSingleFile.h.embed"
-};
+gallery::LazyLoadedText singleHeader{"Snippets/StoragePickers/StoragePickersPickSingleFile.html"};
+gallery::LazyLoadedText singleCode{"Snippets/StoragePickers/StoragePickersPickSingleFile.h"};
 
 FrameworkElement single() {
 #include "Snippets/StoragePickers/StoragePickersPickSingleFile.h"
@@ -36,12 +32,8 @@ FrameworkElement single() {
     });
 }
 
-constexpr char8_t multipleHeader[] = {
-#include "Snippets/StoragePickers/StoragePickersPickMultipleFiles.html.embed"
-};
-constexpr char8_t multipleCode[] = {
-#include "Snippets/StoragePickers/StoragePickersPickMultipleFiles.h.embed"
-};
+gallery::LazyLoadedText multipleHeader{"Snippets/StoragePickers/StoragePickersPickMultipleFiles.html"};
+gallery::LazyLoadedText multipleCode{"Snippets/StoragePickers/StoragePickersPickMultipleFiles.h"};
 
 FrameworkElement multiple() {
 #include "Snippets/StoragePickers/StoragePickersPickMultipleFiles.h"
@@ -54,12 +46,8 @@ FrameworkElement multiple() {
     });
 }
 
-constexpr char8_t saveHeader[] = {
-#include "Snippets/StoragePickers/StoragePickersSaveFile.html.embed"
-};
-constexpr char8_t saveCode[] = {
-#include "Snippets/StoragePickers/StoragePickersSaveFile.h.embed"
-};
+gallery::LazyLoadedText saveHeader{"Snippets/StoragePickers/StoragePickersSaveFile.html"};
+gallery::LazyLoadedText saveCode{"Snippets/StoragePickers/StoragePickersSaveFile.h"};
 
 FrameworkElement save() {
 #include "Snippets/StoragePickers/StoragePickersSaveFile.h"
@@ -72,12 +60,8 @@ FrameworkElement save() {
     });
 }
 
-constexpr char8_t folderHeader[] = {
-#include "Snippets/StoragePickers/StoragePickersPickFolder.html.embed"
-};
-constexpr char8_t folderCode[] = {
-#include "Snippets/StoragePickers/StoragePickersPickFolder.h.embed"
-};
+gallery::LazyLoadedText folderHeader{"Snippets/StoragePickers/StoragePickersPickFolder.html"};
+gallery::LazyLoadedText folderCode{"Snippets/StoragePickers/StoragePickersPickFolder.h"};
 
 FrameworkElement folder() {
 #include "Snippets/StoragePickers/StoragePickersPickFolder.h"
@@ -90,12 +74,8 @@ FrameworkElement folder() {
     });
 }
 
-constexpr char8_t thumbnailHeader[] = {
-#include "Snippets/StoragePickers/StoragePickersFileThumbnail.html.embed"
-};
-constexpr char8_t thumbnailCode[] = {
-#include "Snippets/StoragePickers/StoragePickersFileThumbnail.h.embed"
-};
+gallery::LazyLoadedText thumbnailHeader{"Snippets/StoragePickers/StoragePickersFileThumbnail.html"};
+gallery::LazyLoadedText thumbnailCode{"Snippets/StoragePickers/StoragePickersFileThumbnail.h"};
 
 FrameworkElement thumbnail() {
 #include "Snippets/StoragePickers/StoragePickersFileThumbnail.h"
@@ -110,6 +90,25 @@ FrameworkElement thumbnail() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::storagePickersPage() {
-    return StackPanel {single(), multiple(), save(), folder(), thumbnail()};
+static wxl::FrameworkElement storagePickersPage() {
+    return StackPanel {
+        // Подсказка оригинала вверху страницы. Отступ prose {0,12,12,12} — дословно отступ RichTextBlock оригинала: prose
+        // кладёт HtmlBlock ровно в Content InfoBar, где стоял RichTextBlock, поэтому отступ переносится дословно.
+        InfoBar {
+            isClosable = false,
+            isOpen = true,
+            Margin {0, 8, 0, 0},
+            content = gallery::prose(
+                u8"The picker reopens in the <span style=\"semibold\">last selected location and view</span>. The "
+                u8"<code><span style=\"semibold\">SuggestedStartLocation</span></code> and "
+                u8"<code><span style=\"semibold\">ViewMode</span></code> are only applied the "
+                u8"<span style=\"semibold\">first time</span> the picker is opened (for example, right after app "
+                u8"installation or when no previous selection exists).",
+                Thickness {0, 12, 12, 12},
+                false),
+        },
+        single(), multiple(), save(), folder(), thumbnail(),
+    };
 }
+
+REGISTER_GALLERY_PAGE(L"StoragePickers", storagePickersPage);

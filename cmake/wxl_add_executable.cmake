@@ -6,7 +6,7 @@ include_guard(GLOBAL)
 #
 # Two kinds of file, and they arrive by different roads.
 #
-# The Windows App Runtime bootstrapper is linked: wxl.ui declares it as an
+# The Windows App Runtime bootstrapper is linked: wxl.ui.common declares it as an
 # imported shared library, so CMake knows the DLL behind the import library and
 # $<TARGET_RUNTIME_DLLS> names it for whoever links wxl. Anything else of that
 # kind would be named too, without a line added here. The list is known only
@@ -27,7 +27,7 @@ function(wxl_target_runtime target)
         return()
     endif()
 
-    get_target_property(_files wxl::ui WXL_RUNTIME_FILES)
+    get_target_property(_files wxl::ui.common WXL_RUNTIME_FILES)
 
     if(_files)
         set(_copies "")
@@ -60,48 +60,90 @@ function(wxl_target_runtime target)
         COMMENT "Copying the runtime libraries beside ${target}")
 endfunction()
 
+# The manifest every executable built on wxl carries -- an application, and a
+# console tool of the library's own -- generated from wxl_app.manifest.in beside
+# this file: what it declares is the library's requirement rather than the
+# executable's business, and the one thing that differs between executables --
+# the name in the assembly identity -- is the target's own name, which is known
+# right here. One template for every kind of executable, so what the process is
+# told is said in one place. wxl_add_executable() calls this for an application,
+# and a tool or a benchmark declared with add_executable() calls it on its own
+# target:
+#
+#     add_executable(winui-srcgen main.cpp)
+#     wxl_target_manifest(winui-srcgen)
+#
+# A test does not: it checks the code without the manifest, since the code has
+# to be right without it, and a probe of the platform that links nothing of wxl
+# keeps the process the platform gives it.
+#
+# A target whose sources carry a manifest of their own by then keeps it and gets
+# no second one: two of them with different identities do not merge, and the
+# link fails.
+function(wxl_target_manifest target)
+    get_target_property(_sources ${target} SOURCES)
+
+    if(_sources MATCHES "\\.manifest(;|$)")
+        return()
+    endif()
+
+    set(WXL_APP_NAME "${target}")
+    set(_manifest "${CMAKE_CURRENT_BINARY_DIR}/${target}.manifest")
+
+    # configure_file(), not file(CONFIGURE): it puts the template into the
+    # configure dependencies by itself, so editing the template rebuilds the
+    # build files instead of being quietly ignored.
+    configure_file("${CMAKE_CURRENT_FUNCTION_LIST_DIR}/wxl_app.manifest.in"
+                   "${_manifest}" @ONLY)
+
+    target_sources(${target} PRIVATE "${_manifest}")
+endfunction()
+
 # An application on wxl, declared the way every one of them is declared:
 #
 #     wxl_add_executable(sample.quadratic
-#         main.cpp
-#         app.manifest)
+#         UI wxl::ui.full
+#         main.cpp)
 #
-# It is a windowed executable -- wxl owns wWinMain and there is no other kind
-# of application here -- it links wxl::ui and nothing else of wxl, it takes its
-# place in the IDE tree, and what wxl needs at run time lands beside it.
+# UI names the library of a profile the application stands on
+# (wxl_add_ui_library): the profile is chosen here, in the one place, and there
+# is no default. It is a windowed executable -- wxl owns wWinMain and there is
+# no other kind of application here -- it links that library and nothing else
+# of wxl, it takes its place in the IDE tree, and what wxl needs at run time
+# lands beside it.
 #
-# The manifest comes with it, generated from wxl_app.manifest.in beside this
-# file: what it declares is the library's requirement rather than the
-# application's business, and the one thing that differs between applications
-# -- the name in the assembly identity -- is the target's own name, which is
-# known right here. Nobody writes or edits a manifest for an application.
-#
-# An application that passes a manifest of its own keeps it and gets no second
-# one: two of them with different identities do not merge, and the link fails.
+# The manifest comes with it (wxl_target_manifest), and nobody writes or edits
+# one for an application. An application that passes a manifest of its own
+# keeps it and gets no second one.
 #
 # What belongs to one application and not to all of them is said after this
 # call, on the target it made: another library, an icon (wxl_target_icon), a
 # folder shipped beside the executable (wxl_target_assets).
 function(wxl_add_executable target)
-    set(_sources ${ARGN})
-
-    if(NOT _sources MATCHES "\.manifest(;|$)")
-        set(WXL_APP_NAME "${target}")
-        set(_manifest "${CMAKE_CURRENT_BINARY_DIR}/${target}.manifest")
-
-        # configure_file(), not file(CONFIGURE): it puts the template into the
-        # configure dependencies by itself, so editing the template rebuilds the
-        # build files instead of being quietly ignored.
-        configure_file("${CMAKE_CURRENT_FUNCTION_LIST_DIR}/wxl_app.manifest.in"
-                       "${_manifest}" @ONLY)
-
-        list(APPEND _sources "${_manifest}")
+    cmake_parse_arguments(PARSE_ARGV 1 A "" "UI" "")
+    if(NOT A_UI)
+        message(FATAL_ERROR
+            "wxl_add_executable(${target}): no UI. The library of the profile the "
+            "application stands on is named in the call: "
+            "wxl_add_executable(<target> UI <library> <sources>...), "
+            "for example UI wxl::ui.full.")
+    endif()
+    if(NOT TARGET "${A_UI}")
+        message(FATAL_ERROR
+            "wxl_add_executable(${target}): UI ${A_UI} is not a target. It names the "
+            "library of a profile, made by wxl_add_ui_library (wxl::ui.full, say).")
     endif()
 
-    add_executable(${target} WIN32 ${_sources})
+    add_executable(${target} WIN32 ${A_UNPARSED_ARGUMENTS})
 
-    target_link_libraries(${target} PRIVATE wxl::ui)
+    # wxl::core beside the library, which links it already: the headers an
+    # application includes import wxl.core, and with an installed wxl CMake
+    # builds the module of an imported target for a target that names that
+    # target in its own link libraries -- reached through the interface of the
+    # library of the profile, it was not built for the application.
+    target_link_libraries(${target} PRIVATE ${A_UI} wxl::core)
 
+    wxl_target_manifest(${target})
     wxl_set_target_folders(${target})
     wxl_target_runtime(${target})
 endfunction()

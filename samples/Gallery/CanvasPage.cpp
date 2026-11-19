@@ -7,12 +7,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t controlHeader[] = {
-#include "Snippets/Canvas/CanvasControl.html.embed"
-};
-constexpr char8_t controlCode[] = {
-#include "Snippets/Canvas/CanvasControl.h.embed"
-};
+gallery::LazyLoadedText controlHeader{"Snippets/Canvas/CanvasControl.html"};
+gallery::LazyLoadedText controlCode{"Snippets/Canvas/CanvasControl.h"};
 
 FrameworkElement control() {
 #include "Snippets/Canvas/CanvasControl.h"
@@ -27,6 +23,8 @@ FrameworkElement control() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::canvasPage() {
+static wxl::FrameworkElement canvasPage() {
     return StackPanel {control()};
 }
+
+REGISTER_GALLERY_PAGE(L"Canvas", canvasPage);

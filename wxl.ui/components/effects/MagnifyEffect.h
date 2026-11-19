@@ -1,0 +1,170 @@
+#pragma once
+
+// wxl::MagnifyEffect -- an element that grows (or shrinks) while the pointer
+// is over it, written in the element's own braces:
+//
+//     Button {
+//         u"Play",
+//         MagnifyEffect {1.2f},
+//     }
+//
+// It goes to its scale on PointerEntered and back to 1 on PointerExited, over
+// a fixed time rather than with the pointer's distance from the centre. The
+// distance was tried and dropped: mouse moves arrive a few per traversal, so
+// the size stepped between them, and it left the element standing still at
+// in-between scales, where glyphs cannot be crisp (see below).
+//
+// **The number and the tags.** `MagnifyEffect {1.2f}` is the scale; below 1
+// the element shrinks under the pointer instead. Everything else is written
+// with the tags the rest of the vocabulary already has, as on any wrapper:
+//
+//     MagnifyEffect {
+//         1.2f,                  // or scale = 1.2f, or scale = Size{1.3f, 1.1f}
+//         maximum = 1.35f,       // where the way in turns back
+//         minimum = 0.95f,       // where the way out turns back
+//         duration = 250ms,      // the first phase of each motion
+//         delayTime = 80ms,      // before growing: a pointer passing over
+//     }                          // does not jerk the element
+//
+// maximum and minimum are the far points each motion swings to before
+// settling: maximum past the scale on the way in, minimum past 1 on the way
+// out. For a shrinking effect they lie the other way round --
+// `MagnifyEffect {0.8f, maximum = 0.7f, minimum = 1.2f}` dips to 0.7 and settles
+// at 0.8, then springs to 1.2 and settles at 1. Unset, or on the wrong side,
+// there is no swing.
+//
+// **Timing.** A motion without a swing takes 140 ms in and 180 ms out, on an
+// S curve. One with a swing takes 300 ms in and 360 ms out, on the
+// compositor's BackEase: one continuous curve out past the end and back,
+// with the amplitude found from the far point. `duration` sets the whole
+// motion either way.
+//
+// The scale is a float, as the composition that shows it keeps it. A double
+// literal narrows, and the warning names the place of the narrowing: the line
+// itself for `MagnifyEffect {1.2}`, the float constructor; the dispatch inside
+// for `MagnifyEffect {1.2, maximum = 1.35}`, whose braces hand the value on as
+// written, and for `scale = 1.2`, a name of several types that keeps the
+// number for the setter. A float literal, `1.2f`, narrows nothing.
+//
+// maximum and minimum are measured on the axis that moves further from 1. The
+// braced `scale = {1.3f, 1.1f}` needs the typed anchor,
+// schema::MagnifyEffect::scale in schema.h: the bare `scale` names a property
+// two classes declare with two types, so on its own it only deduces.
+//
+// **One effect, many elements.** The object is a handle, like every wrapper:
+// copies share one state, and an effect built once can be attached to a whole
+// toolbar. The state keeps the composition objects every attached element can
+// share -- the easing curve, both motions, both expressions and the property
+// set the scale lives in -- so a second button costs a property set and two
+// subscriptions, not another set of animations. A setting changed later is
+// picked up by every attached element at its next motion.
+//
+// **The motion runs in the compositor.** What the element shows is a scalar
+// on the visual's own property set, animated by a key frame animation; the
+// visual reads it through an expression. Nothing is measured or laid out per
+// frame, and only the two pointer events reach the UI thread. Scale is the
+// visual's rather than the layout's: neighbours do not move, and the element
+// keeps the place it was measured for.
+//
+// **Crisp where the motion ends.** A composition scale stretches what XAML has
+// drawn; a scale XAML itself applies (a ScaleTransform in RenderTransform) is
+// drawn by XAML at that scale, glyph stems on device pixels. So the scale is
+// split in two: a base XAML draws at, and the visual's scale divided by it. On
+// PointerEntered the base becomes the full scale and the visual starts at its
+// inverse, so the element looks unchanged, and grows to exactly 1 -- at full
+// size it is nothing but XAML's own drawing. On PointerExited the base goes
+// back to 1 and the visual shrinks to exactly 1 -- at rest it is XAML's
+// drawing at 1. The resampling is all at the start of each motion, where the
+// eye does not dwell; where it ends, nothing is resampled.
+//
+// The effect owns the RenderTransform and RenderTransformOrigin of what grows,
+// so it cannot be attached where that needs a render transform of its own.
+// (Reading RenderTransform does not tell whether one was set -- an unset one
+// comes back as a fresh object on every read.)
+//
+// **The element or its content.** The pointer is followed on the element the
+// effect is written on; what grows is that element, or with
+// `MagnifyTarget::Content` among the arguments only its content -- the glyph
+// of a toolbar button, while the button reacts over its whole face:
+//
+//     Button {
+//         toolTip = u"Open",
+//         MagnifyEffect {1.2f, MagnifyTarget::Content},
+//         content = FontIcon {glyph = ...},
+//     }
+//
+// The content is a ContentControl's Content, otherwise the element's one
+// child in the visual tree; found once the element is loaded, it is the same
+// for the rest of the element's life. It is also what keeps a tooltip: XAML
+// closes the tooltip of an element whose own visual grows moments after
+// showing it, and leaves it open while only the content inside grows.
+
+#include "core.h"
+#include "geometry.h"
+#include <wxl/Microsoft.UI.Xaml.h>
+#include "impl/member.h"
+
+namespace wxl {
+
+/// What MagnifyEffect grows: the element it is written on, or only that
+/// element's content while the element follows the pointer.
+enum class MagnifyTarget : uint8_t
+{
+    Element,
+    Content
+};
+
+class MagnifyEffect
+{
+public:
+    /// Growing to 1.2, no swing.
+    MagnifyEffect();
+
+    /// The scale alone.
+    explicit MagnifyEffect(float scale);
+
+    /// The tag form: a bare number among the tags is the scale. Numbers alone
+    /// are not a tag pack -- one is the constructor above, more do not compile.
+    template <typename... Setters>
+        requires(sizeof...(Setters) > 0) &&
+                (!(std::is_arithmetic_v<std::remove_cvref_t<Setters>> && ...)) &&
+                impl::setter_pack<MagnifyEffect, Setters...>
+    explicit MagnifyEffect(Setters&&... setters) : MagnifyEffect() {
+        (impl::apply_argument(*this, std::forward<Setters>(setters)), ...);
+    }
+
+    MagnifyEffect(MagnifyEffect const& other) noexcept;
+    MagnifyEffect& operator=(MagnifyEffect const& other) noexcept;
+    ~MagnifyEffect();
+
+    /// The scale grown to, per axis.
+    void scale(Size value) const;
+    void scale(float value) const { scale(Size{value, value}); }
+    void setPositional(float value) const { scale(value); }
+
+    /// The far points the way in and the way out swing to, as scales on the
+    /// axis that moves further. Unset, the motion does not swing.
+    void maximum(double value) const;
+    void minimum(double value) const;
+
+    /// The whole of each motion. Unset, 140 ms in and 180 out; with a swing,
+    /// 300 and 360.
+    void duration(core::duration value) const;
+
+    /// How long the pointer has to stay before the element starts growing.
+    void delayTime(core::duration value) const;
+
+    /// What grows; the element unless told otherwise. Positional:
+    /// `MagnifyEffect {1.2f, MagnifyTarget::Content}`.
+    void target(MagnifyTarget value) const;
+    void setPositional(MagnifyTarget value) const { target(value); }
+
+    /// Hung on the element when its braces are applied.
+    void operator()(UIElement const& element) const;
+
+private:
+    struct Impl;
+    core::intrusive_ptr<Impl> impl_;
+};
+
+}  // namespace wxl

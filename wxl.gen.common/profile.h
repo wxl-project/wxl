@@ -1,7 +1,11 @@
 #pragma once
 
+#include <array>
+#include <compare>
+#include <cstdint>
 #include <filesystem>
 #include <map>
+#include <optional>
 #include <set>
 #include <string>
 #include <string_view>
@@ -10,9 +14,14 @@
 // Input side of winui-srcgen: profiles say *what* to generate -- which
 // NuGet packages' metadata to read, which types are the roots of the
 // dependency walk, and which of their members take part in it. See
-// the profile documentation. Profiles are plain JSON with comments,
-// read by wxl.json; nothing here exposes the reader, so only
+// the profile documentation. A profile is a file <name>.winxl-profile, JSON
+// with comments, read by wxl::json; nothing here exposes the reader, so only
 // profile.cpp imports it.
+//
+// Which version of a package is read, and where it is, a profile does not
+// say: the NuGet restore of the build resolves it once, and the configure
+// writes the result into a list (restored_packages below) that every run
+// takes as its input.
 
 // Which members of a type participate in generation -- and therefore in
 // the dependency walk, since a member that isn't generated can't drag its
@@ -72,22 +81,14 @@ struct synthetic_member {
     // Exactly one of `type` and `cpp_type` is given.
     std::string cpp_type;     // "FluentSymbol"
     std::string cpp_include;  // "FluentSymbol.h"
-};
 
-// A method WinRT declares that is a setter in all but name: one argument, no
-// result -- Window.SetTitleBar(UIElement). Only a property gets a tag, so such a
-// method can be called and never written in braces; a profile that names it
-// here gives it one, under the name without "Set" (`titleBar = ...`), whose
-// setter calls the method. The method itself stays as it is.
-//
-// `type` narrows the value to a class of the metadata more specific than the
-// parameter -- TitleBar where the method takes any UIElement -- and with a
-// definite class to build, the tag also takes the braces that build one:
-// `titleBar = { leftHeader = ..., content = ... }`. Empty keeps the parameter's
-// own type and the ordinary assignment.
-struct setter_method {
-    std::string method;  // "SetTitleBar", spelled as metadata spells it
-    std::string type;    // "Microsoft.UI.Xaml.Controls.TitleBar", or empty
+    // The value is also written unnamed in the class's braces. A property claims that route
+    // by itself only when its type carries its own name (Margin); a wxl type that cannot --
+    // RowLengths behind RowDefinitions, whose name is taken by the value written --
+    // says so here.
+    bool positional = false;
+
+    friend bool operator==(synthetic_member const&, synthetic_member const&) = default;
 };
 
 // A wrapped class that a string builds: the abstract Geometry, which is made from
@@ -97,6 +98,8 @@ struct setter_method {
 struct from_text_t {
     std::string function;  // "impl::geometry_from_text"
     std::string include;   // header declaring it, as the generated source writes it
+
+    friend bool operator==(from_text_t const&, from_text_t const&) = default;
 };
 
 // A method of the platform whose call wxl replaces with its own: the class keeps the
@@ -109,16 +112,15 @@ struct from_text_t {
 struct replaced_call {
     std::string function;  // "impl::stream_reference_from_uri", under namespace wxl
     std::string include;   // header declaring it, as the generated source writes it
+
+    friend bool operator==(replaced_call const&, replaced_call const&) = default;
 };
 
 // One NuGet package a profile draws metadata from. `metadata` names the
 // .winmd files to read out of `metadata_dir` inside the package; when it's
-// empty, every .winmd found there is read.
-//
-// A package the SDK release ships names no version: the version comes from
-// that release, which declares one for every package in it -- see
-// `windows_app_sdk` below. A package from outside the SDK has no such
-// declaration to read, so it names its own version and must.
+// empty, every .winmd found there is read. The package is read at the version
+// and from the directory the restore of the build resolved
+// (restored_packages).
 struct package_ref {
     std::string id;
     std::vector<std::string> metadata;
@@ -129,16 +131,19 @@ struct package_ref {
     // those: a resource has a name and a target type, not a type of its own.
     std::vector<std::string> resources;
 
-    std::string version;       // empty for a package the SDK release ships
-
-    // A version of a package the SDK release ships, named in place of the one
-    // the release declares -- for every entry of that id in every profile of
-    // the set. The one deliberate departure from "the release's packages are
-    // one consistent set": a package whose other channel declares types the
-    // stable one keeps out, and the profile that asks for them says why.
-    std::string override_version;
+    // The lowest version of the package whose metadata declares what the
+    // profile asks for ("minimumVersion"), or empty when any version does: a
+    // restored version below it stops the run. For a package outside the
+    // Windows App SDK release -- Win2D -- this is the one requirement there
+    // is; a package of the release is usually covered by the release's
+    // minimum (profile::minimum_windows_app_sdk).
+    std::string minimum_version;
     std::string metadata_dir;  // empty means "metadata", the layout the SDK uses
 };
+
+// The umbrella package of a Windows App SDK release: its dependencies are the
+// packages of the release, so its version is the release's.
+inline constexpr std::string_view windows_app_sdk_id = "Microsoft.WindowsAppSDK";
 
 // One profile file, as loaded -- `extends` is not yet resolved here.
 struct profile {
@@ -147,19 +152,28 @@ struct profile {
     std::filesystem::path source;
     std::vector<std::string> extends;
 
-    // The Microsoft.WindowsAppSDK release every package below is taken
-    // from. That package's nuspec declares the exact version of each
-    // sub-package shipped with it, so naming the release once is what
-    // keeps the set consistent -- a hand-picked version per package drifts
-    // into combinations nobody ships. Empty when a profile leaves the
-    // choice to the one it extends.
-    std::string windows_app_sdk;
+    // The components the profile selects ("components"), by name; a component's own
+    // `dependencies` are added when the set is resolved.
+    std::vector<std::string> components;
+
+    // The lowest Windows App SDK release (the umbrella package
+    // Microsoft.WindowsAppSDK) whose packages declare the types this profile
+    // projects ("minimumWindowsAppSdk"), or empty when the profile does not
+    // constrain the release. For a set of profiles the highest of these is
+    // the requirement, so a profile that extends another can raise it and
+    // never lower it.
+    std::string minimum_windows_app_sdk;
 
     std::vector<package_ref> packages;
     std::map<std::string, member_filter> types;  // "Microsoft.UI.Xaml.Controls.Button" -> filter
     std::map<std::string, std::vector<synthetic_member>> synthetic;  // by the same type name
-    std::map<std::string, std::vector<setter_method>> setter_methods;  // by the same type name
-    std::map<std::string, from_text_t> from_text;                      // by the same type name
+    // Methods WinRT declares that are setters in all but name: one argument, no result --
+    // Window.SetTitleBar(UIElement). Only a property gets a tag, so such a method can be called
+    // and never written in braces; a profile that names it ("setterMethods", spelled as metadata
+    // spells it) gives it one, under the name without "Set" (`titleBar = ...`), taking what the
+    // method takes, whose setter calls the method. The method itself stays as it is.
+    std::map<std::string, std::set<std::string>> setter_methods;  // by the same type name
+    std::map<std::string, from_text_t> from_text;                 // by the same type name
     std::map<std::string, std::map<std::string, replaced_call>> replaced_calls;  // type name -> method name
 
     // The named styles of a listed type, by dictionary key: "styles": [...]
@@ -177,6 +191,72 @@ struct profile {
     member_filter discovered = member_filter::none();
     bool windows_metadata = false;
 };
+
+// The C++ type, under namespace wxl, of a type word of a description that metadata carries as a
+// signature element rather than as a type of its own, spelled as WinRT spells it: "Double" is
+// double, "String" hstring, "Object" Object. Null for any other word, which is a type of the
+// metadata by its full name (a dot in it) or a type a component describes.
+char const* element_type_name(std::string_view word);
+
+// One member of a class a component describes: its name as metadata would spell it, and the
+// type of its value, its element or its event's args as a type word (element_type_names()).
+struct described_member {
+    std::string name;  // "HeaderIcon"
+    std::string type;  // "Microsoft.UI.Xaml.Controls.IconElement"
+    // "set": "bind" -- a property the class has as a binding target alone: no setter, a
+    // property_binder of the class binds it.
+    bool bound = false;
+};
+
+// A class wxl writes by hand, as its component describes it ("classes"): the vocabulary it
+// takes in braces. A profile that selects the component gets the keys and tags of its members,
+// its schema entry and the checks of the description against the code, as for a class of the
+// metadata.
+struct described_class {
+    std::string name;    // "SettingsCard", under namespace wxl
+    std::string header;  // declares it, relative to the component's directory
+    std::string base;    // a type word, or empty
+    std::vector<described_member> properties;
+    std::vector<described_member> collections;  // the type is the element's
+    std::vector<described_member> events;       // the type is the args'
+};
+
+// An enumeration wxl writes by hand, as its component describes it ("enums"): a property of its
+// type takes its values by name, `contentAlignment.vertical`.
+struct described_enum {
+    std::string name;    // "SettingsCardContentAlignment", under namespace wxl
+    std::string header;  // declares it, relative to the component's directory
+    std::vector<std::string> values;
+};
+
+// A component: a directory holding component.json, the hand-written code of wxl.ui that
+// calls a part of the projection, and what that code asks the projection for. `imports`
+// is read with the keys a profile has for it (types, packages, windowsMetadata) and joins the
+// roots of the walk like one more profile of the chain, so a type it lists is generated
+// whoever else lists it. `classes` and `enums` describe what the component declares. The other
+// keys describe the component to the build.
+struct component {
+    std::string name;  // equals the name of its directory
+    std::filesystem::path source;     // the component.json
+    std::filesystem::path directory;  // the one that holds it
+    // What the walk is asked to start from -- the packages, the listed types with everything
+    // written under them, and the Windows metadata: the keys a profile and the `imports` of a
+    // component share.
+    profile imports;
+    std::vector<std::string> dependencies;  // other components, by name
+    std::vector<std::string> sources;       // files of the component, relative to its directory
+    std::vector<std::string> libraries;     // targets the component links
+    std::string surface;                    // its compile-only test, relative to the directory
+    std::string description;
+    std::vector<described_class> classes;   // in the order the manifest lists them
+    std::vector<described_enum> enums;
+};
+
+// Reads one component.json. Throws std::runtime_error naming the file on malformed JSON, on a
+// key the manifest, its `imports` or a description does not have, on a name that is not the
+// name of the directory the file is in, and on a description whose header is no file of the
+// component.
+component load_component(std::filesystem::path const& manifest);
 
 // What wxl implements on its own side of the boundary: the base types it
 // supplies by hand, the roots every run gets, the WinRT types it already has
@@ -206,44 +286,61 @@ struct type_map {
         std::string include;        // header defining that value type
     };
 
-    // A property of a class wxl writes by hand -- CompositionWindow's zoom --
-    // which no metadata declares and which the builder syntax is still to
-    // write in braces. The dispatch behind a tag is a template on the object,
-    // so the key and the tag are all it takes; the class declares the member.
-    struct hand_written_property {
-        std::string name;        // "Zoom", as metadata would spell it
-        std::string value_type;  // "double" -- the braced form's type, under namespace wxl
-        std::string include;     // header defining that type, or empty
-    };
-
     // A property a generated class has as a binding target alone -- NumberBox's
     // IntermediateValue, the number as it is being typed: no metadata declares
-    // it and no setter writes it, a pair in impl/binding.h reads it off the
-    // control. It gets the key, the tag, the class's schema anchor and a test
-    // line binding it in the direction the pair takes.
+    // it and no setter writes it, a hand-written function binds it. It gets the
+    // key, the tag, the class's schema anchor and a test line binding it in the
+    // direction the pair takes; where the class is generated, the binding pair
+    // that calls the function (BindingPairs.h).
     struct bound_member {
         std::string class_name;  // "Microsoft.UI.Xaml.Controls.NumberBox"
         std::string name;        // "IntermediateValue", as metadata would spell it
         std::string value_type;  // "double" -- the observable's type, under namespace wxl
-        std::string direction;   // "input", "output" or "both"
-        std::string include;     // header defining that type, or empty
+        std::string direction;   // "input" or "both"
+        std::string function;    // "impl::apply_bind_intermediate_value", under namespace wxl
+        std::string include;     // header declaring the function, as the output writes it
     };
 
+    // A property of the metadata that the control writes itself, and the events
+    // it says so under: ToggleSwitch.IsOn under Toggled, ToggleButton.IsChecked
+    // under Checked and Unchecked. Where the class is generated, the generator
+    // writes the binding pair over the class's own getter, setter and events,
+    // and the pair serves every class derived from it.
+    struct binding_pair {
+        std::string class_name;           // "Microsoft.UI.Xaml.Controls.ToggleSwitch"
+        std::string property;             // "IsOn", as metadata spells it
+        std::vector<std::string> events;  // {"Toggled"}, as metadata spells them
+    };
+
+    std::filesystem::path source;  // the file, for the messages that name it
     std::set<std::string> predefined;
     std::set<std::string> implicit_roots;
     std::vector<projection> projections;
     std::vector<tag> tags;
-
-    // The same for events -- CompositionWindow's ClientSizeChanged: a key, an
-    // `on...` tag, and an EventAdder calling the class's add_on.../remove_on....
-    std::vector<hand_written_property> hand_written_properties;
-    std::set<std::string> hand_written_events;
     std::vector<bound_member> bound_members;
+    std::vector<binding_pair> binding_pairs;
 };
 
 // Reads profiles/types.json. Throws std::runtime_error naming the file on
-// malformed JSON or an entry missing a required key.
+// malformed JSON, an entry missing a required key, and an entry of
+// "bindingPairs" or "boundMembers" with a key it does not have. Whether a
+// binding pair's class, property and events exist is the metadata's to say,
+// and the walk checks it (crawl.h).
 type_map load_type_map(std::filesystem::path const& path);
+
+// The Windows SDK a build projects: its version, which also names the folder of
+// its reference (References\<version>), and the .winmd files the build's C++/WinRT
+// projection of the platform was made from.
+struct windows_sdk {
+    std::string version;                          // "10.0.26100.0"
+    std::vector<std::filesystem::path> metadata;  // the platform's .winmd files
+};
+
+// What lists a root of the walk: a profile, or the manifest of a component.
+struct listing {
+    std::filesystem::path source;  // the profile or the component.json
+    std::string component;         // the component's name; empty for a profile
+};
 
 // Several profiles (plus everything they reference, transitively) merged
 // into the single input the crawler actually walks.
@@ -253,45 +350,172 @@ struct profile_set {
     std::vector<std::filesystem::path> resources;  // XAML dictionaries to read
     std::map<std::string, member_filter> types;     // roots of the walk
     std::map<std::string, std::vector<synthetic_member>> synthetic;  // properties wxl adds
-    std::map<std::string, std::vector<setter_method>> setter_methods;  // methods written as tags
-    std::map<std::string, from_text_t> from_text;                      // classes a string builds
+    std::map<std::string, std::set<std::string>> setter_methods;  // methods written as tags
+    std::map<std::string, from_text_t> from_text;                 // classes a string builds
     std::map<std::string, std::map<std::string, replaced_call>> replaced_calls;  // type name -> method name
 
     // Merged the way members are, as a union: a profile that lists a type
     // without "styles", or has no "brushes", asks for all of them, and so
-    // the merge does. A type no profile lists keeps all of its styles.
+    // the merge does; a component asks for none (load_component). A type no
+    // profile lists keeps all of its styles.
     std::map<std::string, member_filter> styles;
     member_filter brushes = member_filter::none();  // None until the first profile merges in
 
     member_filter discovered = member_filter::none();
 
-    // The Windows platform metadata directory a profile asked for
-    // ("windowsMetadata") and this machine does not have, or empty. The walk
-    // then stops at every Windows type it reaches, so a run says so.
-    std::filesystem::path missing_windows_metadata;
+    // What lists each type of `types`, the first in load order: a type the metadata does
+    // not declare is reported against it, and the report says which component brought it.
+    std::map<std::string, listing> listed_by;
+
+    // A component the chain names in "components", and the profile that names it first.
+    struct component_request {
+        std::string name;
+        std::filesystem::path by;
+    };
+
+    // The components the chain names, in the order it names them, before "dependencies" adds to
+    // them; and the components selected, each after its dependencies.
+    std::vector<component_request> named_components;
+    std::vector<component> components;
+
+    // What the set was resolved from, for the steps after the walk: the list of
+    // the restore, the Windows App SDK release it resolved (the version of
+    // Microsoft.WindowsAppSDK, empty when it has none), and the Windows SDK of the
+    // build, whose reference documents its metadata -- read into `metadata` when
+    // a profile of the set asks for it ("windowsMetadata", `windows_metadata`).
+    std::filesystem::path restored_from;
+    std::string windows_app_sdk;
+    windows_sdk sdk;
+    bool windows_metadata = false;
 };
 
 // Reads a single profile file. Throws std::runtime_error with the file
-// name on malformed JSON, on an unknown key shape, or on a type that
+// name on malformed JSON, on a key a profile does not have, on an unknown key shape, on a type that
 // carries both "members" and "excludeMembers" (mutually exclusive by
-// design -- a member named in both would be a straight contradiction).
+// design -- a member named in both would be a straight contradiction),
+// on a minimum that is not a NuGet version, and on the keys that name a
+// version to read -- "windowsAppSdk", and "version" or "overrideVersion" of
+// a package -- with the key that says what a profile can say instead.
 profile load_profile(std::filesystem::path const& path);
 
 // Where a profile named in `extends` lives. A reference is either a path (has
-// a directory part or a .json suffix), relative to the referring profile's
-// directory, or a bare profile name sitting next to the profile that named it.
+// a directory part or an extension), relative to the referring profile's
+// directory, or a bare profile name, the file <name>.winxl-profile next to the
+// profile that named it -- and, when there is no such file there and
+// `profiles_dir` is given, the file of that name in `profiles_dir`, the
+// generator's own profiles (wxl.gen/profiles, or the copy an installed wxl
+// ships), which is how a profile of an application extends `full`. A path has
+// no such second place. A bare name found in neither throws std::runtime_error
+// naming the referrer and both files. The reference is a profile's own text,
+// checked UTF-8, as load_profile() puts it in `extends`.
 std::filesystem::path resolve_reference(std::string_view reference,
-                                        std::filesystem::path const& referrer);
+                                        std::filesystem::path const& referrer,
+                                        std::filesystem::path const& profiles_dir = {});
+
+// A package version, parsed and compared the way NuGet's NuGetVersion is:
+// SemVer 2.0 with a fourth numeric part. The numeric parts are compared as
+// numbers, a part not written being 0; a release is above its prereleases;
+// prerelease labels are compared identifier by identifier -- an identifier
+// that is an Int32 as a number, a number below any text, text ignoring ASCII
+// case -- and of two labels that agree as far as the shorter goes, the
+// shorter is the lower; build metadata takes no part. The order is weak:
+// 1.0.0-A and 1.0.0-a are equivalent and spelled differently.
+class nuget_version {
+public:
+    // The version `text` spells, or nothing when it spells none: one to four
+    // numeric parts separated by dots, each an Int32, then optionally '-' and a
+    // label of dot-separated identifiers of [0-9A-Za-z-], none of them a number
+    // with a leading zero, then optionally '+' and metadata of identifiers of
+    // the same characters. Whitespace is refused.
+    static std::optional<nuget_version> parse(std::string_view text);
+
+    friend std::weak_ordering operator<=>(nuget_version const& a, nuget_version const& b);
+    friend bool operator==(nuget_version const& a, nuget_version const& b) {
+        return (a <=> b) == 0;
+    }
+
+private:
+    std::array<std::int32_t, 4> numbers_{};
+    std::vector<std::string> prerelease_;
+};
+
+// One package the NuGet restore of a build resolved: its id as the restore
+// spells it, the version it resolved, and the directory the package is in.
+struct restored_package {
+    std::string id;
+    std::string version;
+    std::filesystem::path directory;
+};
+
+// What the NuGet restore of a build resolved, and the Windows SDK the build
+// projects: the input every run reads its packages from. The configure of the
+// build writes it into <build>/wxl.packages/restored-packages.json
+// (cmake/wxl_packages.cmake). Nothing here is worked out by the generator:
+// a package is read at the version the restore resolved, and the Windows
+// metadata is the set of .winmd files the build's own C++/WinRT projection of
+// the platform was made from.
+struct restored_packages {
+    std::filesystem::path source;  // the file, for the messages that name it
+    std::vector<restored_package> packages;
+    windows_sdk sdk;
+
+    // The package with this id, matched the way NuGet matches ids, ignoring
+    // ASCII case; null when the restore has none.
+    restored_package const* find(std::string_view id) const;
+};
+
+// Reads the list of the restore. Throws std::runtime_error naming the file
+// when it is not there -- with how to get it -- on malformed JSON, on an entry
+// missing a key, on a version that is not a NuGet version, on a package
+// listed twice, on a Windows SDK version that is not four numbers separated by
+// dots, and on a Windows SDK without metadata.
+restored_packages load_restored_packages(std::filesystem::path const& path);
+
+// Where a run looks for components, and what it checks the includes against.
+struct component_search {
+    // The directories that hold components: component N is <directory>/N/component.json.
+    std::vector<std::filesystem::path> directories;
+
+    // The directory of what no component owns (the library's include directory, wxl.ui/src
+    // today). When set, every include a profile or a selected component gives must be a file of a
+    // selected component or of this directory, or one of `generated_includes`. Includes are
+    // spelled the way the emitter spells them: "../X.h" is a hand-written header named relative to
+    // the library's include directory with "../" in front, a plain name is a generated file, and
+    // "<winrt/...>" / "<chrono>" are projection / standard headers. An include starting with "../"
+    // is resolved against this directory and against each selected component's directory; the
+    // resolved path must stay inside that directory and not lie in a component the profiles do
+    // not select. A plain name must be one of `generated_includes`; a name in angle brackets is not
+    // checked. Empty: includes are not checked.
+    std::optional<std::filesystem::path> common_directory;
+
+    // Headers the generator writes itself into its output (FluentSymbol.h), so no directory holds them.
+    std::vector<std::string> generated_includes;
+};
 
 // Loads every named profile plus, transitively, the profiles they
 // `extends`, and merges them. A profile reference is either a path or a
-// bare name resolved as `<dir of the referencing profile>/<name>.json`.
+// bare name resolved as `<dir of the referencing profile>/<name>.winxl-profile`,
+// or else as `<profiles_dir>/<name>.winxl-profile` (resolve_reference).
 // Diamonds are loaded once; cycles are an error.
+//
+// Every package a profile names is read from `restored`, at the version the
+// restore resolved. A package the restore does not have, a version below the
+// package's minimumVersion, and a Microsoft.WindowsAppSDK below the highest
+// minimumWindowsAppSdk of the set (or absent while a profile names one) are
+// errors: std::runtime_error naming the profile, the package and both
+// versions, or what the restore has to add.
 profile_set resolve_profiles(std::vector<std::filesystem::path> const& paths,
-                             std::filesystem::path const& nuget_root);
+                             restored_packages const& restored,
+                             component_search const& search = {},
+                             std::filesystem::path const& profiles_dir = {});
 
-// %NUGET_PACKAGES%, or %USERPROFILE%\.nuget\packages when unset.
-std::filesystem::path default_nuget_root();
+// Compares the components a build read from the profile chain on its own with those the chain
+// names in "components" before "dependencies" adds to them, as sets: the build compiles the
+// components it read, and the projection is made for those the chain names. An empty list
+// matches a chain naming none. Throws std::runtime_error naming both lists and the profile that
+// names each component of the chain.
+void check_build_components(profile_set const& profiles,
+                            std::vector<std::string> const& build_components);
 
 // One named glyph of the icon font: the name a `FluentSymbol` is written
 // under, and the code point behind it.

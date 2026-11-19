@@ -3,7 +3,7 @@
 //
 // This is the other half of the comparison -- scene_wxl_benchmark.cpp describes the
 // same scene declaratively. Nothing here is written to be slow: it is what an
-// ordinary WinUI3 application in C++ looks like when there is no XAML file,
+// ordinary WinUI application in C++ looks like when there is no XAML file,
 // down to the idioms -- a string reaches a Text property as a view, so
 // cppwinrt makes a stack HSTRING reference for it rather than allocating one,
 // and wxl's own setters now do exactly the same (impl/conversions.h).
@@ -37,6 +37,7 @@
 #include <winrt/Windows.UI.h>
 
 #include <MddBootstrap.h>
+#include <WindowsAppSDK-VersionInfo.h>
 
 namespace mux = winrt::Microsoft::UI::Xaml;
 namespace muxc = winrt::Microsoft::UI::Xaml::Controls;
@@ -322,8 +323,8 @@ std::vector<muxm::SolidColorBrush> inkPalette() {
     return palette;
 }
 
-void writeText(muxc::TextBlock const& block, bench::PassValues const& v,
-               std::u16string_view word, muxm::Brush const& ink, mux::Thickness const& edge) {
+void writeText(muxc::TextBlock const& block, bench::PassValues const& v, std::u16string_view word,
+               muxm::Brush const& ink, mux::Thickness const& edge) {
     block.Text(wide(word));
     block.FontSize(v.fontSize);
     block.Foreground(ink);
@@ -333,8 +334,8 @@ void writeText(muxc::TextBlock const& block, bench::PassValues const& v,
     block.Margin(edge);
 }
 
-void writeButton(muxc::Button const& button, bench::PassValues const& v,
-                 std::u16string_view word, mux::Thickness const& edge) {
+void writeButton(muxc::Button const& button, bench::PassValues const& v, std::u16string_view word,
+                 mux::Thickness const& edge) {
     button.Content(boxed(word));
     button.IsEnabled(v.flag);
     button.Padding(edge);
@@ -354,8 +355,8 @@ winrt::Windows::Foundation::IReference<bool> checkState(int state) {
     return state == 1;
 }
 
-void writeCheck(muxc::CheckBox const& check, bench::PassValues const& v,
-                std::u16string_view word, mux::Thickness const& edge) {
+void writeCheck(muxc::CheckBox const& check, bench::PassValues const& v, std::u16string_view word,
+                mux::Thickness const& edge) {
     check.IsThreeState(true);
     check.IsChecked(checkState(v.threeState));
     check.Content(boxed(word));
@@ -429,9 +430,8 @@ int verify(std::vector<CardHandles> const& handles) {
     // by the property store -- and the third state comes back as no object at
     // all, which is the whole of what IReference<bool> means.
     auto const checked = h.check.IsChecked();
-    bool const stateHeld = v.threeState == 2
-                               ? !checked
-                               : checked && checked.Value() == (v.threeState == 1);
+    bool const stateHeld =
+        v.threeState == 2 ? !checked : checked && checked.Value() == (v.threeState == 1);
 
     int passed = 0;
     auto const held = [&passed](char const* what, bool ok) {
@@ -560,10 +560,13 @@ int main(int argc, char** argv) {
         }
     }
 
-    // The framework package first: without it no WinUI3 class can be
-    // activated at all. Release 2 -- the minor version is not consulted -- and
-    // no version tag, matching what wxl's own bootstrap asks for.
-    winrt::check_hresult(::MddBootstrapInitialize(0x00020000, nullptr, {}));
+    // The framework package first: without it no WinUI class can be
+    // activated at all. The release of the restored Runtime package, by its
+    // major version and version tag, as wxl's own bootstrap asks for it
+    // (impl/bootstrap.cpp).
+    constexpr wchar_t const* tag = WINDOWSAPPSDK_RELEASE_VERSION_TAG_W;
+    winrt::check_hresult(
+        ::MddBootstrapInitialize(WINDOWSAPPSDK_RELEASE_MAJORMINOR, tag[0] ? tag : nullptr, {}));
 
     winrt::init_apartment(winrt::apartment_type::single_threaded);
 

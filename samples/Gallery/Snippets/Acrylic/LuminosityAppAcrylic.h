@@ -20,7 +20,7 @@ auto example = Grid {
     minWidth = 652,
     width = BindOutput {room->step, [](int step) { return step == 2 ? 652.0 : step == 1 ? 500.0 : std::numeric_limits<double>::quiet_NaN(); }},
     minHeight = BindOutput {room->step, [](int step) { return step == 0 ? 200.0 : 252.0; }},
-    columnDefinitions = u"*,252",
+    ColumnDefinitions<u"*,252">,
     behind(),
     Rectangle {Margin {12}, fill = brush},
 };
@@ -37,7 +37,7 @@ auto options = StackPanel {
         smallChange = 0.001,
         stepFrequency = 0.001,
         value = 0.8,
-        onValueChanged = [brush](Slider const& self) { brush.tintOpacity(self.value()); },
+        onValueChanged += [brush](Slider const& self) { brush.tintOpacity(self.value()); },
     },
     TextBlock {Margin {0, 12, 0, 12}, u"Tint Luminosity Opacity :"},
     Slider {
@@ -50,6 +50,6 @@ auto options = StackPanel {
         smallChange = 0.001,
         stepFrequency = 0.001,
         value = 0.8,
-        onValueChanged = [brush](Slider const& self) { brush.tintLuminosityOpacity(self.value()); },
+        onValueChanged += [brush](Slider const& self) { brush.tintLuminosityOpacity(self.value()); },
     },
 };

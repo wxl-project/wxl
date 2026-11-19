@@ -5,7 +5,7 @@
 #include "Pages.h"
 #include "Shell.h"
 #include "Failure.h"
-#include "LoadXaml.h"
+#include "Resource.h"
 
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 #include <wxl/Microsoft.UI.Xaml.Input.h>
@@ -77,7 +77,7 @@ struct Model {
 
 }  // namespace
 
-FrameworkElement gallery::scratchPadPage() {
+static FrameworkElement scratchPadPage() {
     auto const model = gallery::hold<Model>();
     model->reset();
     std::weak_ptr<Model> const weak = model;
@@ -91,15 +91,15 @@ FrameworkElement gallery::scratchPadPage() {
 
     return Grid {
         height = 640,
-        rowDefinitions = u"*,*",
+        RowDefinitions<u"*,*">,
         Border {borderBrush = brushes.DividerStrokeColorDefault, BorderThickness {0, 0, 0, 1}, child = model->pad},
         Grid {
             row = 1,
             Padding {12},
             columnSpacing = 12.0,
             rowSpacing = 8.0,
-            rowDefinitions = u"*,auto",
-            columnDefinitions = u"*,auto",
+            RowDefinitions<u"*,auto">,
+            ColumnDefinitions<u"*,auto">,
             model->editor,
             StackPanel {
                 column = 1,
@@ -107,10 +107,10 @@ FrameworkElement gallery::scratchPadPage() {
                 vAlign.top,
                 spacing = 8.0,
                 minWidth = 168,
-                Button {hAlign.stretch, styles.Button.Accent, content = u"Load", onClick = [weak](auto&&...) {
+                Button {hAlign.stretch, styles.Button.Accent, content = u"Load", onClick += [weak](auto&&...) {
                             if (auto const self = weak.lock()) { self->load(); }
                         }},
-                Button {hAlign.stretch, content = u"Reset", toolTip = u"Resets to the default scratch pad content", onClick = [weak](auto&&...) {
+                Button {hAlign.stretch, content = u"Reset", toolTip = u"Resets to the default scratch pad content", onClick += [weak](auto&&...) {
                             if (auto const self = weak.lock()) { self->reset(); }
                         }},
             },
@@ -118,3 +118,5 @@ FrameworkElement gallery::scratchPadPage() {
         },
     };
 }
+
+REGISTER_GALLERY_PAGE(L"ScratchPad", scratchPadPage);

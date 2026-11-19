@@ -1,0 +1,31 @@
+{
+  "name": "scroll_view",
+  "dependencies": [],
+  "sources": [
+    "impl/scroll_controller_helpers.cpp",
+    "impl/scroll_controller_helpers.h"
+  ],
+  "libraries": [],
+  "description": "The scroll controllers of ScrollView.",
+  "imports": {
+    "types": {
+      "Microsoft.UI.Xaml.Controls.ScrollView": {
+        "members": [],
+        "syntheticMembers": {
+          "VerticalScrollController": {
+            "comment": "The bar that drives the view up and down, and is told where it is.",
+            "type": "Microsoft.UI.Xaml.Controls.AnnotatedScrollBar",
+            "function": "impl::set_vertical_scroll_controller",
+            "include": "../impl/scroll_controller_helpers.h"
+          },
+          "HorizontalScrollController": {
+            "comment": "The same, sideways.",
+            "type": "Microsoft.UI.Xaml.Controls.AnnotatedScrollBar",
+            "function": "impl::set_horizontal_scroll_controller",
+            "include": "../impl/scroll_controller_helpers.h"
+          }
+        }
+      }
+    }
+  }
+}

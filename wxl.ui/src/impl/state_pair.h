@@ -8,13 +8,13 @@
 // heard.
 //
 // Templates over the element, so that the rules are checked without XAML
-// (test/state_pair_test.cpp); binding.cpp hands them the real element. Each
-// settle_* is the field's binding watch, and runs again from the element's
-// Loaded: an element out of the tree can be asked nothing, so the field keeps
-// the request and the element serves it as it enters the tree. What the
-// control reports on its own -- the focus moving, a scroll coming to rest -- is
-// written into the field as it is and never settled: settling a lost focus
-// would take it back.
+// (test/state_pair_test.cpp); focus_pair.cpp and vertical_offset_pair.cpp hand
+// them the real element. Each settle_* is the field's binding watch, and runs
+// again from the element's Loaded: an element out of the tree can be asked
+// nothing, so the field keeps the request and the element serves it as it
+// enters the tree. What the control reports on its own -- the focus moving, a
+// scroll coming to rest -- is written into the field as it is and never
+// settled: settling a lost focus would take it back.
 
 #include "../core.h"
 

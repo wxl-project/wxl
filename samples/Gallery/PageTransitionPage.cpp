@@ -5,7 +5,6 @@
 #include <memory>
 #include "MotionPages.h"
 #include "PagedFrame.h"
-#include "ResourceBrush.h"
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 #include <wxl/Microsoft.UI.Xaml.Media.Animation.h>
 
@@ -14,12 +13,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t pageTransitionsHeader[] = {
-#include "Snippets/PageTransition/PageTransitions.html.embed"
-};
-constexpr char8_t pageTransitionsCode[] = {
-#include "Snippets/PageTransition/PageTransitions.h.embed"
-};
+gallery::LazyLoadedText pageTransitionsHeader{"Snippets/PageTransition/PageTransitions.html"};
+gallery::LazyLoadedText pageTransitionsCode{"Snippets/PageTransition/PageTransitions.h"};
 
 FrameworkElement pageTransitions() {
 #include "Snippets/PageTransition/PageTransitions.h"
@@ -34,6 +29,8 @@ FrameworkElement pageTransitions() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::pageTransitionPage() {
+static wxl::FrameworkElement pageTransitionPage() {
     return StackPanel {pageTransitions()};
 }
+
+REGISTER_GALLERY_PAGE(L"PageTransition", pageTransitionPage);

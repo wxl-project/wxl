@@ -117,15 +117,15 @@ auto example = StackPanel {
         automationId = u"WindowingOpenConfiguredWindow",
         automationName = u"Open a window with the configured client size and constraints",
         content = u"Open configured window",
-        onClick = [model](Button const&) { model->open(); },
+        onClick += [model](Button const&) { model->open(); },
     },
 };
 
 auto options = Grid {
     columnSpacing = 12,
     rowSpacing = 12,
-    columnDefinitions = u"*,*",
-    rowDefinitions = u"auto,auto,auto",
+    ColumnDefinitions<u"*,*">,
+    RowDefinitions<u"auto,auto,auto">,
     model->clientWidth,
     model->clientHeight,
     model->minimumWidth,

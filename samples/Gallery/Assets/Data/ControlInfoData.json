@@ -19,7 +19,7 @@
           "IsNew": true,
           "Subtitle": "Reusable definitions for shared values to ensure consistency and maintainability.",
           "ImagePath": "ms-appx:///Assets/ControlImages/CodeTagIcon.png",
-          "Description": "In WinUI 3, XAML resources are reusable objects like colors, brushes, or strings, defined once and used throughout your app to maintain consistency and simplify updates. These resources are typically stored in a ResourceDictionary for better organization and scalability. Special theme resources adapt automatically to light or dark modes, ensuring a seamless look across themes.",
+          "Description": "In WinUI, XAML resources are reusable objects like colors, brushes, or strings, defined once and used throughout your app to maintain consistency and simplify updates. These resources are typically stored in a ResourceDictionary for better organization and scalability. Special theme resources adapt automatically to light or dark modes, ensuring a seamless look across themes.",
           "Docs": [
             {
               "Title": "ResourceDictionary and XAML resource references",
@@ -57,7 +57,7 @@
           ],
           "ApiNamespace": "Microsoft.UI.Xaml",
           "ImagePath": "ms-appx:///Assets/ControlImages/CodeTagIcon.png",
-          "Description": "XAML Styles in WinUI 3 are reusable sets of property values that you can apply to multiple controls. They help maintain a consistent look and feel across your app. Instead of setting the same properties on every control, you define a style once and then reuse it wherever needed.",
+          "Description": "XAML Styles in WinUI are reusable sets of property values that you can apply to multiple controls. They help maintain a consistent look and feel across your app. Instead of setting the same properties on every control, you define a style once and then reuse it wherever needed.",
           "Docs": [
             {
               "Title": "Style - API",
@@ -89,7 +89,7 @@
           "IsNew": true,
           "Subtitle": "Connecting UI elements to data for automatic synchronization and updates.",
           "ImagePath": "ms-appx:///Assets/ControlImages/CodeTagIcon.png",
-          "Description": "Binding in WinUI 3 is a way to connect a property of a control to a source, such as another property, a data object, or a view model. It keeps the data synchronized between the source and the target control, enabling dynamic updates.",
+          "Description": "Binding in WinUI is a way to connect a property of a control to a source, such as another property, a data object, or a view model. It keeps the data synchronized between the source and the target control, enabling dynamic updates.",
           "Docs": [
             {
               "Title": "Data binding",
@@ -3680,7 +3680,7 @@
           "RelatedControls": [
             "Acrylic"
           ]
-        }      
+        }
       ]
     },
     {

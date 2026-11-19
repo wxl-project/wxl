@@ -11,12 +11,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t basicHeader[] = {
-#include "Snippets/SplitView/BasicSplitView.html.embed"
-};
-constexpr char8_t basicCode[] = {
-#include "Snippets/SplitView/BasicSplitView.h.embed"
-};
+gallery::LazyLoadedText basicHeader{"Snippets/SplitView/BasicSplitView.html"};
+gallery::LazyLoadedText basicCode{"Snippets/SplitView/BasicSplitView.h"};
 
 FrameworkElement basic() {
 #include "Snippets/SplitView/BasicSplitView.h"
@@ -31,6 +27,8 @@ FrameworkElement basic() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::splitViewPage() {
+static wxl::FrameworkElement splitViewPage() {
     return StackPanel {basic()};
 }
+
+REGISTER_GALLERY_PAGE(L"SplitView", splitViewPage);

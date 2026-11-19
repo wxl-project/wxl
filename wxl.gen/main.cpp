@@ -12,30 +12,56 @@ namespace {
 
 // The help, with the codes --doc-language takes filled in from the one list of
 // them (documentation_languages).
-constexpr std::string_view usage = R"(winui-srcgen -- generates wxl wrappers from WinUI3 metadata.
+constexpr std::string_view usage = R"(winui-srcgen -- generates wxl wrappers from WinUI metadata.
 
-  winui-srcgen --profile <file.json> [--profile <file.json>]...
-               [--out <dir>] [--target <cmake target>]
-               [--nuget-root <dir>] [--winmd <file.winmd>]...
-               [--types <file.json>] [--docs [--doc-language <code>]]
+  winui-srcgen --profile <file.winxl-profile> [--profile <file.winxl-profile>]...
+               --packages <restored-packages.json> --out <dir> [--parts <n>]
+               [--winmd <file.winmd>]... [--types <file.json>]
+               [--symbols <file.json>] [--docs [--doc-language <code>]]
+               [--component-dir <dir>]... [--component <name>]...
+               [--common-dir <dir>] [--profiles-dir <dir>]
 
   --profile      Input profile; may be repeated. Profiles say which NuGet
                  packages to read, which types are the roots of the
                  dependency walk, and which of their members take part.
-  --out          Output directory for the generated sources
-                 (default: wxl.ui/src/wxl).
-  --target       CMake target the generated CMakeLists.txt adds its sources
-                 to (default: wxl.ui).
-  --nuget-root   NuGet package cache holding the packages the profiles name
-                 (default: %NUGET_PACKAGES%, else %USERPROFILE%\.nuget\packages).
+  --profiles-dir The generator's own profiles (wxl.gen/profiles, or the copy
+                 an installed wxl ships), where a bare name in "extends" is
+                 looked for when the profile that names it has no such file
+                 beside it -- so a profile outside that directory extends
+                 full or base. A name found in neither stops the run with
+                 both files named; a path in "extends" is only ever relative
+                 to the profile. Without it, only the file beside is read.
+  --packages     What the NuGet restore of the build resolved: every package
+                 with its version and directory, and the Windows SDK of the
+                 build's projection with its .winmd files. The configure of
+                 the build writes it into
+                 <build>/wxl.packages/restored-packages.json. Each package a
+                 profile names is read at the version listed there, and the
+                 Windows metadata is that SDK's.
+  --out          Output directory: the headers, included as <wxl/X.h>
+                 through the directory above it, and in parts/ the sources
+                 to compile. The build of the wxl tree generates into
+                 <build>/wxl.ui/<profile>/wxl (cmake/wxl_ui_profile.cmake).
+                 Only files that change are written, and a file an earlier
+                 run wrote and this one does not is removed.
+  --parts        Into how many sources the out-of-line bodies go,
+                 parts/wrapper-00.cpp and on, from 1 to {} (default: 1),
+                 each with about as many classes as the next; beside them
+                 parts/schema_surface.cpp, the compile-only test of
+                 schema.h.
   --winmd        Extra .winmd file to read, on top of what the profiles resolve to.
   --types        What wxl implements itself: the types it supplies by hand,
                  the ones it already has an equivalent of, and the properties
                  carrying a tag (default: types.json beside the first profile).
-  --docs         Write the metadata's documentation into the generated
+  --symbols      The names of the icon font's glyphs, which FluentSymbol
+                 spells (default: fluent-symbols.json beside the first
+                 profile, read when it is there). A file named here that is
+                 not there stops the run.
+  --docs        Write the metadata's documentation into the generated
                  headers as /// comments. Windows types are documented from
-                 the Windows SDK's reference, Windows App SDK types from
-                 the .xml beside their .winmd, which is in English only.
+                 the reference of the Windows SDK the --packages list names,
+                 Windows App SDK types from the .xml beside their .winmd,
+                 which is in English only.
                  A .winmd with no documentation is said; a documentation
                  file that does not read stops the run. The language's code
                  and Doxygen's name for it are written to doc_language.txt in
@@ -46,6 +72,21 @@ constexpr std::string_view usage = R"(winui-srcgen -- generates wxl wrappers fro
                  (default: en); any other code is refused before the run.
                  Where a contract has no file in it, English is used and
                  said. Needs --docs.
+  --component-dir  Directory holding components, repeatable: a component N is
+                 <dir>/N/component.json. The chain's components and their
+                 "dependencies" are resolved from the directories given.
+  --component    A component the build read from the chain; repeatable. With
+                 --component-dir, the list -- empty when none is given -- is
+                 compared as a set with the chain's own "components", before
+                 "dependencies" adds to them, and a mismatch stops the run
+                 with both lists named. Without --component-dir it is refused.
+  --common-dir   The library's include directory (wxl.ui/src), which holds
+                 what no component owns. When set, every include a profile
+                 or a selected component gives is checked: "../X.h" must be
+                 X in this directory or in a selected component's directory,
+                 and not a file of a component the profiles do not select; a
+                 name without "../" must be a header the generator writes.
+                 Any other include stops the run.
 )";
 
 // "de, en, ...": the codes of documentation_languages, for the help and for
@@ -61,61 +102,121 @@ std::string language_codes() {
     return codes;
 }
 
+// The number --parts names: decimal digits, from 1 to max_parts -- the names of
+// the parts have two digits. Anything else is refused before the run.
+std::size_t parts_value(std::string_view text) {
+    std::size_t parts = 0;
+    auto const [end, error] = std::from_chars(text.data(), text.data() + text.size(), parts);
+    if (text.empty() || error != std::errc{} || end != text.data() + text.size() || parts < 1 ||
+        parts > max_parts) {
+        throw std::runtime_error(
+            std::format("--parts {}: the number of parts is from 1 to {}", text, max_parts));
+    }
+    return parts;
+}
+
 struct options {
     std::vector<std::filesystem::path> profiles;
     std::vector<std::filesystem::path> extra_metadata;
-    // Default output lands in the library that consumes it; the generated
-    // directory carries its own CMakeLists.txt (see gen/cmake.cpp).
-    std::filesystem::path out_dir{"wxl.ui/src/wxl"};
-    std::string cmake_target{"wxl.ui"};
-    std::filesystem::path nuget_root;
+    std::filesystem::path out_dir;
+    std::size_t parts = 1;
+    std::filesystem::path packages;
+    std::filesystem::path profiles_dir;  // empty: a bare name is looked for beside its referrer only
     std::filesystem::path type_map;
     std::filesystem::path symbols;
+    // Whether --symbols named the file: a file named is read whether or not it is there, so
+    // that a missing one stops the run; the default beside the first profile is read only
+    // when it is there.
+    bool symbols_named = false;
     bool docs = false;
     // The entry of documentation_languages --doc-language named, English when
     // --docs names none; null without --docs.
     documentation_language const* doc_language = nullptr;
     bool help = false;
+    component_search search;
+    // --component: what the build read from the chain, checked against it when --component-dir
+    // is given.
+    std::vector<std::string> build_components;
 };
 
-options parse_options(int argc, char** argv) {
+// An argument as text, for a message or for an option that takes text: UTF-8, as
+// the rest of the run spells text, with U+FFFD where the system's UTF-16 is not
+// well-formed.
+std::string text_of(std::wstring_view argument) {
+    return std::string{wxl::core::unicode::repaired(argument).to_utf8().chars()};
+}
+
+// The arguments in UTF-16, as the system hands them over: a path among them goes
+// to the file system as it came, with no code page on the way.
+options parse_options(int argc, wchar_t** argv) {
     options opts;
     // Absent when --doc-language is not given: an empty code that is given is
     // refused like any other the reference lacks, not taken for the default.
     std::optional<std::string> language;
 
-    auto const value = [&](int& i, std::string_view option) {
+    auto const value = [&](int& i, std::wstring_view option) {
         if (++i >= argc) {
-            throw std::runtime_error(std::format("{} needs a value", option));
+            throw std::runtime_error(std::format("{} needs a value", text_of(option)));
         }
-        return std::string{argv[i]};
+        return std::wstring_view{argv[i]};
+    };
+    // A value that is text, not a path: UTF-16 that does not spell anything is
+    // refused, not carried on with U+FFFD in it.
+    auto const text_value = [&](int& i, std::wstring_view option) {
+        auto const text = wxl::core::unicode::checked(value(i, option));
+        if (!text) {
+            throw std::runtime_error(
+                std::format("{}: the value is not well-formed UTF-16", text_of(option)));
+        }
+        return std::string{text->to_utf8().chars()};
     };
 
     for (int i = 1; i < argc; ++i) {
-        std::string_view const argument{argv[i]};
-        if (argument == "--profile" || argument == "-p") {
+        std::wstring_view const argument{argv[i]};
+        if (argument == L"--profile" || argument == L"-p") {
             opts.profiles.emplace_back(value(i, argument));
-        } else if (argument == "--out" || argument == "-o") {
+        } else if (argument == L"--out" || argument == L"-o") {
             opts.out_dir = value(i, argument);
-        } else if (argument == "--target") {
-            opts.cmake_target = value(i, argument);
-        } else if (argument == "--nuget-root") {
-            opts.nuget_root = value(i, argument);
-        } else if (argument == "--types") {
+        } else if (argument == L"--parts") {
+            opts.parts = parts_value(text_value(i, argument));
+        } else if (argument == L"--packages") {
+            opts.packages = value(i, argument);
+        } else if (argument == L"--types") {
             opts.type_map = value(i, argument);
-        } else if (argument == "--winmd") {
+        } else if (argument == L"--symbols") {
+            opts.symbols = value(i, argument);
+            opts.symbols_named = true;
+        } else if (argument == L"--winmd") {
             opts.extra_metadata.emplace_back(value(i, argument));
-        } else if (argument == "--docs") {
+        } else if (argument == L"--docs") {
             opts.docs = true;
-        } else if (argument == "--doc-language") {
-            language = value(i, argument);
-        } else if (argument == "--help" || argument == "-h") {
+        } else if (argument == L"--doc-language") {
+            language = text_value(i, argument);
+        } else if (argument == L"--help" || argument == L"-h") {
             opts.help = true;
+        } else if (argument == L"--component-dir") {
+            opts.search.directories.emplace_back(value(i, argument));
+        } else if (argument == L"--component") {
+            opts.build_components.push_back(text_value(i, argument));
+        } else if (argument == L"--common-dir") {
+            opts.search.common_directory = value(i, argument);
+        } else if (argument == L"--profiles-dir") {
+            opts.profiles_dir = value(i, argument);
         } else {
-            throw std::runtime_error(std::format("unknown argument: {}", argument));
+            throw std::runtime_error(std::format("unknown argument: {}", text_of(argument)));
         }
     }
 
+    // A list with nowhere to look is a build that lost its directories, not one to ignore.
+    if (!opts.build_components.empty() && opts.search.directories.empty()) {
+        auto names = opts.build_components;
+        std::ranges::sort(names);
+        throw std::runtime_error(std::format(
+            "the build names components (--component: {}) and no directory to find them in "
+            "(--component-dir): pass the directory that holds them, <dir>/<name>/component.json, "
+            "as the build does (wxl.ui/components of the wxl tree)",
+            wxl::core::join(names, ", ")));
+    }
     if (language && !opts.docs) {
         throw std::runtime_error("--doc-language needs --docs");
     }
@@ -130,9 +231,6 @@ options parse_options(int argc, char** argv) {
         }
     }
 
-    if (opts.nuget_root.empty()) {
-        opts.nuget_root = default_nuget_root();
-    }
     // Beside the first profile: the map belongs to the same tree the profiles
     // do, and naming it on every run would be noise.
     if (opts.type_map.empty() && !opts.profiles.empty()) {
@@ -142,26 +240,49 @@ options parse_options(int argc, char** argv) {
     if (opts.symbols.empty() && !opts.profiles.empty()) {
         opts.symbols = opts.profiles.front().parent_path() / "fluent-symbols.json";
     }
+    opts.search.generated_includes.emplace_back(gen::symbols_header);
     return opts;
 }
 
 }  // namespace
 
-int main(int argc, char** argv) {
+int wmain(int argc, wchar_t** argv) {
     try {
         auto const opts = parse_options(argc, argv);
         if (opts.help || opts.profiles.empty()) {
-            std::print(usage, language_codes());
+            std::print(usage, max_parts, language_codes());
             return opts.help ? 0 : 1;
+        }
+        // The versions and the directories of the packages are the restore's,
+        // and a run without them has nothing to read the profiles from.
+        if (opts.packages.empty()) {
+            throw std::runtime_error(
+                "no list of the restored packages: pass --packages "
+                "<build>/wxl.packages/restored-packages.json, which the configure of the build "
+                "writes from its NuGet restore (in the wxl tree, tools\\build.ps1 or "
+                "cmake --preset x64-dynamic writes "
+                "build/x64-dynamic/wxl.packages/restored-packages.json)");
+        }
+
+        // No default: where the output goes is the build's to say, and a guess would leave
+        // wrappers where nothing compiles them.
+        if (opts.out_dir.empty()) {
+            throw std::runtime_error(
+                "no output directory: pass --out <dir> (the build of the wxl tree generates into "
+                "<build>/wxl.ui/<profile>/wxl, see cmake/wxl_ui_profile.cmake)");
         }
 
         auto const types = load_type_map(opts.type_map);
         std::vector<symbol> symbols;
-        if (std::filesystem::is_regular_file(opts.symbols)) {
+        if (opts.symbols_named || std::filesystem::is_regular_file(opts.symbols)) {
             symbols = load_symbol_names(opts.symbols);
         }
 
-        auto profiles = resolve_profiles(opts.profiles, opts.nuget_root);
+        auto profiles = resolve_profiles(opts.profiles, load_restored_packages(opts.packages),
+                                         opts.search, opts.profiles_dir);
+        if (!opts.search.directories.empty()) {
+            check_build_components(profiles, opts.build_components);
+        }
         for (auto&& file : opts.extra_metadata) {
             if (!std::filesystem::is_regular_file(file)) {
                 throw std::runtime_error(std::format("no such metadata file: {}",
@@ -176,7 +297,7 @@ int main(int argc, char** argv) {
             throw std::runtime_error("no roots to walk: the profiles list no types");
         }
 
-        run(profiles, types, std::move(symbols), output{opts.out_dir, opts.cmake_target},
+        run(profiles, types, std::move(symbols), output{opts.out_dir, opts.parts},
             opts.doc_language);
     } catch (std::exception const& e) {
         // Covers profile loading, metadata reading and file writing alike.

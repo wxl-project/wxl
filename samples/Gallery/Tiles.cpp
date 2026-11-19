@@ -22,7 +22,7 @@ wxl::FrameworkElement gallery::controlTile(ControlInfo const& item) {
 
     auto tile = Grid {
         Grid {
-            columnDefinitions = u"auto,*",
+            ColumnDefinitions<u"auto,*">,
             Image {
                 width = 32,
                 Margin {8, 12, 16, 0},
@@ -65,9 +65,9 @@ wxl::FrameworkElement gallery::controlTile(ControlInfo const& item) {
         });
     }
 
-    // Не перенесённый контрол виден, но не открывается — как в оригинале
+    // Незарегистрированный контрол виден, но не открывается — как в оригинале
     // контрол, не попавший в сборку.
-    bool const ported = pageFor(item.uniqueId) != nullptr;
+    bool const registered = pageFor(item.uniqueId) != nullptr;
     // NarrowLayout оригинала (ItemTemplates): ниже 641 карточка на всю ширину места и выше.
     auto& wide = gallery::pageSize().wide;
     return Border {
@@ -79,7 +79,7 @@ wxl::FrameworkElement gallery::controlTile(ControlInfo const& item) {
         borderBrush = brushes.Card.StrokeColorDefault,
         BorderThickness {1},
         CornerRadius {8},
-        opacity = ported ? 1.0 : 0.5,
+        opacity = registered ? 1.0 : 0.5,
         name = item.uniqueId,
         tile,
     };
@@ -99,7 +99,7 @@ wxl::GridView gallery::tileGrid(std::span<ControlInfo const* const> items,
         selectionMode = ListViewSelectionMode::None,
         isItemClickEnabled = true,
         Padding {padding},
-        onItemClick = [](Object const&, ItemClickEventArgs& args) {
+        onItemClick += [](Object const&, ItemClickEventArgs& args) {
             auto const tile = args.clickedItem().try_as<FrameworkElement>();
             if (!tile) {
                 return;

@@ -9,12 +9,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t customLayoutHeader[] = {
-#include "Snippets/LayoutPanel/CustomLayout.html.embed"
-};
-constexpr char8_t customLayoutCode[] = {
-#include "Snippets/LayoutPanel/CustomLayout.h.embed"
-};
+gallery::LazyLoadedText customLayoutHeader{"Snippets/LayoutPanel/CustomLayout.html"};
+gallery::LazyLoadedText customLayoutCode{"Snippets/LayoutPanel/CustomLayout.h"};
 
 FrameworkElement customLayout() {
 #include "Snippets/LayoutPanel/CustomLayout.h"
@@ -29,6 +25,8 @@ FrameworkElement customLayout() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::layoutPanelPage() {
+static wxl::FrameworkElement layoutPanelPage() {
     return StackPanel {customLayout()};
 }
+
+REGISTER_GALLERY_PAGE(L"LayoutPanel", layoutPanelPage);

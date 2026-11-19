@@ -3,11 +3,21 @@
 #include "crawl.h"
 
 import std;
+import wxl.core;
 
 using namespace winmd::reader;
 
 std::string full_name(TypeDef const& type) {
     return std::format("{}.{}", type.TypeNamespace(), type.TypeName());
+}
+
+std::filesystem::path metadata_path(std::string_view name) {
+    auto const text = wxl::core::unicode::checked(name);
+    if (!text) {
+        throw std::runtime_error(std::format("a name in the metadata is not UTF-8: {}",
+                                             wxl::core::unicode::repaired(name).chars()));
+    }
+    return wxl::core::unicode::to_path(*text);
 }
 
 bool is_plain_method(MethodDef const& method) {
@@ -361,6 +371,7 @@ struct crawler {
             process_inheritance(type, cat, filter);
             if (cat == category::class_type) {
                 process_profile_additions(type);
+                process_binding_pairs(type);
                 process_activation_factory(type, filter);
             }
             process_members(type, filter);
@@ -452,16 +463,53 @@ struct crawler {
         if (auto const setters = profiles.setter_methods.find(full_name(type));
             setters != profiles.setter_methods.end()) {
             for (auto&& setter : setters->second) {
-                because(dependency_reason::kind_t::Added, setter.method);
-                TypeDef const value_type = setter.type.empty() ? TypeDef{} : db.find(setter.type);
-                if (value_type) {
-                    depend(type, value_type);
-                    enqueue(value_type);
-                }
-                result.setter_methods[type].push_back({setter, value_type});
-                result.property_names.insert(setter.method.substr(3));
+                because(dependency_reason::kind_t::Added, setter);
+                result.setter_methods[type].insert(setter);
+                result.property_names.insert(setter.substr(3));
             }
         }
+    }
+
+    // What a binding pair of the type map is made of: the property and the
+    // events the control writes it under. A class the walk reaches has its
+    // pairs, so their members come in with it, each at the level that declares
+    // it -- Slider's Value and ValueChanged are RangeBase's. That they exist
+    // was checked before the walk (check_binding_pairs).
+    void process_binding_pairs(TypeDef const& type) {
+        std::string const name = full_name(type);
+        for (auto&& pair : types.binding_pairs) {
+            if (pair.class_name != name) {
+                continue;
+            }
+            because(dependency_reason::kind_t::Added, pair.property);
+            enqueue(declaring_level(type, member_kind::Property, pair.property),
+                    member_filter::allow({pair.property}));
+            for (auto&& event : pair.events) {
+                enqueue(declaring_level(type, member_kind::Event, event),
+                        member_filter::allow({event}));
+            }
+        }
+    }
+
+    // The class that declares a member of `type`: the type itself or the
+    // nearest class it derives from, counting the interfaces each implements;
+    // empty when none does.
+    static TypeDef declaring_level(TypeDef const& type, member_kind kind, std::string_view name) {
+        for (TypeDef level = type; level; level = base_of(level)) {
+            if (!declarations_of(level, kind, name).empty()) {
+                return level;
+            }
+        }
+        return {};
+    }
+
+    static bool derives_from(TypeDef const& type, TypeDef const& base) {
+        for (TypeDef level = base_of(type); level; level = base_of(level)) {
+            if (level == base) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // What a class reaches through its activation factory rather than
@@ -669,12 +717,12 @@ struct crawler {
     // metadata genuinely contains. The roots and each type's dependencies
     // are taken by full name, so the order depends on the metadata alone.
     void order() {
-        std::vector<TypeDef> types;
-        types.reserve(result.surface.size());
+        std::vector<TypeDef> roots;
+        roots.reserve(result.surface.size());
         for (auto&& [type, filter] : result.surface) {
-            types.push_back(type);
+            roots.push_back(type);
         }
-        std::sort(types.begin(), types.end(), by_full_name{});
+        std::sort(roots.begin(), roots.end(), by_full_name{});
 
         std::set<TypeDef> done;
         std::set<TypeDef> visiting;
@@ -695,7 +743,7 @@ struct crawler {
             result.ordered.push_back(type);
         };
 
-        for (auto&& type : types) {
+        for (auto&& type : roots) {
             visit(type);
         }
 
@@ -887,28 +935,180 @@ std::vector<member_declaration> declarations_of(TypeDef const& type, member_kind
     return found;
 }
 
+namespace {
+
+// A root the metadata does not declare, as a line of the error that stops the
+// walk: what lists it, and which input would have to declare it. A type of
+// Windows is declared by the Windows SDK of the build, read only when a profile
+// asks for it; any other type of a profile by a package of the restore; a root
+// of the type map by whatever the profiles read, which the type map cannot say.
+std::string undeclared_root(std::string_view name, profile_set const& profiles) {
+    auto const listed = profiles.listed_by.find(std::string{name});
+    if (listed == profiles.listed_by.end()) {
+        return std::format("\n  {}, a root of every run in the type map (types.json): no metadata "
+                           "the profiles read declares it",
+                           name);
+    }
+    auto const listing = wxl::core::unicode::to_utf8(listed->second.source);
+    if (name.starts_with("Windows.")) {
+        return profiles.windows_metadata
+                   ? std::format("\n  {}, listed by {}: the Windows SDK {} of the build does not "
+                                 "declare it; build with a Windows SDK that does, or take the type "
+                                 "out of the profile",
+                                 name, listing.chars(), profiles.sdk.version)
+                   : std::format("\n  {}, listed by {}: a Windows type, and no profile of the set "
+                                 "reads the Windows metadata; say \"windowsMetadata\": true in the "
+                                 "profile",
+                                 name, listing.chars());
+    }
+    return std::format("\n  {}, listed by {}: no package the profiles name declares it at the "
+                       "version the restore resolved; restore a release or a package version "
+                       "that declares it, or take the type out of the profile",
+                       name, listing.chars());
+}
+
+// The binding pairs and the bound members of the type map, held to the
+// metadata: a class it declares, and for a pair a property and events the
+// class or a class it derives from declares. A bound member's property is
+// wxl's own and is not looked for. A pair serves the classes derived from its
+// own (BindingPairs.h), so two entries of one property along one line of
+// inheritance would both claim the derived class; that, and one property
+// named twice on one class, stops the run with both entries named, before a
+// binding written on such a class fails to compile.
+void check_binding_pairs(type_map const& types, cache const& db) {
+    auto const fail = [&types](std::string_view message) {
+        throw std::runtime_error(std::format(
+            "{}: {}", wxl::core::unicode::to_utf8(types.source).chars(), message));
+    };
+    auto const class_named = [&](std::string_view where, std::string const& name) {
+        TypeDef const type = name.contains('.') ? db.find(name) : TypeDef{};
+        if (!type || get_category(type) != category::class_type) {
+            fail(std::format("{}: the metadata read declares no class {}", where, name));
+        }
+        return type;
+    };
+
+    struct entry {
+        std::string where;
+        std::string property;
+        TypeDef type;
+    };
+    std::vector<entry> entries;
+    for (auto&& pair : types.binding_pairs) {
+        std::string where = std::format("binding pair {}.{}", pair.class_name, pair.property);
+        TypeDef const type = class_named(where, pair.class_name);
+        if (!crawler::declaring_level(type, member_kind::Property, pair.property)) {
+            fail(std::format("{}: {} declares no property {}, and no class it derives from does",
+                             where, pair.class_name, pair.property));
+        }
+        for (auto&& event : pair.events) {
+            if (!crawler::declaring_level(type, member_kind::Event, event)) {
+                fail(std::format("{}: {} declares no event {}, and no class it derives from does",
+                                 where, pair.class_name, event));
+            }
+        }
+        entries.push_back({std::move(where), pair.property, type});
+    }
+    for (auto&& member : types.bound_members) {
+        std::string where = std::format("bound member {}.{}", member.class_name, member.name);
+        TypeDef const type = class_named(where, member.class_name);
+        entries.push_back({std::move(where), member.name, type});
+    }
+
+    for (std::size_t at = 0; at != entries.size(); ++at) {
+        for (std::size_t other = at + 1; other != entries.size(); ++other) {
+            auto const& a = entries[at];
+            auto const& b = entries[other];
+            if (a.property != b.property) {
+                continue;
+            }
+            if (a.type == b.type) {
+                fail(std::format("{} and {}: one property of one class is bound twice", a.where,
+                                 b.where));
+            }
+            bool const a_derived = crawler::derives_from(a.type, b.type);
+            if (a_derived || crawler::derives_from(b.type, a.type)) {
+                auto const& base = a_derived ? b : a;
+                auto const& derived = a_derived ? a : b;
+                fail(std::format("{} and {}: {} derives from {}, whose pair of {} serves it "
+                                 "already; two pairs of one property along one line of "
+                                 "inheritance would make a binding of it ambiguous -- remove one",
+                                 a.where, b.where, full_name(derived.type), full_name(base.type),
+                                 a.property));
+            }
+        }
+    }
+}
+
+}  // namespace
+
 closure crawl(profile_set const& raw_profiles, type_map const& types, cache const& db) {
     profile_set profiles = raw_profiles;
     for (auto&& root : types.implicit_roots) {
         profiles.types.try_emplace(root, member_filter::all());
     }
 
-    crawler cr{profiles, types, db};
-
+    std::string missing;
     for (auto&& [name, filter] : profiles.types) {
         if (!db.find(name)) {
-            cr.result.missing_types.push_back(name);
+            missing += undeclared_root(name, profiles);
         }
     }
+    if (!missing.empty()) {
+        auto const release = profiles.windows_app_sdk.empty()
+                                 ? std::format("no {}", windows_app_sdk_id)
+                                 : std::format("{} {}", windows_app_sdk_id, profiles.windows_app_sdk);
+        throw std::runtime_error(std::format(
+            "the metadata read does not declare these types, with {} and Windows SDK {} in the "
+            "restore of the build ({}):{}",
+            release, profiles.sdk.version, wxl::core::unicode::to_utf8(profiles.restored_from).chars(),
+            missing));
+    }
+    check_binding_pairs(types, db);
+
+    crawler cr{profiles, types, db};
 
     cr.route_inherited_members();
 
     for (auto&& [name, filter] : profiles.types) {
-        auto const type = db.find(name);
-        if (!type) {
-            continue;
-        }
+        auto const type = db.find_required(name);
         cr.enqueue(type, cr.listed_filter(type));
+    }
+
+    // A type of the metadata a description names is reached as the walk reaches one through a
+    // signature: a class with none of its members, an enumeration with all of its values. A word
+    // without a dot is an element of a signature or a type a component describes
+    // (resolve_profiles holds those to the components).
+    std::string undeclared;
+    for (auto&& comp : profiles.components) {
+        for (auto&& klass : comp.classes) {
+            auto const take = [&](std::string const& member, std::string const& word) {
+                if (!word.contains('.')) {
+                    return;
+                }
+                auto const type = db.find(word);
+                if (!type) {
+                    undeclared += std::format("\n  {}.{}: {} (component '{}', {})", klass.name,
+                                              member, word, comp.name,
+                                              wxl::core::unicode::to_utf8(comp.source).chars());
+                    return;
+                }
+                cr.because(dependency_reason::kind_t::Added, member);
+                cr.enqueue(type);
+                cr.result.described_types.emplace(word, type);
+            };
+            take("(base)", klass.base);
+            for (auto const* members : {&klass.properties, &klass.collections, &klass.events}) {
+                for (auto&& member : *members) {
+                    take(member.name, member.type);
+                }
+            }
+        }
+    }
+    if (!undeclared.empty()) {
+        throw std::runtime_error(std::format(
+            "the descriptions of the components name types the metadata read does not declare:{}",
+            undeclared));
     }
 
     cr.run();
@@ -923,16 +1123,24 @@ closure crawl(profile_set const& raw_profiles, type_map const& types, cache cons
     cr.collect_attached();
     cr.order();
 
-    // The keys of the members wxl's hand-written classes add to the vocabulary
-    // (types.json): the walk meets none of them, and the key enums are flat.
-    for (auto&& property : types.hand_written_properties) {
-        cr.result.property_names.insert(property.name);
+    // The keys of the members of the classes the selected components describe, and of the
+    // bound members of the type map: the walk meets none of them, and the key enums are flat.
+    for (auto&& comp : profiles.components) {
+        for (auto&& klass : comp.classes) {
+            for (auto&& member : klass.properties) {
+                cr.result.property_names.insert(member.name);
+            }
+            for (auto&& member : klass.collections) {
+                cr.result.property_names.insert(member.name);
+            }
+            for (auto&& member : klass.events) {
+                cr.result.event_names.insert(member.name);
+            }
+        }
     }
     for (auto&& member : types.bound_members) {
         cr.result.property_names.insert(member.name);
     }
-    cr.result.event_names.insert(types.hand_written_events.begin(),
-                                 types.hand_written_events.end());
 
     return std::move(cr.result);
 }

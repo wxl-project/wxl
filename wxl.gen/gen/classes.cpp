@@ -7,6 +7,7 @@
 #include "wxl.gen.h"
 
 import std;
+import wxl.core;
 
 // Class wrappers, grouped into three files per file group -- a WinRT
 // namespace, or several whose base classes reach into each other
@@ -17,8 +18,11 @@ import std;
 //   <Namespace>.impl.h   private -- the matching `Impl` chain, one field
 //                        per surviving interface; not written for a group
 //                        of statics-only classes, which has no `Impl`
-//   <Namespace>.cpp      out-of-line bodies: constructors, members, the
-//                        runtime class names and the explicit instantiations
+//   bodies               out-of-line: constructors, members, the runtime
+//                        class names and the explicit instantiations, one
+//                        entry per class (body_file), which write_parts
+//                        (gen/parts.cpp) spreads over the build's
+//                        translation units, parts/wrapper-NN.cpp
 //
 // Grouping per namespace rather than per class is what the closure's
 // dependency ordering buys: inside one file the classes are already
@@ -41,7 +45,7 @@ import std;
 // are declared by the interfaces it implements, so each generated member
 // reaches its interface through get<&Impl::field>() -- one real
 // QueryInterface on first use, a cached pointer read afterwards. A static
-// member goes through impl::Statics<I>, the cached activation factory. Every
+// member goes through impl::activation_factory<I>, the cached activation factory. Every
 // type a member names crosses the public boundary through gen/types.h, and a
 // member naming a type that has no wxl equivalent yet is skipped and
 // counted rather than emitted broken.
@@ -57,7 +61,7 @@ namespace {
 // Children, ItemsControl and MenuFlyout say Items, TabView says TabItems.
 // Reading it off the metadata means a profile aimed at another control
 // library gets the same treatment with nothing hand-written; the namespace
-// is either markup one, since WinUI3 kept the older spelling on the types
+// is either markup one, since WinUI kept the older spelling on the types
 // that came from it.
 std::string content_property_of(TypeDef const& type) {
     for (auto&& attribute : type.CustomAttribute()) {
@@ -422,11 +426,6 @@ public_header_needs public_needs(std::string_view ns, std::vector<class_info> co
                                  std::set<std::string> const& dropped) {
     public_header_needs needs{file_includes(ns, classes, group_of, /*impl_side=*/false), {}};
     auto& includes = needs.includes;
-    // The classes a narrowed setter names are announced rather than included.
-    // Such a class is routinely built on this very group -- Window.titleBar
-    // takes a TitleBar, whose header includes this one for FrameworkElement --
-    // and a declaration taking a reference needs the name alone.
-    //
     // Every wrapped class a member names is announced as well as included:
     // namespaces refer to each other through members (Input's XamlUICommand
     // holds a Controls IconSource, while Controls reaches Input through
@@ -453,10 +452,11 @@ public_header_needs public_needs(std::string_view ns, std::vector<class_info> co
                                 member.result.public_includes.end());
             }
             // A property a profile wrote by hand over a wrapped class (a tip
-            // that is a ToolTip) is announced like a narrowed setter: its
-            // class is routinely on the far side of a circle of includes.
-            if (member.braced ||
-                (!member.synthetic_call.empty() && member.params.front().type.is_wrapper)) {
+            // that is a ToolTip) is announced rather than included: its class
+            // is routinely built on this very group, on the far side of a
+            // circle of includes, and a declaration taking a reference needs
+            // the name alone.
+            if (!member.synthetic_call.empty() && member.params.front().type.is_wrapper) {
                 needs.announced.insert(member.params.front().type.value_type);
                 continue;
             }
@@ -503,7 +503,7 @@ public_header_needs public_needs(std::string_view ns, std::vector<class_info> co
 // an instance cannot be made, so a wrapper for one would be a smart
 // pointer that is always null over an Impl field that is never
 // filled. The static members reach their factory through
-// impl::Statics<>, keyed on the interface rather than on any object,
+// impl::activation_factory<>, keyed on the interface rather than on any object,
 // and touch none of it.
 //
 // What it derives from instead is wxl::Statics, hand-written beside
@@ -665,15 +665,10 @@ public:
                    "    {}(Object const& object);\n",
                    info.name, info.name);
     }
+    // `protected extern X()` of the real class has no mirror here: an
+    // Impl it made would be empty, a wrapper of nothing. A deriving type
+    // builds its own Impl, whole, and hands it to the constructor below.
     std::print(out, "\nprotected:\n");
-    if (info.construction == construction_t::ProtectedOnly) {
-        // Mirrors `protected extern X()` in the real class: only a type
-        // deriving from it can construct one, so there is no activation
-        // to do here.
-        write_doc(out, "    ", info.constructor_doc);
-        std::print(out, "    {}();\n\n", info.name);
-    }
-
     std::print(out, R"(    explicit {}(Impl* impl) noexcept;
 
     friend class Object::Impl;
@@ -683,7 +678,7 @@ public:
 }
 
 // Every non-statics class of a group, for the try_as instantiations the
-// header states and the source defines.
+// header declares; the bodies define them (group_bodies).
 template <typename Line>
 void for_try_as(std::ostream& out, std::vector<class_info> const& classes, Line line) {
     bool announced = false;
@@ -834,7 +829,7 @@ void write_impl_header(std::filesystem::path const& path, std::string_view ns,
     std::print(out, "\n}}  // namespace wxl\n");
 }
 
-// Which of the activation-factory paths a group's source uses: plain or
+// Which of the activation-factory paths a group's bodies use: plain or
 // composable activation, statics, constructors taking arguments.
 struct factory_use {
     bool activation = false;
@@ -846,25 +841,33 @@ struct factory_use {
     bool any() const { return activation || statics || constructors; }
 };
 
+factory_use factory_use_of(class_info const& info) {
+    return {.activation = info.construction == construction_t::PublicActivation ||
+                          info.construction == construction_t::PublicComposition,
+            .statics = !info.statics.empty(),
+            .constructors = !info.constructors.empty()};
+}
+
 factory_use factory_use_of(std::vector<class_info> const& classes) {
     factory_use use;
     for (auto&& info : classes) {
-        use.activation = use.activation || info.construction == construction_t::PublicActivation ||
-                         info.construction == construction_t::PublicComposition;
-        use.statics = use.statics || !info.statics.empty();
-        use.constructors = use.constructors || !info.constructors.empty();
+        auto const own = factory_use_of(info);
+        use.activation = use.activation || own.activation;
+        use.statics = use.statics || own.statics;
+        use.constructors = use.constructors || own.constructors;
     }
     return use;
 }
 
-// What a group's source includes beside its own private header.
+// What a translation unit holding a group's bodies includes beside the group's
+// private header.
 std::set<std::string> source_includes(std::vector<class_info> const& classes, factory_use use) {
     std::set<std::string> includes;
     if (use.activation) {
-        includes.insert("../impl/activation_factory.h");
+        includes.insert("../impl/activator.h");
     }
     if (use.statics || use.constructors) {
-        includes.insert("../impl/statics.h");
+        includes.insert("../impl/activation_factory.h");
     }
     for (auto&& info : classes) {
         for (auto&& iface : info.statics) {
@@ -902,42 +905,41 @@ std::set<std::string> source_includes(std::vector<class_info> const& classes, fa
     return includes;
 }
 
-// The runtime class names the cached activation factories key on.
-// Deliberately in the source and not in a header: each name is used by
-// exactly one translation unit -- this one -- and a header would make every
-// including TU parse it.
-void write_runtime_class_names(std::ostream& out, std::vector<class_info> const& classes) {
+// The runtime class names the cached activation factories of a class key on.
+// Deliberately beside the class's bodies and not in a header: each name is
+// used by exactly one translation unit -- the one holding the bodies that
+// reach the factory -- and a header would make every including TU parse it.
+// Ahead of those bodies, since a specialization has to precede its first use.
+void write_runtime_class_names(std::ostream& out, class_info const& info) {
     std::print(out, "\nnamespace impl {{\n");
-    for (auto&& info : classes) {
-        auto const name_class = [&out, &info](std::string_view key) {
-            std::print(out, R"(
+    auto const name_class = [&out, &info](std::string_view key) {
+        std::print(out, R"(
 template <>
 struct runtime_class_name_of<{}> {{
     static constexpr wchar_t value[] = L"{}";
 }};
 )",
-                       key, info.metadata_name);
-        };
+                   key, info.metadata_name);
+    };
 
-        if (info.construction == construction_t::PublicActivation ||
-            info.construction == construction_t::PublicComposition) {
-            name_class(info.name);
+    if (info.construction == construction_t::PublicActivation ||
+        info.construction == construction_t::PublicComposition) {
+        name_class(info.name);
+    }
+    // A factory interface is keyed on the same way a statics one is
+    // -- it too is reached through the class's activation factory,
+    // and it too names exactly one class. Once per interface, not
+    // once per constructor: a factory routinely declares several.
+    std::set<std::string> keyed;
+    for (auto&& ctor : info.constructors) {
+        if (keyed.insert(ctor.statics_interface).second) {
+            name_class(ctor.statics_interface);
         }
-        // A factory interface is keyed on the same way a statics one is
-        // -- it too is reached through the class's activation factory,
-        // and it too names exactly one class. Once per interface, not
-        // once per constructor: a factory routinely declares several.
-        std::set<std::string> keyed;
-        for (auto&& ctor : info.constructors) {
-            if (keyed.insert(ctor.statics_interface).second) {
-                name_class(ctor.statics_interface);
-            }
-        }
-        // A statics interface is keyed on directly: it already names
-        // exactly one class, so it needs no marker type of its own.
-        for (auto&& iface : info.statics) {
-            name_class(iface.winrt_type);
-        }
+    }
+    // A statics interface is keyed on directly: it already names
+    // exactly one class, so it needs no marker type of its own.
+    for (auto&& iface : info.statics) {
+        name_class(iface.winrt_type);
     }
     std::print(out, "}}  // namespace impl\n");
 }
@@ -945,7 +947,7 @@ struct runtime_class_name_of<{}> {{
 void write_constructor_bodies(std::ostream& out, class_info const& info) {
     // A statics-only class has no Impl to be constructed from -- only
     // the member bodies, which reach their factory through
-    // impl::Statics<> and never touch an object.
+    // impl::activation_factory<> and never touch an object.
     if (!info.statics_only) {
         std::print(out, "\n{}::{}(Impl* impl) noexcept : base_t(impl) {{}}\n", info.name,
                    info.name);
@@ -960,14 +962,13 @@ void write_constructor_bodies(std::ostream& out, class_info const& info) {
 
     switch (info.construction) {
         case construction_t::PublicActivation:
-            // Activated straight into the Impl's own field: the cached
-            // factory writes the raw pointer into the slot cppwinrt
-            // stores it in, so there is no temporary smart pointer and
-            // no extra AddRef/Release on the way.
+            // Activated by the Impl's own constructor, into its own field:
+            // the cached factory writes the raw pointer into the slot
+            // cppwinrt stores it in, so there is no temporary smart pointer
+            // and no extra AddRef/Release on the way. The class comes as
+            // the activator's type in the tag (Object.impl.h).
             std::print(out, R"(
-{}::{}() : base_t(new Impl{{}}) {{
-    impl::ActivationFactory<{}>::activate(put_abi());
-}}
+{}::{}() : base_t(new Impl{{impl::activation<impl::activator<{}>>{{}}}}) {{}}
 )",
                        info.name, info.name, info.name);
             break;
@@ -978,17 +979,11 @@ void write_constructor_bodies(std::ostream& out, class_info const& info) {
             // its IID is what the composing path asks the factory object
             // for.
             std::print(out, R"(
-{}::{}() : base_t(new Impl{{}}) {{
-    impl::ComposableFactory<{}, {}>::activate(put_abi());
-}}
+{}::{}() : base_t(new Impl{{impl::activation<impl::composable_activator<{}, {}>>{{}}}}) {{}}
 )",
                        info.name, info.name, info.name, winrt_type_name(info.composable_factory));
             break;
         case construction_t::ProtectedOnly:
-            // No activation: the real class has no public constructor,
-            // so an instance can only come from a derived type.
-            std::print(out, "\n{}::{}() : base_t(new Impl{{}}) {{}}\n", info.name, info.name);
-            break;
         case construction_t::PublicFactory:
         case construction_t::None:
             break;
@@ -1016,7 +1011,7 @@ void write_constructor_bodies(std::ostream& out, class_info const& info) {
                        arguments);
             continue;
         }
-        std::print(out, "\n{}::{}({})\n    : base_t(new Impl{{impl::Statics<{}>->{}({})}}) {{}}\n",
+        std::print(out, "\n{}::{}({})\n    : base_t(new Impl{{impl::activation_factory<{}>->{}({})}}) {{}}\n",
                    info.name, info.name, parameter_list(ctor.method), ctor.statics_interface,
                    ctor.method.winrt_name, arguments);
     }
@@ -1039,7 +1034,7 @@ void write_constructor_bodies(std::ostream& out, class_info const& info) {
 // come out empty.
 void write_event_add_body(std::ostream& out, std::string_view signature, member_info const& member) {
     auto const raise = member.is_static
-                           ? std::format("impl::Statics<{}>->{}", member.statics_interface,
+                           ? std::format("impl::activation_factory<{}>->{}", member.statics_interface,
                                          member.winrt_name)
                            : std::format("get<&Impl::{}>().{}", member.field, member.winrt_name);
 
@@ -1094,7 +1089,7 @@ void write_member_body(std::ostream& out, class_info const& info, member_info co
         }
         switch (member.kind) {
             case member_info::kind_t::EventRemove:
-                arguments += std::format("impl::to_winrt({})", param.name);
+                arguments += std::format("impl::to_winrt(impl::take_token({}))", param.name);
                 break;
             case member_info::kind_t::BoxedString:
                 arguments += std::format("impl::box_text({})", param.name);
@@ -1122,8 +1117,8 @@ void write_member_body(std::ostream& out, class_info const& info, member_info co
         !member.replaced_call.empty()
             ? std::format("{}({})", member.replaced_call, arguments)
         : member.is_static
-            ? std::format("impl::Statics<{}>->{}({})", member.statics_interface, member.winrt_name,
-                          arguments)
+            ? std::format("impl::activation_factory<{}>->{}({})", member.statics_interface,
+                          member.winrt_name, arguments)
             : std::format("get<&Impl::{}>().{}({})", member.field,
                           member.method_call.empty() ? member.winrt_name : member.method_call,
                           arguments);
@@ -1138,61 +1133,106 @@ void write_member_body(std::ostream& out, class_info const& info, member_info co
                member.returns_void ? call : substitute(member.result.from_winrt, call));
 }
 
-void write_source(std::filesystem::path const& path, std::string_view ns,
-                  std::vector<class_info> const& classes,
-                  std::map<std::string, std::string> const& group_of,
-                  std::set<std::string> const& instantiations) {
-    auto out = open_output(path);
+// The body of each bind() a binding pair of the metadata declares
+// (BindingPairs.h): the shared mechanism, impl::bind_pair, over the wrapper's
+// own getter, setter and events. Beside the owner's other bodies, so it is
+// compiled once, in a translation unit that has the owner whole; it names no
+// winrt. The direction is `asked`, as the static member `direction` of the
+// pair is the one it allows.
+void write_binding_pair_bodies(std::ostream& out, binding_pair_info const& pair) {
+    std::string events;
+    for (auto&& event : pair.events) {
+        events += std::format("{}EventKey::{}", events.empty() ? "" : ", ", event);
+    }
+    for (auto&& field : pair.fields) {
+        std::print(out, R"(
+void impl::binding_pair<PropertyKey::{0}, {1}>::bind({1} const& control,
+                                                     core::observable<{2}>& field,
+                                                     impl::bind_direction asked) {{
+    impl::bind_pair<{3}>(
+        control, field, asked, []({1} const& c) -> {2} {{ return {4}; }},
+        []({1} const& c, {2} const& value) {{ {5}; }});
+}}
+)",
+                   pair.key, pair.owner, field.type, events, field.get, field.set);
+    }
+}
 
-    auto const use = factory_use_of(classes);
-    auto includes = source_includes(classes, use);
-    if (!has_impl(classes)) {
-        includes.merge(private_includes(ns, classes, group_of));
-        std::print(out, "{}", banner);
-        write_includes(out, includes);
+// Whether the class owns a pair of the metadata, whose bodies its part writes.
+bool has_binding_pairs(class_info const& info, std::vector<binding_pair_info> const& pairs) {
+    return std::ranges::any_of(pairs, [&info](binding_pair_info const& pair) {
+        return pair.owner == info.name && !pair.events.empty();
+    });
+}
+
+// The out-of-line bodies of a group (body_file): per class its runtime class
+// names, its constructors and members, and the one body of each try_as the
+// header promised -- the class's own translation unit has what that
+// instantiation needs and a consumer has not: the class's Impl, where try_as
+// reads the WinRT type the wrapper stands for.
+//
+// What a translation unit holding them includes: the group's private header
+// first, then the projection and private headers the bodies name. A group of
+// statics-only classes has no private header, and takes what that header
+// would include instead.
+body_file group_bodies(std::string_view ns, std::vector<class_info> const& classes,
+                       std::map<std::string, std::string> const& group_of,
+                       std::set<std::string> const& instantiations,
+                       std::vector<binding_pair_info> const& pairs) {
+    body_file file{.name = std::string{ns}};
+
+    auto includes = source_includes(classes, factory_use_of(classes));
+    if (std::ranges::any_of(classes, [&pairs](auto&& info) { return has_binding_pairs(info, pairs); })) {
+        includes.insert({"../impl/binding.h", "BindingPairs.h", "Members.h"});
+    }
+    if (has_impl(classes)) {
+        file.includes.push_back(std::format("{}.impl.h", ns));
     } else {
-        std::print(out, "{}#include \"{}.impl.h\"\n", banner, ns);
-        if (!includes.empty()) {
-            std::print(out, "\n");
-            write_includes(out, includes);
-        }
+        includes.merge(private_includes(ns, classes, group_of));
     }
-
-    std::print(out, "\nnamespace wxl {{\n");
-
-    if (use.any()) {
-        write_runtime_class_names(out, classes);
-    }
+    file.includes.insert(file.includes.end(), includes.begin(), includes.end());
 
     for (auto&& info : classes) {
+        std::ostringstream out;
+        if (factory_use_of(info).any()) {
+            write_runtime_class_names(out, info);
+        }
         write_constructor_bodies(out, info);
         for (auto&& member : info.members) {
             write_member_body(out, info, member);
+        }
+        if (!info.statics_only) {
+            std::print(out, "\ntemplate {0} Object::try_as<{0}>() const;\n", info.name);
+            std::print(out, "template bool Object::is<{0}>() const;\n", info.name);
+        }
+        for (auto&& pair : pairs) {
+            if (pair.owner == info.name && !pair.events.empty()) {
+                write_binding_pair_bodies(out, pair);
+            }
+        }
+        if (auto text = std::move(out).str(); !text.empty()) {
+            file.classes.push_back(std::move(text));
         }
     }
 
     if (!instantiations.empty()) {
         // The one definition of each specialization in the whole library.
         // Which translation unit gets it is arbitrary but has to be decided
-        // somewhere: it is the first file group that names it, and that file
-        // already includes everything the instantiation needs -- the
-        // element's own Impl, which is where the template reads the WinRT
-        // type it stands for.
-        std::print(out, "\n");
+        // somewhere: it is the first file group that names it, whose includes
+        // already have everything the instantiation needs -- the element's own
+        // Impl, which is where the template reads the WinRT type it stands
+        // for. With the group's last class, after every body that uses it.
+        std::string text = "\n";
         for (auto&& specialization : instantiations) {
-            std::print(out, "template class {};\n", specialization);
+            text += std::format("template class {};\n", specialization);
+        }
+        if (file.classes.empty()) {
+            file.classes.push_back(std::move(text));
+        } else {
+            file.classes.back() += text;
         }
     }
-
-    // The one body of each try_as the header promised. This file has what the
-    // instantiation needs and a consumer has not: the class's own Impl, where
-    // try_as reads the WinRT type the wrapper stands for.
-    for_try_as(out, classes, [&out](class_info const& info) {
-        std::print(out, "template {0} Object::try_as<{0}>() const;\n", info.name);
-        std::print(out, "template bool Object::is<{0}>() const;\n", info.name);
-    });
-
-    std::print(out, "\n}}  // namespace wxl\n");
+    return file;
 }
 
 // Where every wrapped type can be found, once the class grouping is known:
@@ -1465,6 +1505,7 @@ void add_synthetic_members(class_source& source, closure const& cl, type_index c
                                /*returns_void=*/true, {{"value", std::move(use)}}};
             member.is_property_setter = true;
             member.synthetic_call = declaration.function;
+            member.positional = declaration.positional;
             info.members.push_back(std::move(member));
         }
     }
@@ -1474,52 +1515,36 @@ void add_synthetic_members(class_source& source, closure const& cl, type_index c
 // beside the method it calls, and only a method that is a setter in
 // all but name qualifies: one argument, nothing handed back, an
 // instance to call it on.
-void add_setter_methods(class_source& source, closure const& cl, type_index const& index,
+void add_setter_methods(class_source& source, closure const& cl,
                        std::vector<skipped_member>& skipped) {
     auto& info = source.info;
     if (auto const setters = cl.setter_methods.find(source.type);
         setters != cl.setter_methods.end()) {
-        for (auto&& [declaration, value_type] : setters->second) {
+        for (auto&& declared : setters->second) {
             auto const method =
                 std::find_if(info.members.begin(), info.members.end(), [&](auto&& member) {
                     return member.kind == member_info::kind_t::Forward &&
-                           member.winrt_name == declaration.method;
+                           member.winrt_name == declared;
                 });
             if (method == info.members.end()) {
-                skipped.push_back({declaration.method,
+                skipped.push_back({declared,
                                    "setter method: the class declares no such method, or "
                                    "the profile filtered it out"});
                 continue;
             }
             if (method->is_static || !method->returns_void || method->params.size() != 1 ||
                 method->is_property_setter) {
-                skipped.push_back({declaration.method,
+                skipped.push_back({declared,
                                    "setter method: not a method taking one argument and "
                                    "returning nothing"});
                 continue;
             }
 
             member_info setter = *method;
-            setter.winrt_name = declaration.method.substr(3);
+            setter.winrt_name = declared.substr(3);
             setter.name = member_name(setter.winrt_name);
-            setter.method_call = declaration.method;
+            setter.method_call = declared;
             setter.is_property_setter = true;
-            if (!declaration.type.empty()) {
-                auto use = value_type ? map_type(value_type, index)
-                                      : type_use{.reason = std::format(
-                                                    "no type {} in the metadata",
-                                                    declaration.type)};
-                if (!use.supported || !use.is_wrapper) {
-                    skipped.push_back(
-                        {declaration.method,
-                         std::format("setter method: {}",
-                                     use.supported ? declaration.type + " is not a class"
-                                                   : use.reason)});
-                    continue;
-                }
-                setter.params.front().type = std::move(use);
-                setter.braced = true;
-            }
             info.members.push_back(std::move(setter));
         }
     }
@@ -1585,7 +1610,7 @@ void collect_members(class_source& source, closure const& cl, type_index const& 
     add_static_members(source, cl, index, skipped);
     add_constructors(source, cl, index, skipped);
     add_synthetic_members(source, cl, index, skipped);
-    add_setter_methods(source, cl, index, skipped);
+    add_setter_methods(source, cl, skipped);
     add_replaced_calls(source, m, skipped);
     drop_redeclared(source.info.members);
 }
@@ -1652,8 +1677,6 @@ public:
             add_static(member);
             return;
         }
-
-        auto& info = source_.info;
 
         if (member.kind == member_info::kind_t::EventAdd) {
             context_.m.dsl.events.insert(member.winrt_name);
@@ -1783,18 +1806,14 @@ private:
         auto& info = source_.info;
         auto& d = context_.m.dsl;
         auto const& value = member.params.front().type;
-        auto [it, inserted] = d.property_value_type.emplace(member.winrt_name, value.value_type);
-        if (!inserted && it->second != value.value_type) {
-            it->second.clear();  // no single type, so no braced form
-        }
+        d.property_value_types[member.winrt_name].insert(value.value_type);
         d.includes.insert(value.public_includes.begin(), value.public_includes.end());
 
         // The schema keeps the type this class declares it with, which is
-        // the disagreement above resolved rather than given up on -- for
-        // the disagreement between *classes*. One class saying it twice
-        // is a different thing (SymbolIcon takes both Symbol and
-        // FluentSymbol) and lands where the flat tag lands: no single
-        // type, so no braced form, and one member rather than two.
+        // the flat tag's list narrowed to one -- for the disagreement
+        // between *classes*. One class saying it twice is a different
+        // thing (SymbolIcon takes both Symbol and FluentSymbol): no single
+        // type, so only the deduced form, and one member rather than two.
         auto const declared =
             std::find_if(klass_.members.begin(), klass_.members.end(), [&member](auto&& already) {
                 return already.kind == schema::member::kind_t::Property &&
@@ -1807,10 +1826,7 @@ private:
         } else {
             klass_.members.push_back({schema::member::kind_t::Property, member.winrt_name,
                                       member.name, value.value_type});
-            klass_.members.back().braced = member.braced;
-        }
-        if (member.braced) {
-            d.braced.insert(member.winrt_name);
+            klass_.members.back().positional = member.positional;
         }
 
         // A property whose type belongs to it alone is unambiguous as an
@@ -1833,7 +1849,7 @@ private:
             // literal mean two things. The property keeps its name.
             context_.m.withheld_routes.push_back(std::format(
                 "{}.{}: a string literal is already the text route", info.name, member.name));
-        } else if (value.value_type == member.winrt_name || is_content_element) {
+        } else if (value.value_type == member.winrt_name || is_content_element || member.positional) {
             // A route has to say something. `Object` says nothing --
             // every wrapper is one -- so a property typed that way keeps
             // its name whatever else it is.
@@ -1954,8 +1970,8 @@ void group_classes(std::vector<class_source>& sources, model& m) {
 // actually has, since a tag is the only thing that surfaces them.
 void add_enumerators(type_kinds const& kinds, closure const& cl, dsl& d) {
     std::set<std::string> enum_types;
-    for (auto&& [name, value_type] : d.property_value_type) {
-        enum_types.insert(value_type);
+    for (auto&& [name, value_types] : d.property_value_types) {
+        enum_types.insert(value_types.begin(), value_types.end());
     }
     for (auto&& type : kinds.enums) {
         auto const name = std::string{type.TypeName()};
@@ -1965,30 +1981,379 @@ void add_enumerators(type_kinds const& kinds, closure const& cl, dsl& d) {
     }
 }
 
-// The vocabulary of the classes wxl writes by hand (types.json): no
-// metadata declares it, and the dispatch behind a tag is a template on the
-// object, so a key and a tag are all such a member needs. A generated class
-// that declares the same name with another type leaves no definite one.
-void add_hand_written_vocabulary(type_map const& types, dsl& d) {
-    auto const add = [&d](auto const& member) {
-        auto [it, inserted] = d.property_value_type.emplace(member.name, member.value_type);
-        if (!inserted && it->second != member.value_type) {
-            it->second.clear();
-        }
-        if (!member.include.empty()) {
-            d.includes.insert(member.include);
-        }
-    };
-    for (auto&& property : types.hand_written_properties) {
-        add(property);
-    }
-    d.events.insert(types.hand_written_events.begin(), types.hand_written_events.end());
-
-    // A bound-only member needs the same key and tag; the setter the tag
-    // dispatches to is constrained on the member's existence, so on a class
-    // that has none the assignment is refused rather than compiled.
+// A bound-only member of the type map needs a key and a tag; the setter the
+// tag dispatches to is constrained on the member's existence, so on a class
+// that has none the assignment is refused rather than compiled. Its include
+// is its function's, which BindingPairs.h needs and Members.h does not.
+void add_bound_vocabulary(type_map const& types, dsl& d) {
     for (auto&& member : types.bound_members) {
-        add(member);
+        d.property_value_types[member.name].insert(member.value_type);
+    }
+}
+
+// What a type word of a description stands for in C++, under namespace wxl.
+struct described_type {
+    std::string cpp;                 // "IconElement", "double", "hstring"
+    std::string taken;               // a setter's parameter, without its const&: "hstring_param"
+    std::set<std::string> includes;  // as the emitter spells them
+};
+
+// The type a parameter of `use` has, without the const& it may be passed by.
+std::string taken_type(type_use const& use) {
+    std::string_view param = use.param_type;
+    if (constexpr std::string_view by_reference = " const&"; param.ends_with(by_reference)) {
+        param.remove_suffix(by_reference.size());
+    }
+    return std::string{param};
+}
+
+// The classes wxl writes by hand, as the components the profiles select describe them
+// (component.json): members of the vocabulary exactly as a generated class's are -- a name's
+// types join its list, whoever declares them -- with a schema entry and the checks that hold the
+// description to the code (schema::checks).
+class described_vocabulary {
+public:
+    described_vocabulary(std::vector<component> const& components, closure const& cl,
+                         type_index const& index, model& m)
+        : components_(components), cl_(cl), index_(index), m_(m) {}
+
+    void add() {
+        std::set<std::string> generated;
+        for (auto&& [type, name] : index_.names) {
+            generated.insert(name);
+        }
+        for (auto&& comp : components_) {
+            auto const declare = [&](std::string const& name, std::string const& header) {
+                if (generated.contains(name)) {
+                    fail(comp, std::format("{} is described here and generated from the "
+                                           "metadata as well, both under namespace wxl",
+                                           name));
+                }
+                auto const [at, added] = hand_written_.try_emplace(name, "../" + header, &comp);
+                if (!added) {
+                    fail(comp, std::format("{} is described here and by component '{}' ({}), "
+                                           "both under namespace wxl",
+                                           name, at->second.owner->name,
+                                           wxl::core::unicode::to_utf8(at->second.owner->source)
+                                               .chars()));
+                }
+                m_.schema.includes.insert("../" + header);
+            };
+            for (auto&& klass : comp.classes) {
+                declare(klass.name, klass.header);
+            }
+            for (auto&& described : comp.enums) {
+                declare(described.name, described.header);
+            }
+        }
+
+        for (auto&& comp : components_) {
+            for (auto&& described : comp.enums) {
+                add_enum(described);
+            }
+            for (auto&& klass : comp.classes) {
+                add_class(comp, klass);
+            }
+        }
+    }
+
+private:
+    [[noreturn]] static void fail(component const& comp, std::string_view message) {
+        throw std::runtime_error(std::format(
+            "{}: {}", wxl::core::unicode::to_utf8(comp.source).chars(), message));
+    }
+
+    // A value type, an element type or a base: what the metadata maps it onto, as a member's
+    // signature would be mapped. Args are named as an event of the metadata names them.
+    described_type resolve(component const& comp, std::string_view where, std::string const& word,
+                           bool args = false) const {
+        if (auto const hand_written = hand_written_.find(word); hand_written != hand_written_.end()) {
+            // A component stands on its own dependencies, never on what else a profile selects.
+            if (!depends_on(comp, *hand_written->second.owner)) {
+                fail(comp, std::format("{}: the type '{}' is described by component '{}', which "
+                                       "is not among the dependencies of component '{}'",
+                                       where, word, hand_written->second.owner->name, comp.name));
+            }
+            return {word, word, {hand_written->second.include}};
+        }
+        type_use use;
+        if (element_type_name(word)) {
+            use = map_element_type(word);
+        } else if (auto const type = cl_.described_types.find(word);
+                   type != cl_.described_types.end()) {
+            // Args are named as an event of the metadata names them: an args class by its view,
+            // which map_type refuses as a value.
+            if (args) {
+                auto const name = index_.names.find(type->second);
+                auto const header = index_.headers.find(type->second);
+                if (name != index_.names.end() && header != index_.headers.end()) {
+                    return {name->second, name->second, {header->second}};
+                }
+            }
+            use = map_type(type->second, index_);
+        } else {
+            fail(comp, std::format("{}: '{}' is no type of the metadata read, nor one a selected "
+                                   "component describes",
+                                   where, word));
+        }
+        if (!use.supported) {
+            fail(comp, std::format("{}: {}", where, use.reason));
+        }
+        return {use.value_type, taken_type(use), use.public_includes};
+    }
+
+    void add_enum(described_enum const& described) {
+        auto& values = m_.dsl.enumerators[described.name];
+        for (auto&& value : described.values) {
+            values.emplace_back(member_name(value), value);
+            m_.schema.checks.push_back(
+                {schema::check::kind_t::Value, described.name, value, {}, {}});
+        }
+    }
+
+    void add_class(component const& comp, described_class const& klass) {
+        auto& d = m_.dsl;
+        using check = schema::check;
+        auto const where = [&](std::string const& member) {
+            return std::format("{}.{}", klass.name, member);
+        };
+        auto const value_of = [&](described_member const& member) {
+            auto type = resolve(comp, where(member.name), member.type);
+            d.includes.insert(type.includes.begin(), type.includes.end());
+            return type;
+        };
+
+        schema::class_t entry{klass.name, {}, "../" + klass.header, {}};
+        if (!klass.base.empty()) {
+            auto const base = resolve(comp, where("(base)"), klass.base);
+            entry.base = base.cpp;
+            m_.schema.checks.push_back(
+                {check::kind_t::Base, klass.name, {}, base.cpp, klass.base});
+        }
+
+        for (auto&& member : klass.properties) {
+            auto const type = value_of(member);
+            // An attached property's tag is the object's own where the object has the member
+            // (write_dispatch): zIndex on an effect. Its tag has the one type of the attached
+            // setter, so a member of another type has no tag to be written with.
+            if (auto const attached = d.attached.find(member.name); attached != d.attached.end()) {
+                if (attached->second.front().value_type != type.cpp) {
+                    fail(comp, std::format("{}: {} is the name of an attached property of {}, "
+                                           "whose tag takes {}",
+                                           where(member.name), member.name,
+                                           attached->second.front().owner,
+                                           attached->second.front().value_type));
+                }
+            } else {
+                d.property_value_types[member.name].insert(type.cpp);
+            }
+            schema::member described{member.bound ? schema::member::kind_t::Bound
+                                                  : schema::member::kind_t::Property,
+                                     member.name, member_name(member.name), type.cpp};
+            // The form every pair takes, whichever direction it binds.
+            if (member.bound) {
+                described.direction = "input";
+            }
+            entry.members.push_back(std::move(described));
+            // A setter is held to the type its parameter has, a binder to the field's.
+            if (member.bound) {
+                m_.schema.checks.push_back(
+                    {check::kind_t::Bound, klass.name, member.name, type.cpp, member.type});
+            } else {
+                m_.schema.checks.push_back(
+                    {check::kind_t::Setter, klass.name, member.name, type.taken, member.type});
+            }
+        }
+        for (auto&& member : klass.collections) {
+            auto const type = value_of(member);
+            d.collection_element.emplace(member.name, type.cpp);
+            entry.members.push_back({schema::member::kind_t::Collection, member.name,
+                                     member_name(member.name), type.cpp});
+            m_.schema.checks.push_back(
+                {check::kind_t::Collection, klass.name, member.name, type.cpp, member.type});
+        }
+        for (auto&& member : klass.events) {
+            auto const type = resolve(comp, where(member.name), member.type, /*args=*/true);
+            d.events.insert(member.name);
+            entry.members.push_back(
+                {schema::member::kind_t::Event, member.name, "on" + member.name});
+            m_.schema.checks.push_back(
+                {check::kind_t::Event, klass.name, member.name, type.cpp, member.type});
+        }
+        m_.schema.classes.push_back(std::move(entry));
+    }
+
+    // Whether `comp` is `on` or reaches it through "dependencies". Every component of the
+    // closure is selected, so each name is found.
+    bool depends_on(component const& comp, component const& on) const {
+        if (comp.name == on.name) {
+            return true;
+        }
+        for (auto&& name : comp.dependencies) {
+            auto const dependency = std::ranges::find(components_, name, &component::name);
+            if (dependency != components_.end() && depends_on(*dependency, on)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    struct hand_written {
+        std::string include;  // its header, as the emitter spells it
+        component const* owner;
+    };
+
+    std::vector<component> const& components_;
+    closure const& cl_;
+    type_index const& index_;
+    model& m_;
+    std::map<std::string, hand_written> hand_written_;
+};
+
+void add_described_classes(std::vector<component> const& components, closure const& cl,
+                           type_index const& index, model& m) {
+    described_vocabulary{components, cl, index, m}.add();
+}
+
+// The fields a property binds to, by the property's type: one rule per type,
+// so that every pair of one type converts alike, and none for a type no rule
+// covers. `c` is the control and `value` the field's value; `name` is the
+// property as the wrapper spells it.
+//
+// A double binds as it is and as a float, narrowed on the way in: the float
+// field asks for that precision, and an empty NumberBox's NaN stays NaN. It
+// binds as a core::nullable<double> too, whose every NaN is empty: the empty
+// box arrives as empty, and an empty field goes to the control as NaN, an
+// empty box. Two empty values are equal, so observable::set ends the echo of
+// an emptied box, which NaN, equal to nothing, cannot. A nullable
+// bool -- IsChecked, whose third state a three-state box has -- binds as a
+// bool, empty reading false. A string binds as core::u16_text: the control
+// hands back units nothing guaranteed -- a paste is whatever the clipboard
+// held -- and repaired() makes them checked text, an odd surrogate becoming
+// U+FFFD; the repaired text written back reads the same on the control's own
+// change event, which observable::set then ends. The checked text goes to the
+// control as it is: hstring_param takes u16_text.
+std::vector<binding_field> binding_fields(std::string_view type, std::string_view name) {
+    auto const as_is = [name](std::string_view field) {
+        return binding_field{std::string{field}, std::format("c.{}()", name),
+                             std::format("c.{}(value)", name)};
+    };
+    if (type == "bool" || type == "Color" || type == "double") {
+        auto fields = std::vector{as_is(type)};
+        if (type == "double") {
+            fields.push_back({"float", std::format("static_cast<float>(c.{}())", name),
+                              std::format("c.{}(value)", name)});
+            fields.push_back(
+                {"core::nullable<double>", std::format("c.{}()", name),
+                 std::format("c.{}(value.value_or(std::numeric_limits<double>::quiet_NaN()))",
+                             name)});
+        }
+        return fields;
+    }
+    if (type == "int32_t") {
+        return {as_is("int")};
+    }
+    if (type == "core::nullable<bool>") {
+        return {{"bool", std::format("c.{}().value_or(false)", name),
+                 std::format("c.{}(value)", name)}};
+    }
+    if (type == "hstring") {
+        return {{"core::u16_text", std::format("core::unicode::repaired(c.{}())", name),
+                 std::format("c.{}(value)", name)}};
+    }
+    return {};
+}
+
+// The binding pairs of the classes this run generates (BindingPairs.h); a
+// class it does not generate has none. A pair of the type map's bindingPairs
+// is made of the wrapper's own getter, setter and events, on its class or the
+// nearest level above that has them. The walk brought them in, so a level
+// without one is a member the run could not map, and that stops the run
+// rather than leave the class without its pair; so does a property of a type
+// no rule binds.
+void add_binding_pairs(std::vector<class_source> const& sources,
+                       std::map<std::string, std::string> const& base_of, type_map const& types,
+                       model& m) {
+    std::map<std::string, class_source const*> by_metadata_name;
+    std::map<std::string, class_source const*> by_name;
+    for (auto&& source : sources) {
+        by_metadata_name.emplace(source.info.metadata_name, &source);
+        by_name.emplace(source.info.name, &source);
+    }
+    auto const fail = [&types](std::string_view message) {
+        throw std::runtime_error(std::format(
+            "{}: {}", wxl::core::unicode::to_utf8(types.source).chars(), message));
+    };
+    auto const find_member = [&](class_source const& owner, auto const& matches) {
+        for (auto&& level : ancestry(owner.info.name, base_of)) {
+            auto const at = by_name.find(level);
+            if (at == by_name.end()) {
+                break;
+            }
+            for (auto&& member : at->second->info.members) {
+                if (!member.is_static && matches(member)) {
+                    return &member;
+                }
+            }
+        }
+        return static_cast<member_info const*>(nullptr);
+    };
+
+    for (auto&& pair : types.binding_pairs) {
+        auto const owner = by_metadata_name.find(pair.class_name);
+        if (owner == by_metadata_name.end()) {
+            continue;
+        }
+        auto const& source = *owner->second;
+        std::string const where = std::format("binding pair {}.{}", pair.class_name, pair.property);
+        auto const* const getter = find_member(source, [&pair](member_info const& member) {
+            return member.is_property_getter && member.winrt_name == pair.property;
+        });
+        auto const* const setter = find_member(source, [&pair](member_info const& member) {
+            return member.kind == member_info::kind_t::Forward && member.is_property_setter &&
+                   member.winrt_name == pair.property;
+        });
+        if (!getter || !setter) {
+            fail(std::format("{}: the wrapper of {} has no {} of {}; the members skipped say why",
+                             where, source.info.name, getter ? "setter" : "getter", pair.property));
+        }
+
+        binding_pair_info info{pair.property, source.info.name, getter->name, "both"};
+        for (auto&& event : pair.events) {
+            if (!find_member(source, [&event](member_info const& member) {
+                    return member.kind == member_info::kind_t::EventAdd && member.winrt_name == event;
+                })) {
+                fail(std::format("{}: the wrapper of {} has no event {}; the members skipped say why",
+                                 where, source.info.name, event));
+            }
+            info.events.push_back(event);
+        }
+        info.fields = binding_fields(getter->result.value_type, getter->name);
+        if (info.fields.empty()) {
+            fail(std::format("{}: no rule binds a field to a property of type {}", where,
+                             getter->result.value_type));
+        }
+        info.includes.insert("../core.h");
+        for (auto&& field : info.fields) {
+            if (field.type == getter->result.value_type) {
+                info.includes.insert(getter->result.public_includes.begin(),
+                                     getter->result.public_includes.end());
+            }
+        }
+        m.binding_pairs.push_back(std::move(info));
+    }
+
+    for (auto&& bound : types.bound_members) {
+        auto const owner = by_metadata_name.find(bound.class_name);
+        if (owner == by_metadata_name.end()) {
+            continue;
+        }
+        binding_pair_info info{bound.name, owner->second->info.name, member_name(bound.name),
+                               bound.direction};
+        info.fields.push_back({bound.value_type, {}, {}});
+        info.function = bound.function;
+        info.includes = {"../core.h", bound.include};
+        m.binding_pairs.push_back(std::move(info));
     }
 }
 
@@ -2003,7 +2368,7 @@ void add_hand_written_vocabulary(type_map const& types, dsl& d) {
 // whoever typed its name -- which means a class below it has to inherit
 // from the nearest ancestor that does have one.
 void finish_schema(std::vector<std::pair<std::string, schema::member>>& attached_elsewhere,
-                   type_map const& types, model& m) {
+                   model& m) {
     auto& sch = m.schema;
     for (auto&& [target, member] : attached_elsewhere) {
         auto const owner = std::find_if(sch.classes.begin(), sch.classes.end(),
@@ -2013,21 +2378,27 @@ void finish_schema(std::vector<std::pair<std::string, schema::member>>& attached
         }
     }
 
-    // A bound-only member joins the class it is written on (types.json). The
-    // class has to be in the closure: a member on a class nobody generates
-    // would anchor to nothing, and is reported rather than dropped.
-    for (auto&& bound : types.bound_members) {
-        std::string const name = bound.class_name.substr(bound.class_name.rfind('.') + 1);
+    // A binding pair joins the class it is on, as the run generates it: a
+    // bound member as the anchor of its own, a pair of the metadata once per
+    // field type, over the anchor its property already has. The owner of a
+    // pair is a class the run generates, and every one of them has a schema
+    // class by now; a pair with none would leave its binding out of the
+    // schema and the surface test, so it stops the run.
+    for (auto&& pair : m.binding_pairs) {
         auto const owner = std::find_if(sch.classes.begin(), sch.classes.end(),
-                                        [&name](auto&& klass) { return klass.name == name; });
+                                        [&pair](auto&& klass) { return klass.name == pair.owner; });
         if (owner == sch.classes.end()) {
-            m.unplaced_bound_members.push_back(std::format("{}.{}", bound.class_name, bound.name));
-            continue;
+            throw std::runtime_error(std::format(
+                "the binding pair {}.{} is on a class the schema has no entry for", pair.owner,
+                pair.name));
         }
-        schema::member member{schema::member::kind_t::Bound, bound.name, member_name(bound.name),
-                              bound.value_type};
-        member.direction = bound.direction;
-        owner->members.push_back(std::move(member));
+        for (auto&& field : pair.fields) {
+            schema::member member{pair.events.empty() ? schema::member::kind_t::Bound
+                                                      : schema::member::kind_t::Paired,
+                                  pair.key, pair.name, field.type};
+            member.direction = pair.direction;
+            owner->members.push_back(std::move(member));
+        }
     }
 
     std::map<std::string, std::string> schema_base;  // every class -> its base, before pruning
@@ -2054,7 +2425,8 @@ void finish_schema(std::vector<std::pair<std::string, schema::member>>& attached
 }  // namespace
 
 type_index analyze_classes(type_kinds const& kinds, closure const& cl, type_map const& types,
-                           documentation_source* docs, model& m) {
+                           std::vector<component> const& components, documentation_source* docs,
+                           model& m) {
     auto const wrapped = wrapped_types_of(kinds, types);
     auto sources = read_classes(wrapped, cl, types, m);
 
@@ -2091,14 +2463,17 @@ type_index analyze_classes(type_kinds const& kinds, closure const& cl, type_map 
         vocabulary.finish();
     }
 
+    add_binding_pairs(sources, base_of, types, m);
     group_classes(sources, m);
+    add_described_classes(components, cl, index, m);
+    add_bound_vocabulary(types, m.dsl);
     add_enumerators(kinds, cl, m.dsl);
-    add_hand_written_vocabulary(types, m.dsl);
-    finish_schema(attached_elsewhere, types, m);
+    finish_schema(attached_elsewhere, m);
     return index;
 }
 
-void write_classes(output const& out, model const& m, emitted& em) {
+void write_classes(output const& out, model const& m, emitted& em,
+                   std::vector<body_file>& bodies) {
     for (auto&& line : m.class_warnings) {
         std::print(stderr, "warning: {}\n", line);
     }
@@ -2137,21 +2512,20 @@ void write_classes(output const& out, model const& m, emitted& em) {
     size_t constructors = 0;
     size_t members = 0;
     for (auto&& group : m.class_groups) {
-        auto const header = out.dir / (group.name + ".h");
-        auto const source = out.dir / (group.name + ".cpp");
+        auto const header = out.dir / metadata_path(group.name + ".h");
 
         write_public_header(header, group.name, group.classes, m.group_of, group.collections_used,
                             group.dropped);
         em.add(header);
 
         if (has_impl(group.classes)) {
-            auto const impl_header = out.dir / (group.name + ".impl.h");
+            auto const impl_header = out.dir / metadata_path(group.name + ".impl.h");
             write_impl_header(impl_header, group.name, group.classes, m.group_of);
             em.add(impl_header);
         }
 
-        write_source(source, group.name, group.classes, m.group_of, group.collections_defined);
-        em.add(source);
+        bodies.push_back(group_bodies(group.name, group.classes, m.group_of,
+                                      group.collections_defined, m.binding_pairs));
 
         classes += group.classes.size();
         for (auto&& info : group.classes) {

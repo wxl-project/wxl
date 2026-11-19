@@ -1,0 +1,39 @@
+// wxl::RsdnBlock: разметка в parse() модуля wxl.rsdn, наполнение — общим
+// сборщиком семейства (MarkupBlock.cpp).
+
+#include "Object.impl.h"
+#include "RsdnBlock.impl.h"
+#include "impl/activator.h"
+
+// Импорты последними — markup_build.h несёт wxl.core, wxl.rsdn добавляем
+// сами.
+#include "impl/markup_build.h"
+
+import wxl.rsdn;
+
+namespace wxl {
+
+namespace impl {
+
+template <>
+struct runtime_class_name_of<RsdnBlock> {
+    static constexpr wchar_t value[] = L"Microsoft.UI.Xaml.Controls.RichTextBlock";
+};
+
+}  // namespace impl
+
+RsdnBlock::RsdnBlock(Impl* impl) noexcept : base_t(impl) {}
+
+RsdnBlock::RsdnBlock() : base_t(new Impl{impl::activation<impl::activator<RsdnBlock>>{}}) {}
+
+void RsdnBlock::rsdn(hstring_param const& markup) const {
+    clear();
+    append(markup);
+}
+
+void RsdnBlock::append(hstring_param const& markup) const {
+    const html::document parsed = wxl::rsdn::parse(markup.text().view());
+    impl::build_markup(*this, *static_cast<Impl*>(impl()), parsed);
+}
+
+}  // namespace wxl

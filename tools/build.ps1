@@ -5,26 +5,46 @@
 # itself: it runs vcvars64.bat in a child cmd, reads back the variables it
 # set, and applies them to the current process.
 #
-# The VCPKG_ROOT vcvars64.bat overwrites on the way (it points at Visual
-# Studio's own bundled vcpkg, which carries no cppwinrt port) needs no
-# undoing here: cmake/vcpkg_bootstrap.cmake resolves the real root from
-# vcpkg's own vcpkg.path.txt and never reads the environment variable on
-# Windows. That is what the bootstrap file exists for.
+# The same environment names the Visual Studio installation whose MSBuild the
+# configure runs to restore the NuGet packages and build the C++/WinRT
+# projection (VSINSTALLDIR), and the Windows SDK of both the projection and the
+# compiler (WindowsSDKVersion): see cmake/wxl_packages.cmake.
+#
+# -UpdatePackages runs the update of the NuGet packages: a configure with
+# WXL_UPDATE_PACKAGES=ON, which takes the newest version every minimum of
+# tools/packages.json admits (the same major version and channel as the
+# minimum), keeps a package held at one version in brackets ([1.4.0]) at that
+# version, writes tools/packages.lock.json anew and prints every pin with its
+# version before and after. The configure removes the option from the cache
+# when the update succeeds, so the next one is an ordinary configure that takes
+# the versions of the lock file. Review the versions and commit the lock file.
+#
+# -Preset names the build dublet, the configure preset of CMakePresets.json and
+# the directory build\<preset> it configures: x64-dynamic, the default, builds
+# the libraries, the samples, the tests and the site with the CRT linked
+# dynamically; x64-static builds the tool set with the CRT linked statically.
 #
 # Usage:
-#   tools\build.ps1                 # configure (if needed) and build Debug
+#   tools\build.ps1                 # configure (if needed) and build Debug in build\x64-dynamic
 #   tools\build.ps1 -Config Release
-#   tools\build.ps1 -Configure      # force a re-configure first
+#   tools\build.ps1 -Preset x64-static -Config Release -Target winui-srcgen
+#   tools\build.ps1 -Configure      # re-configure and stop, without building
 #   tools\build.ps1 -Target winui-srcgen
 #   tools\build.ps1 -Configure -Define WXL_BUILD_BENCHMARKS=ON
+#   tools\build.ps1 -Define WXL_BUILD_BENCHMARKS=ON   # re-configure, then build
+#   tools\build.ps1 -UpdatePackages # update the NuGet packages and the lock file, then build
 #   tools\build.ps1 -Toolset 14.52  # another installed MSVC toolset; the default is pinned below
 #   tools\build.ps1 -BuildDir build\bench  # a build directory of its own (tools\bench.ps1 uses it)
+#
+# -Define takes a list: in PowerShell, -Define A=ON,B=OFF. From cmd.exe, where
+# `pwsh script.ps1` passes the commas on as text, run the script through
+# -Command: pwsh -NoProfile -Command ".\tools\build.ps1 -Define A=ON,B=OFF".
 
 [CmdletBinding()]
 param(
     [ValidateSet('Debug', 'Release')]
     [string]$Config = 'Debug',
-    [string]$Preset = 'x64',
+    [string]$Preset = 'x64-dynamic',
     [string]$Target,
     [switch]$Configure,
 
@@ -42,48 +62,41 @@ param(
 
     # Cache entries passed on to the configure step, without the -D. They stick
     # in CMakeCache.txt, so a later run without them keeps whatever was set.
-    [string[]]$Define
+    [string[]]$Define,
+
+    # A configure that updates the NuGet packages and writes the lock file
+    # anew (see the top of this file); unlike -Define, it does not stick.
+    [switch]$UpdatePackages
 )
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 
-function Import-VisualStudioEnvironment {
-    if ($env:VSCMD_VER) { return }  # already inside a developer prompt
+. (Join-Path $PSScriptRoot 'vs-environment.ps1')
 
-    $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
-    if (-not (Test-Path $vswhere)) { throw "vswhere.exe not found: $vswhere" }
+# -Configure stops before the build, so a target given with it would be dropped.
+if ($Configure -and $Target) { throw '-Configure stops before the build: -Target has nothing to build.' }
 
-    # -prerelease so an Insiders/preview installation counts; the tree needs a
-    # toolset new enough for `import std;`, which is where those tend to be.
-    $install = & $vswhere -latest -prerelease -products * `
-        -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
-        -property installationPath
-    if (-not $install) { throw 'No Visual Studio installation with the C++ toolset was found.' }
-
-    $vcvars = Join-Path $install 'VC\Auxiliary\Build\vcvars64.bat'
-    if (-not (Test-Path $vcvars)) { throw "vcvars64.bat not found: $vcvars" }
-
-    & "$env:ComSpec" /c "`"$vcvars`" -vcvars_ver=$Toolset >nul 2>nul && set" | ForEach-Object {
-        if ($_ -match '^([^=]+)=(.*)$') {
-            Set-Item -Path "env:$($Matches[1])" -Value $Matches[2]
-        }
-    }
-}
-
-Import-VisualStudioEnvironment
+Import-VisualStudioEnvironment $Toolset
 
 $buildDir = if ($BuildDir) {
     if ([System.IO.Path]::IsPathRooted($BuildDir)) { $BuildDir } else { Join-Path $root $BuildDir }
 } else {
     Join-Path $root "build\$Preset"
 }
-if ($Configure -or $Define -or -not (Test-Path (Join-Path $buildDir 'CMakeCache.txt'))) {
+if ($Configure -or $Define -or $UpdatePackages -or
+    -not (Test-Path (Join-Path $buildDir 'CMakeCache.txt'))) {
     # -B after the preset: it overrides the preset's binaryDir and nothing else.
     $configureArgs = @('--preset', $Preset, '-S', $root, '-B', $buildDir)
     foreach ($d in $Define) { $configureArgs += "-D$d" }
+    if ($UpdatePackages) { $configureArgs += '-DWXL_UPDATE_PACKAGES=ON' }
     cmake @configureArgs
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+    if ($Configure) {
+        Write-Host "Configuration completed successfully. Skipping build stage as requested." -ForegroundColor Green
+        exit 0
+    }
 }
 
 # The build directory by name rather than `--build --preset`: a build preset is

@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t simpleHeader[] = {
-#include "Snippets/RepeatButton/Simple.html.embed"
-};
-constexpr char8_t simpleCode[] = {
-#include "Snippets/RepeatButton/Simple.h.embed"
-};
+gallery::LazyLoadedText simpleHeader{"Snippets/RepeatButton/Simple.html"};
+gallery::LazyLoadedText simpleCode{"Snippets/RepeatButton/Simple.h"};
 
 FrameworkElement simple() {
 #include "Snippets/RepeatButton/Simple.h"
@@ -28,6 +24,8 @@ FrameworkElement simple() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::repeatButtonPage() {
+static wxl::FrameworkElement repeatButtonPage() {
     return StackPanel {simple()};
 }
+
+REGISTER_GALLERY_PAGE(L"RepeatButton", repeatButtonPage);

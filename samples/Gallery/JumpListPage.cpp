@@ -2,22 +2,18 @@
 
 #include "Pages.h"
 #include "Shell.h"
-#include "Packaged.h"
+#include "Application.h"
 #include <wxl/Windows.UI.StartScreen.h>
 
-import wxl.async;
+import wxl.core;
 
 using namespace wxl;
 using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t tasksHeader[] = {
-#include "Snippets/JumpList/AddingTasksJumpList.html.embed"
-};
-constexpr char8_t tasksCode[] = {
-#include "Snippets/JumpList/AddingTasksJumpList.h.embed"
-};
+gallery::LazyLoadedText tasksHeader{"Snippets/JumpList/AddingTasksJumpList.html"};
+gallery::LazyLoadedText tasksCode{"Snippets/JumpList/AddingTasksJumpList.h"};
 
 FrameworkElement tasks() {
 #include "Snippets/JumpList/AddingTasksJumpList.h"
@@ -29,12 +25,8 @@ FrameworkElement tasks() {
     });
 }
 
-constexpr char8_t groupHeader[] = {
-#include "Snippets/JumpList/JumpListAddingItemsCustomGroup.html.embed"
-};
-constexpr char8_t groupCode[] = {
-#include "Snippets/JumpList/JumpListAddingItemsCustomGroup.h.embed"
-};
+gallery::LazyLoadedText groupHeader{"Snippets/JumpList/JumpListAddingItemsCustomGroup.html"};
+gallery::LazyLoadedText groupCode{"Snippets/JumpList/JumpListAddingItemsCustomGroup.h"};
 
 FrameworkElement group() {
 #include "Snippets/JumpList/JumpListAddingItemsCustomGroup.h"
@@ -48,7 +40,7 @@ FrameworkElement group() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::jumpListPage() {
+static wxl::FrameworkElement jumpListPage() {
     // What the original says above its examples: the list belongs to a packaged application.
     return StackPanel {
         InfoBar {Margin {0, 10, 0, 0}, isOpen = true, isClosable = false, severity = InfoBarSeverity::Warning,
@@ -61,3 +53,5 @@ wxl::FrameworkElement gallery::jumpListPage() {
         group(),
     };
 }
+
+REGISTER_GALLERY_PAGE(L"JumpList", jumpListPage);

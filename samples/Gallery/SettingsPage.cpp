@@ -25,7 +25,7 @@ FrameworkElement themeChoice() {
         ComboBoxItem {content = u"Dark"},
         ComboBoxItem {content = u"Use system setting"},
         selectedIndex = 2,
-        onSelectionChanged = [](Object const& sender, SelectionChangedEventArgs&) {
+        onSelectionChanged += [](Object const& sender, SelectionChangedEventArgs&) {
             auto const box = sender.try_as<ComboBox>();
             auto const root = box.xamlRoot().content().try_as<FrameworkElement>();
             if (!root) {
@@ -51,20 +51,20 @@ FrameworkElement manageSamples() {
         spacing = 8.0,
         Button {
             u"Clear recents",
-            gallery::appPop(),
+            gallery::appButtonHoverEffect(),
             minWidth = 120,
             isEnabled = !gallery::recentlyVisited().empty(),
-            onClick = [](Object const& sender, RoutedEventArgs&) {
+            onClick += [](Object const& sender, RoutedEventArgs&) {
                 gallery::clearRecentlyVisited();
                 sender.try_as<Button>().isEnabled(false);
             },
         },
         Button {
             u"Remove favorites",
-            gallery::appPop(),
+            gallery::appButtonHoverEffect(),
             minWidth = 120,
             isEnabled = !gallery::favorites().empty(),
-            onClick = [](Object const& sender, RoutedEventArgs&) {
+            onClick += [](Object const& sender, RoutedEventArgs&) {
                 gallery::clearFavorites();
                 sender.try_as<Button>().isEnabled(false);
             },
@@ -76,7 +76,7 @@ FrameworkElement manageSamples() {
 
 wxl::FrameworkElement gallery::settingsPage() {
     return Grid {
-        rowDefinitions = u"auto,*",
+        RowDefinitions<u"auto,*">,
         TextBlock {u"Settings", Margin {36, 24, 36, 0}, maxWidth = 1064, styles.TextBlock.Title},
         ScrollView {
             row = 1,
@@ -99,7 +99,7 @@ wxl::FrameworkElement gallery::settingsPage() {
                         ComboBoxItem {content = u"Left"},
                         ComboBoxItem {content = u"Top"},
                         selectedIndex = gallery::navigationOnTop() ? 1 : 0,
-                        onSelectionChanged = [](Object const& sender, SelectionChangedEventArgs&) {
+                        onSelectionChanged += [](Object const& sender, SelectionChangedEventArgs&) {
                             gallery::setNavigationOnTop(sender.try_as<ComboBox>().selectedIndex() == 1);
                         },
                     },
@@ -115,7 +115,7 @@ wxl::FrameworkElement gallery::settingsPage() {
                     description = u"Controls provide audible feedback",
                     headerIcon = FontIcon {glyph = u"\uEC4F"},
                     ToggleSwitch {
-                        onToggled = [](ToggleSwitch const& self, RoutedEventArgs&) {
+                        onToggled += [](ToggleSwitch const& self, RoutedEventArgs&) {
                             ElementSoundPlayer::state(self.isOn() ? ElementSoundPlayerState::On : ElementSoundPlayerState::Off);
                             if (!self.isOn()) {
                                 ElementSoundPlayer::spatialAudioMode(ElementSpatialAudioMode::Off);
@@ -127,7 +127,7 @@ wxl::FrameworkElement gallery::settingsPage() {
                         description = u"Learn more about enabling sounds in your app on the Sound page",
                         isEnabled = ElementSoundPlayer::state() == ElementSoundPlayerState::On,
                         ToggleSwitch {
-                            onToggled = [](ToggleSwitch const& self, RoutedEventArgs&) {
+                            onToggled += [](ToggleSwitch const& self, RoutedEventArgs&) {
                                 ElementSoundPlayer::spatialAudioMode(self.isOn() ? ElementSpatialAudioMode::On : ElementSpatialAudioMode::Off);
                             },
                         },
@@ -136,7 +136,7 @@ wxl::FrameworkElement gallery::settingsPage() {
                 sectionHeader(u"About"),
                 SettingsExpander {
                     header = u"WXL Gallery",
-                    description = u"A port of the WinUI 3 Gallery to wxl: the same types, no XAML.",
+                    description = u"A port of the WinUI Gallery to wxl: the same types, no XAML.",
                     headerIcon = BitmapIcon {uriSource = u"Assets/Tiles/BadgeLogo.png", showAsMonochrome = false},
                     TextBlock {GALLERY_VERSION, foreground = brushes.Text.FillColor.Secondary, isTextSelectionEnabled = true},
                     items[
@@ -150,7 +150,7 @@ wxl::FrameworkElement gallery::settingsPage() {
                                 foreground = brushes.Text.FillColor.Secondary,
                                 isTextSelectionEnabled = true,
                             },
-                            onClick = [](auto&&...) {
+                            onClick += [](auto&&...) {
                                 auto package = DataPackage {};
                                 package.setText(u"git clone https://github.com/microsoft/WinUI-Gallery");
                                 Clipboard::setContent(package);
@@ -166,7 +166,7 @@ wxl::FrameworkElement gallery::settingsPage() {
                             contentAlignment = SettingsCardContentAlignment::Vertical,
                             StackPanel {
                                 HyperlinkButton {u"Windows App SDK 2.4", navigateUri = u"https://aka.ms/windowsappsdk"},
-                                HyperlinkButton {u"WinUI 3", navigateUri = u"https://aka.ms/winui"},
+                                HyperlinkButton {u"WinUI", navigateUri = u"https://aka.ms/winui"},
                                 HyperlinkButton {u"Windows Community Toolkit", navigateUri = u"https://aka.ms/toolkit/windows"},
                                 HyperlinkButton {u"Win2D", navigateUri = u"https://github.com/Microsoft/Win2D"},
                             },

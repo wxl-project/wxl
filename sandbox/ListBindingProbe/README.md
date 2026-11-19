@@ -18,7 +18,7 @@
 ## Как устроена
 
 - `main.cpp` — приложение на wxl: точка входа и `ListView`, описанный синтаксисом wxl (`itemTemplate`,
-  `itemsSource = indexList(2)`), — без него вопрос (г) был бы о копии, а не о wxl.
+  `itemsSource = IndexList(2)`), — без него вопрос (г) был бы о копии, а не о wxl.
 - `probes.cpp` — всё остальное на проекции cppwinrt напрямую. Источник — свой объект COM на ABI
   (`IObservableVector<Object>`, `IVector<Object>`, `IIterable<Object>`, `IWeakReferenceSource`), элементы — такие же
   объекты-слоты; каждый `QueryInterface`, вызов и `AddRef`/`Release` не из своего потока записываются. Шаблон
@@ -37,7 +37,7 @@
 
 ```powershell
 pwsh -NoProfile -File tools\build.ps1 -Target sandbox.list-binding-probe
-$exe = 'build\x64\sandbox\ListBindingProbe\Debug\sandbox.list-binding-probe.exe'
+$exe = 'build\x64-dynamic\sandbox\ListBindingProbe\Debug\sandbox.list-binding-probe.exe'
 $p = Start-Process $exe -Wait -PassThru
 Get-Content (Join-Path (Split-Path $exe) 'list-binding-probe.txt')
 "exit code: $($p.ExitCode)"

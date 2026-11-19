@@ -28,7 +28,7 @@
 #include "../Uri.h"
 #include "../Thickness.h"
 #include "../CornerRadius.h"
-#include "event_token.h"
+#include "../EventToken.h"
 #include "../geometry.h"
 #include "../hstring_param.h"
 #include "value_box.h"
@@ -121,6 +121,17 @@ inline winrt::Windows::Foundation::Size to_winrt(Size value) {
     return std::bit_cast<winrt::Windows::Foundation::Size>(value);
 }
 
+// wxl's EventToken and the ABI's winrt::event_token: the number crosses as it is. Not a
+// bit_cast of the whole object -- EventToken is not copied, so it is not trivially copyable --
+// and only the machinery makes a token from a number (core::impl::make_event_token).
+inline winrt::event_token to_winrt(EventToken const& token) noexcept {
+    return winrt::event_token{token.value()};
+}
+
+inline EventToken from_winrt(winrt::event_token token) noexcept {
+    return core::impl::make_event_token(token.value);
+}
+
 inline Size from_winrt(winrt::Windows::Foundation::Size const& value) {
     return std::bit_cast<Size>(value);
 }
@@ -166,7 +177,7 @@ inline Uri from_winrt(winrt::Windows::Foundation::Uri const& value) {
 // framework reads as "inherit".
 inline winrt::Microsoft::UI::Xaml::Media::FontFamily to_winrt(FontFamily const& value) {
     return value.empty() ? nullptr
-                        : winrt::Microsoft::UI::Xaml::Media::FontFamily{to_winrt(value.name())};
+                         : winrt::Microsoft::UI::Xaml::Media::FontFamily{to_winrt(value.name())};
 }
 
 inline FontFamily from_winrt(winrt::Microsoft::UI::Xaml::Media::FontFamily const& value) {
@@ -174,36 +185,28 @@ inline FontFamily from_winrt(winrt::Microsoft::UI::Xaml::Media::FontFamily const
 }
 
 // WinRT's nullable box and wxl's nullable. cppwinrt's IReference<T> already
-// converts to and from a std::optional of the *same* T; these add the
-// element's own conversion, which is why it arrives as a callable -- the
-// element may cross as itself, as a cast, or through one of the overloads
-// above, and only the generator knows which.
+// converts to and from an optional of the *same* T; this adds the element's
+// own conversion, which is why it arrives as a callable -- the element may
+// cross as itself, as a cast, or through one of the overloads above, and only
+// the generator knows which.
 //
-// The parameter is spelled compressed_optional rather than core::nullable
-// because an alias template deduces nothing: nullable<T> is whatever the
-// selector for T resolved to, and the compiler cannot run that backwards.
-template <typename WinRT, typename T, typename S, typename Convert>
-WinRT to_reference(core::compressed_optional<T, S> const& value, Convert convert) {
-    return value ? WinRT{convert(*value)} : WinRT{nullptr};
-}
-
+// The parameter is any optional_like rather than core::nullable<T>, because an
+// alias template deduces nothing: nullable<T> is whatever the selector for T
+// resolved to -- a compressed_optional, or the plain optional of a type with
+// no spare value to compress into (bool, a Color) -- and the compiler cannot
+// run that backwards.
+//
 // A boolean is handed over as one of two objects that already exist -- see
-// impl/value_box.h. Every other type still gets a box of its own, because
-// every other type has more values than boxes are worth making in advance.
-//
-// It is std::optional and not a compressed_optional because bool is the one
-// type with no spare value to compress into; core::nullable<bool> is this,
-// and optional_selector<bool> in compressed_optional.ixx says why.
-template <typename WinRT, typename Convert>
-WinRT to_reference(std::optional<bool> const& value, Convert) {
-    return value ? WinRT{bool_reference(*value)} : WinRT{nullptr};
-}
-
-// The other types with no spare value -- a Color, whose every bit pattern is a
-// colour -- are std::optional too, and box like the compressed ones.
-template <typename WinRT, typename T, typename Convert>
-WinRT to_reference(std::optional<T> const& value, Convert convert) {
-    return value ? WinRT{convert(*value)} : WinRT{nullptr};
+// impl/value_box.h. Every other type gets a box of its own, because every
+// other type has more values than boxes are worth making in advance.
+template <typename WinRT, core::optional_like Optional, typename Convert>
+WinRT to_reference(Optional const& value, [[maybe_unused]] Convert convert) {
+    if (!value) return WinRT{nullptr};
+    if constexpr (std::is_same_v<typename Optional::value_type, bool>) {
+        return WinRT{bool_reference(*value)};
+    } else {
+        return WinRT{convert(*value)};
+    }
 }
 
 // Coming out, the element type is named by the caller, so the alias works
@@ -221,7 +224,6 @@ core::nullable<T> from_reference(WinRT const& value, Convert convert) {
 winrt::Microsoft::UI::Xaml::Media::ImageSource to_winrt(ImageSource const& value);
 ImageSource from_winrt(winrt::Microsoft::UI::Xaml::Media::ImageSource const& value);
 
-
 // The four edges. Margin, Padding and BorderThickness are tags over this
 // same type, and each of them is one, so the pair below covers them too.
 inline winrt::Microsoft::UI::Xaml::Thickness to_winrt(Thickness const& value) {
@@ -232,7 +234,6 @@ inline Thickness from_winrt(winrt::Microsoft::UI::Xaml::Thickness const& value) 
     return std::bit_cast<Thickness>(value);
 }
 
-
 // The four corners, arranged like the edges above.
 inline winrt::Microsoft::UI::Xaml::CornerRadius to_winrt(CornerRadius const& value) {
     return std::bit_cast<winrt::Microsoft::UI::Xaml::CornerRadius>(value);
@@ -241,7 +242,6 @@ inline winrt::Microsoft::UI::Xaml::CornerRadius to_winrt(CornerRadius const& val
 inline CornerRadius from_winrt(winrt::Microsoft::UI::Xaml::CornerRadius const& value) {
     return std::bit_cast<CornerRadius>(value);
 }
-
 
 // A length of time is wxl's own, because wxl already has one and the whole
 // library speaks it: `core::duration` counts the same 100ns ticks WinRT does,
@@ -275,7 +275,6 @@ inline DateTime from_winrt(winrt::Windows::Foundation::DateTime const& value) {
     return winrt::clock::to_sys(value);
 }
 
-
 // The numerics a composition object is written in. cppwinrt spells these
 // float2 / float3 / float3x2 / float4x4 -- the C++ names of the metadata
 // types Vector2 / Vector3 / Matrix3x2 / Matrix4x4 -- which is the one place
@@ -290,7 +289,6 @@ inline Vector2 from_winrt(winrt::Windows::Foundation::Numerics::float2 const& va
     return std::bit_cast<Vector2>(value);
 }
 
-
 inline winrt::Windows::Foundation::Numerics::float3 to_winrt(Vector3 value) {
     return std::bit_cast<winrt::Windows::Foundation::Numerics::float3>(value);
 }
@@ -299,7 +297,6 @@ inline Vector3 from_winrt(winrt::Windows::Foundation::Numerics::float3 const& va
     return std::bit_cast<Vector3>(value);
 }
 
-
 inline winrt::Windows::Foundation::Numerics::float3x2 to_winrt(Matrix3x2 const& value) {
     return std::bit_cast<winrt::Windows::Foundation::Numerics::float3x2>(value);
 }
@@ -307,7 +304,6 @@ inline winrt::Windows::Foundation::Numerics::float3x2 to_winrt(Matrix3x2 const& 
 inline Matrix3x2 from_winrt(winrt::Windows::Foundation::Numerics::float3x2 const& value) {
     return std::bit_cast<Matrix3x2>(value);
 }
-
 
 inline winrt::Windows::Foundation::Numerics::float4x4 to_winrt(Matrix4x4 const& value) {
     return std::bit_cast<winrt::Windows::Foundation::Numerics::float4x4>(value);

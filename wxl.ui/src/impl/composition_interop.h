@@ -6,7 +6,7 @@
 // InteractiveExperiences package, and that header cannot be included: its
 // first line pulls in the ABI header Microsoft.ui.composition.h, which the
 // package does not carry (the same trap Microsoft.UI.Interop.h sets, see
-// WindowPlacement.cpp). Everything it would give us is three vtables and
+// WindowNative.cpp). Everything it would give us is three vtables and
 // three IIDs, so they are restated here, copied from that header.
 //
 // Two of the types those signatures name are left as raw IInspectable**:
@@ -25,8 +25,8 @@ namespace wxl::impl {
 MIDL_INTERFACE("FAB19398-6D19-4D8A-B752-8F096C396069")
 ICompositorInterop : public ::IUnknown {
 public:
-    virtual HRESULT STDMETHODCALLTYPE CreateGraphicsDevice(::IUnknown* renderingDevice,
-                                                           ::IInspectable** result) = 0;
+    virtual HRESULT STDMETHODCALLTYPE CreateGraphicsDevice(::IUnknown * renderingDevice,
+                                                           ::IInspectable * *result) = 0;
 };
 
 // {2D6355C2-AD57-4EAE-92E4-4C3EFF65D578}
@@ -50,8 +50,8 @@ public:
 MIDL_INTERFACE("4AFA8030-BC70-4B0C-B1C7-6E69F933DC83")
 ICompositionGraphicsDeviceInterop : public ::IUnknown {
 public:
-    virtual HRESULT STDMETHODCALLTYPE GetRenderingDevice(::IUnknown** value) = 0;
-    virtual HRESULT STDMETHODCALLTYPE SetRenderingDevice(::IUnknown* value) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetRenderingDevice(::IUnknown * *value) = 0;
+    virtual HRESULT STDMETHODCALLTYPE SetRenderingDevice(::IUnknown * value) = 0;
 };
 
 }  // namespace wxl::impl

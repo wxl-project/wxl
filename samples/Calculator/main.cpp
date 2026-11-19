@@ -27,17 +27,17 @@ namespace {
     // свет ровный, ключевой спадает от проекции лампы к краю.
     consteval Glow glow(Color albedo, double height) {
         return {
-            relief_helper::under(albedo, lamp, 0.0, height),
-            relief_helper::under(albedo, lamp, 0.5 * glowRadius, height),
-            relief_helper::under(albedo, lamp, glowRadius, height),
+            Relief::under(albedo, lamp, 0.0, height),
+            Relief::under(albedo, lamp, 0.5 * glowRadius, height),
+            Relief::under(albedo, lamp, glowRadius, height),
         };
     }
 
     // Шаблон фона панели: кисть строится при применении
     Template<RadialGradientBrush> backgroundTemplate(Glow const& tones) {
         return {
-            center = Point {0.33, 0.33},
-            gradientOrigin = {0.33, 0.33},
+            center = Point {0.33f, 0.33f},
+            gradientOrigin = {0.33f, 0.33f},
             radiusX = glowRadius,
             radiusY = glowRadius,
             Template<GradientStop> {tones.centre, offset = 0.0},
@@ -139,23 +139,23 @@ wxl::Teardown wxl_launched() {
         // Корпус — сама сетка клавиш: фон, кант и фокус надеты прямо на неё.
         content = Grid {
             requestedTheme = ElementTheme::Dark,
-            BevelEffect {rimLight, rimShade, strokeThickness = 2},
+            BevelEffect {rimLight, rimShade, strokeThickness = 2.0f},
             isTabStop = true,
             background = SolidColorBrush {color = panel},
             CornerRadius {6},
             Padding {16},
             rowSpacing = 12,
             columnSpacing = 12,
-            rowDefinitions = u"auto,*,*,*,*,*",
-            columnDefinitions = u"*,*,*,*",
+            RowDefinitions<u"auto,*,*,*,*,*">,
+            ColumnDefinitions<u"*,*,*,*">,
 
             // Перехват текстового ввода символов
-            onCharacterReceived = [calc](Object const&, CharacterReceivedRoutedEventArgs& args) {
+            onCharacterReceived += [calc](Object const&, CharacterReceivedRoutedEventArgs& args) {
                 args.handled(calc->press(args.character()));
             },
 
-            // Перехват системных горячих клавиш до стандартного роутинга диалогов WinUI 3
-            onPreviewKeyDown = [calc](Object const&, KeyRoutedEventArgs& args) {
+            // Перехват системных горячих клавиш до стандартного роутинга диалогов WinUI
+            onPreviewKeyDown += [calc](Object const&, KeyRoutedEventArgs& args) {
                 switch (args.key()) {
                     case VirtualKey::Enter:  calc->press(u'='); break;
                     case VirtualKey::Escape: calc->press(u'C'); break;
@@ -164,7 +164,7 @@ wxl::Teardown wxl_launched() {
                 args.handled(true);
             },
 
-            onLoaded = [](Grid const& keypad) { keypad.focus(FocusState::Programmatic); },
+            onLoaded += [](Grid const& keypad) { keypad.focus(FocusState::Programmatic); },
 
             // Табло: вдавлено тем же кантом с цветами в обратном порядке, поверх
             // тёмной обводки самого элемента.
@@ -180,7 +180,7 @@ wxl::Teardown wxl_launched() {
                 Margin {0, 4, 0, 12},
 
                 Grid {
-                    rowDefinitions = u"auto,*",
+                    RowDefinitions<u"auto,*">,
 
                     // Верхняя строка: текущее выражение (формула)
                     TextBlock {
@@ -216,7 +216,7 @@ wxl::Teardown wxl_launched() {
                     hAlign.stretch, vAlign.stretch,
                     row = key.index / 4 + 1,
                     column = key.index % 4,
-                    onClick = [calc, symbol = key.value] { calc->press(symbol); },
+                    onClick += [calc, symbol = key.value] { calc->press(symbol); },
 
                     content = TextBlock {
                         key.text(),

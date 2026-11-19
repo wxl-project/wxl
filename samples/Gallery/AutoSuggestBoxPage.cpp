@@ -5,7 +5,7 @@
 
 #include "Pages.h"
 #include "Shell.h"
-#include "StringList.h"
+#include "Box.h"
 
 #include <string>
 #include <vector>
@@ -17,12 +17,8 @@ namespace {
 
 #include "Snippets/AutoSuggestBox/Cats.h"
 
-constexpr char8_t basicHeader[] = {
-#include "Snippets/AutoSuggestBox/Basic.html.embed"
-};
-constexpr char8_t basicCode[] = {
-#include "Snippets/AutoSuggestBox/Basic.h.embed"
-};
+gallery::LazyLoadedText basicHeader{"Snippets/AutoSuggestBox/Basic.html"};
+gallery::LazyLoadedText basicCode{"Snippets/AutoSuggestBox/Basic.h"};
 
 FrameworkElement basic() {
 #include "Snippets/AutoSuggestBox/Basic.h"
@@ -34,25 +30,23 @@ FrameworkElement basic() {
     });
 }
 
-constexpr char8_t searchHeader[] = {
-#include "Snippets/AutoSuggestBox/SearchBox.html.embed"
-};
-constexpr char8_t searchCode[] = {
-#include "Snippets/AutoSuggestBox/SearchBox.h.embed"
-};
+gallery::LazyLoadedText searchHeader{"Snippets/AutoSuggestBox/SearchBox.html"};
+gallery::LazyLoadedText searchCode{"Snippets/AutoSuggestBox/SearchBox.h"};
 
 FrameworkElement searchBox() {
 #include "Snippets/AutoSuggestBox/SearchBox.h"
 
     return gallery::controlExample({
         .header = gallery::snippet(searchHeader),
-        .example = Grid {rowDefinitions = u"auto,auto", box, Border {row = 1, details}},
+        .example = Grid {RowDefinitions<u"auto,auto">, box, Border {row = 1, details}},
         .code = gallery::snippet(searchCode),
     });
 }
 
 }  // namespace
 
-wxl::FrameworkElement gallery::autoSuggestBoxPage() {
+static wxl::FrameworkElement autoSuggestBoxPage() {
     return StackPanel {basic(), searchBox()};
 }
+
+REGISTER_GALLERY_PAGE(L"AutoSuggestBox", autoSuggestBoxPage);

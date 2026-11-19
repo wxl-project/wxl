@@ -19,7 +19,7 @@
 #include <wxl/Windows.Storage.Streams.h>
 #include <wxl/Windows.System.h>
 
-import wxl.async;
+import wxl.core;
 
 
 using namespace wxl;
@@ -27,12 +27,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t previewHeader[] = {
-#include "Snippets/CaptureElementPreview/CaptureElementPreviewMediacapturePreviewDisplayedVia.html.embed"
-};
-constexpr char8_t previewCode[] = {
-#include "Snippets/CaptureElementPreview/CaptureElementPreviewMediacapturePreviewDisplayedVia.h.embed"
-};
+gallery::LazyLoadedText previewHeader{"Snippets/CaptureElementPreview/CaptureElementPreviewMediacapturePreviewDisplayedVia.html"};
+gallery::LazyLoadedText previewCode{"Snippets/CaptureElementPreview/CaptureElementPreviewMediacapturePreviewDisplayedVia.h"};
 
 FrameworkElement preview() {
 #include "Snippets/CaptureElementPreview/CaptureElementPreviewMediacapturePreviewDisplayedVia.h"
@@ -47,6 +43,8 @@ FrameworkElement preview() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::captureElementPreviewPage() {
+static wxl::FrameworkElement captureElementPreviewPage() {
     return StackPanel {preview()};
 }
+
+REGISTER_GALLERY_PAGE(L"CaptureElementPreview", captureElementPreviewPage);

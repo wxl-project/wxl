@@ -26,7 +26,7 @@ struct Model {
     WrapPanel tiles {
         Margin {2},
         // When the panel is resized the rows change, and with them the labels.
-        onSizeChanged = [this](Object const&, SizeChangedEventArgs&) { placeLabels(); },
+        onSizeChanged += [this](Object const&, SizeChangedEventArgs&) { placeLabels(); },
     };
 
     AnnotatedScrollBar bar {
@@ -35,9 +35,9 @@ struct Model {
         Margin {4, 0, 48, 0},
         hAlign.right,
         // The labels are placed when the bar is on the screen, and again when the rows change.
-        onLoaded = [this](Object const&, RoutedEventArgs&) { placeLabels(); },
+        onLoaded += [this](Object const&, RoutedEventArgs&) { placeLabels(); },
         // What the tooltip over the rail says: the section the pointer is in.
-        onDetailLabelRequested = [this](Object const&, AnnotatedScrollBarDetailLabelRequestedEventArgs& args) {
+        onDetailLabelRequested += [this](Object const&, AnnotatedScrollBarDetailLabelRequestedEventArgs& args) {
             args.content(Object::from_text(labelAt(args.scrollOffset())));
         },
     };
@@ -80,7 +80,7 @@ struct Model {
 auto const model = gallery::hold<Model>();
 
 auto example = Grid {
-    columnDefinitions = u"*,auto",
+    ColumnDefinitions<u"*,auto">,
     ScrollView {
         maxWidth = 800,
         maxHeight = 500,
@@ -89,7 +89,7 @@ auto example = Grid {
         // The bar drives the view and is told where it is.
         verticalScrollController = model->bar,
         // Once it is connected, the labels are placed against what the bar now knows of the extent.
-        onLoaded = [model](Object const&, RoutedEventArgs&) { model->placeLabels(); },
+        onLoaded += [model](Object const&, RoutedEventArgs&) { model->placeLabels(); },
         content = model->tiles,
     },
     model->bar,
@@ -97,7 +97,7 @@ auto example = Grid {
 
 auto options = Grid {
     minWidth = 200,
-    rowDefinitions = u"auto,auto",
+    RowDefinitions<u"auto,auto">,
     TextBlock {vAlign.center, u"Changing the AnnotatedScrollBar height refreshes its Labels layout."},
     Slider {
         row = 1,

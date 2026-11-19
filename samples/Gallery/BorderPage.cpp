@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t aroundHeader[] = {
-#include "Snippets/Border/BorderAroundTextblock.html.embed"
-};
-constexpr char8_t aroundCode[] = {
-#include "Snippets/Border/BorderAroundTextblock.h.embed"
-};
+gallery::LazyLoadedText aroundHeader{"Snippets/Border/BorderAroundTextblock.html"};
+gallery::LazyLoadedText aroundCode{"Snippets/Border/BorderAroundTextblock.h"};
 
 FrameworkElement around() {
 #include "Snippets/Border/BorderAroundTextblock.h"
@@ -21,13 +17,15 @@ FrameworkElement around() {
     return gallery::controlExample({
         .header = gallery::snippet(aroundHeader),
         .example = border,
-        .options = {thickness, Grid {columnDefinitions = u"*,*", columnSpacing = 8.0, backgroundChoice, brushChoice}},
+        .options = {thickness, Grid {ColumnDefinitions<u"*,*">, columnSpacing = 8.0, backgroundChoice, brushChoice}},
         .code = gallery::snippet(aroundCode),
     });
 }
 
 }  // namespace
 
-wxl::FrameworkElement gallery::borderPage() {
+static wxl::FrameworkElement borderPage() {
     return StackPanel {around()};
 }
+
+REGISTER_GALLERY_PAGE(L"Border", borderPage);

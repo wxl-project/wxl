@@ -5,69 +5,40 @@
 #include "pch.h"
 
 using namespace wxl;
+using namespace wxl::core;
 using namespace wxl::dsl;
+
+namespace {
 
 // Presets are their arguments, and these are constants: laid out by the
 // compiler, with nothing to run for them at start-up.
 namespace presets {
-    inline constexpr Preset centeredAndWrapped{hAlign.center, textWrapping.wrap};
-    inline constexpr Preset allCentered{hAlign.center, vAlign.center};
+    constexpr Preset centeredAndWrapped{hAlign.center, textWrapping.wrap};
+    constexpr Preset allCentered{hAlign.center, vAlign.center};
 }
 
-ElementTheme nextTheme(ElementTheme value) {
-    constexpr int themeCount = 3;
-    return ElementTheme {(int(value) + 1) % themeCount};
+ElementTheme themeOf(bool dark) {
+    return dark ? ElementTheme::Dark : ElementTheme::Light;
 }
 
-FluentSymbol themeIcon(ElementTheme value)
-{
-    switch(value) {
-    case ElementTheme::Light:
-        return FluentSymbol::Brightness;
-    case ElementTheme::Dark:
-        return FluentSymbol::MobQuietHours;
-    default:
-        return FluentSymbol::Settings;
-    }
+// The button shows where it leads: the icon and the name of the other theme.
+SymbolIcon switchIcon(bool dark) {
+    return SymbolIcon {symbol = dark ? FluentSymbol::Brightness : FluentSymbol::MobQuietHours};
 }
 
-std::wstring themeName(ElementTheme value)
-{
-    switch(value) {
-    case ElementTheme::Light:
-        return L"Light";
-    case ElementTheme::Dark:
-        return L"Dark";
-    default:
-        return L"Default System";
-    }
+std::u16string switchTip(bool dark) {
+    return dark ? u"Switch theme to Light" : u"Switch theme to Dark";
 }
 
-ElementTheme currentTheme = ElementTheme::Default;
+}  // namespace
 
-void updateThemeButton(Button const& themeButton) {
-    auto const next = nextTheme(currentTheme);
-    Apply {themeButton,
-        content = SymbolIcon {symbol = themeIcon(next)},
-        toolTip = L"Switch theme to " + themeName(next),
-    };
-}
-
-void updateTheme(Button const& themeButton) {
-    if (auto const root = themeButton.xamlRoot().content().try_as<FrameworkElement>())
-        root.requestedTheme(currentTheme);
-
-    updateThemeButton(themeButton);
-}
-
-wxl::Teardown wxl_launched() {
-    auto themeButton = Button {
-        Margin {16, 0},
-        onClick = [&](Button const& self) {
-            currentTheme = nextTheme(currentTheme);
-            updateTheme(self);
-        },
-    };
+Teardown wxl_launched() {
+    // Whether the window is dark. It takes the system's theme before the window shows,
+    // and the button flips it. Its bindings own what they drive, so the Teardown keeps
+    // it as long as the window lives, and a handler on those controls refers to it
+    // without owning it.
+    auto const darkOwner = make_refcounted<observable<bool>>();
+    observable<bool>& darkTheme = *darkOwner;
 
     auto topBar = Card {
         row = 0,
@@ -76,24 +47,29 @@ wxl::Teardown wxl_launched() {
         Padding {16, 8},
         Grid {
             HtmlBlock {
-                fontFamily = L"Segoe UI",
+                fontFamily = u"Segoe UI",
                 fontSize = 28,
                 FontWeight {600},
                 vAlign.center,
                 isTextSelectionEnabled = false,
                 // The markup string must be placed last: setters are evaluated from left to right,
                 // and the <sub> tag scales relative to the previously applied font size.
-                L"<font color=\"#0080ff\">W</font><sub>inUI</sub> "
-                L"<font color=\"#ff9d00\">X</font><sub>aml</sub>-"
-                L"<font color=\"#00a053\">L</font><sub>ess</sub>",
+                u"<font color=\"#0080ff\">W</font><sub>inUI</sub> "
+                u"<font color=\"#ff9d00\">X</font><sub>aml</sub>-"
+                u"<font color=\"#00a053\">L</font><sub>ess</sub>",
             },
             StackPanel {
                 orientation.horizontal,
                 hAlign.right,
-                themeButton,
+                Button {
+                    Margin {16, 0},
+                    content = BindOutput {darkTheme, switchIcon},
+                    toolTip = BindOutput {darkTheme, switchTip},
+                    onClick += [&darkTheme] { darkTheme.set(!darkTheme.get()); },
+                },
                 HyperlinkButton {
-                    content = L" Github Project Repository ",
-                    navigateUri = L"https://github.com/wxl-project/wxl",
+                    content = u" Github Project Repository ",
+                    navigateUri = u"https://github.com/wxl-project/wxl",
                     styles.ButtonBase.TextBlockButton,
                     Padding {3},
                 },
@@ -110,19 +86,19 @@ wxl::Teardown wxl_launched() {
         Padding {0},
         background = brushes.SolidBackgroundFillColor.Secondary,
         Grid {
-            rowDefinitions = L"auto,*,auto",
+            RowDefinitions<u"auto,*,auto">,
             StackPanel {
                 row = 0,
                 orientation.horizontal,
                 Padding {110, 0},
                 Image {
-                    source = L"Assets/wxl.png",
+                    source = u"Assets/wxl.png",
                     Margin {8, 0},
                     width = 78,
                     height = 73.3333333,
                 },
                 TextBlock {
-                    text = L"WXL",
+                    text = u"WXL",
                     styles.TextBlock.Header,
                     vAlign.center,
                     hAlign.center,
@@ -133,15 +109,15 @@ wxl::Teardown wxl_launched() {
                 row = 1,
                 background = brushes.Card.BackgroundFillColor.Default,
                 TextBlock {
-                    L"A modern C++23 library for declarative, Flutter-style WinUI 3 development.",
+                    u"A modern C++23 library for declarative, Flutter-style WinUI development.",
                     Margin { 16, 0 },
                     vAlign.bottom,
                     styles.TextBlock.Subtitle,
                     presets::centeredAndWrapped,
                 },
                 TextBlock {
-                    L"Leveraging C++ modules to eliminate heavy WinRT bloat, "
-                    L"it restores simplicity and control to native C++ GUI development.",
+                    u"Leveraging C++ modules to eliminate heavy WinRT bloat, "
+                    u"it restores simplicity and control to native C++ GUI development.",
                     Margin { 16, 14 },
                     vAlign.center,
                     presets::centeredAndWrapped,
@@ -150,30 +126,32 @@ wxl::Teardown wxl_launched() {
             Button {
                 row = 2,
                 Margin {0, 12},
-                content = L"Click",
-                onClick = {content = L"Thank You!"},
+                content = u"Click",
+                onClick += [](Button const& self) { self.content(u"Thank You!"); },
                 hAlign.center,
             },
         },
     };
 
     auto window = Window {
-        title = L"Hello from WXL",
+        title = u"Hello from WXL",
         minSize = {500, 420},
         Grid {
-            rowDefinitions = L"auto,*,auto",
+            RowDefinitions<u"auto,*,auto">,
             background = brushes.SolidBackgroundFillColor.Base,
             topBar,
             card,
         },
     };
 
+    // The window opens in the system's theme, and from then on shows the field. On the
+    // window, not on its content: the frame follows it too.
+    darkTheme.set(WindowNative::actualTheme(window) == ElementTheme::Dark);
+    Apply {window, requestedTheme = BindOutput {darkTheme, themeOf}};
+
     auto appWindow = window.appWindow();
     appWindow.resize({800, 600});
     window.activate();
 
-    currentTheme = themeButton.actualTheme();
-    updateThemeButton(themeButton);
-
-    return {};
+    return [darkOwner](TeardownReason) {};
 }

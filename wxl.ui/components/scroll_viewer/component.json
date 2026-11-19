@@ -1,0 +1,30 @@
+{
+  "name": "scroll_viewer",
+  "dependencies": [
+    "schema",
+    "dsl"
+  ],
+  "sources": [
+    "impl/scroll_viewer_helpers.cpp",
+    "impl/scroll_viewer_helpers.h"
+  ],
+  "surface": "scroll_viewer.surface.cpp",
+  "libraries": [],
+  "description": "The wheel a viewer passes on.",
+  "imports": {
+    "types": {
+      "Microsoft.UI.Xaml.Controls.ScrollViewer": {
+        "members": [],
+        "syntheticMembers": {
+          "WheelToParent": {
+            "comment": "A wheel turn this viewer cannot use (nothing to scroll up or down, no modifier key) goes on up to the panel that scrolls the page. The viewer takes the wheel and marks it handled even when it scrolls nothing, so without this a horizontal strip of code stops the page.",
+            "cppType": "bool",
+            "cppInclude": "../core.h",
+            "function": "impl::set_wheel_to_parent",
+            "include": "../impl/scroll_viewer_helpers.h"
+          }
+        }
+      }
+    }
+  }
+}

@@ -136,23 +136,23 @@ void rgbOf(Color value, float* out) {
 }
 
 struct Shaded {
-    core::observable<double> rise {14.0};
-    core::observable<double> emboss {-0.4};
-    core::observable<double> shoulder {18.0};
+    core::observable<float> rise {14.0f};
+    core::observable<float> emboss {-0.4f};
+    core::observable<float> shoulder {18.0f};
     core::observable<int> shoulderKind {0};
-    core::observable<double> corner {22.0};
+    core::observable<float> corner {22.0f};
 
     core::observable<int> lightKind {0};
     core::observable<double> azimuth {120.0};
     core::observable<double> elevation {45.0};
-    core::observable<double> lightHeight {220.0};
-    core::observable<double> ambientShare {0.3};
-    core::observable<double> diffuseShare {0.9};
-    core::observable<double> specularShare {0.35};
-    core::observable<double> shine {48.0};
-    core::observable<double> shadow {0.55};
-    core::observable<double> softness {5.0};
-    core::observable<double> occlusion {0.35};
+    core::observable<float> lightHeight {220.0f};
+    core::observable<float> ambientShare {0.3f};
+    core::observable<float> diffuseShare {0.9f};
+    core::observable<float> specularShare {0.35f};
+    core::observable<float> shine {48.0f};
+    core::observable<float> shadow {0.55f};
+    core::observable<float> softness {5.0f};
+    core::observable<float> occlusion {0.35f};
     core::observable<bool> linearLight {true};
     core::observable<Color> lightColor {rgb(255, 246, 232)};
     core::observable<Color> keyColor {rgb(68, 72, 79)};
@@ -231,10 +231,10 @@ struct Shaded {
                 ComPtr<ID2D1Device> drawing;
                 context->GetDevice(&drawing);
                 ComPtr<ID2D1Device2> drawing2;
-                wxl::check_hresult(drawing.As(&drawing2));
+                wxl::impl::check_hresult(drawing.As(&drawing2));
                 ComPtr<IDXGIDevice> dxgi;
-                wxl::check_hresult(drawing2->GetDxgiDevice(&dxgi));
-                wxl::check_hresult(dxgi.As(&device));
+                wxl::impl::check_hresult(drawing2->GetDxgiDevice(&dxgi));
+                wxl::impl::check_hresult(dxgi.As(&device));
             });
             device->GetImmediateContext(&immediate);
         }
@@ -245,16 +245,16 @@ struct Shaded {
             if (!compile("drawVertex", "vs_4_0", vertexCode) || !compile("drawPixel", "ps_4_0", pixelCode)) {
                 return false;
             }
-            wxl::check_hresult(device->CreateVertexShader(vertexCode->GetBufferPointer(), vertexCode->GetBufferSize(),
+            wxl::impl::check_hresult(device->CreateVertexShader(vertexCode->GetBufferPointer(), vertexCode->GetBufferSize(),
                                                           nullptr, &vertexShader));
-            wxl::check_hresult(device->CreatePixelShader(pixelCode->GetBufferPointer(), pixelCode->GetBufferSize(),
+            wxl::impl::check_hresult(device->CreatePixelShader(pixelCode->GetBufferPointer(), pixelCode->GetBufferSize(),
                                                          nullptr, &pixelShader));
 
             D3D11_BUFFER_DESC description {};
             description.ByteWidth = sizeof(Parameters);
             description.Usage = D3D11_USAGE_DEFAULT;
             description.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-            wxl::check_hresult(device->CreateBuffer(&description, nullptr, &constants));
+            wxl::impl::check_hresult(device->CreateBuffer(&description, nullptr, &constants));
         }
 
         if (!texture) {
@@ -268,8 +268,8 @@ struct Shaded {
             description.SampleDesc.Count = 1;
             description.Usage = D3D11_USAGE_DEFAULT;
             description.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-            wxl::check_hresult(device->CreateTexture2D(&description, nullptr, &texture));
-            wxl::check_hresult(device->CreateRenderTargetView(texture.Get(), nullptr, &view));
+            wxl::impl::check_hresult(device->CreateTexture2D(&description, nullptr, &texture));
+            wxl::impl::check_hresult(device->CreateRenderTargetView(texture.Get(), nullptr, &view));
             bitmap.Reset();
         }
         return true;
@@ -305,16 +305,16 @@ struct Shaded {
         p.frame[3] = cellWidth;
         p.key[0] = lab::keySide * scale;
         p.key[1] = lab::keySide * scale;
-        p.key[2] = static_cast<float>(corner.get()) * scale;
-        p.key[3] = static_cast<float>(shoulder.get()) * scale;
-        p.shape[0] = static_cast<float>(rise.get()) * scale;
-        p.shape[1] = static_cast<float>(emboss.get());
+        p.key[2] = corner.get() * scale;
+        p.key[3] = shoulder.get() * scale;
+        p.shape[0] = rise.get() * scale;
+        p.shape[1] = emboss.get();
         p.shape[2] = shoulderKind.get() == 1 ? 1.0f : 0.0f;
         p.shape[3] = lightKind.get() == 1 ? 1.0f : 0.0f;
         if (lightKind.get() == 1) {
             p.lamp[0] = lightX * scale;
             p.lamp[1] = lightY * scale;
-            p.lamp[2] = static_cast<float>(lightHeight.get()) * scale;
+            p.lamp[2] = lightHeight.get() * scale;
         } else {
             // Лампа под азимутом и высотой: 0 -- справа, 90 -- сверху экрана.
             double const a = azimuth.get() * 3.14159265358979 / 180.0;
@@ -323,16 +323,16 @@ struct Shaded {
             p.lamp[1] = static_cast<float>(-std::sin(a) * std::cos(e));
             p.lamp[2] = static_cast<float>(std::sin(e));
         }
-        p.lamp[3] = static_cast<float>(ambientShare.get());
+        p.lamp[3] = ambientShare.get();
         rgbOf(lightColor.get(), p.lampColor);
-        p.lampColor[3] = static_cast<float>(diffuseShare.get());
+        p.lampColor[3] = diffuseShare.get();
         rgbOf(keyColor.get(), p.keyColor);
-        p.keyColor[3] = static_cast<float>(specularShare.get());
+        p.keyColor[3] = specularShare.get();
         rgbOf(panelColor.get(), p.panelColor);
-        p.panelColor[3] = static_cast<float>(shine.get());
-        p.shade[0] = static_cast<float>(shadow.get());
-        p.shade[1] = static_cast<float>(softness.get()) * scale;
-        p.shade[2] = static_cast<float>(occlusion.get());
+        p.panelColor[3] = shine.get();
+        p.shade[0] = shadow.get();
+        p.shade[1] = softness.get() * scale;
+        p.shade[2] = occlusion.get();
         p.shade[3] = linearLight.get() ? 1.0f : 0.0f;
         // Ячейка -- клавиша с половиной промежутка по сторонам.
         p.origin[0] = lab::keyGap * scale / 2.0f;
@@ -362,11 +362,11 @@ struct Shaded {
         SizeInt32 const size = surface.size();
         if (!bitmap) {
             ComPtr<IDXGISurface> dxgi;
-            wxl::check_hresult(texture.As(&dxgi));
+            wxl::impl::check_hresult(texture.As(&dxgi));
             D2D1_BITMAP_PROPERTIES1 const properties = D2D1::BitmapProperties1(
                 D2D1_BITMAP_OPTIONS_NONE,
                 D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED));
-            wxl::check_hresult(context->CreateBitmapFromDxgiSurface(dxgi.Get(), &properties, &bitmap));
+            wxl::impl::check_hresult(context->CreateBitmapFromDxgiSurface(dxgi.Get(), &properties, &bitmap));
         }
         context->SetPrimitiveBlend(D2D1_PRIMITIVE_BLEND_COPY);
         context->DrawBitmap(bitmap.Get(),
@@ -388,8 +388,8 @@ lab::Experiment lab::shaderPage() {
         vAlign.center,
         background = SolidColorBrush {color = rgb(24, 25, 28)},
         [model](Border const& host) { ElementCompositionPreview::setElementChildVisual(host, model->sprite); },
-        onLoaded = [model](Border const& self) { model->loaded(self.xamlRoot().rasterizationScale()); },
-        onPointerMoved =
+        onLoaded += [model](Border const& self) { model->loaded(self.xamlRoot().rasterizationScale()); },
+        onPointerMoved +=
             [model](Border const& self, PointerRoutedEventArgs& args) {
                 Point const place = args.getCurrentPoint(self).position();
                 model->lightAt(place.x, place.y);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <filesystem>
 #include <map>
 #include <set>
 #include <string>
@@ -44,6 +45,12 @@ struct by_full_name {
 
 // "Microsoft.UI.Xaml.Controls.Button"
 std::string full_name(winmd::reader::TypeDef const& type);
+
+// A name the metadata spells, as a path: the namespace a generated file is named
+// after, the contract a folder of the SDK's reference is named after. Nothing
+// checks the text of a .winmd before it is read, so it is checked here, and a name
+// that is not UTF-8 stops with std::runtime_error naming it.
+std::filesystem::path metadata_path(std::string_view name);
 
 // Accessors (get_X/put_X/add_X/remove_X) and .ctor are not methods of their
 // own: they are reached through the Property and Event tables, so neither the
@@ -167,17 +174,9 @@ struct closure {
     // and the DSL exactly like the real ones; only the body differs.
     std::map<winmd::reader::TypeDef, std::vector<synthetic_t>> synthetic;
 
-    // A method a profile writes as a tag (see profile.h), with the class it
-    // narrows the value to resolved -- empty when it keeps the parameter's own
-    // type. The narrowed class is pulled into the closure the way a synthetic
-    // member's type is.
-    struct setter {
-        setter_method declaration;
-        winmd::reader::TypeDef type;
-    };
-
-    // Per class: the methods written as tags on it.
-    std::map<winmd::reader::TypeDef, std::vector<setter>> setter_methods;
+    // Per class: the methods a profile writes as tags on it (see profile.h), by
+    // the method's name.
+    std::map<winmd::reader::TypeDef, std::set<std::string>> setter_methods;
 
     // Per class: the attached properties its statics declare. In metadata an
     // attached property is nothing but a Set<X>(element, value) / Get<X>
@@ -185,6 +184,11 @@ struct closure {
     // name is what the builder syntax writes on the *child*, so it takes part
     // in the key enum like any other property name.
     std::map<winmd::reader::TypeDef, std::vector<std::string>> attached;
+
+    // The types of the metadata the descriptions of the selected components name -- a base, a
+    // property's value, an element, an event's args -- by the full name they are written with.
+    // Each is a root of the walk with the members a discovered type has.
+    std::map<std::string, winmd::reader::TypeDef> described_types;
 
     std::set<std::string> property_names;
     std::set<std::string> event_names;
@@ -198,14 +202,25 @@ struct closure {
     // Pre-defined types the walk stopped at; recorded, never emitted.
     std::set<winmd::reader::TypeDef, by_full_name> boundary;
 
-    // Diagnostics: profile entries the metadata doesn't back up. Both are
-    // reported by main(), not thrown -- a stale name shouldn't stop a run.
-    std::vector<std::string> missing_types;    // "Ns.Type" not in the metadata at all
+    // A diagnostic: members a profile names that no type declares, reported by
+    // main(). A type the metadata does not declare stops the walk instead.
     std::vector<std::string> unknown_members;  // "Ns.Type.Member" nothing declares
 };
 
 // The walk from the profiles' roots and the type map's implicit ones; the
 // type map also says where it stops and which keys wxl's own classes add.
+// A root the metadata does not declare -- a type of a profile, or an implicit
+// root of the type map -- stops it with std::runtime_error, which names every
+// such type, the profile that lists it and the Windows App SDK release of the
+// restore: the metadata read is the restore's, and a release that lacks a type
+// the profiles project cannot be projected from.
+//
+// The binding pairs of the type map are held to the metadata before the walk:
+// a pair whose class, property or event the metadata does not declare, a bound
+// member whose class it does not declare, one property bound twice on one
+// class, and two pairs of one property on a class and a class derived from it
+// stop it with std::runtime_error naming the type map and the entries. A class
+// the walk reaches brings in the members its pairs are made of.
 closure crawl(profile_set const& profiles, type_map const& types, winmd::reader::cache const& db);
 
 // The kinds of member a profile names. A Constant is an enumerator.

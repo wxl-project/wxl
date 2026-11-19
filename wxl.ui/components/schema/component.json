@@ -1,0 +1,12 @@
+{
+  "name": "schema",
+  "dependencies": [
+    "dsl"
+  ],
+  "sources": [
+    "schema.h",
+    "ui.h"
+  ],
+  "libraries": [],
+  "description": "The aggregate headers: schema.h, the generated schema with the fragments of the profile's components, and ui.h, the one include of an application."
+}

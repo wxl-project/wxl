@@ -110,24 +110,11 @@ is built on binding reactive `observable` containers (business logic) to UI
 properties through declarative bindings.
 
 ```cpp
-class Equation : public noncopyable
+struct Equation : sta_refcounted
 {
-    observable<Answer> answer;
-
-public:
-    observable<double> a{blank}, b{blank}, c{blank};
-    observable<u16_text> D, x1, x2;
-
-    Equation() {
-        // Declarative binding: three input numbers -> solve is called automatically
-        answer
-            .follow(a, b, c, solve)
-            .on_change([this](Answer const& answer) noexcept {
-                D.set(answer.D);
-                x1.set(answer.x1); // State update -> shown in the UI automatically
-                x2.set(answer.x2);
-            });
-    }
+    observable<nullable<double>> a, b, c;
+    // Three input numbers -> solve is called automatically on every edit
+    observable<Answer> answer{a, b, c, solve};
 };
 
 // A preset that unifies the styling of input fields
@@ -145,7 +132,7 @@ NumberBox {
 // ...
 TextBox {
     output,
-    text = BindOutput {eq.D},
+    text = BindOutput {eq.answer, &Answer::D},
 },
 ```
 
@@ -163,60 +150,61 @@ To build the library and the sample projects, you will need:
 - **OS:** Windows x64
 - **Compiler toolchain:** Visual Studio 2026 (Insiders channel) with the
   MSVC toolset 14.53.36911 or newer
-- **Build:** CMake (version 4.3 / 4.4) and Ninja
+- **WinUI tools:** in the same installation, the workload "WinUI application
+  development" with the component "C++ WinUI app development tools"; in
+  Build Tools for Visual Studio 2026, the workload "WinUI application
+  development build tools" with the component "C++ WinUI app development
+  build tools". The configure gets the NuGet packages and the cppwinrt
+  projection from the MSBuild of that installation
+- **Windows SDK:** 10.0.26100.0 or newer
+- **Build:** CMake (version 4.5 or newer) and Ninja
 - **Environment:** PowerShell 7 (`pwsh`)
-- **Dependency management:** an installed `vcpkg` with the one-time
-  integration command (`vcpkg integrate install`) already run. The build
-  scripts locate the package manager automatically via the
-  `vcpkg.path.txt` file, or when the `-DVCPKG_ROOT=<path>` flag is passed
-  explicitly.
+- **.NET SDK 10:** to build the `winxl` utility, which installs the runtime;
+  the utility itself needs no .NET on the machine
 
 ### Step-by-step setup
 
 Start a `pwsh` session in the root directory of the cloned repository and run
-the following commands to prepare the environment, generate the projection
-and run a sample:
+the following commands to build the tree and run a sample:
 
 ```powershell
-# 1. Restore the required NuGet packages (versions are pinned in tools/packages.json)
-pwsh -NoProfile -File tools\restore-packages.ps1
+# 1. Configure and build the whole tree without the documentation site.
+#    The configure restores the NuGet packages (pinned in tools/packages.json, resolved into
+#    tools/packages.lock.json and listed in build\x64-dynamic\wxl.packages\restored-packages.json)
+#    and builds the cppwinrt projection in the build directory; the build builds the
+#    winui-srcgen generator, writes the WinUI wrappers of the full profile with it into
+#    build\x64-dynamic\wxl.ui\full\wxl and compiles them with the rest; WXL_WINXL=ON
+#    builds the winxl utility
+tools\build.ps1 -Define WXL_BUILD_DOCS=OFF,WXL_WINXL=ON
 
-# 2. Generate the base cppwinrt projection into the generated\ directory
-pwsh -NoProfile -File tools\projection.ps1
+# 2. Deploy the experimental Windows App Runtime from the package the configure restored
+build\x64-dynamic\winxl\winxl.exe runtime install --packages build\x64-dynamic\wxl.packages\restored-packages.json
 
-# 3. Deploy the experimental Windows App Runtime
-pwsh -NoProfile -File tools\install-runtime.ps1
-
-# 4. Build the winui-srcgen tool without generating its accompanying documentation
-tools\build.ps1 -Target winui-srcgen -Define WXL_BUILD_DOCS=OFF
-
-# 5. Run the generator to build the full profile of WinUI wrappers
-build\x64\wxl.gen\Debug\winui-srcgen.exe --profile wxl.gen\profiles\full.json
-
-# 6. Configure CMake and build the Quadratic sample project
-tools\build.ps1 -Configure -Target sample.quadratic
-
-# 7. Run the built application
-build\x64\samples\Quadratic\Debug\sample.quadratic.exe
+# 3. Run the Quadratic sample application
+build\x64-dynamic\samples\Quadratic\Debug\sample.quadratic.exe
 ```
 
 A detailed walkthrough of each automation step, the supported CMake
-configuration options, running the unit tests, and a guide to integrating
-`wxl` into your own projects are covered in
-[docs/building.md](docs/building.md).
+configuration options and running the unit tests are covered in
+[docs/building.md](docs/building.md). Your own project takes `wxl` from the
+`WinXL` package (`find_package(wxl)` in CMake or a `PackageReference` in
+MSBuild), or adds the root of the `wxl` tree — `add_subdirectory` or
+`FetchContent` — and sets the language options of `wxl` before it (see
+[«Подключение wxl»](docs/building.md#подключение-wxl), in Russian).
 
 ## Repository layout
 
 | Directory | Description and modules |
 | :--- | :--- |
-| **`wxl.core`** | Library core (the `wxl.core` module): the single-threaded STA memory pool, reference counting, reactive `observable` containers, the event model, grapheme-aware UTF-8/UTF-16 text support, file system access, the optimized `nullable` container. |
-| **`wxl.async`** | Asynchronous subsystem: `task` coroutines, the `sta_loop` dispatcher with non-blocking file I/O, operation cancellation, low-level lock-free queues, data exchange channels and thread synchronization primitives. |
-| **`wxl.fmt`** / **`wxl.logging`** | `text_builder` and string formatting modules built on top of the `fmt` library. Logging subsystem components. |
-| **`wxl.xml`** / **`wxl.json`** | Lightweight parsers for XML and JSON. |
-| **`wxl.html`** / related | Modules for parsing HTML, BB-code and RSDN text markup for the `HtmlBlock`, `BbBlock`, `RsdnBlock` visual components. The `wxl.highlight` syntax highlighting subsystem. |
+| **`wxl.core`** | Library core — one module, `wxl.core`, build target `wxl::core`: the single-threaded STA memory pool, reference counting, reactive `observable` containers, the event model, grapheme-aware UTF-8/UTF-16 text support, file system access, the optimized `nullable` container. The areas of the module lie in subdirectories of `wxl.core/src`, below. |
+| `wxl.core/src/async` | Asynchronous subsystem: `task` coroutines, the `sta_loop` dispatcher with non-blocking file I/O, operation cancellation, low-level lock-free queues, data exchange channels and thread synchronization primitives. |
+| `wxl.core/src/fmt`, `logging` | `text_builder` and string formatting on top of the `fmt` library. The logging subsystem. |
+| `wxl.core/src/xml`, `json` | Lightweight parsers for XML and JSON. |
+| `wxl.core/src/html` | Parsing of the HTML subset for the `HtmlBlock` visual component. |
+| **`wxl.bb`** / **`wxl.rsdn`** / **`wxl.highlight`** | Modules parsing BB-code and RSDN markup into the same tree for `BbBlock`, `RsdnBlock`. The `wxl.highlight` syntax highlighting subsystem, shown by `CodeBlock`. |
 | **`wxl.gen.*`** | Source code of the `winui-srcgen` projection generator (`wxl.gen`, `wxl.gen.common`) and `wxl.gen.ui`, a GUI for visually editing code generation profiles (launched via `run-gen-ui.cmd`). |
 | **`wxl.ui`** | The **WinUI** graphics stack without XAML: public object wrappers, the declarative DSL syntax, window management, data binding and visual effects. |
-| **Auxiliary** | `samples` — sample projects; `sandbox` — isolated experiments with **WinUI** mechanisms; `test-support` — unit testing infrastructure; `cmake`, `tools`, `docs` — build and automation scripts and documentation sources. |
+| **Auxiliary** | `samples` — sample projects; `sandbox` — isolated experiments with **WinUI** mechanisms; `wxl.test` — unit testing infrastructure; `cmake`, `tools`, `docs` — build and automation scripts and documentation sources. |
 
 ## Current status and limitations
 
@@ -252,8 +240,9 @@ tested on a par with Debug.
 ### Code generation limitations
 
 - **Profile contents.** **wxl** contains only those **WinUI** types and members that
-  are listed in the `wxl.gen/profiles/full.json` profile. To add anything
-  missing, extend the profile and regenerate the wrappers.
+  are listed in the `wxl.gen/profiles/full.winxl-profile` profile. To add
+  anything missing, extend the profile; the next build generates the wrappers
+  itself.
 - **Inheritance with overriding (Overrides).** A custom subclass of a **WinUI**
   class that overrides methods through the `I<Class>Overrides` interfaces is
   not supported yet: the COM interface aggregation prototype in

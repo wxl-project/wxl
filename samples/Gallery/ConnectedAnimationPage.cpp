@@ -5,12 +5,11 @@
 #include <memory>
 #include <vector>
 #include "Box.h"
-#include "ItemBuilder.h"
-#include "ItemElement.h"
+#include "IndexList.h"
+#include "ItemTemplate.h"
 #include <wxl/Microsoft.UI.Dispatching.h>
 #include "MotionPages.h"
 #include "PagedFrame.h"
-#include "ResourceBrush.h"
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 #include <wxl/Microsoft.UI.Xaml.Media.Animation.h>
 #include <wxl/Microsoft.UI.Xaml.h>
@@ -20,12 +19,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t listPageHeader[] = {
-#include "Snippets/ConnectedAnimation/ConnectedAnimationListPage.html.embed"
-};
-constexpr char8_t listPageCode[] = {
-#include "Snippets/ConnectedAnimation/ConnectedAnimationListPage.h.embed"
-};
+gallery::LazyLoadedText listPageHeader{"Snippets/ConnectedAnimation/ConnectedAnimationListPage.html"};
+gallery::LazyLoadedText listPageCode{"Snippets/ConnectedAnimation/ConnectedAnimationListPage.h"};
 
 FrameworkElement listPage() {
 #include "Snippets/ConnectedAnimation/ConnectedAnimationListPage.h"
@@ -37,12 +32,8 @@ FrameworkElement listPage() {
     });
 }
 
-constexpr char8_t sameElementsHeader[] = {
-#include "Snippets/ConnectedAnimation/ConnectedAnimationElementsSame.html.embed"
-};
-constexpr char8_t sameElementsCode[] = {
-#include "Snippets/ConnectedAnimation/ConnectedAnimationElementsSame.h.embed"
-};
+gallery::LazyLoadedText sameElementsHeader{"Snippets/ConnectedAnimation/ConnectedAnimationElementsSame.html"};
+gallery::LazyLoadedText sameElementsCode{"Snippets/ConnectedAnimation/ConnectedAnimationElementsSame.h"};
 
 FrameworkElement sameElements() {
 #include "Snippets/ConnectedAnimation/ConnectedAnimationElementsSame.h"
@@ -54,12 +45,8 @@ FrameworkElement sameElements() {
     });
 }
 
-constexpr char8_t simpleHeader[] = {
-#include "Snippets/ConnectedAnimation/SimpleConnectedAnimation.html.embed"
-};
-constexpr char8_t simpleCode[] = {
-#include "Snippets/ConnectedAnimation/SimpleConnectedAnimation.h.embed"
-};
+gallery::LazyLoadedText simpleHeader{"Snippets/ConnectedAnimation/SimpleConnectedAnimation.html"};
+gallery::LazyLoadedText simpleCode{"Snippets/ConnectedAnimation/SimpleConnectedAnimation.h"};
 
 FrameworkElement simple() {
 #include "Snippets/ConnectedAnimation/SimpleConnectedAnimation.h"
@@ -72,12 +59,8 @@ FrameworkElement simple() {
     });
 }
 
-constexpr char8_t itemsRepeaterHeader[] = {
-#include "Snippets/ConnectedAnimation/ConnectedAnimationItemsrepeater.html.embed"
-};
-constexpr char8_t itemsRepeaterCode[] = {
-#include "Snippets/ConnectedAnimation/ConnectedAnimationItemsrepeater.h.embed"
-};
+gallery::LazyLoadedText itemsRepeaterHeader{"Snippets/ConnectedAnimation/ConnectedAnimationItemsrepeater.html"};
+gallery::LazyLoadedText itemsRepeaterCode{"Snippets/ConnectedAnimation/ConnectedAnimationItemsrepeater.h"};
 
 FrameworkElement itemsRepeater() {
 #include "Snippets/ConnectedAnimation/ConnectedAnimationItemsrepeater.h"
@@ -91,6 +74,8 @@ FrameworkElement itemsRepeater() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::connectedAnimationPage() {
+static wxl::FrameworkElement connectedAnimationPage() {
     return StackPanel {listPage(), sameElements(), simple(), itemsRepeater()};
 }
+
+REGISTER_GALLERY_PAGE(L"ConnectedAnimation", connectedAnimationPage);

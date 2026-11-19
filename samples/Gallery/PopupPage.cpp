@@ -9,12 +9,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t offsetExampleHeader[] = {
-#include "Snippets/Popup/PopupOffsetPositioning.html.embed"
-};
-constexpr char8_t offsetExampleCode[] = {
-#include "Snippets/Popup/PopupOffsetPositioning.h.embed"
-};
+gallery::LazyLoadedText offsetExampleHeader{"Snippets/Popup/PopupOffsetPositioning.html"};
+gallery::LazyLoadedText offsetExampleCode{"Snippets/Popup/PopupOffsetPositioning.h"};
 
 FrameworkElement offsetExample() {
 #include "Snippets/Popup/PopupOffsetPositioning.h"
@@ -29,6 +25,8 @@ FrameworkElement offsetExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::popupPage() {
+static wxl::FrameworkElement popupPage() {
     return StackPanel {offsetExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"Popup", popupPage);

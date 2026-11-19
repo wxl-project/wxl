@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t createWindowHeader[] = {
-#include "Snippets/Windowing/CreateMultipleWindows.html.embed"
-};
-constexpr char8_t createWindowCode[] = {
-#include "Snippets/Windowing/CreateMultipleWindows.h.embed"
-};
+gallery::LazyLoadedText createWindowHeader{"Snippets/Windowing/CreateMultipleWindows.html"};
+gallery::LazyLoadedText createWindowCode{"Snippets/Windowing/CreateMultipleWindows.h"};
 
 FrameworkElement createWindow() {
 #include "Snippets/Windowing/CreateMultipleWindows.h"
@@ -25,12 +21,8 @@ FrameworkElement createWindow() {
     });
 }
 
-constexpr char8_t sizingHeader[] = {
-#include "Snippets/Windowing/WindowSizing.html.embed"
-};
-constexpr char8_t sizingCode[] = {
-#include "Snippets/Windowing/WindowSizing.h.embed"
-};
+gallery::LazyLoadedText sizingHeader{"Snippets/Windowing/WindowSizing.html"};
+gallery::LazyLoadedText sizingCode{"Snippets/Windowing/WindowSizing.h"};
 
 FrameworkElement sizing() {
 #include "Snippets/Windowing/WindowSizing.h"
@@ -45,7 +37,7 @@ FrameworkElement sizing() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::windowingPage() {
+static wxl::FrameworkElement windowingPage() {
     return StackPanel {
         TextBlock {
             Margin {0, 0, 0, 8},
@@ -53,3 +45,5 @@ wxl::FrameworkElement gallery::windowingPage() {
             u"Create top-level XAML windows and configure their client-area size. Each example opens a separate window.",
         },createWindow(), sizing()};
 }
+
+REGISTER_GALLERY_PAGE(L"Windowing", windowingPage);

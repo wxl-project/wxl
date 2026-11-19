@@ -15,7 +15,7 @@
 #include <string>
 #include <string_view>
 
-// IRestrictedErrorInfo before cppwinrt, as terminate_reason.cpp has it: the test asks an error
+// IRestrictedErrorInfo before cppwinrt, as Application.cpp has it: the test asks an error
 // whether it has one.
 #include "platform.h"
 
@@ -23,14 +23,24 @@
 
 #include <winrt/base.h>
 
-#include "impl/terminate_reason.h"
+#include "Application.h"
+
+// The application's namer and the installing of it are its private members; the test reaches
+// them through this friend of the class, as the event waits' tests reach theirs.
+namespace wxl::impl {
+
+struct application_test {
+    static void install_terminate_report() noexcept { Application::install_terminate_report(); }
+};
+
+}  // namespace wxl::impl
 
 namespace {
 
-// The handler and its namer, set as wWinMain sets them: once in a process, since the namer
-// is set once. A death runs in a process of its own and sets them there.
+// The handler and its namer, set as wWinMain sets them: once in a process, since the namer is set
+// once. A death runs in a process of its own and sets them there.
 void set_the_handler_once() {
-    static bool const set = (wxl::impl::install_terminate_report(), true);
+    static bool const set = (wxl::impl::application_test::install_terminate_report(), true);
     static_cast<void>(set);
 }
 
@@ -60,9 +70,12 @@ TEST(TerminateReason, names_the_code_and_the_message_of_an_hresult_error) {
 // A pair goes out as one code point, a lone half as U+FFFD, and the end of line a message
 // may carry does not.
 TEST(TerminateReason, writes_the_message_as_utf8) {
-    EXPECT_EQ(describe_thrown(winrt::hresult_error(failed, L"a\xD83D\xDE00" L"b\xD800 \r\n")),
+    EXPECT_EQ(describe_thrown(winrt::hresult_error(failed,
+                                                   L"a\xD83D\xDE00"
+                                                   L"b\xD800 \r\n")),
               "wxl: unhandled exception: winrt::hresult_error 0x80004005: "
-              "a\xF0\x9F\x98\x80" "b\xEF\xBF\xBD");
+              "a\xF0\x9F\x98\x80"
+              "b\xEF\xBF\xBD");
 }
 
 // Without a message of its own, the code is followed by what the error info says of it.
@@ -90,8 +103,8 @@ TEST(TerminateReason, names_an_hresult_error_without_error_info) {
 TEST(TerminateReason, writes_the_code_in_capitals) {
     constexpr std::int32_t out_of_memory = static_cast<std::int32_t>(0x8007000E);  // E_OUTOFMEMORY
     std::string const short_of_memory = describe_thrown(winrt::hresult_error{out_of_memory});
-    EXPECT_TRUE(short_of_memory.starts_with(
-        "wxl: unhandled exception: winrt::hresult_error 0x8007000E: "))
+    EXPECT_TRUE(
+        short_of_memory.starts_with("wxl: unhandled exception: winrt::hresult_error 0x8007000E: "))
         << short_of_memory;
 }
 
@@ -103,18 +116,12 @@ TEST(TerminateReason, leaves_other_exceptions_to_wxl_core) {
 }
 
 // The report goes to stderr rather than to a dialog that would hang the run.
-void without_a_dialog() {
-    _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
-}
+void without_a_dialog() { _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT); }
 
-[[noreturn]] void fail() {
-    throw winrt::hresult_error(failed, L"проба terminate");
-}
+[[noreturn]] void fail() { throw winrt::hresult_error(failed, L"проба terminate"); }
 
 // A call with no way out for an exception, as a listener of the window is.
-void listen() noexcept {
-    fail();
-}
+void listen() noexcept { fail(); }
 
 void throw_out_of_a_noexcept_call() {
     without_a_dialog();

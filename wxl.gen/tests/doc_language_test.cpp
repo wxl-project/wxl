@@ -24,7 +24,14 @@ import wxl.core;
 
 namespace {
 
-std::filesystem::path const profiles_dir{WXL_GEN_PROFILES_DIR};
+// u8, so that the path reads the directory as UTF-8 and not in the ANSI code page.
+std::filesystem::path const profiles_dir{u8"" WXL_GEN_PROFILES_DIR};
+// The components the profiles name, as the build finds them.
+std::filesystem::path const components_dir{u8"" WXL_UI_COMPONENTS_DIR};
+
+// The list the configure of this build wrote: the packages its restore resolved
+// and the Windows SDK of its projection.
+std::filesystem::path const restored_packages_file{u8"" WXL_RESTORED_PACKAGES};
 
 // The generator's output for one test, in a directory of the test's own,
 // emptied before and removed after.
@@ -38,7 +45,7 @@ protected:
 
     void TearDown() override { std::filesystem::remove_all(dir_); }
 
-    output out() const { return {dir_, "wxl.ui"}; }
+    output out() const { return {dir_}; }
     std::filesystem::path file() const { return dir_ / "doc_language.txt"; }
 
     static model documented_in(documentation_language const* language) {
@@ -61,18 +68,21 @@ TEST_F(doc_language, names_the_code_and_doxygens_language_under_the_banner) {
     documentation_language const* const traditional = find_documentation_language("zh-hant");
     ASSERT_NE(traditional, nullptr);
 
-    gen::emitted em;
+    gen::emitted em{dir_};
     gen::write_doc_language(out(), documented_in(traditional), em);
 
     EXPECT_EQ(text_of(file()), std::string{gen::banner} + "zh-hant Chinese-Traditional\n");
-    EXPECT_EQ(em.files(), std::vector<std::string>{"doc_language.txt"});
+    ASSERT_EQ(em.files().size(), 1u);
+    EXPECT_EQ(em.files().front().native(), L"doc_language.txt");
 }
 
 // A whole run, as main() makes it: the language reaches the model and the
 // writer from the run's own argument, and the next run without documentation
 // takes the file away.
 TEST_F(doc_language, follows_the_run_that_writes_the_wrappers) {
-    auto const profiles = resolve_profiles({profiles_dir / "base.json"}, default_nuget_root());
+    auto const profiles = resolve_profiles({profiles_dir / "base.winxl-profile"},
+                                           load_restored_packages(restored_packages_file),
+                                           {.directories = {components_dir}});
     auto const types = load_type_map(profiles_dir / "types.json");
 
     documentation_language const* const russian = find_documentation_language("ru");

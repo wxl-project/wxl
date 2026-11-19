@@ -54,7 +54,7 @@ FrameworkElement picture(zstring_view path) {
 
 FrameworkElement heroHeader() {
     return Grid {
-        rowDefinitions = u"auto,auto,*",
+        RowDefinitions<u"auto,auto,*">,
         height = 400,
         Border {
             rowSpan = 3,
@@ -164,7 +164,7 @@ wxl::FrameworkElement gallery::homePage() {
         row = 1,
         Margin {36, 24, 0, 16},
         hAlign.center,
-        onSelectionChanged = [body, recentPanel, favoritePanel](Object const& sender, SelectorBarSelectionChangedEventArgs&) {
+        onSelectionChanged += [body, recentPanel, favoritePanel](Object const& sender, SelectorBarSelectionChangedEventArgs&) {
             auto const selected = sender.try_as<SelectorBar>().selectedItem();
             if (selected && gallery::wide(selected.text()) == L"Favorites") {
                 body.child(favoritePanel);
@@ -181,7 +181,7 @@ wxl::FrameworkElement gallery::homePage() {
     return ScrollViewer {
         verticalScrollBarVisibility = ScrollBarVisibility::Auto,
         content = Grid {
-            rowDefinitions = u"auto,auto,*",
+            RowDefinitions<u"auto,auto,*">,
             heroHeader(),
             bar,
             body,

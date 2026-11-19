@@ -1,0 +1,16 @@
+{
+  "name": "dsl",
+  "dependencies": [],
+  "sources": [
+    "aliases.h",
+    "Bind.h",
+    "event_awaitable.h",
+    "impl/binding.h",
+    "impl/member.cpp",
+    "impl/member.h",
+    "resource_lookup.cpp",
+    "resource_lookup.h"
+  ],
+  "libraries": [],
+  "description": "The machinery every profile stands on: member tags, bindings, event awaits, resource lookup."
+}

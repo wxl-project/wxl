@@ -12,12 +12,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t lottieHeader[] = {
-#include "Snippets/AnimatedVisualPlayer/AnimatedVisualPlayerPlaybackLottieAnimation.html.embed"
-};
-constexpr char8_t lottieCode[] = {
-#include "Snippets/AnimatedVisualPlayer/AnimatedVisualPlayerPlaybackLottieAnimation.h.embed"
-};
+gallery::LazyLoadedText lottieHeader{"Snippets/AnimatedVisualPlayer/AnimatedVisualPlayerPlaybackLottieAnimation.html"};
+gallery::LazyLoadedText lottieCode{"Snippets/AnimatedVisualPlayer/AnimatedVisualPlayerPlaybackLottieAnimation.h"};
 
 FrameworkElement lottie() {
 #include "Snippets/AnimatedVisualPlayer/AnimatedVisualPlayerPlaybackLottieAnimation.h"
@@ -31,6 +27,8 @@ FrameworkElement lottie() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::animatedVisualPlayerPage() {
+static wxl::FrameworkElement animatedVisualPlayerPage() {
     return StackPanel {lottie()};
 }
+
+REGISTER_GALLERY_PAGE(L"AnimatedVisualPlayer", animatedVisualPlayerPage);

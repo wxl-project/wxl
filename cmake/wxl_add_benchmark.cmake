@@ -9,9 +9,10 @@ include_guard(GLOBAL)
 #         ARGS    "${generic_xaml}" 20
 #         INPUTS  "${generic_xaml}")
 #
-# It is a console executable -- a benchmark prints its table -- and it takes its
-# place in the IDE tree. What it links and anything else of its own is said
-# after this call, on the target it made.
+# It is a console executable -- a benchmark prints its table -- carrying the
+# manifest of wxl's executables (wxl_target_manifest), and it takes its place in
+# the IDE tree. What it links and anything else of its own is said after this
+# call, on the target it made.
 #
 # ARGS is the command line it is run with, INPUTS the files it reads; a relative
 # input is taken from the directory of the call. Both are written, together with
@@ -32,6 +33,7 @@ function(wxl_add_benchmark target)
 
     add_executable(${target} ${ARG_SOURCES})
 
+    wxl_target_manifest(${target})
     wxl_set_target_folders(${target})
 
     set(_inputs "")

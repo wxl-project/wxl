@@ -175,6 +175,10 @@ void applyConsoleTheme(int themeIndex) {
     ::SetConsoleScreenBufferInfoEx(out, &info);
 }
 
+wxl::core::nullable<int> Settings::fontPixels() const {
+    return fontSize.get().transform([](double size) { return static_cast<int>(std::lround(size)); });
+}
+
 void loadSettings(Settings& settings) {
     HKEY key = nullptr;
     if (::RegOpenKeyExW(HKEY_CURRENT_USER, kKey, 0, KEY_READ, &key) != ERROR_SUCCESS) {
@@ -186,7 +190,8 @@ void loadSettings(Settings& settings) {
     settings.fontFamily.set(clampIndex(
         static_cast<int>(readDword(key, L"FontFamily", settings.fontFamily.get())),
         fontFamilies().size()));
-    settings.fontSize.set(static_cast<int>(readDword(key, L"FontSize", settings.fontSize.get())));
+    settings.fontSize.set(
+        readDword(key, L"FontSize", static_cast<DWORD>(settings.fontPixels().value())));
     settings.theme.set(clampIndex(
         static_cast<int>(readDword(key, L"Theme", settings.theme.get())), themeNames().size()));
     // The stored title is text from outside -- repaired, not trusted: an odd
@@ -206,7 +211,10 @@ void saveSettings(Settings const& settings) {
 
     writeDword(key, L"MinimizeOnClose", settings.minimizeOnClose.get() ? 1 : 0);
     writeDword(key, L"FontFamily", static_cast<DWORD>(settings.fontFamily.get()));
-    writeDword(key, L"FontSize", static_cast<DWORD>(settings.fontSize.get()));
+    // An empty size is none to keep: the stored one is the size last applied.
+    if (auto const pixels = settings.fontPixels()) {
+        writeDword(key, L"FontSize", static_cast<DWORD>(*pixels));
+    }
     writeDword(key, L"Theme", static_cast<DWORD>(settings.theme.get()));
     writeString(key, L"WindowTitle", std::wstring{settings.windowTitle.get().wchars()});
 

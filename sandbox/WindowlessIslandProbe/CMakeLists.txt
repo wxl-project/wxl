@@ -7,8 +7,8 @@
 # успевает ли задник при быстрой растяжке. Исследовательский код на проекции
 # cppwinrt напрямую, с журналом рядом с исполняемым файлом.
 wxl_add_executable(sandbox.windowless-island-probe
+    UI wxl::ui.full
     main.cpp
 )
 
-target_include_directories(sandbox.windowless-island-probe PRIVATE ${WXL_CPPWINRT_PROJECTION_DIR})
 target_link_libraries(sandbox.windowless-island-probe PRIVATE Microsoft::CppWinRT runtimeobject.lib user32.lib gdi32.lib)

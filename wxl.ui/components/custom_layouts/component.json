@@ -1,0 +1,28 @@
+{
+  "name": "custom_layouts",
+  "dependencies": [
+    "schema",
+    "dsl"
+  ],
+  "sources": [
+    "AvailableSizeLayout.cpp",
+    "AvailableSizeLayout.h",
+    "CustomLayout.cpp",
+    "CustomLayout.h",
+    "CustomVirtualizingLayout.cpp",
+    "CustomVirtualizingLayout.h"
+  ],
+  "surface": "custom_layouts.surface.cpp",
+  "libraries": [],
+  "description": "The layout objects written in wxl: a layout of two functions, its virtualizing form, and the layout that reports the size its panel was offered.",
+  "classes": {
+    "AvailableSizeLayout": {
+      "header": "AvailableSizeLayout.h",
+      "base": "Microsoft.UI.Xaml.Controls.Layout",
+      "properties": {
+        "AvailableWidth": { "type": "Double", "set": "bind" },
+        "AvailableHeight": { "type": "Double", "set": "bind" }
+      }
+    }
+  }
+}

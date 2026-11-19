@@ -1,37 +1,25 @@
-# Перенос WinUI 3 Gallery на wxl: те же типы, без XAML. Страница контрола — по
+# Перенос WinUI Gallery на wxl: те же типы, без XAML. Страница контрола — по
 # .cpp; общая раскладка примера (ControlExample оригинала) — в Presenter.cpp;
 # окно с NavigationView — в main.cpp.
 
-# Сниппеты: код примеров, который и компилируется (#include "X.h"), и
-# показывается (#include "X.h.embed" — байты того же файла, см. embed.cmake),
-# и введения (X.html, только показываются).
+# Сниппеты: код примеров (X.h) страницы компилируют #include, а для показа
+# эти же X.h и введения (X.html) читает рядом с exe LazyLoadedText.
 file(GLOB_RECURSE _gallery_snippets CONFIGURE_DEPENDS
      "${CMAKE_CURRENT_SOURCE_DIR}/Snippets/*.h"
      "${CMAKE_CURRENT_SOURCE_DIR}/Snippets/*.html")
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/Snippets" PREFIX "Snippets"
              FILES ${_gallery_snippets})
 
-set(_gallery_embedded "")
-foreach(_snippet IN LISTS _gallery_snippets)
-    file(RELATIVE_PATH _relative "${CMAKE_CURRENT_SOURCE_DIR}" "${_snippet}")
-    set(_embedded "${CMAKE_CURRENT_BINARY_DIR}/${_relative}.embed")
-    add_custom_command(
-        OUTPUT "${_embedded}"
-        COMMAND "${CMAKE_COMMAND}" "-DIN=${_snippet}" "-DOUT=${_embedded}"
-                -P "${CMAKE_CURRENT_SOURCE_DIR}/embed.cmake"
-        DEPENDS "${_snippet}" "${CMAKE_CURRENT_SOURCE_DIR}/embed.cmake"
-        COMMENT "Сниппет ${_relative}.embed"
-        VERBATIM)
-    list(APPEND _gallery_embedded "${_embedded}")
-endforeach()
-
 wxl_add_executable(sample.gallery
+    UI wxl::ui.full
     Pages.h
     Catalog.h
     Shell.h
     pch.h
     main.cpp
     Presenter.cpp
+    Prose.cpp
+    LazyText.cpp
     Catalog.cpp
     Contact.cpp
     CustomDataObject.cpp
@@ -44,7 +32,7 @@ wxl_add_executable(sample.gallery
     RepeaterData.cpp
     Shell.cpp
     Tiles.cpp
-    ItemPages.cpp
+    PageRegistry.cpp
     ItemPage.cpp
     ListPages.cpp
     HomePage.cpp
@@ -187,20 +175,18 @@ wxl_add_executable(sample.gallery
     RichTextBlockPage.cpp
     RichEditBoxPage.cpp
     ${_gallery_snippets}
-    ${_gallery_embedded}
-    embed.cmake
 )
 
-# Байты сниппетов лежат в дереве сборки под тем же путём, что и сами сниппеты.
-target_include_directories(sample.gallery PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
-
 wxl_target_assets(sample.gallery Assets)
+# Сниппеты рядом с exe: их читает LazyLoadedText при первом обращении.
+wxl_target_assets(sample.gallery Snippets)
 # Версия приложения — версия проекта из корневого CMakeLists.txt: у приложения без пакета других источников нет.
 target_compile_definitions(sample.gallery PRIVATE GALLERY_VERSION=u"${wxl-project_VERSION}")
-target_link_libraries(sample.gallery PRIVATE wxl::json wxl::fmt)
+target_link_libraries(sample.gallery PRIVATE wxl::core)
 
 # LottieLogo.cpp -- код анимации Lottie, написанный на объектах Composition и Win2D самой платформы, -- единственный файл
-# приложения, которому нужны заголовки проекции; наружу он отдаёт один wxl::Object. Остальным они остаются закрыты.
+# приложения, которому нужны заголовки проекции; наружу он отдаёт один wxl::Object. Остальным они остаются закрыты:
+# каталог проекции (каталог включаемых файлов цели Microsoft::CppWinRT) задан только этому файлу, а саму цель
+# приложение не линкует.
 set_source_files_properties(LottieLogo.cpp PROPERTIES INCLUDE_DIRECTORIES
-    "${WXL_CPPWINRT_PROJECTION_DIR};${WXL_WINDOWSAPPSDK_FOUNDATION_DIR}/include;${WXL_WINDOWSAPPSDK_WINUI_DIR}/include")
-target_link_libraries(sample.gallery PRIVATE Microsoft::CppWinRT)
+    "$<TARGET_PROPERTY:Microsoft::CppWinRT,INTERFACE_INCLUDE_DIRECTORIES>;${WXL_WINDOWSAPPSDK_FOUNDATION_DIR}/include;${WXL_WINDOWSAPPSDK_WINUI_DIR}/include")

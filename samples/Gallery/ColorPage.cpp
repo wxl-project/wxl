@@ -15,12 +15,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t referenceHeader[] = {
-#include "Snippets/Color/ColorBrushReference.html.embed"
-};
-constexpr char8_t referenceCode[] = {
-#include "Snippets/Color/ColorBrushReference.h.embed"
-};
+gallery::LazyLoadedText referenceHeader{"Snippets/Color/ColorBrushReference.html"};
+gallery::LazyLoadedText referenceCode{"Snippets/Color/ColorBrushReference.h"};
 
 FrameworkElement section(int index) {
     switch (index) {
@@ -40,7 +36,7 @@ struct Model {
 
 }  // namespace
 
-FrameworkElement gallery::colorPage() {
+static FrameworkElement colorPage() {
 #include "Snippets/Color/ColorBrushReference.h"
 
     auto const model = gallery::hold<Model>();
@@ -49,7 +45,7 @@ FrameworkElement gallery::colorPage() {
         automationName = u"PageSelector",
         items[SelectorBarItem {text = u"Text", isSelected = true}, SelectorBarItem {text = u"Fill"}, SelectorBarItem {text = u"Stroke"},
               SelectorBarItem {text = u"Background"}, SelectorBarItem {text = u"Signal"}, SelectorBarItem {text = u"High Contrast"}],
-        onSelectionChanged = [model](SelectorBar const& sender, SelectorBarSelectionChangedEventArgs&) {
+        onSelectionChanged += [model](SelectorBar const& sender, SelectorBarSelectionChangedEventArgs&) {
             auto const selected = sender.selectedItem();
             auto const items = sender.items();
             int current = 0;
@@ -75,3 +71,5 @@ FrameworkElement gallery::colorPage() {
         model->frame,
     };
 }
+
+REGISTER_GALLERY_PAGE(L"Color", colorPage);

@@ -1,4 +1,4 @@
-// WinUI 3 Gallery без XAML — App и MainWindow оригинала: окно строит
+// WinUI Gallery без XAML — App и MainWindow оригинала: окно строит
 // оболочка (Shell.cpp), здесь только точка входа.
 
 #include "Shell.h"

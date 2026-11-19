@@ -1,4 +1,4 @@
-# UnifiedTaskProbe: горячие пути wxl.async и цепочки любой глубины
+# UnifiedTaskProbe: горячие пути async в wxl.core и цепочки любой глубины
 
 Проба отвечает на два вопроса.
 
@@ -29,7 +29,7 @@ wxl, — `sta_loop::async_call(fn, stop)` и `sta_loop::async_call(orphanable, f
 
 ```
 tools\build.ps1 -Target sandbox.unified-task-probe
-build\x64\sandbox\UnifiedTaskProbe\Debug\sandbox.unified-task-probe.exe > before.txt
+build\x64-dynamic\sandbox\UnifiedTaskProbe\Debug\sandbox.unified-task-probe.exe > before.txt
 ```
 
 Аргументы: `[прогонов [множитель итераций]]`. По умолчанию 7 прогонов и полные числа
@@ -59,7 +59,7 @@ build\x64\sandbox\UnifiedTaskProbe\Debug\sandbox.unified-task-probe.exe > before
 | `task at once` | `co_await f(i)`, где `f` кончается, не приостанавливаясь |
 | `task at once +token` | то же, `f` принимает токен параметром (копия в кадр) |
 | `pause d=N` | цепочка из `N` корутин, нижняя приостанавливается на ожидании, которое возобновляют руками; при `N = 1` это `co_await f()`, где `f` приостанавливается один раз |
-| `pause d=N +token` | то же, токен идёт вниз параметром в каждый кадр; нижнее ожидание — приложения, и после него корутина спрашивает токен сама (`throw_if_canceled`) |
+| `pause d=N +token` | то же, токен идёт вниз параметром в каждый кадр; нижнее ожидание — приложения, и после него корутина спрашивает токен сама (`throw_if_stop_requested`) |
 
 **operation, and chains of coroutines down to one** — операция и цепочки до неё, в трёх
 режимах (столбцах):

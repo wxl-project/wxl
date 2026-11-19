@@ -2,10 +2,10 @@
 // item (the position of a contact in the application's vector) to the element that shows it.
 auto const* people = &gallery::contacts();
 auto const contactOf = [people](Object const& item) {
-    auto const& contact = (*people)[static_cast<size_t>(intOf(item))];
+    auto const& contact = (*people)[static_cast<size_t>(unboxValue<int64_t>(item))];
     return Grid {
-        rowDefinitions = u"*,*",
-        columnDefinitions = u"auto,*",
+        RowDefinitions<u"*,*">,
+        ColumnDefinitions<u"auto,*">,
         Ellipse {rowSpan = 2, width = 32, height = 32, Margin {6}, horizontalAlignment = HorizontalAlignment::Center,
                  verticalAlignment = VerticalAlignment::Center, fill = brushes.Control.Strong.FillColorDefault},
         TextBlock {column = 1, Margin {12, 6, 0, 0}, styles.TextBlock.Base, contact.name()},
@@ -25,12 +25,12 @@ model->list.itemTemplate([people, contactOf, weak = std::weak_ptr<Model>(model)]
     row.contextFlyout(MenuFlyout {
         MenuFlyoutItem {
             text = u"Delete",
-            onClick = [weak, item](auto&&...) {
+            onClick += [weak, item](auto&&...) {
                 auto const model = weak.lock();
                 if (!model) return;
                 auto const items = model->list.items();
                 for (uint32_t at = 0; at < items.size(); ++at) {
-                    if (intOf(items.getAt(at)) == intOf(item)) {
+                    if (unboxValue<int64_t>(items.getAt(at)) == unboxValue<int64_t>(item)) {
                         items.removeAt(at);
                         break;
                     }
@@ -40,6 +40,6 @@ model->list.itemTemplate([people, contactOf, weak = std::weak_ptr<Model>(model)]
     });
     return row;
 });
-model->list.itemsSource(indexList(static_cast<int64_t>(people->size())));
+model->list.itemsSource(IndexList(static_cast<int64_t>(people->size())));
 
 auto example = model->list;

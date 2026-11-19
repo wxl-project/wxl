@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t withImageHeader[] = {
-#include "Snippets/ScrollViewer/Content.html.embed"
-};
-constexpr char8_t withImageCode[] = {
-#include "Snippets/ScrollViewer/Content.h.embed"
-};
+gallery::LazyLoadedText withImageHeader{"Snippets/ScrollViewer/Content.html"};
+gallery::LazyLoadedText withImageCode{"Snippets/ScrollViewer/Content.h"};
 
 FrameworkElement withImage() {
 #include "Snippets/ScrollViewer/Content.h"
@@ -28,6 +24,8 @@ FrameworkElement withImage() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::scrollViewerPage() {
+static wxl::FrameworkElement scrollViewerPage() {
     return StackPanel {withImage()};
 }
+
+REGISTER_GALLERY_PAGE(L"ScrollViewer", scrollViewerPage);

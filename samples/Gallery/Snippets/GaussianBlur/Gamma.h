@@ -11,7 +11,7 @@ StackPanel {
             fontSize = 40,
             FontWeight {700},
             foreground = rgb(255, 236, 200),
-            GaussianBlurEffect {color = rgb(255, 122, 0), blurRadius = 24.0f, gamma = 0.3},
+            GaussianBlurEffect {color = rgb(255, 122, 0), blurRadius = 24.0f, gamma = 0.3f},
         },
     },
     Border {
@@ -23,7 +23,7 @@ StackPanel {
             fontSize = 40,
             FontWeight {700},
             foreground = rgb(255, 236, 200),
-            GaussianBlurEffect {color = rgb(255, 122, 0), blurRadius = 24.0f, gamma = 1.0},
+            GaussianBlurEffect {color = rgb(255, 122, 0), blurRadius = 24.0f, gamma = 1.0f},
         },
     },
     Border {
@@ -35,7 +35,7 @@ StackPanel {
             fontSize = 40,
             FontWeight {700},
             foreground = rgb(255, 236, 200),
-            GaussianBlurEffect {color = rgb(255, 122, 0), blurRadius = 24.0f, gamma = 3.0},
+            GaussianBlurEffect {color = rgb(255, 122, 0), blurRadius = 24.0f, gamma = 3.0f},
         },
     },
 };

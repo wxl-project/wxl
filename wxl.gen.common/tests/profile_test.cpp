@@ -1,53 +1,759 @@
 #include <gtest/gtest.h>
 
-#include <cstdlib>
+#include <algorithm>
 #include <filesystem>
+#include <fstream>
+#include <stdexcept>
 #include <string>
+#include <string_view>
+#include <vector>
 
 #include "profile.h"
 
+import wxl.core;
+
 namespace {
 
-std::filesystem::path const profiles_dir{WXL_GEN_PROFILES_DIR};
+// u8, so that the path reads the directory as UTF-8 and not in the ANSI code page.
+std::filesystem::path const profiles_dir{u8"" WXL_GEN_PROFILES_DIR};
+// The components the profiles name, as the build finds them.
+std::filesystem::path const components_dir{u8"" WXL_UI_COMPONENTS_DIR};
 
-// SystemRoot for the life of the object, the previous value back after.
-class system_root {
-public:
-    explicit system_root(char const* value) {
-        if (char const* previous = std::getenv("SystemRoot")) {
-            previous_ = previous;
-        }
-        _putenv_s("SystemRoot", value);
+// The list the configure of this build wrote: the packages its restore resolved
+// and the Windows SDK of its projection.
+std::filesystem::path const restored_packages_file{u8"" WXL_RESTORED_PACKAGES};
+
+// Two paths compared as paths, element by element, so that / and \ are one separator,
+// and shown through to_utf8() when they differ: operator<< on a path goes through
+// string(), which throws on a name the ANSI code page cannot write.
+::testing::AssertionResult same_path(std::filesystem::path const& actual,
+                                     std::filesystem::path const& expected) {
+    if (actual == expected) return ::testing::AssertionSuccess();
+    return ::testing::AssertionFailure() << wxl::core::unicode::to_utf8(actual).chars() << " vs "
+                                         << wxl::core::unicode::to_utf8(expected).chars();
+}
+
+std::string utf8(std::filesystem::path const& path) {
+    return std::string{wxl::core::unicode::to_utf8(path).chars()};
+}
+
+// A path as a JSON string writes it: in UTF-8, with / for the separator, which
+// needs no escape.
+std::string json_path(std::filesystem::path const& path) {
+    std::string text = utf8(path);
+    std::ranges::replace(text, '\\', '/');
+    return text;
+}
+
+// A directory of the test's own under %TEMP%, empty.
+std::filesystem::path scratch(std::wstring_view name) {
+    auto const directory =
+        std::filesystem::temp_directory_path() / L"wxl.gen.common.profile" / name;
+    std::filesystem::remove_all(directory);
+    std::filesystem::create_directories(directory);
+    return directory;
+}
+
+void write(std::filesystem::path const& file, std::string_view text) {
+    std::filesystem::create_directories(file.parent_path());
+    std::ofstream{file, std::ios::binary} << text;
+}
+
+// One package of a list of the restore, as JSON.
+std::string listed(std::string_view id, std::string_view version,
+                   std::filesystem::path const& directory) {
+    return std::string{"{\"id\": \""} + std::string{id} + "\", \"version\": \"" +
+           std::string{version} + "\", \"directory\": \"" + json_path(directory) + "\"}";
+}
+
+// A list of the restore in `directory` with these packages, and a Windows SDK
+// of `sdk_version` whose one .winmd file is there too (empty: nothing here opens
+// it).
+std::filesystem::path write_list(std::filesystem::path const& directory,
+                                 std::vector<std::string> const& packages,
+                                 std::string_view sdk_version = "10.0.26100.0") {
+    auto const winmd = directory / L"sdk" / L"Windows.Foundation.FoundationContract.winmd";
+    write(winmd, "");
+    std::string text = "{\n    \"packages\": [";
+    for (std::size_t at = 0; at != packages.size(); ++at) {
+        text += (at ? ",\n        " : "\n        ") + packages[at];
     }
-    ~system_root() { _putenv_s("SystemRoot", previous_.c_str()); }
+    text += "\n    ],\n    \"windowsSdk\": {\"version\": \"" + std::string{sdk_version} +
+            "\", \"metadata\": [\"" + json_path(winmd) + "\"]}\n}\n";
+    auto const file = directory / L"restored-packages.json";
+    write(file, text);
+    return file;
+}
 
-private:
-    std::string previous_;
-};
+// A package directory with one .winmd file under metadata/.
+std::filesystem::path write_package(std::filesystem::path const& directory) {
+    write(directory / L"metadata" / L"Test.winmd", "");
+    return directory;
+}
+
+// What the call stops with; a failure of the test when it does not stop.
+template <typename F>
+std::string stops_with(F&& call) {
+    try {
+        call();
+    } catch (std::runtime_error const& error) {
+        return error.what();
+    }
+    ADD_FAILURE() << "the call had to stop with an error";
+    return {};
+}
+
+// Whether `text` holds every one of `parts`, each named when it is missing.
+::testing::AssertionResult says(std::string_view text, std::vector<std::string> const& parts) {
+    for (auto&& part : parts) {
+        if (text.find(part) == std::string_view::npos) {
+            return ::testing::AssertionFailure() << "no \"" << part << "\" in: " << text;
+        }
+    }
+    return ::testing::AssertionSuccess();
+}
 
 }  // namespace
 
-// A profile that asks for the Windows metadata on a machine without it still
-// resolves -- without that metadata the walk stops at every Windows type, which
-// a run reports rather than refuses -- and names the directory it looked in.
-TEST(profile, missing_windows_metadata_is_named) {
-    system_root const nowhere{"M:\\no-such-windows"};
-    auto const profiles = resolve_profiles({profiles_dir / "base.json"}, default_nuget_root());
+// The Windows metadata a profile asks for is that of the Windows SDK the build
+// projects, file for file as the list of the restore names it.
+TEST(profile, the_windows_metadata_is_the_one_the_build_projects) {
+    auto const restored = load_restored_packages(restored_packages_file);
+    ASSERT_FALSE(restored.sdk.metadata.empty());
+    auto const profiles = resolve_profiles({profiles_dir / "base.winxl-profile"}, restored,
+                                           {.directories = {components_dir}});
 
-    EXPECT_EQ(profiles.missing_windows_metadata,
-              std::filesystem::path{"M:\\no-such-windows"} / "System32" / "WinMetadata");
-    for (auto&& file : profiles.metadata) {
-        EXPECT_FALSE(file.string().starts_with("M:\\no-such-windows")) << file;
+    for (auto&& file : restored.sdk.metadata) {
+        EXPECT_NE(std::ranges::find(profiles.metadata, file), profiles.metadata.end())
+            << utf8(file);
     }
 }
 
-TEST(profile, present_windows_metadata_is_read) {
-    auto const profiles = resolve_profiles({profiles_dir / "base.json"}, default_nuget_root());
+// A package is read from the directory the list names, whatever case the profile
+// spells its id in, and in a folder named in Cyrillic -- "пакеты", spelled out so
+// that the source's own encoding does not matter -- whatever the ANSI code page
+// of the machine.
+TEST(profile, reads_a_package_from_the_directory_the_restore_names) {
+    auto const directory = scratch(L"package_directory");
+    auto const package = write_package(directory / L"\u043F\u0430\u043A\u0435\u0442\u044B" /
+                                       L"test.package" / L"1.2.0");
+    auto const list = write_list(directory, {listed("Test.Package", "1.2.0", package)});
+    write(directory / L"p.winxl-profile",
+          R"({"packages": [{"id": "test.package", "minimumVersion": "1.2.0-beta"}]})");
 
-    EXPECT_TRUE(profiles.missing_windows_metadata.empty()) << profiles.missing_windows_metadata;
-    bool windows = false;
-    for (auto&& file : profiles.metadata) {
-        windows = windows || file.filename() == "Windows.Foundation.winmd";
+    auto const profiles =
+        resolve_profiles({directory / L"p.winxl-profile"}, load_restored_packages(list));
+    ASSERT_EQ(profiles.metadata.size(), 1u);
+    EXPECT_TRUE(same_path(profiles.metadata.front(), package / L"metadata" / L"Test.winmd"));
+
+    std::filesystem::remove_all(directory);
+}
+
+TEST(profile, a_release_below_the_minimum_names_the_profile_and_both_versions) {
+    auto const directory = scratch(L"release_below");
+    auto const list = write_list(
+        directory, {listed("Microsoft.WindowsAppSDK", "2.5.4-experimental", directory)});
+    auto const profile = directory / L"p.winxl-profile";
+    write(profile, R"({"minimumWindowsAppSdk": "2.6.0"})");
+    auto const restored = load_restored_packages(list);
+
+    EXPECT_TRUE(says(stops_with([&] { resolve_profiles({profile}, restored); }),
+                     {utf8(profile), "Microsoft.WindowsAppSDK", "2.6.0", "2.5.4-experimental",
+                      utf8(list)}));
+
+    std::filesystem::remove_all(directory);
+}
+
+// The set needs the highest of its minimums: a profile that extends another
+// raises the requirement, and one that names a lower release does not lower it.
+TEST(profile, the_highest_minimum_of_the_set_is_the_one_checked) {
+    auto const directory = scratch(L"highest_minimum");
+    auto const base = directory / L"base.winxl-profile";
+    write(base, R"({"minimumWindowsAppSdk": "2.5.4-experimental"})");
+    auto const lower = directory / L"lower.winxl-profile";
+    write(lower, R"({"extends": ["base"], "minimumWindowsAppSdk": "2.5.1"})");
+    auto const higher = directory / L"higher.winxl-profile";
+    write(higher, R"({"extends": ["base"], "minimumWindowsAppSdk": "2.6.0"})");
+
+    auto const older = load_restored_packages(
+        write_list(directory / L"older", {listed("Microsoft.WindowsAppSDK", "2.5.1", directory)}));
+    EXPECT_TRUE(says(stops_with([&] { resolve_profiles({lower}, older); }),
+                     {utf8(base), "2.5.4-experimental", "2.5.1"}));
+
+    auto const release = load_restored_packages(
+        write_list(directory / L"release",
+                   {listed("microsoft.windowsappsdk", "2.5.4-experimental", directory)}));
+    EXPECT_NO_THROW(resolve_profiles({lower}, release));
+    EXPECT_TRUE(says(stops_with([&] { resolve_profiles({higher}, release); }),
+                     {utf8(higher), "2.6.0", "2.5.4-experimental"}));
+
+    std::filesystem::remove_all(directory);
+}
+
+TEST(profile, a_minimum_release_the_restore_lacks_says_what_to_add) {
+    auto const directory = scratch(L"release_missing");
+    auto const restored = load_restored_packages(write_list(directory, {}));
+    auto const profile = directory / L"p.winxl-profile";
+    write(profile, R"({"minimumWindowsAppSdk": "2.5.4-experimental"})");
+
+    EXPECT_TRUE(says(stops_with([&] { resolve_profiles({profile}, restored); }),
+                     {utf8(profile), "add a reference to Microsoft.WindowsAppSDK "
+                                     "2.5.4-experimental or newer"}));
+
+    std::filesystem::remove_all(directory);
+}
+
+TEST(profile, a_package_the_restore_lacks_says_what_to_add) {
+    auto const directory = scratch(L"package_missing");
+    auto const restored = load_restored_packages(write_list(directory, {}));
+    auto const profile = directory / L"p.winxl-profile";
+    write(profile, R"({"packages": [{"id": "Test.Missing", "minimumVersion": "1.4.0"}]})");
+
+    EXPECT_TRUE(says(stops_with([&] { resolve_profiles({profile}, restored); }),
+                     {utf8(profile), "Test.Missing",
+                      "add a reference to Test.Missing 1.4.0 or newer"}));
+
+    std::filesystem::remove_all(directory);
+}
+
+TEST(profile, a_package_below_its_minimum_names_both_versions) {
+    auto const directory = scratch(L"package_below");
+    auto const package = write_package(directory / L"package");
+    auto const restored =
+        load_restored_packages(write_list(directory, {listed("Test.Package", "1.4.0", package)}));
+    auto const profile = directory / L"p.winxl-profile";
+    write(profile, R"({"packages": [{"id": "Test.Package", "minimumVersion": "1.5.0"}]})");
+
+    EXPECT_TRUE(says(stops_with([&] { resolve_profiles({profile}, restored); }),
+                     {utf8(profile), "Test.Package", "1.5.0", "1.4.0"}));
+
+    std::filesystem::remove_all(directory);
+}
+
+// A key that names a version to read stops the load, and the message names the key
+// that says what a profile can say instead.
+TEST(profile, a_key_that_names_a_version_to_read_names_its_replacement) {
+    auto const directory = scratch(L"version_keys");
+    auto const release = directory / L"release.winxl-profile";
+    write(release, R"({"windowsAppSdk": "2.5.4-experimental"})");
+    auto const version = directory / L"version.winxl-profile";
+    write(version, R"({"packages": [{"id": "Microsoft.Graphics.Win2D", "version": "1.4.0"}]})");
+    auto const overridden = directory / L"override.winxl-profile";
+    write(overridden, R"({"packages": [{"id": "Microsoft.WindowsAppSDK.WinUI",
+                                        "overrideVersion": "2.3.10-experimental"}]})");
+
+    EXPECT_TRUE(says(stops_with([&] { load_profile(release); }),
+                     {utf8(release), "'windowsAppSdk'", "'minimumWindowsAppSdk'"}));
+    EXPECT_TRUE(says(stops_with([&] { load_profile(version); }),
+                     {utf8(version), "Microsoft.Graphics.Win2D", "'version'", "'minimumVersion'"}));
+    EXPECT_TRUE(says(stops_with([&] { load_profile(overridden); }),
+                     {utf8(overridden), "Microsoft.WindowsAppSDK.WinUI", "'overrideVersion'",
+                      "'minimumVersion'", "'minimumWindowsAppSdk'"}));
+
+    std::filesystem::remove_all(directory);
+}
+
+TEST(profile, a_minimum_that_is_not_a_version_is_refused) {
+    auto const directory = scratch(L"not_a_version");
+    auto const release = directory / L"release.winxl-profile";
+    write(release, R"({"minimumWindowsAppSdk": "latest"})");
+    auto const package = directory / L"package.winxl-profile";
+    write(package,
+          R"json({"packages": [{"id": "Test.Package", "minimumVersion": "[1.0,2.0)"}]})json");
+    // A key that is there names a version, and an empty one names none.
+    auto const empty_release = directory / L"empty_release.winxl-profile";
+    write(empty_release, R"({"minimumWindowsAppSdk": ""})");
+    auto const empty_package = directory / L"empty_package.winxl-profile";
+    write(empty_package, R"({"packages": [{"id": "Test.Package", "minimumVersion": ""}]})");
+
+    EXPECT_TRUE(says(stops_with([&] { load_profile(release); }), {utf8(release), "latest"}));
+    EXPECT_TRUE(says(stops_with([&] { load_profile(package); }), {utf8(package), "[1.0,2.0)"}));
+    EXPECT_TRUE(says(stops_with([&] { load_profile(empty_release); }),
+                     {utf8(empty_release),
+                      "'minimumWindowsAppSdk' is \"\", which is not a NuGet version"}));
+    EXPECT_TRUE(says(stops_with([&] { load_profile(empty_package); }),
+                     {utf8(empty_package),
+                      "'minimumVersion' is \"\", which is not a NuGet version"}));
+
+    std::filesystem::remove_all(directory);
+}
+
+// A list made by an earlier configure can name a file the Windows SDK no longer
+// has; the run names it rather than walking without it.
+TEST(profile, a_listed_windows_metadata_file_that_is_gone_is_named) {
+    auto const directory = scratch(L"metadata_gone");
+    auto const list = write_list(directory, {});
+    auto const gone = directory / L"sdk" / L"Windows.Foundation.FoundationContract.winmd";
+    std::filesystem::remove(gone);
+    auto const profile = directory / L"p.winxl-profile";
+    write(profile, R"({"windowsMetadata": true})");
+    auto const restored = load_restored_packages(list);
+
+    // The file as the list spells it, which is how the message names it.
+    EXPECT_TRUE(says(stops_with([&] { resolve_profiles({profile}, restored); }),
+                     {utf8(list), "10.0.26100.0", json_path(gone)}));
+
+    std::filesystem::remove_all(directory);
+}
+
+TEST(profile, a_list_that_is_not_there_says_how_to_get_it) {
+    auto const directory = scratch(L"no_list");
+    auto const list = directory / L"restored-packages.json";
+
+    EXPECT_TRUE(says(stops_with([&] { load_restored_packages(list); }),
+                     {utf8(list), "<build>/wxl.packages/restored-packages.json", "configure"}));
+
+    std::filesystem::remove_all(directory);
+}
+
+// The version of the Windows SDK names a folder of its reference, and is held to
+// the form the configure writes: four numbers separated by dots.
+TEST(profile, a_list_with_a_windows_sdk_version_of_another_form_is_refused) {
+    auto const directory = scratch(L"sdk_version");
+    EXPECT_NO_THROW(load_restored_packages(write_list(directory / L"good", {}, "10.0.26100.0")));
+    int at = 0;
+    for (std::string_view const version : {"", "10.0.26100", "10.0.26100.0.1", "10..26100.0",
+                                           "v10.0.26100.0", "10.0.26100.0 ", "..."}) {
+        auto const list = write_list(directory / std::to_wstring(at++), {}, version);
+        EXPECT_TRUE(says(stops_with([&] { load_restored_packages(list); }),
+                         {utf8(list), "'windowsSdk.version'"}))
+            << version;
     }
-    EXPECT_TRUE(windows);
+
+    std::filesystem::remove_all(directory);
+}
+
+TEST(profile, a_list_that_names_a_package_twice_is_refused) {
+    auto const directory = scratch(L"listed_twice");
+    auto const list = write_list(directory, {listed("Test.Package", "1.0.0", directory),
+                                             listed("test.package", "1.1.0", directory)});
+
+    EXPECT_TRUE(says(stops_with([&] { load_restored_packages(list); }),
+                     {utf8(list), "test.package", "twice"}));
+
+    std::filesystem::remove_all(directory);
+}
+
+// A reference in Cyrillic -- "базовый", "папка/базовый.winxl-profile", spelled out
+// so that the source's own encoding does not matter -- names the file it spells,
+// beside the profile that makes it; a bare name is a .winxl-profile.
+TEST(profile, a_reference_in_cyrillic_names_the_file_it_spells) {
+    std::filesystem::path const referrer{L"C:\\profiles\\full.winxl-profile"};
+
+    constexpr std::string_view basic = "\xD0\xB1\xD0\xB0\xD0\xB7\xD0\xBE\xD0\xB2\xD1\x8B\xD0\xB9";
+    EXPECT_TRUE(
+        same_path(resolve_reference(basic, referrer),
+                  L"C:\\profiles\\\u0431\u0430\u0437\u043E\u0432\u044B\u0439.winxl-profile"));
+    constexpr std::string_view in_folder =
+        "\xD0\xBF\xD0\xB0\xD0\xBF\xD0\xBA\xD0\xB0/"
+        "\xD0\xB1\xD0\xB0\xD0\xB7\xD0\xBE\xD0\xB2\xD1\x8B\xD0\xB9.winxl-profile";
+    EXPECT_TRUE(same_path(resolve_reference(in_folder, referrer),
+                          L"C:\\profiles\\\u043F\u0430\u043F\u043A\u0430\\"
+                          L"\u0431\u0430\u0437\u043E\u0432\u044B\u0439.winxl-profile"));
+}
+
+// A profile that names itself nothing is named after its file, and a file named in
+// Cyrillic -- "профиль", spelled out so that the source's own encoding does not
+// matter -- gives that name in UTF-8, whatever the ANSI code page of the machine.
+TEST(profile, takes_its_name_from_a_file_named_in_cyrillic) {
+    auto const directory = scratch(L"name_from_file");
+    auto const file = directory / L"\u043F\u0440\u043E\u0444\u0438\u043B\u044C.winxl-profile";
+    std::ofstream{file} << "{}";
+
+    EXPECT_EQ(load_profile(file).name, "\xD0\xBF\xD1\x80\xD0\xBE\xD1\x84\xD0\xB8\xD0\xBB\xD1\x8C");
+
+    std::filesystem::remove_all(directory);
+}
+
+// The binding pairs of the type map come as the file lists them, each with the events
+// its control writes the property under, and a bound member with the function that
+// binds it and the header declaring that function.
+TEST(type_map, reads_the_binding_pairs_and_the_function_of_a_bound_member) {
+    auto const file = profiles_dir / "types.json";
+    auto const types = load_type_map(file);
+    EXPECT_TRUE(same_path(types.source, file));
+
+    auto const toggle = std::ranges::find(types.binding_pairs,
+                                          "Microsoft.UI.Xaml.Controls.Primitives.ToggleButton",
+                                          &type_map::binding_pair::class_name);
+    ASSERT_NE(toggle, types.binding_pairs.end());
+    EXPECT_EQ(toggle->property, "IsChecked");
+    EXPECT_EQ(toggle->events, (std::vector<std::string>{"Checked", "Unchecked"}));
+
+    auto const focus = std::ranges::find(types.bound_members, "IsFocused",
+                                         &type_map::bound_member::name);
+    ASSERT_NE(focus, types.bound_members.end());
+    EXPECT_EQ(focus->function, "impl::apply_bind_focus");
+    EXPECT_EQ(focus->include, "../impl/focus_pair.h");
+    EXPECT_EQ(focus->direction, "both");
+}
+
+// An entry of "bindingPairs" or "boundMembers" that is not what the key says stops the
+// read, with the file and the entry named: a key the entry does not have, events that
+// are missing, empty, not text or named twice, a bound member without its function or
+// with a direction that is no pair's.
+TEST(type_map, a_malformed_binding_pair_names_the_file_and_the_entry) {
+    auto const directory = scratch(L"malformed_binding_pair");
+    auto const file = directory / L"types.json";
+    auto const refused = [&](std::string_view text) {
+        write(file, text);
+        return stops_with([&] { load_type_map(file); });
+    };
+    std::string const pair = R"("class": "A.Box", "property": "IsOn")";
+    std::string const bound = R"("class": "A.Box", "property": "IsOn", "value": "bool")";
+
+    struct refusal {
+        std::string text;
+        std::string says;
+    };
+    std::vector<refusal> const refusals{
+        {R"({"bindingPairs": {}})", "'bindingPairs' must be an array"},
+        {R"({"bindingPairs": [{"class": "A.Box", "events": ["Toggled"]}]})",
+         "every binding pair needs a string 'property'"},
+        {"{\"bindingPairs\": [{" + pair + R"(, "events": ["Toggled"], "event": "Toggled"}]})",
+         "binding pair A.Box.IsOn: 'event' is not a key of this entry"},
+        {"{\"bindingPairs\": [{" + pair + "}]}",
+         "binding pair A.Box.IsOn: 'events' must be an array naming at least one event"},
+        {"{\"bindingPairs\": [{" + pair + R"(, "events": []}]})",
+         "binding pair A.Box.IsOn: 'events' must be an array naming at least one event"},
+        {"{\"bindingPairs\": [{" + pair + R"(, "events": [1]}]})",
+         "binding pair A.Box.IsOn: 'events' must contain strings only"},
+        {"{\"bindingPairs\": [{" + pair + R"(, "events": ["Toggled", "Toggled"]}]})",
+         "binding pair A.Box.IsOn: the event Toggled is named twice"},
+        {"{\"handWrittenMembers\": {\"boundMembers\": [{" + bound +
+             R"(, "direction": "both", "include": "../impl/binding.h"}]}})",
+         "every bound member needs a string 'function'"},
+        {"{\"handWrittenMembers\": {\"boundMembers\": [{" + bound +
+             R"(, "direction": "output", "function": "impl::f", "include": "../f.h"}]}})",
+         "bound member A.Box.IsOn: 'direction' is \"input\" or \"both\""},
+        {"{\"handWrittenMembers\": {\"boundMembers\": [{" + bound +
+             R"(, "direction": "both", "function": "impl::f", "include": "../f.h", "valueInclude": "../v.h"}]}})",
+         "bound member A.Box.IsOn: 'valueInclude' is not a key of this entry"},
+    };
+    for (auto&& [text, message] : refusals) {
+        EXPECT_TRUE(says(refused(text), {utf8(file), message})) << text;
+    }
+
+    std::filesystem::remove_all(directory);
+}
+
+// A type map that is not there, or of another shape than its keys say, stops the read with the
+// file named: the map itself, a list of names, the projected types, the tagged properties, the
+// hand-written members and an entry of the binding pairs.
+TEST(type_map, a_type_map_it_cannot_read_names_the_file) {
+    auto const directory = scratch(L"type_map_unreadable");
+    auto const file = directory / L"types.json";
+    EXPECT_TRUE(says(stops_with([&] { load_type_map(file); }), {"cannot open: " + utf8(file)}));
+
+    struct refusal {
+        std::string text;
+        std::string says;
+    };
+    std::vector<refusal> const refusals{
+        {"[]", "a type map must be a JSON object"},
+        {R"({"predefined": "Microsoft.UI.Xaml.Application"})",
+         "'predefined' must be an array of strings"},
+        {R"({"implicitRoots": [1]})", "'implicitRoots' must contain strings only"},
+        {R"({"projectedTypes": {}})", "'projectedTypes' must be an array"},
+        {R"({"projectedTypes": ["A.B"]})", "every projected type must be an object"},
+        {R"({"projectedTypes": [{"type": "A.B", "include": "../b.h"}]})",
+         "every projected type needs a string 'wxl'"},
+        {R"({"projectedTypes": [{"type": "A.B", "wxl": "B", "include": "../b.h", "fromString": "yes"}]})",
+         "'fromString' must be true or false"},
+        {R"({"taggedProperties": {}})", "'taggedProperties' must be an array"},
+        {R"({"taggedProperties": ["Row"]})", "every tagged property must be an object"},
+        {R"({"taggedProperties": [{"property": "Row", "wxl": "row"}]})",
+         "every tagged property needs a string 'value'"},
+        {R"({"taggedProperties": [{"property": "Row", "wxl": "row", "value": "int32_t", "include": 1}]})",
+         "'include' must be a string"},
+        {R"({"handWrittenMembers": []})", "'handWrittenMembers' must be an object"},
+        {R"({"handWrittenMembers": {"pairs": []}})",
+         "'handWrittenMembers': 'pairs' is not a key of this entry"},
+        {R"({"handWrittenMembers": {"boundMembers": {}}})",
+         "'handWrittenMembers.boundMembers' must be an array"},
+        {R"({"handWrittenMembers": {"boundMembers": ["IsFocused"]}})",
+         "every bound member must be an object"},
+        {R"({"bindingPairs": ["IsOn"]})", "every binding pair must be an object"},
+    };
+    for (auto&& [text, message] : refusals) {
+        write(file, text);
+        EXPECT_TRUE(says(stops_with([&] { load_type_map(file); }), {utf8(file), message})) << text;
+    }
+
+    std::filesystem::remove_all(directory);
+}
+
+// The names of the icon font are read by code point, each name and each code point once, every
+// code point four hex digits; a table of another shape stops the read with the file and the
+// symbol named.
+TEST(symbol_names, a_table_it_cannot_read_names_the_file_and_the_symbol) {
+    auto const directory = scratch(L"symbols");
+    auto const file = directory / L"fluent-symbols.json";
+    write(file, R"({"symbols": {"Back": "E72B", "Add": "E710"}})");
+    auto const names = load_symbol_names(file);
+    ASSERT_EQ(names.size(), 2u);
+    EXPECT_EQ(names[0].name, "Add");
+
+    struct refusal {
+        std::string text;
+        std::string says;
+    };
+    std::vector<refusal> const refusals{
+        {"[]", "a symbol table must be a JSON object"},
+        {"{}", "'symbols' must be an object of name -> code point"},
+        {R"({"symbols": []})", "'symbols' must be an object of name -> code point"},
+        {R"({"symbols": {"Add": 59152}})", "'Add': a code point must be a string"},
+        {R"({"symbols": {"Add": "E71"}})", "'Add': 'E71' is not four hex digits"},
+        {R"({"symbols": {"Add": "E7100"}})", "'Add': 'E7100' is not four hex digits"},
+        {R"({"symbols": {"Add": "E7G0"}})", "'Add': 'E7G0' is not four hex digits"},
+        {R"({"symbols": {"Add": "E710", "Add": "E711"}})", "'Add' is named twice"},
+        {R"({"symbols": {"Add": "E710", "Plus": "E710"}})",
+         "'Plus': code point E710 is used twice"},
+    };
+    for (auto&& [text, message] : refusals) {
+        write(file, text);
+        EXPECT_TRUE(says(stops_with([&] { load_symbol_names(file); }), {utf8(file), message}))
+            << text;
+    }
+
+    std::filesystem::remove_all(directory);
+}
+
+// A profile that is not there, does not parse, is not an object, or has a key of another shape
+// than the key says stops the read with the file named, and with the type for what is written
+// under one.
+TEST(profile, a_profile_it_cannot_read_stops_the_run) {
+    auto const directory = scratch(L"unreadable");
+
+    auto const gone = directory / L"gone.winxl-profile";
+    EXPECT_TRUE(says(stops_with([&] { load_profile(gone); }), {"cannot open: " + utf8(gone)}));
+
+    auto const broken = directory / L"broken.winxl-profile";
+    write(broken, R"({"types": )");
+    EXPECT_TRUE(says(stops_with([&] { load_profile(broken); }), {utf8(broken)}));
+
+    auto const array = directory / L"array.winxl-profile";
+    write(array, "[]");
+    EXPECT_TRUE(says(stops_with([&] { load_profile(array); }),
+                     {utf8(array), "a profile must be a JSON object"}));
+
+    // Under the type A.B.
+    auto const type = [](std::string_view entry) {
+        return std::string{R"({"types": {"A.B": )"} + std::string{entry} + "}}";
+    };
+    auto const synthetic = [&](std::string_view member) {
+        return type(std::string{R"({"syntheticMembers": {"M": )"} + std::string{member} + "}}");
+    };
+    struct refusal {
+        std::string text;
+        std::string says;
+    };
+    std::vector<refusal> const refusals{
+        {R"({"name": 1})", "'name' must be a string"},
+        {R"({"windowsMetadata": "yes"})", "'windowsMetadata' must be true or false"},
+        {R"({"extends": "base"})", "'extends' must be an array of strings"},
+        {R"({"brushes": ["X", 1]})", "'brushes' must contain strings only"},
+        {R"({"discoveredTypes": "some"})",
+         "'discoveredTypes' must be \"none\" or \"all\", got \"some\""},
+        {R"({"sauce": []})", "profile: 'sauce' is not a key of this entry"},
+        {R"({"packages": {}})", "'packages' must be an array"},
+        {R"({"packages": ["Test.Package"]})",
+         "every 'packages' entry must be an object with an 'id'"},
+        {R"({"packages": [{"id": 1}]})", "every package needs a string 'id'"},
+        {R"({"types": []})", "'types' must be an object keyed by metadata type name"},
+        {type("[]"), "type 'A.B' must map to an object"},
+        {type(R"({"members": [], "excludeMembers": []})"),
+         "type 'A.B' has both 'members' and 'excludeMembers'"},
+        {type(R"({"styles": "AccentButtonStyle"})"), "'styles' must be an array of strings"},
+        {type(R"({"syntheticMembers": []})"),
+         "type 'A.B': 'syntheticMembers' must be an object keyed by property name"},
+        {synthetic("1"), "type 'A.B': synthetic member 'M' must be an object"},
+        {synthetic(R"({"function": "f", "include": "../f.h"})"),
+         "type 'A.B': synthetic member 'M' needs exactly one of 'type' and 'cppType'"},
+        {synthetic(R"({"type": "Double", "cppType": "double", "function": "f", "include": "../f.h"})"),
+         "type 'A.B': synthetic member 'M' needs exactly one of 'type' and 'cppType'"},
+        {synthetic(R"({"cppType": "RowLengths", "function": "f", "include": "../f.h"})"),
+         "type 'A.B': synthetic member 'M' has 'cppType' and so needs 'cppInclude'"},
+        {synthetic(R"({"type": "Double", "include": "../f.h"})"),
+         "type 'A.B': synthetic member 'M' needs a string 'function'"},
+        {synthetic(R"({"type": "Double", "function": "f", "include": "../f.h", "positional": 1})"),
+         "'positional' must be true or false"},
+        {type(R"({"setterMethods": ["Set"]})"),
+         "type 'A.B': setter method 'Set' has no name after 'Set' to give its tag"},
+        {type(R"({"setterMethods": ["Close"]})"),
+         "type 'A.B': setter method 'Close' has no name after 'Set' to give its tag"},
+        {type(R"({"replacedCalls": []})"),
+         "type 'A.B': 'replacedCalls' must be an object keyed by method name"},
+        {type(R"({"replacedCalls": {"Close": {"function": "f"}}})"),
+         "type 'A.B': replaced call 'Close' must be an object with a string 'function' and a "
+         "string 'include'"},
+        {type(R"({"fromText": "f"})"),
+         "type 'A.B': 'fromText' must be an object with 'function' and 'include'"},
+    };
+    auto const file = directory / L"p.winxl-profile";
+    for (auto&& [text, message] : refusals) {
+        write(file, text);
+        EXPECT_TRUE(says(stops_with([&] { load_profile(file); }), {utf8(file), message})) << text;
+    }
+
+    std::filesystem::remove_all(directory);
+}
+
+// Profiles that extend each other in a circle stop the load at the profile met a second time.
+TEST(profile, a_cycle_of_extends_is_refused) {
+    auto const directory = scratch(L"extends_cycle");
+    auto const a = directory / L"a.winxl-profile";
+    write(a, R"({"extends": ["b"]})");
+    write(directory / L"b.winxl-profile", R"({"extends": ["a"]})");
+
+    EXPECT_TRUE(says(stops_with([&] {
+                         resolve_profiles({a}, load_restored_packages(write_list(directory, {})));
+                     }),
+                     {"profile reference cycle at " + utf8(std::filesystem::canonical(a))}));
+
+    std::filesystem::remove_all(directory);
+}
+
+// A bare name in `extends` is the profile beside the one that names it, and when there is none
+// there, the one of the profiles directory -- whose own bare names are, again, beside it first.
+// The profile beside wins over the one of the directory.
+TEST(profile, a_bare_name_not_beside_its_profile_is_looked_for_in_the_profiles_directory) {
+    auto const directory = scratch(L"extends_profiles_dir");
+    auto const application = directory / L"application";
+    auto const profiles = directory / L"profiles";
+    write(profiles / L"full.winxl-profile", R"({"name": "packaged full", "extends": ["base"]})");
+    write(profiles / L"base.winxl-profile", R"({"name": "packaged base"})");
+    auto const app = application / L"app.winxl-profile";
+    write(app, R"({"name": "app", "extends": ["full"]})");
+    auto const restored = load_restored_packages(write_list(directory, {}));
+
+    EXPECT_EQ(resolve_profiles({app}, restored, {}, profiles).loaded,
+              (std::vector<std::string>{"packaged base", "packaged full", "app"}));
+
+    write(application / L"base.winxl-profile", R"({"name": "own base"})");
+    write(app, R"({"name": "app", "extends": ["base"]})");
+    EXPECT_EQ(resolve_profiles({app}, restored, {}, profiles).loaded,
+              (std::vector<std::string>{"own base", "app"}));
+    EXPECT_TRUE(same_path(resolve_reference("base", app, profiles),
+                          application / L"base.winxl-profile"));
+    EXPECT_TRUE(same_path(resolve_reference("full", app, profiles),
+                          profiles / L"full.winxl-profile"));
+
+    std::filesystem::remove_all(directory);
+}
+
+// A reference with a directory part or an extension is a path from the profile that names it,
+// and nothing else: the profiles directory having a file of that name does not make it found.
+TEST(profile, a_path_in_extends_is_not_looked_for_in_the_profiles_directory) {
+    auto const directory = scratch(L"extends_path");
+    auto const profiles = directory / L"profiles";
+    write(profiles / L"full.winxl-profile", "{}");
+    auto const app = directory / L"application" / L"app.winxl-profile";
+    write(app, R"({"extends": ["full.winxl-profile"]})");
+    auto const restored = load_restored_packages(write_list(directory, {}));
+
+    EXPECT_TRUE(says(stops_with([&] { resolve_profiles({app}, restored, {}, profiles); }),
+                     {"cannot open: " + utf8(app.parent_path() / L"full.winxl-profile")}));
+
+    std::filesystem::remove_all(directory);
+}
+
+// A bare name found neither beside its profile nor in the profiles directory stops the load with
+// the profile that names it and both files looked for.
+TEST(profile, a_bare_name_found_nowhere_names_both_places) {
+    auto const directory = scratch(L"extends_nowhere");
+    auto const profiles = directory / L"profiles";
+    std::filesystem::create_directories(profiles);
+    auto const app = directory / L"application" / L"app.winxl-profile";
+    write(app, R"({"extends": ["full"]})");
+    auto const restored = load_restored_packages(write_list(directory, {}));
+
+    EXPECT_TRUE(says(stops_with([&] { resolve_profiles({app}, restored, {}, profiles); }),
+                     {utf8(app) + ": profile 'full' named in extends is not found",
+                      "not beside it (" + utf8(app.parent_path() / L"full.winxl-profile") + ")",
+                      "not in the profiles directory (" + utf8(profiles / L"full.winxl-profile") +
+                          ")"}));
+
+    std::filesystem::remove_all(directory);
+}
+
+// The files a profile asks of a package are looked for in the directory the restore names, and
+// one that is not there stops the run with the package, its version and the place named: no
+// metadata directory, no .winmd file in it, a metadata or a resource file named and missing.
+TEST(profile, a_file_of_a_package_that_is_not_there_is_named) {
+    auto const directory = scratch(L"package_files");
+    auto const bare = directory / L"bare";
+    std::filesystem::create_directories(bare);
+    auto const empty = directory / L"empty";
+    write(empty / L"metadata" / L"readme.txt", "");
+    auto const package = write_package(directory / L"package");
+    auto const restored = load_restored_packages(
+        write_list(directory, {listed("Bare.Package", "1.0.0", bare),
+                               listed("Empty.Package", "1.1.0", empty),
+                               listed("Test.Package", "1.2.0", package)}));
+
+    struct refusal {
+        std::string text;
+        std::vector<std::string> says;
+    };
+    // The directory as the list spells it starts the place the message names.
+    std::vector<refusal> const refusals{
+        {R"({"packages": [{"id": "Bare.Package"}]})",
+         {"package 'Bare.Package' 1.0.0: no metadata directory at " + json_path(bare)}},
+        {R"({"packages": [{"id": "Empty.Package"}]})",
+         {"package 'Empty.Package' 1.1.0: no .winmd files in " + json_path(empty)}},
+        {R"({"packages": [{"id": "Test.Package", "metadata": ["Missing.winmd"]}]})",
+         {"package 'Test.Package' 1.2.0: no such metadata file: " + json_path(package),
+          "Missing.winmd"}},
+        {R"({"packages": [{"id": "Test.Package", "resources": ["Themes/generic.xaml"]}]})",
+         {"package 'Test.Package' 1.2.0: no such resource file: " + json_path(package),
+          "generic.xaml"}},
+    };
+    auto const profile = directory / L"p.winxl-profile";
+    for (auto&& [text, message] : refusals) {
+        write(profile, text);
+        auto parts = message;
+        parts.push_back(utf8(profile));
+        EXPECT_TRUE(says(stops_with([&] { resolve_profiles({profile}, restored); }), parts))
+            << text;
+    }
+
+    std::filesystem::remove_all(directory);
+}
+
+// A list of the restore of another shape than the configure writes stops the read with the file
+// named.
+TEST(profile, a_list_it_cannot_read_is_refused) {
+    auto const directory = scratch(L"list_unreadable");
+    auto const winmd =
+        json_path(directory / L"sdk" / L"Windows.Foundation.FoundationContract.winmd");
+    std::string const sdk = R"("windowsSdk": {"version": "10.0.26100.0", "metadata": [")" + winmd +
+                            R"("]})";
+    struct refusal {
+        std::string text;
+        std::string says;
+    };
+    std::vector<refusal> const refusals{
+        {"[]", "a list of the restored packages must be a JSON object"},
+        {R"({"packages": {}, )" + sdk + "}", "'packages' must be an array"},
+        {R"({"packages": ["Test.Package"], )" + sdk + "}",
+         "every 'packages' entry must be an object"},
+        {R"({"packages": [{"id": "Test.Package", "directory": "x"}], )" + sdk + "}",
+         "every package needs a string 'version'"},
+        {"{\"packages\": [" + listed("Test.Package", "latest", directory) + "], " + sdk + "}",
+         "package 'Test.Package': \"latest\" is not a NuGet version"},
+        {R"({"packages": []})", "'windowsSdk' must be an object with a string 'version'"},
+        {R"({"packages": [], "windowsSdk": {"version": "10.0.26100.0", "metadata": []}})",
+         "'windowsSdk' must be an object with a string 'version'"},
+        {R"({"packages": [], "windowsSdk": {"version": "10.0.26100.0", "metadata": [1]}})",
+         "'windowsSdk.metadata' must contain strings only"},
+    };
+    auto const list = directory / L"restored-packages.json";
+    for (auto&& [text, message] : refusals) {
+        write(list, text);
+        EXPECT_TRUE(says(stops_with([&] { load_restored_packages(list); }), {utf8(list), message}))
+            << text;
+    }
+
+    std::filesystem::remove_all(directory);
 }

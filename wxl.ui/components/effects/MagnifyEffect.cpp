@@ -1,0 +1,323 @@
+// wxl::MagnifyEffect: the composition behind it -- see MagnifyEffect.h for
+// what it does and why.
+//
+// The state works on the cppwinrt projection directly rather than through
+// wxl's wrappers: it keeps composition objects for as long as the effect
+// lives and calls them on every pointer event, and the projection is what the
+// wrappers would forward to anyway.
+//
+// The projection comes first, and with it every standard header it needs:
+// the wxl headers below carry the wxl.core import, and a standard header after
+// that import is one MSVC has already seen through the std module.
+#include <winrt/Microsoft.UI.Composition.h>
+#include <winrt/Microsoft.UI.Xaml.Controls.h>
+#include <winrt/Microsoft.UI.Xaml.Hosting.h>
+#include <winrt/Microsoft.UI.Xaml.Input.h>
+#include <winrt/Microsoft.UI.Xaml.Media.h>
+#include <winrt/Microsoft.UI.Xaml.h>
+#include <winrt/Windows.Foundation.Numerics.h>
+
+#include <algorithm>
+#include <cmath>
+#include <numbers>
+#include <optional>
+
+#include "MagnifyEffect.h"
+#include "Object.impl.h"
+#include <wxl/Microsoft.UI.Xaml.impl.h>
+
+namespace wxl {
+
+namespace composition = winrt::Microsoft::UI::Composition;
+namespace xaml = winrt::Microsoft::UI::Xaml;
+
+namespace {
+// core::duration counts 100 ns ticks, the same unit as TimeSpan.
+winrt::Windows::Foundation::TimeSpan timespan(core::duration d) {
+    return winrt::Windows::Foundation::TimeSpan{static_cast<int64_t>(d.ticks())};
+}
+
+// How far BackEase out overshoots its end, in units of the way: the largest
+// of a·s·sin(πs) − s³ on [0, 1], which is the curve's own formula with the
+// end at the origin. It grows with the amplitude a, so the amplitude that
+// swings exactly to a given far point is found by bisection.
+float back_overshoot(float a) {
+    float best = 0.0f;
+    for (int i = 1; i < 256; ++i) {
+        float const s = i / 256.0f;
+        best = std::max(best, a * s * std::sin(std::numbers::pi_v<float> * s) - s * s * s);
+    }
+    return best;
+}
+
+float back_amplitude(float past) {
+    float low = 0.0f;
+    float high = 1.0f;
+    while (back_overshoot(high) < past) high *= 2.0f;
+    for (int i = 0; i < 32; ++i) {
+        float const mid = (low + high) / 2.0f;
+        (back_overshoot(mid) < past ? low : high) = mid;
+    }
+    return high;
+}
+}  // namespace
+
+struct MagnifyEffect::Impl : core::sta_refcounted {
+    // ---- The settings ----
+    Size scale{1.2f, 1.2f};
+    core::nullable<float> maximum;
+    core::nullable<float> minimum;
+    core::nullable<core::duration> duration;
+    core::duration delay{};
+    MagnifyTarget target = MagnifyTarget::Element;  // read when an element is attached
+
+    // ---- What every attached element shares, made on the first one ----
+    //
+    // The compositor is the XAML one, the same for every element on the one
+    // STA thread; the property set carries the scale per axis so that a
+    // changed setting reaches running expressions without restarting them.
+    composition::Compositor compositor{nullptr};
+    composition::CompositionPropertySet shared{nullptr};
+    composition::ExpressionAnimation centre{nullptr};
+    composition::ExpressionAnimation shown{nullptr};
+    composition::ScalarKeyFrameAnimation grow{nullptr};
+    composition::ScalarKeyFrameAnimation shrink{nullptr};
+    bool stale = true;
+
+    // The axis that moves further from 1: what maximum and minimum are
+    // measured on. Below 1 on it the effect shrinks under the pointer.
+    float leading() const {
+        return std::abs(scale.width - 1.0f) >= std::abs(scale.height - 1.0f) ? scale.width
+                                                                             : scale.height;
+    }
+
+    void changed() {
+        stale = true;
+        if (shared) {
+            shared.InsertScalar(L"X", scale.width);
+            shared.InsertScalar(L"Y", scale.height);
+        }
+    }
+
+    // The shared objects, made on the first attached element and the motions
+    // remade after a setting changed. The motions animate progress: 0 at rest, 1
+    // grown, beyond either end for the swing past it.
+    void prepare(composition::Compositor const& owner) {
+        if (!compositor) {
+            compositor = owner;
+            shared = compositor.CreatePropertySet();
+            shared.InsertScalar(L"X", scale.width);
+            shared.InsertScalar(L"Y", scale.height);
+
+            // The exact centre, the same point XAML scales about: two
+            // uniform scales about one point compose into one.
+            centre = compositor.CreateExpressionAnimation(
+                L"Vector3(this.Target.Size.X * 0.5, this.Target.Size.Y * 0.5, 0)");
+
+            // What is shown is base * visual, so the visual carries the
+            // quotient. `p` is each attached element's own property set, set
+            // just before the expression is started on it. FocusScale is the
+            // rise FocusEffect gives the element under keyboard focus: the
+            // two multiply.
+            shown = compositor.CreateExpressionAnimation(
+                L"Vector3((1 + (s.X - 1) * p.MagnifyProgress) / p.MagnifyBaseX * p.FocusScale,"
+                L" (1 + (s.Y - 1) * p.MagnifyProgress) / p.MagnifyBaseY * p.FocusScale, 1)");
+            shown.SetReferenceParameter(L"s", shared);
+        }
+        if (stale) {
+            remake_motions();
+            stale = false;
+        }
+    }
+
+    void remake_motions() {
+        // An S -- handles at a third and two thirds -- is what the eye reads
+        // as a thing starting and stopping rather than dragged at one speed.
+        auto const curve = compositor.CreateCubicBezierEasingFunction({0.33f, 0.0f}, {0.67f, 1.0f});
+
+        // The swing past each end in progress units: 0 at rest, 1 at the
+        // scale. maximum is where the way in turns back, minimum the way out,
+        // so for a shrinking effect maximum is below the scale and minimum
+        // above 1. A value on the wrong side of its end gives no swing.
+        float const travel = leading() - 1.0f;
+        float past_top = 0.0f;
+        float past_bottom = 0.0f;
+        if (travel != 0.0f) {
+            if (maximum) {
+                past_top = std::max(0.0f, (*maximum - 1.0f) / travel - 1.0f);
+            }
+            if (minimum) {
+                past_bottom = std::max(0.0f, -(*minimum - 1.0f) / travel);
+            }
+        }
+
+        // A swing is one continuous curve, BackEase out: it passes the end,
+        // turns smoothly and comes back, the way a thrown thing does. Two
+        // key frames glued at the far point would stop there twice. The
+        // amplitude is found from the far point once, here.
+        auto const motion = [&](float to, float past, std::chrono::milliseconds natural,
+                                std::chrono::milliseconds natural_swing) {
+            auto const animation = compositor.CreateScalarKeyFrameAnimation();
+            animation.Duration(duration ? timespan(*duration)
+                                        : winrt::Windows::Foundation::TimeSpan{
+                                              past != 0.0f ? natural_swing : natural});
+            composition::CompositionEasingFunction easing = curve;
+            if (past != 0.0f) {
+                easing = composition::CompositionEasingFunction::CreateBackEasingFunction(
+                    compositor, composition::CompositionEasingFunctionMode::Out,
+                    back_amplitude(past));
+            }
+            animation.InsertKeyFrame(1.0f, to, easing);
+            return animation;
+        };
+        grow =
+            motion(1.0f, past_top, std::chrono::milliseconds{140}, std::chrono::milliseconds{300});
+        grow.DelayTime(timespan(delay));
+        shrink = motion(0.0f, past_bottom, std::chrono::milliseconds{180},
+                        std::chrono::milliseconds{360});
+    }
+};
+
+MagnifyEffect::MagnifyEffect() : impl_{new Impl, /*add_ref=*/false} {}
+
+MagnifyEffect::MagnifyEffect(float scale) : MagnifyEffect() { this->scale(scale); }
+
+MagnifyEffect::MagnifyEffect(MagnifyEffect const& other) noexcept = default;
+MagnifyEffect& MagnifyEffect::operator=(MagnifyEffect const& other) noexcept = default;
+MagnifyEffect::~MagnifyEffect() = default;
+
+void MagnifyEffect::scale(Size value) const {
+    impl_->scale = value;
+    impl_->changed();
+}
+
+// The public type is RangeBase's, double; the value is kept as the float the
+// composition scales by, as Windows.Foundation.Rect keeps its doubles.
+void MagnifyEffect::maximum(double value) const {
+    impl_->maximum = static_cast<float>(value);
+    impl_->changed();
+}
+
+void MagnifyEffect::minimum(double value) const {
+    impl_->minimum = static_cast<float>(value);
+    impl_->changed();
+}
+
+void MagnifyEffect::duration(core::duration value) const {
+    impl_->duration = value;
+    impl_->changed();
+}
+
+void MagnifyEffect::delayTime(core::duration value) const {
+    impl_->delay = value;
+    impl_->changed();
+}
+
+void MagnifyEffect::target(MagnifyTarget value) const { impl_->target = value; }
+
+namespace {
+// One attached element: the progress on its own visual's property set, and
+// the transform XAML draws what grows at -- that element or its content.
+struct Attachment : core::sta_refcounted {
+    composition::CompositionPropertySet own{nullptr};
+    xaml::Media::ScaleTransform base{nullptr};
+
+    // What grows takes the base scale XAML draws it at, about its centre, and
+    // the expression that shows the rest; the progress it reads stays on the
+    // element, where FocusEffect finds it and multiplies its rise in through
+    // FocusScale.
+    void fit(xaml::UIElement const& grows, composition::ExpressionAnimation const& centre,
+             composition::ExpressionAnimation const& shown) {
+        base = xaml::Media::ScaleTransform{};
+        grows.RenderTransformOrigin({0.5f, 0.5f});
+        grows.RenderTransform(base);
+        auto const visual = xaml::Hosting::ElementCompositionPreview::GetElementVisual(grows);
+        visual.StartAnimation(L"CenterPoint", centre);
+        shown.SetReferenceParameter(L"p", own);
+        visual.StartAnimation(L"Scale", shown);
+    }
+
+    // The base moves in one step, together with the divisor the visual reads,
+    // so the size on screen does not jump; both are set from the same handler
+    // and reach the screen in the same frame. It is set to where the motion
+    // ends, which is why what the eye finally sees is XAML's own drawing at
+    // that scale and nothing resampled.
+    void rebase(float x, float y) const {
+        base.ScaleX(x);
+        base.ScaleY(y);
+        own.InsertScalar(L"MagnifyBaseX", x);
+        own.InsertScalar(L"MagnifyBaseY", y);
+    }
+};
+
+// The content of an element: a ContentControl's Content when it is an
+// element, otherwise the one child in the visual tree -- what a Border, a
+// Viewbox or a templated control without content show. Empty when there is
+// none or there are several.
+xaml::UIElement content_of(xaml::UIElement const& element) {
+    if (auto const control = element.try_as<xaml::Controls::ContentControl>()) {
+        if (auto const content = control.Content().try_as<xaml::UIElement>()) {
+            return content;
+        }
+    }
+    if (xaml::Media::VisualTreeHelper::GetChildrenCount(element) == 1) {
+        return xaml::Media::VisualTreeHelper::GetChild(element, 0).try_as<xaml::UIElement>();
+    }
+    return nullptr;
+}
+}  // namespace
+
+void MagnifyEffect::operator()(UIElement const& wrapper) const {
+    auto const element = Object::Impl::as<xaml::UIElement>(wrapper);
+    auto const visual = xaml::Hosting::ElementCompositionPreview::GetElementVisual(element);
+    impl_->prepare(visual.Compositor());
+
+    core::intrusive_ptr<Attachment> const attachment{new Attachment, /*add_ref=*/false};
+    attachment->own = visual.Properties();
+    attachment->own.InsertScalar(L"MagnifyProgress", 0.0f);
+    attachment->own.InsertScalar(L"MagnifyBaseX", 1.0f);
+    attachment->own.InsertScalar(L"MagnifyBaseY", 1.0f);
+    attachment->own.InsertScalar(L"FocusScale", 1.0f);
+
+    // The content is there once the element is loaded -- the template applied,
+    // the content placed -- and is found from the event's sender: the handlers
+    // hold no element. The first PointerEntered finds it too, should it come
+    // first; until then the element has nothing to grow.
+    bool const content = impl_->target == MagnifyTarget::Content;
+    if (!content) {
+        attachment->fit(element, impl_->centre, impl_->shown);
+    } else if (auto const framework = element.try_as<xaml::FrameworkElement>()) {
+        framework.Loaded([impl = impl_, attachment](auto&& sender, auto&&) {
+            if (!attachment->base) {
+                if (auto const grows = content_of(sender.template as<xaml::UIElement>())) {
+                    attachment->fit(grows, impl->centre, impl->shown);
+                }
+            }
+        });
+    }
+
+    // The state is held by the handlers, not the element: it owns no element,
+    // so nothing here is a cycle.
+    element.PointerEntered([impl = impl_, attachment](auto&& sender, auto&&) {
+        if (!attachment->base) {
+            auto const grows = content_of(sender.template as<xaml::UIElement>());
+            if (!grows) {
+                return;
+            }
+            attachment->fit(grows, impl->centre, impl->shown);
+        }
+        impl->prepare(impl->compositor);
+        attachment->rebase(impl->scale.width, impl->scale.height);
+        attachment->own.StartAnimation(L"MagnifyProgress", impl->grow);
+    });
+    element.PointerExited([impl = impl_, attachment](auto&&, auto&&) {
+        if (!attachment->base) {
+            return;
+        }
+        impl->prepare(impl->compositor);
+        attachment->rebase(1.0f, 1.0f);
+        attachment->own.StartAnimation(L"MagnifyProgress", impl->shrink);
+    });
+}
+
+}  // namespace wxl

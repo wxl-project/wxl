@@ -70,7 +70,7 @@ auto byRoom(Thickness wide, Thickness narrow) {
 
 FrameworkElement titled(zstring_view title, FrameworkElement const& body, Thickness titleMargin, Thickness narrowTitleMargin) {
     return Grid {
-        rowDefinitions = u"auto,*",
+        RowDefinitions<u"auto,*">,
         TextBlock {
             title,
             margin = byRoom(titleMargin, narrowTitleMargin),
@@ -155,7 +155,7 @@ wxl::FrameworkElement gallery::searchResultsPage(std::wstring_view query) {
         isSettingsVisible = false,
         paneDisplayMode = NavigationViewPaneDisplayMode::Top,
         content = host,
-        onSelectionChanged = [show, results](Object const& sender, NavigationViewSelectionChangedEventArgs&) {
+        onSelectionChanged += [show, results](Object const& sender, NavigationViewSelectionChangedEventArgs&) {
             auto const selected = sender.try_as<NavigationView>().selectedItem().try_as<FrameworkElement>();
             if (!selected) {
                 return;

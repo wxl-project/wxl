@@ -445,11 +445,12 @@ type_use operation_of(type_use const& item) {
     use.value_type = std::format("async::task<{}>", item.value_type);
     use.param_type = use.value_type;
     use.winrt_type = "winrt::Windows::Foundation::IInspectable";
-    use.from_winrt = std::format("impl::start_operation<{}>($, [](auto const& v) {{ return {}; }})",
-                                 item.value_type, substitute(item.from_winrt, "v"));
-    use.from_winrt_under = std::format(
-        "impl::start_operation_under<{}>([&] {{ return $; }}, [](auto const& v) {{ return {}; }}, "
-        "std::move(stop))",
+    use.from_winrt =
+        std::format("impl::start_winrt_operation<{}>($, [](auto const& v) {{ return {}; }})",
+                    item.value_type, substitute(item.from_winrt, "v"));
+    use.from_winrt_cancelable = std::format(
+        "impl::start_cancelable_winrt_operation<{}>([&] {{ return $; }}, [](auto const& v) {{ return "
+        "{}; }}, std::move(@))",
         item.value_type, substitute(item.from_winrt, "v"));
     use.instantiations = item.instantiations;
     use.public_includes = item.public_includes;
@@ -466,8 +467,8 @@ type_use action_operation() {
     use.value_type = "async::task<>";
     use.param_type = use.value_type;
     use.winrt_type = "winrt::Windows::Foundation::IInspectable";
-    use.from_winrt = "impl::start_action($)";
-    use.from_winrt_under = "impl::start_action_under([&] { return $; }, std::move(stop))";
+    use.from_winrt = "impl::start_winrt_action($)";
+    use.from_winrt_cancelable = "impl::start_cancelable_winrt_action([&] { return $; }, std::move(@))";
     use.public_includes = {"../Operation.h"};
     use.impl_includes = {"../impl/operation.h"};
     return use;
@@ -722,7 +723,15 @@ type_use map_element_type(std::string_view metadata_name) {
     if (metadata_name == "String") {
         return string_type();
     }
-    return unsupported(std::format("{} is not a metadata type, and not String", metadata_name));
+    if (metadata_name == "Object") {
+        return wrapper_type("Object", "winrt::Windows::Foundation::IInspectable", "../Object.h");
+    }
+    if (auto const* name = element_type_name(metadata_name)) {
+        return primitive(name);
+    }
+    return unsupported(
+        std::format("{} is not a metadata type, nor a type metadata names as an element",
+                    metadata_name));
 }
 
 std::string substitute(std::string_view expression, std::string_view argument) {

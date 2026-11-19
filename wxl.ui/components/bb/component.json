@@ -1,0 +1,17 @@
+{
+  "name": "bb",
+  "dependencies": [
+    "schema",
+    "markup"
+  ],
+  "sources": [
+    "BbBlock.cpp",
+    "BbBlock.h",
+    "BbBlock.impl.h"
+  ],
+  "surface": "bb.surface.cpp",
+  "libraries": [
+    "wxl::bb"
+  ],
+  "description": "The BB-code block."
+}

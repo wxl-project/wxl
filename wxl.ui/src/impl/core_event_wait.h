@@ -1,6 +1,6 @@
 #pragma once
 
-// The wait behind `co_await on_event(event, stop)` on a core::event -- an event of the
+// The wait behind `co_await on_event(event, token)` on a core::event -- an event of the
 // application's own, with no sender and no element to leave the tree with
 // (event_awaitable.h).
 //
@@ -35,24 +35,26 @@ namespace wxl::impl {
 
 /// Whether the wait can hand an argument over: a reference to const it hands over as a
 /// copy, which a type that cannot be copied does not survive, and a polymorphic one would
-/// survive cut down to its static type, without a word.
+/// survive sliced to its static type, without a word.
 template <typename Arg>
 concept invocation_answerable =
     !(std::is_lvalue_reference_v<Arg> && std::is_const_v<std::remove_reference_t<Arg>>) ||
-    (std::is_copy_constructible_v<std::remove_cvref_t<Arg>> && !std::is_polymorphic_v<std::remove_cvref_t<Arg>>);
+    (std::is_copy_constructible_v<std::remove_cvref_t<Arg>> &&
+     !std::is_polymorphic_v<std::remove_cvref_t<Arg>>);
 
 /// How the wait hands over one argument: a reference to non-const as it is, the channel
 /// the coroutine answers through; anything else as a value of its own.
 template <typename Arg>
 struct invocation_answer {
-    static_assert(invocation_answerable<Arg>,
-                  "wxl: on_event answers an argument passed as T const& with a copy of T, and this T "
-                  "cannot be copied or would be sliced -- declare the event with T& to get the "
-                  "raiser's object itself, or with T to pass a value");
+    static_assert(
+        invocation_answerable<Arg>,
+        "wxl: on_event answers an argument passed as T const& with a copy of T, and this T "
+        "cannot be copied or would be sliced -- declare the event with T& to get the "
+        "raiser's object itself, or with T to pass a value");
 
-    using type =
-        std::conditional_t<std::is_lvalue_reference_v<Arg> && !std::is_const_v<std::remove_reference_t<Arg>>, Arg,
-                           std::remove_cvref_t<Arg>>;
+    using type = std::conditional_t<std::is_lvalue_reference_v<Arg> &&
+                                        !std::is_const_v<std::remove_reference_t<Arg>>,
+                                    Arg, std::remove_cvref_t<Arg>>;
 };
 
 template <typename Arg>
@@ -79,7 +81,7 @@ struct invocation_result<Arg> {
 /// outlives the wait, unless it lets go of the callback first -- cleared or ended under
 /// the wait, it ends it.
 template <typename Event, typename... Args>
-class core_event_wait : waiting_event
+class core_event_wait : event_wait
 {
 public:
     using result_t = typename invocation_result<Args...>::type;
@@ -96,12 +98,14 @@ public:
 
     /// Cancelled before it began, or the application going down: the wait does not
     /// suspend, and subscribes to nothing.
-    bool await_ready() const noexcept { return canceled_ || events_closing(); }
+    bool await_ready() const noexcept { return canceled_ || event_wait::closing(); }
 
     // Declared twice, as every hook that checks how it is used is: a strict build's
     // takes the place of the co_await, any other build's has the signature it always had.
 
-    void await_suspend(std::coroutine_handle<> waiter) requires(!async::detail::strict) {
+    void await_suspend(std::coroutine_handle<> waiter)
+        requires(!async::detail::strict)
+    {
         subscribe();
         arm(waiter);
     }
@@ -117,26 +121,29 @@ public:
     /// The arguments of the invocation that resumed the wait. Ended instead -- going
     /// down, or the event let go of the callback -- it throws as every wait of wxl does.
     /// A cancelled token never gets here: the wait under it answers that itself
-    /// (async::detail::cancellable_wait).
+    /// (async::detail::stoppable_wait).
     result_t await_resume() {
         leave();
 
-        if (ended() || events_closing()) throw_ended();
+        if (ended() || event_wait::closing()) throw_ended();
 
         if constexpr (sizeof...(Args) == 1) {
             return answer<std::tuple_element_t<0, std::tuple<Args...>>>(std::get<0>(*args_));
         } else if constexpr (sizeof...(Args) > 1) {
-            return std::apply([](std::remove_reference_t<Args>&... args) { return result_t{answer<Args>(args)...}; },
-                              *args_);
+            return std::apply(
+                [](std::remove_reference_t<Args>&... args) {
+                    return result_t{answer<Args>(args)...};
+                },
+                *args_);
         }
     }
 
-    /// Cancelled by the token (async::detail::cancellable_awaiter): a wait that is
+    /// Cancelled by the token (async::detail::stoppable_awaiter): a wait that is
     /// suspended is resumed by the queue's next turn, or by an invocation if one comes
     /// first -- never by cancel() itself; one that has not begun never suspends.
     void cancel() noexcept {
         if (waiting()) {
-            waiting_event::cancel();
+            event_wait::cancel();
         } else {
             canceled_ = true;
         }
@@ -187,7 +194,7 @@ private:
     void leave() noexcept {
         if (callback* const subscribed = std::exchange(callback_, nullptr)) {
             subscribed->wait_ = nullptr;
-            event_->remove(core::cookie_t{static_cast<typename Event::func_t*>(subscribed)});
+            event_->remove(static_cast<typename Event::func_t&>(*subscribed));
         }
     }
 
@@ -209,7 +216,7 @@ private:
 
     void dropped() noexcept {
         callback_ = nullptr;
-        if (waiting()) waiting_event::cancel();
+        if (waiting()) event_wait::cancel();
     }
 
     Event* event_;

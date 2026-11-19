@@ -5,10 +5,11 @@ module;
 // Unicode: the type of checked text, the three encodings, and the traffic
 // between them.
 //
-// UTF-8 is what this tree keeps text in -- wxl.xml parses it, FB3 stores it,
-// reading positions are counted in it -- and UTF-16 is what Windows speaks, so
-// the pair below is the one that gets used. UTF-32 appears only as char32_t,
-// the type a single code point travels in.
+// UTF-8 is what this tree keeps text in -- wxl::xml and wxl::json parse it and
+// their trees hold it, and the column of a parse error is counted in its
+// bytes -- and UTF-16 is what Windows speaks, so the pair below is the one
+// that gets used. UTF-32 appears only as char32_t, the type a single code
+// point travels in.
 //
 // Everything that decodes takes well-formed text, and says so in the signature
 // rather than in a comment: a transcoder that also had to answer "and what if
@@ -27,7 +28,7 @@ module;
 // Three doors in and no others. A literal is checked where it is written --
 // u8"..." and u"..." convert on their own, at compile time. checked() walks
 // text that came from outside. assume_valid() is for text somebody else has
-// already checked -- a document wxl.xml validated whole -- and its name is the
+// already checked -- a document wxl::xml validated whole -- and its name is the
 // word a reader greps for on the day the guarantee turns out to be false.
 //
 // Text assembled piece by piece needs none of the three: a string grows by
@@ -42,6 +43,19 @@ import std;
 
 namespace wxl::core {
 
+/// The types a character is held in: char, wchar_t and the three that name an
+/// encoding. None of them is a number, though each converts to one.
+export template <typename T>
+concept character = std::same_as<T, char> || std::same_as<T, wchar_t> ||
+                    std::same_as<T, char8_t> || std::same_as<T, char16_t> ||
+                    std::same_as<T, char32_t>;
+
+/// Well-formed Unicode text, in whichever string type holds it.
+///
+/// Only the two shapes below exist -- a view of text somebody else owns, and a
+/// string that owns its own -- because those are the two shapes text travels
+/// in. The primary template is left undefined so that basic_text of anything
+/// else fails to compile rather than quietly meaning something.
 export template <typename T>
 class basic_text;
 
@@ -86,7 +100,6 @@ char* write_utf8_to(char* out, std::wstring_view utf16) noexcept;
 }  // namespace impl
 
 export {
-
 /// Unicode itself: code points and their encodings, checks and conversions,
 /// letters. The names are the plain words of the subject -- checked, repaired,
 /// code_points -- and a namespace of their own keeps them from taking the same
@@ -184,25 +197,26 @@ constexpr nullable<std::size_t> scan_utf8(std::basic_string_view<CharT> text) no
 
         if (at == text.size()) break;
 
-        const int size = unicode::utf8_sequence_size(static_cast<char>(text[at]));
+        const int length = unicode::utf8_sequence_size(static_cast<char>(text[at]));
 
-        if (size == 0 || text.size() - at < static_cast<std::size_t>(size)) return at;
+        if (length == 0 || text.size() - at < static_cast<std::size_t>(length)) return at;
 
-        char32_t code_point = static_cast<unsigned char>(text[at]) & (0xFFu >> (size + 1));
+        char32_t code_point = static_cast<unsigned char>(text[at]) & (0xFFu >> (length + 1));
 
-        for (int index = 1; index != size; ++index) {
-            const auto byte = static_cast<unsigned char>(text[at + static_cast<std::size_t>(index)]);
+        for (int index = 1; index != length; ++index) {
+            const auto byte =
+                static_cast<unsigned char>(text[at + static_cast<std::size_t>(index)]);
 
             if ((byte & 0xC0u) != 0x80u) return at;
 
             code_point = (code_point << 6) | (byte & 0x3Fu);
         }
 
-        if (size == 1) code_point = static_cast<unsigned char>(text[at]);
+        if (length == 1) code_point = static_cast<unsigned char>(text[at]);
 
-        if (code_point < smallest_for[size] || !unicode::is_scalar_value(code_point)) return at;
+        if (code_point < smallest_for[length] || !unicode::is_scalar_value(code_point)) return at;
 
-        at += static_cast<std::size_t>(size);
+        at += static_cast<std::size_t>(length);
     }
 
     return {};
@@ -237,7 +251,8 @@ constexpr std::size_t floor_utf16_boundary(std::basic_string_view<CharT> text,
                                            std::size_t at) noexcept {
     if (at >= text.size()) return text.size();
 
-    if (at == 0 || !unicode::is_low_surrogate(static_cast<char32_t>(static_cast<std::uint16_t>(text[at]))))
+    if (at == 0 ||
+        !unicode::is_low_surrogate(static_cast<char32_t>(static_cast<std::uint16_t>(text[at]))))
         return at;
 
     const auto before = static_cast<char32_t>(static_cast<std::uint16_t>(text[at - 1]));
@@ -268,42 +283,46 @@ constexpr std::size_t floor_utf8_boundary(std::basic_string_view<CharT> text,
 }  // namespace impl
 
 export {
-
 namespace unicode {
 
 /// The offset of the first unit that breaks UTF-8, or nothing if the whole text
 /// is UTF-8. Over-long forms, surrogates and anything above U+10FFFF count as
 /// breaks: each of them decodes to something that looks legitimate, which is
 /// precisely why it has to be refused rather than accepted.
-constexpr nullable<std::size_t> find_invalid_utf8(const std::string_view text) noexcept {
-    return impl::scan_utf8(text);
+constexpr nullable<std::size_t> find_invalid_utf8(const std::string_view str) noexcept {
+    return impl::scan_utf8(str);
 }
 
-constexpr nullable<std::size_t> find_invalid_utf8(const std::u8string_view text) noexcept {
-    return impl::scan_utf8(text);
+/// Returns the offset of the first ill-formed code unit sequence in the UTF-8 text \p str,
+/// or no value when the whole text is well-formed. Over-long forms, surrogates and code
+/// points above U+10FFFF are ill-formed.
+constexpr nullable<std::size_t> find_invalid_utf8(const std::u8string_view str) noexcept {
+    return impl::scan_utf8(str);
 }
 
 /// Whether the text is UTF-8 -- the same walk, for the caller with nothing to
 /// say about where the break was.
-constexpr bool is_valid_utf8(const std::string_view text) noexcept {
-    return !impl::scan_utf8(text).has_value();
+constexpr bool is_valid_utf8(const std::string_view str) noexcept {
+    return !impl::scan_utf8(str).has_value();
 }
 
 /// The offset of the first unit that breaks UTF-16 -- an unpaired surrogate,
 /// which is the only way UTF-16 can be broken -- or nothing if the text is
 /// UTF-16. Windows hands out such text: a file name is a sequence of 16-bit
 /// units, and nothing on the way in makes it well-formed.
-constexpr nullable<std::size_t> find_invalid_utf16(const std::wstring_view text) noexcept {
-    return impl::scan_utf16(text);
+constexpr nullable<std::size_t> find_invalid_utf16(const std::wstring_view str) noexcept {
+    return impl::scan_utf16(str);
 }
 
-constexpr nullable<std::size_t> find_invalid_utf16(const std::u16string_view text) noexcept {
-    return impl::scan_utf16(text);
+/// Returns the offset of the first unpaired surrogate in the UTF-16 text \p str, or no
+/// value when the whole text is well-formed.
+constexpr nullable<std::size_t> find_invalid_utf16(const std::u16string_view str) noexcept {
+    return impl::scan_utf16(str);
 }
 
 /// Whether the text is UTF-16.
-constexpr bool is_valid_utf16(const std::wstring_view text) noexcept {
-    return !impl::scan_utf16(text).has_value();
+constexpr bool is_valid_utf16(const std::wstring_view str) noexcept {
+    return !impl::scan_utf16(str).has_value();
 }
 
 /// The nearest offset at or before `at` where the text may be cut: `at` itself,
@@ -319,28 +338,36 @@ constexpr bool is_valid_utf16(const std::wstring_view text) noexcept {
 ///
 /// Checked text meets the same question in u16_view::substr, which refuses
 /// such a cut instead of moving it: its offsets come from a walk of its own.
-constexpr std::size_t floor_code_point_boundary(const std::wstring_view text,
+constexpr std::size_t floor_code_point_boundary(const std::wstring_view str,
                                                 const std::size_t at) noexcept {
-    return impl::floor_utf16_boundary(text, at);
+    return impl::floor_utf16_boundary(str, at);
 }
 
-constexpr std::size_t floor_code_point_boundary(const std::u16string_view text,
+/// Returns the nearest offset at or before \p at where the UTF-16 text \p str can be cut:
+/// \p at itself, unless it falls between the halves of a surrogate pair, and then the start
+/// of the pair. An offset at or past the end returns the size of the text.
+constexpr std::size_t floor_code_point_boundary(const std::u16string_view str,
                                                 const std::size_t at) noexcept {
-    return impl::floor_utf16_boundary(text, at);
+    return impl::floor_utf16_boundary(str, at);
 }
 
 /// The same for UTF-8: `at` itself, unless it falls among the bytes that continue a
 /// sequence, and then the sequence's lead byte. Bytes nobody has checked -- a buffer filled
 /// up to its size, a message cut where the room ended -- are cut the same way: a byte that
 /// continues no lead within reach is no sequence, and a cut beside it stays put.
-constexpr std::size_t floor_code_point_boundary(const std::string_view text,
+constexpr std::size_t floor_code_point_boundary(const std::string_view str,
                                                 const std::size_t at) noexcept {
-    return impl::floor_utf8_boundary(text, at);
+    return impl::floor_utf8_boundary(str, at);
 }
 
-constexpr std::size_t floor_code_point_boundary(const std::u8string_view text,
+/// Returns the nearest offset at or before \p at where the UTF-8 text \p str can be cut:
+/// \p at itself, unless it falls on a continuation byte of a sequence, and then the lead
+/// byte of the sequence. A continuation byte that no lead byte within the three bytes
+/// before it covers leaves \p at unchanged. An offset at or past the end returns the size
+/// of the text.
+constexpr std::size_t floor_code_point_boundary(const std::u8string_view str,
                                                 const std::size_t at) noexcept {
-    return impl::floor_utf8_boundary(text, at);
+    return impl::floor_utf8_boundary(str, at);
 }
 
 }  // namespace unicode
@@ -354,7 +381,7 @@ namespace impl {
 
 template <typename String>
 void push_utf8(String& out, const char32_t code_point) {
-    using unit = typename String::value_type;
+    using unit = String::value_type;
 
     if (code_point < 0x80) {
         out.push_back(static_cast<unit>(code_point));
@@ -375,7 +402,7 @@ void push_utf8(String& out, const char32_t code_point) {
 
 template <typename String>
 void push_utf16(String& out, const char32_t code_point) {
-    using unit = typename String::value_type;
+    using unit = String::value_type;
 
     if (code_point < 0x10000) {
         out.push_back(static_cast<unit>(code_point));
@@ -391,22 +418,14 @@ void push_utf16(String& out, const char32_t code_point) {
 // ---- The type ----------------------------------------------------------------------
 
 export {
-
-/// Well-formed Unicode text, in whichever string type holds it.
-///
-/// Only the two shapes below exist -- a view of text somebody else owns, and a
-/// string that owns its own -- because those are the two shapes text travels
-/// in. The primary template is left undefined so that basic_text of anything
-/// else fails to compile rather than quietly meaning something.
-template <typename T>
-class basic_text;
-
 /// UTF-8, the encoding this tree keeps text in.
 using u8_view = basic_text<std::u8string_view>;
+/// The type that holds well-formed UTF-8 text in a string of its own.
 using u8_text = basic_text<std::u8string>;
 
 /// UTF-16, the encoding Windows speaks.
 using u16_view = basic_text<std::u16string_view>;
+/// The type that holds well-formed UTF-16 text in a string of its own.
 using u16_text = basic_text<std::u16string>;
 
 /// A view of text known to be well-formed. It borrows like any other view, so
@@ -417,12 +436,17 @@ using u16_text = basic_text<std::u16string>;
 /// mid-sequence would leave the guarantee attached to text that no longer
 /// deserves it.
 template <typename CharT, typename Traits>
-class basic_text<std::basic_string_view<CharT, Traits>> {
+class basic_text<std::basic_string_view<CharT, Traits>>
+{
 public:
+    /// The type that represents a code unit: `char8_t` for UTF-8, `char16_t` for UTF-16.
     using value_type = CharT;
+    /// The type of the underlying view, which carries no guarantee of well-formedness.
     using plain_type = std::basic_string_view<CharT, Traits>;
 
+    /// Indicates whether the text is UTF-8: `true` when the code unit is `char8_t`.
     static constexpr bool is_utf8 = std::same_as<CharT, char8_t>;
+    /// Indicates whether the text is UTF-16: `true` when the code unit is `char16_t`.
     static constexpr bool is_utf16 = std::same_as<CharT, char16_t>;
 
     static_assert(is_utf8 || is_utf16,
@@ -434,7 +458,9 @@ public:
     /// as anything else.
     constexpr basic_text() noexcept = default;
 
-    constexpr basic_text(plain_type text, impl::validated) noexcept : text_(text) {}
+    /// Constructs a view over \p str without checking it. The `impl::validated` key is not
+    /// exported, so only code of the `wxl.core` module can call this constructor.
+    constexpr basic_text(plain_type str, impl::validated) noexcept : text_(str) {}
 
     /// A literal, checked where it is written: u8"Поток №1" is a u8_view and a
     /// mis-encoded one is a compilation error, not a call that has to happen
@@ -457,8 +483,12 @@ public:
     /// use for it -- trimming, splitting, searching.
     constexpr plain_type plain() const noexcept { return text_; }
 
+    /// Returns a pointer to the first code unit. The text is not guaranteed to be
+    /// null-terminated.
     constexpr const CharT* data() const noexcept { return text_.data(); }
+    /// Returns the number of code units.
     constexpr std::size_t size() const noexcept { return text_.size(); }
+    /// Tests whether the text contains no code units.
     constexpr bool empty() const noexcept { return text_.empty(); }
 
     /// The same slice std::basic_string_view::substr makes, and still checked
@@ -481,7 +511,7 @@ public:
     /// by taking the view first, and one this library does not answer by
     /// copying on its own.
     constexpr basic_text substr(const std::size_t at,
-                                  const std::size_t count = plain_type::npos) const {
+                                const std::size_t count = plain_type::npos) const {
         const plain_type part = text_.substr(at, count);
 
         ensure(begins_a_code_point(at) && "checked text may only be cut between code points");
@@ -492,7 +522,7 @@ public:
     }
 
     /// The same bytes as a std::string_view -- what fmt, the file APIs and
-    /// wxl.xml take. char8_t and char differ in name alone, and a cast written
+    /// wxl::xml take. char8_t and char differ in name alone, and a cast written
     /// out at every boundary would be a cast nobody reads.
     std::string_view chars() const noexcept
         requires is_utf8
@@ -515,18 +545,24 @@ public:
         return chars();
     }
 
+    /// Converts UTF-16 text to a `std::wstring_view` over the same units. Available only
+    /// for UTF-16 text.
     operator std::wstring_view() const noexcept
         requires is_utf16
     {
         return wchars();
     }
 
+    /// Converts UTF-8 text to a `std::string` that holds a copy of its bytes. Available
+    /// only for UTF-8 text.
     operator std::string() const
         requires is_utf8
     {
         return std::string(chars());
     }
 
+    /// Converts UTF-16 text to a `std::wstring` that holds a copy of its units. Available
+    /// only for UTF-16 text.
     operator std::wstring() const
         requires is_utf16
     {
@@ -543,18 +579,25 @@ public:
         return *this;
     }
 
+    /// Returns this text unchanged, since it is UTF-16 already; the text is not copied.
+    /// Available only for UTF-16 text.
     constexpr basic_text to_utf16() const noexcept
         requires is_utf16
     {
         return *this;
     }
 
+    /// Converts UTF-8 text to UTF-16, in a new `wxl::core::u16_text`. Available only for
+    /// UTF-8 text.
     u16_text to_utf16() const
         requires is_utf8;
 
+    /// Converts UTF-16 text to UTF-8, in a new `wxl::core::u8_text`. Available only for
+    /// UTF-16 text.
     u8_text to_utf8() const
         requires is_utf16;
 
+    /// Tests whether two texts contain the same code units.
     constexpr bool operator==(const basic_text&) const = default;
 
     /// Against plain text, because comparing is the one thing that cannot
@@ -562,12 +605,16 @@ public:
     /// keeps `node.name() == "section"` reading the way it always did.
     constexpr bool operator==(plain_type other) const noexcept { return text_ == other; }
 
+    /// Tests whether UTF-8 text contains the same bytes as the plain text \p other.
+    /// Available only for UTF-8 text.
     bool operator==(std::string_view other) const noexcept
         requires is_utf8
     {
         return chars() == other;
     }
 
+    /// Tests whether UTF-16 text contains the same units as the plain text \p other.
+    /// Available only for UTF-16 text.
     bool operator==(std::wstring_view other) const noexcept
         requires is_utf16
     {
@@ -578,8 +625,7 @@ private:
     /// Whether the unit at that offset starts a code point -- true at the end
     /// of the text too, since that is where a slice may also stop.
     constexpr bool begins_a_code_point(const std::size_t at) const noexcept {
-        if (at == text_.size())
-            return true;
+        if (at == text_.size()) return true;
 
         if constexpr (is_utf8)
             return !unicode::is_continuation(static_cast<char>(text_[at]));
@@ -599,24 +645,33 @@ private:
 /// between code points. As with any string, a change may move the units, and a
 /// view taken before it is not to be read after.
 template <typename CharT, typename Traits, typename Allocator>
-class basic_text<std::basic_string<CharT, Traits, Allocator>> {
+class basic_text<std::basic_string<CharT, Traits, Allocator>>
+{
 public:
+    /// The type that represents a code unit: `char8_t` for UTF-8, `char16_t` for UTF-16.
     using value_type = CharT;
+    /// The type of the underlying string, which carries no guarantee of well-formedness.
     using plain_type = std::basic_string<CharT, Traits, Allocator>;
+    /// The type of a view of well-formed text in the same encoding.
     using view_type = basic_text<std::basic_string_view<CharT, Traits>>;
 
+    /// Indicates whether the text is UTF-8: `true` when the code unit is `char8_t`.
     static constexpr bool is_utf8 = std::same_as<CharT, char8_t>;
+    /// Indicates whether the text is UTF-16: `true` when the code unit is `char16_t`.
     static constexpr bool is_utf16 = std::same_as<CharT, char16_t>;
 
     static_assert(is_utf8 || is_utf16);
 
     constexpr basic_text() noexcept = default;
 
-    basic_text(plain_type text, impl::validated) noexcept : text_(std::move(text)) {}
+    /// Constructs text that takes over the string \p str without checking it. The
+    /// `impl::validated` key is not exported, so only code of the `wxl.core` module can
+    /// call this constructor.
+    basic_text(plain_type str, impl::validated) noexcept : text_(std::move(str)) {}
 
     /// A copy of a view one was handed, for keeping -- and the one way to get
     /// a null-terminated string out of a view, which c_str() below needs.
-    explicit basic_text(view_type text) : text_(text.plain()) {}
+    explicit basic_text(view_type str) : text_(str.plain()) {}
 
     /// A string answers as a view, and the view is safe as well: a whole text
     /// that is well-formed stays well-formed when nothing is cut off it. This
@@ -626,14 +681,18 @@ public:
         return view_type(std::basic_string_view<CharT, Traits>(text_), impl::validated{});
     }
 
+    /// Returns a reference to the underlying string.
     constexpr const plain_type& plain() const& noexcept { return text_; }
 
     /// The string itself, for a caller done with the guarantee. Moving it out
     /// leaves an empty basic_text, which is still a valid one.
     plain_type plain() && noexcept { return std::move(text_); }
 
+    /// Returns a pointer to the first code unit.
     constexpr const CharT* data() const noexcept { return text_.data(); }
+    /// Returns the number of code units.
     constexpr std::size_t size() const noexcept { return text_.size(); }
+    /// Tests whether the text contains no code units.
     constexpr bool empty() const noexcept { return text_.empty(); }
 
     /// Room for this many units in all, so that text assembled piece by piece
@@ -668,12 +727,13 @@ public:
 
     /// Appends checked text. Two well-formed texts end to end are well-formed:
     /// neither ends or begins inside a code point.
-    basic_text& append(const view_type text) {
-        text_.append(text.plain());
+    basic_text& append(const view_type str) {
+        text_.append(str.plain());
         return *this;
     }
 
-    basic_text& operator+=(const view_type text) { return append(text); }
+    /// Appends the well-formed text \p str, as `append()` does.
+    basic_text& operator+=(const view_type str) { return append(str); }
 
     /// Removes `count` units from `at`, as std::basic_string::erase() does, and
     /// only between code points: both ends are tested the way substr() tests
@@ -684,36 +744,48 @@ public:
         return *this;
     }
 
+    /// Returns the bytes of UTF-8 text as a `std::string_view`. Available only for UTF-8
+    /// text.
     std::string_view chars() const noexcept
         requires is_utf8
     {
         return std::string_view(reinterpret_cast<const char*>(text_.data()), text_.size());
     }
 
+    /// Returns the units of UTF-16 text as a `std::wstring_view`. Available only for UTF-16
+    /// text.
     std::wstring_view wchars() const noexcept
         requires is_utf16
     {
         return std::wstring_view(reinterpret_cast<const wchar_t*>(text_.data()), text_.size());
     }
 
+    /// Converts UTF-8 text to a `std::string_view` over the same bytes. Available only for
+    /// UTF-8 text.
     operator std::string_view() const noexcept
         requires is_utf8
     {
         return chars();
     }
 
+    /// Converts UTF-16 text to a `std::wstring_view` over the same units. Available only
+    /// for UTF-16 text.
     operator std::wstring_view() const noexcept
         requires is_utf16
     {
         return wchars();
     }
 
+    /// Converts UTF-8 text to a `std::string` that holds a copy of its bytes. Available
+    /// only for UTF-8 text.
     operator std::string() const
         requires is_utf8
     {
         return std::string(chars());
     }
 
+    /// Converts UTF-16 text to a `std::wstring` that holds a copy of its units. Available
+    /// only for UTF-16 text.
     operator std::wstring() const
         requires is_utf16
     {
@@ -740,6 +812,8 @@ public:
         return reinterpret_cast<const char*>(text_.c_str());
     }
 
+    /// Returns the null-terminated units of UTF-16 text as a pointer to `const wchar_t`.
+    /// Available only for UTF-16 text.
     const wchar_t* c_str() const noexcept
         requires is_utf16
     {
@@ -754,18 +828,25 @@ public:
         return *this;
     }
 
+    /// Returns a reference to this text, since it is UTF-16 already; the text is not
+    /// copied. Available only for UTF-16 text.
     constexpr const basic_text& to_utf16() const noexcept
         requires is_utf16
     {
         return *this;
     }
 
+    /// Converts UTF-8 text to UTF-16, in a new `wxl::core::u16_text`. Available only for
+    /// UTF-8 text.
     u16_text to_utf16() const
         requires is_utf8;
 
+    /// Converts UTF-16 text to UTF-8, in a new `wxl::core::u8_text`. Available only for
+    /// UTF-16 text.
     u8_text to_utf8() const
         requires is_utf16;
 
+    /// Tests whether two texts contain the same code units.
     bool operator==(const basic_text&) const = default;
 
     /// A view and a string compare directly rather than through one of the
@@ -776,16 +857,21 @@ public:
         return static_cast<view_type>(*this) == other;
     }
 
+    /// Tests whether the text contains the same code units as the plain view \p other.
     bool operator==(std::basic_string_view<CharT, Traits> other) const noexcept {
         return std::basic_string_view<CharT, Traits>(text_) == other;
     }
 
+    /// Tests whether UTF-8 text contains the same bytes as the plain text \p other.
+    /// Available only for UTF-8 text.
     bool operator==(std::string_view other) const noexcept
         requires is_utf8
     {
         return chars() == other;
     }
 
+    /// Tests whether UTF-16 text contains the same units as the plain text \p other.
+    /// Available only for UTF-16 text.
     bool operator==(std::wstring_view other) const noexcept
         requires is_utf16
     {
@@ -798,53 +884,63 @@ private:
 
 namespace unicode {
 
-/// Text somebody else has already checked: a document wxl.xml validated before
+/// Text somebody else has already checked: a document wxl::xml validated before
 /// its grammar walked it, a name the file system spelled and the program has
 /// tested another way. Nothing is looked at, which is the whole point -- and
 /// the reason the call has to be written out rather than happening by
 /// conversion. A literal needs none of this: it converts on its own.
-inline u8_view assume_valid(const std::string_view text) noexcept {
-    return {std::u8string_view(reinterpret_cast<const char8_t*>(text.data()), text.size()),
+inline u8_view assume_valid(const std::string_view str) noexcept {
+    return {std::u8string_view(reinterpret_cast<const char8_t*>(str.data()), str.size()),
             impl::validated{}};
 }
 
-constexpr u8_view assume_valid(const std::u8string_view text) noexcept {
-    return {text, impl::validated{}};
+/// Returns \p str as a `wxl::core::u8_view` without checking it.
+constexpr u8_view assume_valid(const std::u8string_view str) noexcept {
+    return {str, impl::validated{}};
 }
 
-inline u16_view assume_valid(const std::wstring_view text) noexcept {
-    return {std::u16string_view(reinterpret_cast<const char16_t*>(text.data()), text.size()),
+/// Returns \p str as a `wxl::core::u16_view` without checking it. The `wchar_t` units are
+/// reinterpreted as `char16_t`.
+inline u16_view assume_valid(const std::wstring_view str) noexcept {
+    return {std::u16string_view(reinterpret_cast<const char16_t*>(str.data()), str.size()),
             impl::validated{}};
 }
 
-constexpr u16_view assume_valid(const std::u16string_view text) noexcept {
-    return {text, impl::validated{}};
+/// Returns \p str as a `wxl::core::u16_view` without checking it.
+constexpr u16_view assume_valid(const std::u16string_view str) noexcept {
+    return {str, impl::validated{}};
 }
 
 /// The text if it is well-formed, and nothing if it is not -- the door for
 /// everything that came from outside the program.
-inline std::optional<u8_view> checked(const std::string_view text) noexcept {
-    if (find_invalid_utf8(text)) return std::nullopt;
+inline std::optional<u8_view> checked(const std::string_view str) noexcept {
+    if (find_invalid_utf8(str)) return std::nullopt;
 
-    return assume_valid(text);
+    return assume_valid(str);
 }
 
-constexpr std::optional<u8_view> checked(const std::u8string_view text) noexcept {
-    if (find_invalid_utf8(text)) return std::nullopt;
+/// Returns \p str as a `wxl::core::u8_view` if it is well-formed UTF-8, and no value
+/// otherwise.
+constexpr std::optional<u8_view> checked(const std::u8string_view str) noexcept {
+    if (find_invalid_utf8(str)) return std::nullopt;
 
-    return assume_valid(text);
+    return assume_valid(str);
 }
 
-inline std::optional<u16_view> checked(const std::wstring_view text) noexcept {
-    if (find_invalid_utf16(text)) return std::nullopt;
+/// Returns \p str as a `wxl::core::u16_view` if it is well-formed UTF-16, and no value
+/// otherwise. The `wchar_t` units are reinterpreted as `char16_t`.
+inline std::optional<u16_view> checked(const std::wstring_view str) noexcept {
+    if (find_invalid_utf16(str)) return std::nullopt;
 
-    return assume_valid(text);
+    return assume_valid(str);
 }
 
-constexpr std::optional<u16_view> checked(const std::u16string_view text) noexcept {
-    if (find_invalid_utf16(text)) return std::nullopt;
+/// Returns \p str as a `wxl::core::u16_view` if it is well-formed UTF-16, and no value
+/// otherwise.
+constexpr std::optional<u16_view> checked(const std::u16string_view str) noexcept {
+    if (find_invalid_utf16(str)) return std::nullopt;
 
-    return assume_valid(text);
+    return assume_valid(str);
 }
 
 /// The same text with every unpaired surrogate replaced by U+FFFD.
@@ -856,6 +952,8 @@ constexpr std::optional<u16_view> checked(const std::u16string_view text) noexce
 /// Refusing outright is the other honest answer, and the caller that wants it
 /// has checked(); this is for the caller that must write something.
 u16_text repaired(std::wstring_view utf16);
+/// Returns a copy of the UTF-16 text \p utf16 with every unpaired surrogate replaced by
+/// U+FFFD.
 u16_text repaired(std::u16string_view utf16);
 
 /// The same for UTF-8: every ill-formed sequence replaced by U+FFFD, one for
@@ -867,8 +965,9 @@ u8_text repaired(std::string_view utf8);
 
 // ---- Measuring ---------------------------------------------------------------------
 
-/// How many code points the text holds. Bytes are what a string_view counts,
-/// and characters are what a reading position, a column or a limit means.
+/// How many code points the text holds. Bytes are what a string_view counts;
+/// this is the count for an offset or a limit kept in characters rather than
+/// in bytes.
 inline std::size_t code_point_count(const u8_view utf8) noexcept {
     return impl::code_point_count(utf8.chars());
 }
@@ -908,8 +1007,8 @@ inline char* write_utf8(char* out, const u16_view utf16) noexcept {
 /// many bytes it wrote for them. Fewer units taken than the text holds means the
 /// room ran out first.
 struct transcode_result {
-    std::size_t read = 0;
-    std::size_t written = 0;
+    std::size_t read = 0;     ///< The number of UTF-16 units of the text that were read.
+    std::size_t written = 0;  ///< The number of UTF-8 bytes that were written.
 };
 
 /// Writes UTF-16 nobody has checked into `out` as UTF-8, each unpaired surrogate
@@ -920,6 +1019,8 @@ struct transcode_result {
 /// buffer of fixed size. Writing stops before the first code point that does not
 /// fit whole, so what is written is UTF-8 however short the room.
 transcode_result write_utf8_repaired(std::span<char> out, std::wstring_view utf16) noexcept;
+/// Writes the unchecked UTF-16 text \p utf16 into \p out as UTF-8, each unpaired surrogate
+/// as U+FFFD, and stops before the first code point that does not fit whole.
 transcode_result write_utf8_repaired(std::span<char> out, std::u16string_view utf16) noexcept;
 
 /// Appends one code point to a UTF-8 string. The code point must be a scalar
@@ -952,9 +1053,9 @@ void append_utf16(std::basic_string<CharT, Traits, Allocator>& out, u8_view utf8
     // resize_and_overwrite keeps what the string already held and leaves the
     // rest untouched, so the transcoder writes into raw storage instead of
     // over a zero-fill nobody asked for.
-    out.resize_and_overwrite(was + utf16_size(utf8), [was, utf8](CharT* buffer, std::size_t size) {
+    out.resize_and_overwrite(was + utf16_size(utf8), [was, utf8](CharT* buffer, std::size_t total) {
         write_utf16(reinterpret_cast<wchar_t*>(buffer + was), utf8);
-        return size;
+        return total;
     });
 }
 
@@ -963,18 +1064,33 @@ template <typename Traits, typename Allocator>
 void append_utf8(std::basic_string<char, Traits, Allocator>& out, u16_view utf16) {
     const std::size_t was = out.size();
 
-    out.resize_and_overwrite(was + utf8_size(utf16), [was, utf16](char* buffer, std::size_t size) {
+    out.resize_and_overwrite(was + utf8_size(utf16), [was, utf16](char* buffer, std::size_t total) {
         write_utf8(buffer + was, utf16);
-        return size;
+        return total;
     });
 }
 
-/// A path as UTF-8. Through the units the file system actually holds, and with
-/// U+FFFD where they do not spell anything: std::filesystem::path::string()
-/// would convert through the active code page and mangle every name that page
-/// cannot write, and u8string() has no answer at all for a name that is not
-/// well-formed UTF-16 -- which nothing stops a name from being.
+/// A path as UTF-8, for whatever takes text: a message, a log, a JSON or XML
+/// file, a library whose contract is UTF-8. The UTF-16 units the path holds are
+/// transcoded here, each unpaired surrogate as U+FFFD, since nothing obliges a
+/// file name to be well-formed UTF-16.
+///
+/// Not std::filesystem::path::string(): MSVC converts through the process's
+/// ANSI code page, which writes that page's bytes instead of UTF-8 and throws
+/// `std::system_error` ("No mapping for the Unicode character") on a character
+/// the page lacks. A manifest that makes the page UTF-8 gets UTF-8 out of it,
+/// and an unpaired surrogate still throws; u8string() has no answer for one
+/// either.
 u8_text to_utf8(const std::filesystem::path& path);
+
+/// Checked UTF-8 as the path it spells: the way back from to_utf8(), for a path
+/// read out of text -- a JSON or XML file, a profile. The text is transcoded
+/// here to the UTF-16 a path keeps, which well-formed text cannot fail.
+///
+/// Not a path constructed from the narrow text: MSVC reads that in the process's
+/// ANSI code page, and UTF-8 comes out as that page's characters wherever the
+/// page is not UTF-8.
+std::filesystem::path to_path(u8_view utf8);
 
 // ---- Walking ------------------------------------------------------------------------
 
@@ -995,36 +1111,51 @@ u8_text to_utf8(const std::filesystem::path& path);
 /// around them.
 template <typename View>
     requires(std::same_as<View, u8_view> || std::same_as<View, u16_view>)
-class code_points {
+class code_points
+{
 public:
-    using plain_type = typename View::plain_type;
+    /// The type of the underlying view, which carries no guarantee of well-formedness.
+    using plain_type = View::plain_type;
 
+    /// Constructs a view of the code points of \p text. The text is referenced, not copied.
     constexpr explicit code_points(const View text) noexcept : text_(text.plain()) {}
 
-    class iterator {
+    /// Represents a forward iterator over the code points of the text. Dereferencing
+    /// decodes the code point at the current position.
+    class iterator
+    {
     public:
+        /// The type that identifies the iterator category, `std::forward_iterator_tag`.
         using iterator_category = std::forward_iterator_tag;
+        /// The type that identifies the iterator concept, `std::forward_iterator_tag`.
         using iterator_concept = std::forward_iterator_tag;
+        /// The type of an element, a code point.
         using value_type = char32_t;
+        /// The type that represents the distance between two iterators.
         using difference_type = std::ptrdiff_t;
+        /// The type that dereferencing returns: a code point, by value.
         using reference = char32_t;
+        /// The type `void`: dereferencing returns a value, not a reference.
         using pointer = void;
 
         constexpr iterator() noexcept = default;
 
+        /// Constructs an iterator that stands at the offset \p at in \p text, counted in
+        /// code units.
         constexpr iterator(plain_type text, std::size_t at) noexcept : text_(text), at_(at) {}
 
+        /// Returns the code point at the current position, decoded from its code units.
         constexpr char32_t operator*() const noexcept {
             if constexpr (View::is_utf8) {
                 const auto lead = static_cast<unsigned char>(text_[at_]);
 
                 if (lead < 0x80) return lead;
 
-                const int size = utf8_sequence_size(static_cast<char>(lead));
-                const unsigned lead_bits = 0xFFu >> (size + 1);
+                const int length = utf8_sequence_size(static_cast<char>(lead));
+                const unsigned lead_bits = 0xFFu >> (length + 1);
 
                 char32_t code_point = lead & lead_bits;
-                for (int index = 1; index < size; ++index)
+                for (int index = 1; index < length; ++index)
                     code_point = (code_point << 6) |
                                  (static_cast<unsigned char>(text_[at_ + index]) & 0x3Fu);
 
@@ -1052,20 +1183,23 @@ public:
             return assume_valid(text_.substr(at_, units()));
         }
 
+        /// Advances to the next code point.
         constexpr iterator& operator++() noexcept {
             at_ += units();
             return *this;
         }
 
+        /// Advances to the next code point and returns a copy of the iterator from before
+        /// the increment.
         constexpr iterator operator++(int) noexcept {
             iterator was = *this;
             ++*this;
             return was;
         }
 
-        constexpr bool operator==(const iterator& other) const noexcept {
-            return at_ == other.at_;
-        }
+        /// Tests whether two iterators stand at the same offset. The texts are not
+        /// compared.
+        constexpr bool operator==(const iterator& other) const noexcept { return at_ == other.at_; }
 
     private:
         /// How many units the code point the iterator stands on takes. Its
@@ -1083,9 +1217,12 @@ public:
         std::size_t at_ = 0;
     };
 
+    /// Returns an iterator to the first code point.
     constexpr iterator begin() const noexcept { return iterator(text_, 0); }
+    /// Returns an iterator past the last code point.
     constexpr iterator end() const noexcept { return iterator(text_, text_.size()); }
 
+    /// Gets the text whose code points the view walks, as checked text.
     constexpr View text() const noexcept { return assume_valid(text_); }
 
 private:
@@ -1095,6 +1232,8 @@ private:
 /// The walk takes its encoding from the text: a u8_text or a u16_text walks as
 /// the view it answers as, and a literal as the view it converts to.
 code_points(u8_view) -> code_points<u8_view>;
+/// Deduces a walk over UTF-16 text: a `wxl::core::u16_text` or a UTF-16 literal walks as
+/// the `wxl::core::u16_view` it converts to.
 code_points(u16_view) -> code_points<u16_view>;
 
 }  // namespace unicode
@@ -1128,11 +1267,11 @@ u8_text basic_text<std::basic_string_view<CharT, Traits>>::to_utf8() const
 {
     std::u8string result;
 
-    result.resize_and_overwrite(
-        impl::utf8_size(wchars()), [this](char8_t* buffer, std::size_t size) {
-            impl::write_utf8_to(reinterpret_cast<char*>(buffer), wchars());
-            return size;
-        });
+    result.resize_and_overwrite(impl::utf8_size(wchars()),
+                                [this](char8_t* buffer, std::size_t size) {
+                                    impl::write_utf8_to(reinterpret_cast<char*>(buffer), wchars());
+                                    return size;
+                                });
 
     return {std::move(result), impl::validated{}};
 }

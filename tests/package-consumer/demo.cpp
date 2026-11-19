@@ -1,0 +1,39 @@
+// An application on the library of a profile made from the package: one
+// window with a line of text, a button and the three blocks of extended over
+// the markup libraries -- a BbBlock, an RsdnBlock and a CodeBlock filled with
+// text -- so that the link needs the generated wrappers, the sources of the
+// components, wxl::ui.common and the archives of wxl.bb, wxl.rsdn and
+// wxl.highlight.
+
+#include "BbBlock.h"
+#include "CodeBlock.h"
+#include "RsdnBlock.h"
+#include "launch.h"
+#include "ui.h"
+
+using namespace wxl;
+using namespace wxl::dsl;
+
+Teardown wxl_launched() {
+    auto bb = BbBlock {};
+    bb.bb(u"[b]wxl.bb[/b] from the package");
+    auto rsdn = RsdnBlock {};
+    rsdn.rsdn(u"[c#]var text = \"wxl.rsdn\";[/c#]");
+    auto code = CodeBlock {};
+    code.code(u"cpp", u"int main() { return 0; }");
+
+    auto window = Window {
+        title = u"WinXL package consumer",
+        StackPanel {
+            Padding {16},
+            spacing = 8,
+            TextBlock {text = u"wxl from the NuGet package WinXL"},
+            Button {content = u"Close"},
+            bb,
+            rsdn,
+            code,
+        },
+    };
+    window.activate();
+    return {};
+}

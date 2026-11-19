@@ -51,40 +51,61 @@ inline constexpr CharT empty_text[1] = {};
 }  // namespace impl
 
 export {
-
+/// Represents a constant view of a character sequence that is followed by a null
+/// terminator, a guarantee that the type carries.
+///
+/// A string passed to a C API or to WinRT needs the terminator: an HSTRING has one after
+/// its characters, and a fast-pass string is valid only when the terminator is there.
+/// `std::basic_string_view` promises nothing about the unit after its end, so a function
+/// that needs the terminator takes this type instead. A view is constructed from a C
+/// string, from a `std::basic_string`, or through `wxl::core::assume_terminated`; other
+/// types provide conversions of their own. A default-constructed view points at a static
+/// null character rather than holding a null pointer.
 template <typename CharT, typename Traits = std::char_traits<CharT>>
-class basic_zstring_view {
+class basic_zstring_view
+{
 public:
+    /// The type that represents a character.
     using value_type = CharT;
+    /// The type that describes the character traits.
     using traits_type = Traits;
+    /// The type that represents a count of characters or a position.
     using size_type = std::size_t;
+    /// The type that points to a constant character.
     using const_pointer = const CharT*;
+    /// The type that iterates over the characters.
     using const_iterator = const CharT*;
+    /// The type of a plain view over the same characters, which carries no guarantee of a
+    /// terminator.
     using view_type = std::basic_string_view<CharT, Traits>;
 
+    /// A special value that indicates no position, equal to `std::basic_string_view::npos`.
     static constexpr size_type npos = view_type::npos;
 
     /// Empty, and terminated like everything else here.
     constexpr basic_zstring_view() noexcept = default;
 
     /// A C string: the length is where the zero is.
-    constexpr basic_zstring_view(const_pointer text) noexcept
-        : ptr_(text), size_(length_of(text)) {}
+    constexpr basic_zstring_view(const_pointer chars) noexcept
+        : ptr_(chars), size_(length_of(chars)) {}
 
     /// A string, whatever allocator it carries: std::basic_string keeps the zero.
     template <typename Alloc>
     constexpr basic_zstring_view(const std::basic_string<CharT, Traits, Alloc>& text) noexcept
         : ptr_(text.c_str()), size_(text.size()) {}
 
-    // The seam of 0295: text that is still written in wchar_t. The units are the
-    // same sixteen bits on Windows under another name, and the cast is the whole
-    // conversion.
-    basic_zstring_view(const wchar_t* text) noexcept
+    /// Constructs a view over the null-terminated `wchar_t` string \p chars. On Windows the
+    /// `wchar_t` units are the same 16 bits as `char16_t`, and the pointer cast is the
+    /// whole conversion. Available only when `CharT` is `char16_t`.
+    basic_zstring_view(const wchar_t* chars) noexcept
         requires std::same_as<CharT, char16_t>
-        : basic_zstring_view(reinterpret_cast<const char16_t*>(text)) {}
+        : basic_zstring_view(reinterpret_cast<const char16_t*>(chars)) {}
 
+    /// Constructs a view over the characters of the `wchar_t` string \p text, which keeps a
+    /// null terminator after them. Available only when `CharT` is `char16_t`.
     template <typename Alloc>
-    basic_zstring_view(const std::basic_string<wchar_t, std::char_traits<wchar_t>, Alloc>& text) noexcept
+    basic_zstring_view(
+        const std::basic_string<wchar_t, std::char_traits<wchar_t>, Alloc>& text) noexcept
         requires std::same_as<CharT, char16_t>
         : ptr_(reinterpret_cast<const char16_t*>(text.c_str())), size_(text.size()) {}
 
@@ -95,16 +116,27 @@ public:
     basic_zstring_view(basic_zstring_view<Unit> other) noexcept
         : ptr_(reinterpret_cast<const char16_t*>(other.data())), size_(other.size()) {}
 
+    /// Returns a pointer to the first character. A null terminator follows the last
+    /// character.
     constexpr const_pointer data() const noexcept { return ptr_; }
+    /// Returns a pointer to the null-terminated character sequence.
     constexpr const_pointer c_str() const noexcept { return ptr_; }
+    /// Returns the number of characters, not counting the null terminator.
     constexpr size_type size() const noexcept { return size_; }
+    /// Returns the number of characters; the same value as `size()`.
     constexpr size_type length() const noexcept { return size_; }
+    /// Tests whether the view contains no characters.
     constexpr bool empty() const noexcept { return size_ == 0; }
 
+    /// Returns an iterator to the first character.
     constexpr const_iterator begin() const noexcept { return ptr_; }
+    /// Returns an iterator past the last character, which points at the null terminator.
     constexpr const_iterator end() const noexcept { return ptr_ + size_; }
+    /// Returns the character at position \p at. No bounds checking is performed.
     constexpr CharT operator[](size_type at) const noexcept { return ptr_[at]; }
+    /// Returns the first character.
     constexpr CharT front() const noexcept { return ptr_[0]; }
+    /// Returns the last character. The view must not be empty; no check is performed.
     constexpr CharT back() const noexcept { return ptr_[size_ - 1]; }
 
     /// Terminated, so the pointer alone is enough for a callee that wants one,
@@ -126,6 +158,8 @@ public:
     /// The text without the promise, for the code that wants a view.
     constexpr operator view_type() const noexcept { return view_type(ptr_, size_); }
 
+    /// Returns the characters as a plain `view_type`, which carries no guarantee of a
+    /// terminator.
     constexpr view_type view() const noexcept { return view_type(ptr_, size_); }
 
     /// From `at` to the end -- the one slice that keeps the terminator, and so
@@ -136,6 +170,9 @@ public:
         return basic_zstring_view(impl::terminated{}, ptr_ + at, size_ - at);
     }
 
+    /// Returns a plain view of at most \p count characters, starting at position \p at. A
+    /// slice with a count can end before the terminator, so the result is a `view_type`
+    /// rather than a `basic_zstring_view`. A position past the end fails an `ensure` check.
     constexpr view_type substr(size_type at, size_type count) const noexcept {
         ensure(at <= size_ && "substr past the end");
         return view_type(ptr_ + at, std::min(count, size_ - at));
@@ -150,33 +187,38 @@ public:
         size_ -= count;
     }
 
-    friend constexpr bool operator==(basic_zstring_view left, basic_zstring_view right) noexcept {
-        return left.view() == right.view();
+    /// Tests whether two views contain the same characters.
+    friend constexpr bool operator==(basic_zstring_view lhs, basic_zstring_view rhs) noexcept {
+        return lhs.view() == rhs.view();
     }
 
-    friend constexpr bool operator==(basic_zstring_view left, view_type right) noexcept {
-        return left.view() == right;
+    /// Tests whether the view \p lhs contains the same characters as the plain view
+    /// \p rhs.
+    friend constexpr bool operator==(basic_zstring_view lhs, view_type rhs) noexcept {
+        return lhs.view() == rhs;
     }
 
     /// A literal against a view: without this the array would reach either of
     /// the two above through a conversion each, and neither would be better.
-    friend constexpr bool operator==(basic_zstring_view left, const_pointer right) noexcept {
-        return left.view() == view_type(right);
+    friend constexpr bool operator==(basic_zstring_view lhs, const_pointer rhs) noexcept {
+        return lhs.view() == view_type(rhs);
     }
 
-    friend constexpr auto operator<=>(basic_zstring_view left, basic_zstring_view right) noexcept {
-        return left.view() <=> right.view();
+    /// Compares the characters of two views lexicographically, as `std::basic_string_view`
+    /// does.
+    friend constexpr auto operator<=>(basic_zstring_view lhs, basic_zstring_view rhs) noexcept {
+        return lhs.view() <=> rhs.view();
     }
 
     /// The doors that have looked, or need not: the promise is theirs, and the
     /// key is what keeps it from being made anywhere else.
-    constexpr basic_zstring_view(impl::terminated, const_pointer text, size_type size) noexcept
-        : ptr_(text), size_(size) {}
+    constexpr basic_zstring_view(impl::terminated, const_pointer chars, size_type size) noexcept
+        : ptr_(chars), size_(size) {}
 
 private:
-    static constexpr size_type length_of(const_pointer text) noexcept {
-        ensure(text != nullptr && "a zstring_view cannot be made from a null pointer");
-        return Traits::length(text);
+    static constexpr size_type length_of(const_pointer chars) noexcept {
+        ensure(chars != nullptr && "a zstring_view cannot be made from a null pointer");
+        return Traits::length(chars);
     }
 
     const_pointer ptr_ = impl::empty_text<CharT>;
@@ -206,14 +248,15 @@ constexpr basic_zstring_view<CharT, Traits> assume_terminated(
         return {};
     }
 
-    ensure(text.data()[text.size()] == CharT{} && "assume_terminated on a view with no zero after it");
+    ensure(text.data()[text.size()] == CharT{} &&
+           "assume_terminated on a view with no zero after it");
     return basic_zstring_view<CharT, Traits>(impl::terminated{}, text.data(), text.size());
 }
 
 /// The seam: a wstring_view that is terminated, as a zstring_view.
-inline zstring_view assume_terminated(std::wstring_view text) noexcept {
+inline zstring_view assume_terminated(std::wstring_view chars) noexcept {
     return assume_terminated(
-        std::u16string_view(reinterpret_cast<const char16_t*>(text.data()), text.size()));
+        std::u16string_view(reinterpret_cast<const char16_t*>(chars.data()), chars.size()));
 }
 
 }  // export

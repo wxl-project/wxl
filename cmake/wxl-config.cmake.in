@@ -4,29 +4,22 @@
 #
 # Generated from cmake/wxl-config.cmake.in. Loaded by find_package(wxl CONFIG).
 #
-#     find_package(wxl CONFIG REQUIRED COMPONENTS core)   # e.g. the generator
-#     find_package(wxl CONFIG REQUIRED COMPONENTS winui)  # an application
-#     find_package(wxl CONFIG REQUIRED)                   # everything shipped
+#     find_package(wxl CONFIG REQUIRED)
 #
-# Components are optional in the sense that each is installed on its own; asking
-# for one that is not part of this installation is a clean, explained failure.
+# The package is one and has no components: every target it ships comes with
+# it, and asking for a component is a failure check_required_components()
+# explains.
 #
 # wxl ships module *interface sources*, not BMIs: built module interfaces are
 # tied to the exact compiler build and flags, so CMake never installs them and
 # the consumer compiles them once in its own build tree.
 
-# `import std;` needs CMake's experimental gate, and it must be open before the
-# consumer's project() call -- far too early for this file to fix, so all it can
-# do is say precisely what is missing.
-if(NOT DEFINED CMAKE_EXPERIMENTAL_CXX_IMPORT_STD)
+# The module interfaces import std, which CMake gives a project without an
+# experimental gate from 4.5 on. An older CMake would stop much later, on the
+# first `import std;`, so the release is checked here.
+if(CMAKE_VERSION VERSION_LESS 4.5)
     message(FATAL_ERROR
-        "\n[ERROR]: wxl needs CMake's experimental `import std;` support.\n"
-        "Add this ABOVE project() in your top-level CMakeLists.txt:\n"
-        "\n"
-        "    set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD \"@WXL_IMPORT_STD_UUID@\")\n"
-        "\n"
-        "The UUID is tied to a CMake release (this package was built with\n"
-        "CMake @CMAKE_VERSION@); see cmake/wxl_import_std_gate.cmake in wxl.\n"
+        "\n[ERROR]: wxl needs CMake 4.5 or newer for `import std;`; this is CMake ${CMAKE_VERSION}.\n"
     )
 endif()
 
@@ -39,40 +32,67 @@ if(CMAKE_GENERATOR MATCHES "Visual Studio")
     )
 endif()
 
-# Components are discovered from the files actually present, so a new component
-# needs no edit here: install(EXPORT) writes wxl-<component>-targets.cmake.
-# (Per-configuration files are named ...-targets-<config>.cmake and do not match.)
-set(_wxl_requested_components ${wxl_FIND_COMPONENTS})
-if(NOT _wxl_requested_components)
-    file(GLOB _wxl_target_files "${CMAKE_CURRENT_LIST_DIR}/wxl-*-targets.cmake")
-    foreach(_wxl_file IN LISTS _wxl_target_files)
-        cmake_path(GET _wxl_file FILENAME _wxl_name)
-        string(REGEX REPLACE "^wxl-(.+)-targets\\.cmake$" "\\1" _wxl_comp "${_wxl_name}")
-        list(APPEND _wxl_requested_components "${_wxl_comp}")
-    endforeach()
+set(_wxl_helpers "${CMAKE_CURRENT_LIST_DIR}/@WXL_HELPERS_RELATIVE_DIR@")
+
+# With the WinUI layer the package is built against NuGet packages, which the
+# project restores before the targets come: the pins the package was installed
+# with, each at the version the archives were built against, and the C++/WinRT
+# projection over them, Microsoft::CppWinRT, in the project's build directory
+# (cmake/wxl_packages.cmake). The configure then needs what the restore of the
+# wxl tree needs: the developer environment of a Visual Studio installation with
+# the C++ WinUI tools.
+set(_wxl_ui @WXL_INSTALL_UI@)
+if(_wxl_ui)
+    set(_WXL_PACKAGES_INSTALLED_PINS "@PACKAGE_WXL_INSTALL_DATA_DIR@/packages.json")
+    include("${_wxl_helpers}/wxl_packages.cmake")
+    unset(_WXL_PACKAGES_INSTALLED_PINS)
 endif()
 
-foreach(_wxl_comp IN LISTS _wxl_requested_components)
-    set(_wxl_comp_file "${CMAKE_CURRENT_LIST_DIR}/wxl-${_wxl_comp}-targets.cmake")
-    if(EXISTS "${_wxl_comp_file}")
-        include("${_wxl_comp_file}")
-        set(wxl_${_wxl_comp}_FOUND TRUE)
-    else()
-        set(wxl_${_wxl_comp}_FOUND FALSE)
-        set(wxl_NOT_FOUND_MESSAGE
-            "wxl component '${_wxl_comp}' is not part of this installation")
-    endif()
-endforeach()
-
-unset(_wxl_requested_components)
-unset(_wxl_target_files)
-unset(_wxl_comp_file)
-unset(_wxl_comp)
-unset(_wxl_file)
-unset(_wxl_name)
+# The targets, and for every configuration of the project the archives of the
+# build made with its CRT: lib/md for the CRT in a DLL, lib/mt for the static
+# one, Debug for a debug CRT and Release otherwise, as CMAKE_MSVC_RUNTIME_LIBRARY
+# names them (cmake/wxl_runtime_library.cmake). The project sets that variable
+# before find_package(wxl), in its preset, and does not change it afterwards.
+include("${_wxl_helpers}/wxl_runtime_library.cmake")
+wxl_import_targets("${CMAKE_CURRENT_LIST_DIR}")
 
 # The helpers travel with the package and are made available right away, so a
 # consumer can describe its own module targets in the same style wxl does.
-include("${CMAKE_CURRENT_LIST_DIR}/@WXL_HELPERS_RELATIVE_DIR@/wxl_helpers.cmake")
+include("${_wxl_helpers}/wxl_helpers.cmake")
+
+# The helpers of the tests: wxl::test, the headers, came with the targets, and
+# the fixture wxl::test.gtest is compiled here from its installed source over
+# the project's GoogleTest -- now, when the project made GoogleTest available
+# before find_package(wxl), and otherwise when it includes WXL_GTEST_SCRIPT,
+# wxl_gtest.cmake, which fetches GoogleTest the way the tree does:
+#
+#     find_package(wxl 0.1 CONFIG REQUIRED)
+#     include("${WXL_GTEST_SCRIPT}")
+#     wxl_add_gtest(app.tests SRC tests.cpp DEPS wxl::test.gtest wxl::core)
+set_target_properties(wxl::test PROPERTIES
+    WXL_TEST_GTEST_SOURCE "@PACKAGE_WXL_INSTALL_DATA_DIR@/test/@WXL_INSTALL_TEST_GTEST_SOURCE@")
+_wxl_add_test_gtest()
+set(WXL_GTEST_SCRIPT "${_wxl_helpers}/wxl_gtest.cmake")
+
+# What wxl::ui.common stands on in the restore -- the bootstrapper, the DLLs an
+# application gets beside it, what a library of a profile links -- made anew
+# over the project's restore, and what wxl_add_ui_library reads from the
+# targets: the file of the generator the steps run, the directory of its
+# profiles and tables, the directory of the components
+# (cmake/wxl_ui_profile.cmake).
+if(_wxl_ui)
+    include("${_wxl_helpers}/wxl_ui_packages.cmake")
+    include("${_wxl_helpers}/wxl_ui_profile.cmake")
+    wxl_ui_packages(wxl::ui.common)
+    set_target_properties(wxl::ui.common PROPERTIES
+        WXL_UI_COMPONENTS_DIR "@PACKAGE_WXL_INSTALL_DATA_DIR@/components")
+    get_target_property(_wxl_generator wxl::winui-srcgen LOCATION)
+    set_target_properties(wxl::winui-srcgen PROPERTIES
+        WXL_SHARED_FILE "${_wxl_generator}"
+        WXL_PROFILES_DIR "@PACKAGE_WXL_INSTALL_DATA_DIR@/profiles")
+    unset(_wxl_generator)
+endif()
+unset(_wxl_ui)
+unset(_wxl_helpers)
 
 check_required_components(wxl)

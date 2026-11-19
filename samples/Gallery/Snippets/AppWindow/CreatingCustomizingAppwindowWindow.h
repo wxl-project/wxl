@@ -62,14 +62,14 @@ struct Model {
 auto const model = gallery::hold<Model>();
 model->titleBox.text(u"This is a title");
 
-auto example = Button {content = u"Show window", onClick = [model](Button const&) { model->open(); }};
+auto example = Button {content = u"Show window", onClick += [model](Button const&) { model->open(); }};
 
 auto options = StackPanel {
     spacing = 8,
     TextBlock {FontWeight {600}, u"Window title"},
     model->titleBox,
     TextBlock {FontWeight {600}, u"Window size"},
-    Grid {columnDefinitions = u"auto,auto", model->widthBox, model->heightBox},
+    Grid {ColumnDefinitions<u"auto,auto">, model->widthBox, model->heightBox},
     TextBlock {FontWeight {600}, u"Window postion"},
-    Grid {columnDefinitions = u"auto,auto", model->xBox, model->yBox},
+    Grid {ColumnDefinitions<u"auto,auto">, model->xBox, model->yBox},
 };

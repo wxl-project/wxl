@@ -1,68 +1,83 @@
 # ---- Documentation sites, built by CMake ----
 #
 # Doxygen and nothing layered on top of it. The one fact that decides it is that
-# wxl.core and wxl.async are C++20 modules, Doxygen 1.18 is the
-# only generator that renders them as modules, and every post-processor of its
-# XML -- m.css, sourcey, moxygen, breathe, doxybook2 -- drops kind="module".
+# wxl.core is a C++20 module, Doxygen 1.18 is the only generator that renders
+# it as a module, and every post-processor of its XML -- m.css, sourcey,
+# moxygen, breathe, doxybook2 -- drops kind="module".
 #
 # Two entry points:
 #   wxl_doxygen_bootstrap()   -- resolve the tool and the theme, once per tree
 #   wxl_add_doxygen_site(...) -- one target per site
 #
-# Both are meant to be used from outside this tree as well: an application
-# includes this file the same way it already includes vcpkg_bootstrap.cmake and
-# wxl_helpers.cmake, and builds its own site plus wxl's tag file with it.
+# Both are meant to be used from outside this tree as well: a project that adds
+# wxl gets them with it (cmake/config.cmake includes this file), and builds its
+# own site plus wxl's tag file with them.
 
 include_guard(GLOBAL)
 include(FetchContent)
 
 set(WXL_DOXYGEN_CMAKE_DIR "${CMAKE_CURRENT_LIST_DIR}" CACHE INTERNAL "")
 
-# 1.18.0 is the first release that turns `export module` into a module page.
-# Earlier ones parse .ixx happily and quietly produce nothing for the module
-# itself, which is the half-working case worth failing on rather than living
-# with.
-set(WXL_DOXYGEN_MIN_VERSION 1.18.0)
+# The pins of the tool and the theme, set in the function that calls this, so
+# that the functions below see them from whatever scope they are called: a
+# project that adds wxl calls them from its own directory, where the variables
+# of the scope that included this file -- wxl's root -- are not visible.
+macro(_wxl_doxygen_pins)
+    # 1.18.0 is the first release that turns `export module` into a module page.
+    # Earlier ones parse .ixx happily and quietly produce nothing for the module
+    # itself, which is the half-working case worth failing on rather than living
+    # with.
+    set(WXL_DOXYGEN_MIN_VERSION 1.18.0)
 
-# The pinned fallback build, used when the host has nothing new enough. That is
-# the normal case rather than the exception: 1.18.0 is weeks old, so requiring
-# a system install would mean requiring an install nobody has yet.
-# Two builds, one per host the site is built on: the developer's Windows
-# machine, where the published site is built together with the wrappers, and
-# the Linux runner that checks a pull request. Doxygen lexes rather than
-# compiles, so the Linux build renders this tree without MSVC or anything of
-# the toolchain -- which is what lets the site be built where the code cannot.
-if(WIN32)
-    set(WXL_DOXYGEN_URL
-        "https://www.doxygen.nl/files/doxygen-1.18.0.windows.x64.bin.zip")
-    set(WXL_DOXYGEN_SHA256
-        "e84f54cfd49ef06b0b16536056dbec0c496323de28abcce53a4269463de35eaf")
-    set(WXL_DOXYGEN_FETCHED_EXECUTABLE "doxygen.exe")
-elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
-    set(WXL_DOXYGEN_URL
-        "https://www.doxygen.nl/files/doxygen-1.18.0.linux.bin.tar.gz")
-    set(WXL_DOXYGEN_SHA256
-        "14fa81bdc34171edb5f1f02b1d60e74802f0439b77fa44e592565d517d72df90")
-    set(WXL_DOXYGEN_FETCHED_EXECUTABLE "bin/doxygen")
-endif()
+    # The pinned fallback build, used when the host has nothing new enough. That
+    # is the normal case rather than the exception: 1.18.0 is weeks old, so
+    # requiring a system install would mean requiring an install nobody has yet.
+    # Two builds, one per host the site is built on: the developer's Windows
+    # machine, where the published site is built together with the wrappers, and
+    # the Linux runner that checks a pull request. Doxygen lexes rather than
+    # compiles, so the Linux build renders this tree without MSVC or anything of
+    # the toolchain -- which is what lets the site be built where the code
+    # cannot.
+    #
+    # Each archive has two hosts, the release on GitHub and doxygen.nl, which
+    # serve the same bytes. The download moves on to the next URL when an
+    # archive fails its hash, and doxygen.nl sometimes serves a corrupt one
+    # several times in a row; a second host turns that into a slower download
+    # instead of a failed configure.
+    if(WIN32)
+        set(WXL_DOXYGEN_URL
+            "https://github.com/doxygen/doxygen/releases/download/Release_1_18_0/doxygen-1.18.0.windows.x64.bin.zip"
+            "https://www.doxygen.nl/files/doxygen-1.18.0.windows.x64.bin.zip")
+        set(WXL_DOXYGEN_SHA256
+            "e84f54cfd49ef06b0b16536056dbec0c496323de28abcce53a4269463de35eaf")
+        set(WXL_DOXYGEN_FETCHED_EXECUTABLE "doxygen.exe")
+    elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+        set(WXL_DOXYGEN_URL
+            "https://github.com/doxygen/doxygen/releases/download/Release_1_18_0/doxygen-1.18.0.linux.bin.tar.gz"
+            "https://www.doxygen.nl/files/doxygen-1.18.0.linux.bin.tar.gz")
+        set(WXL_DOXYGEN_SHA256
+            "14fa81bdc34171edb5f1f02b1d60e74802f0439b77fa44e592565d517d72df90")
+        set(WXL_DOXYGEN_FETCHED_EXECUTABLE "bin/doxygen")
+    endif()
 
-# jothepro/doxygen-awesome-css, master at 2026-05-31 (past the v2.4.2 tag).
-# Pinned by commit for the same reason winmd is in the root CMakeLists: a tag
-# can move, a commit cannot, and a theme that changes under us changes every
-# page at once.
-set(WXL_DOXYGEN_AWESOME_COMMIT "82d315e34ac419a81caccf470cc2fbc2ec8ee524")
+    # jothepro/doxygen-awesome-css, master at 2026-05-31 (past the v2.4.2 tag).
+    # Pinned by commit for the same reason winmd is in the root CMakeLists: a
+    # tag can move, a commit cannot, and a theme that changes under us changes
+    # every page at once.
+    set(WXL_DOXYGEN_AWESOME_COMMIT "82d315e34ac419a81caccf470cc2fbc2ec8ee524")
 
-set(WXL_DOXYGEN_AWESOME_SCRIPTS
-    doxygen-awesome-darkmode-toggle.js
-    doxygen-awesome-fragment-copy-button.js
-    doxygen-awesome-paragraph-link.js
-    doxygen-awesome-interactive-toc.js)
+    set(WXL_DOXYGEN_AWESOME_SCRIPTS
+        doxygen-awesome-darkmode-toggle.js
+        doxygen-awesome-fragment-copy-button.js
+        doxygen-awesome-paragraph-link.js
+        doxygen-awesome-interactive-toc.js)
 
-# Where the pages fetch mermaid from. One place, for the header patched below
-# and for the Doxyfile: Doxygen's own header block is replaced with ours (see
-# the patch), so the two had better name the same script.
-set(WXL_DOXYGEN_MERMAID_JS_URL
-    "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs")
+    # Where the pages fetch mermaid from. One place, for the header patched
+    # below and for the Doxyfile: Doxygen's own header block is replaced with
+    # ours (see the patch), so the two had better name the same script.
+    set(WXL_DOXYGEN_MERMAID_JS_URL
+        "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs")
+endmacro()
 
 # The theme's JavaScript has to be pulled in from the page header, and Doxygen
 # offers no "extra head" setting -- HTML_HEADER replaces the whole header.
@@ -71,6 +86,8 @@ set(WXL_DOXYGEN_MERMAID_JS_URL
 # at configure time rather than as a build step keeps the site target a single
 # command, and lets a test run Doxygen directly without building anything first.
 function(wxl_doxygen_bootstrap)
+    _wxl_doxygen_pins()
+
     # Everything the cache remembers is checked, not just believed: a fetch that
     # failed halfway leaves the cache entry pointing at a directory that is gone,
     # and the site then fails at build time with seven "does not exist" errors
@@ -88,7 +105,7 @@ function(wxl_doxygen_bootstrap)
         message(STATUS "Doxygen ${DOXYGEN_VERSION}: ${_doxygen}")
     elseif(WXL_DOXYGEN_URL)
         FetchContent_Declare(wxl_doxygen
-            URL "${WXL_DOXYGEN_URL}"
+            URL ${WXL_DOXYGEN_URL}
             URL_HASH "SHA256=${WXL_DOXYGEN_SHA256}"
             DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
         FetchContent_MakeAvailable(wxl_doxygen)
@@ -109,7 +126,7 @@ function(wxl_doxygen_bootstrap)
     # Generated with the default configuration on purpose: what varies between
     # sites (title, search box, tree) sits in Doxygen's own $placeholders and is
     # resolved per page at build time, so one header serves every site.
-    set(_scratch "${CMAKE_BINARY_DIR}/docs/.header")
+    set(_scratch "${PROJECT_BINARY_DIR}/docs/.header")
     file(MAKE_DIRECTORY "${_scratch}")
     execute_process(
         COMMAND "${_doxygen}" -w html header.html footer.html style.css
@@ -151,7 +168,7 @@ function(wxl_doxygen_bootstrap)
     string(APPEND _mermaid "</script>")
     string(REPLACE "$mermaidjs" "${_mermaid}" _html "${_html}")
 
-    set(_header "${CMAKE_BINARY_DIR}/docs/header.html")
+    set(_header "${PROJECT_BINARY_DIR}/docs/header.html")
     file(WRITE "${_header}" "${_html}")
 
     set(WXL_DOXYGEN_EXECUTABLE "${_doxygen}"
@@ -175,19 +192,32 @@ function(_wxl_doxygen_quote out)
     set(${out} "${_result}" PARENT_SCOPE)
 endfunction()
 
-# wxl_doxygen_tree_inputs(<input-var> <exclude-var> <images-var> <root>)
+# wxl_doxygen_tree_inputs(<input-var> <exclude-var> <images-var> <root> [<wrappers>])
 #
 # What the site of a wxl tree rooted at <root> reads: the prose in docs/, the
-# READMEs of the samples, and the sources of every module; the patterns that
-# keep tests, benchmarks and tooling out; and the directories images in the
-# prose are resolved against. One list, because two sites read it: wxl's own
-# (docs/CMakeLists.txt) and the copy an application builds from its tree for
-# the sake of the tag file. A second copy of the list drifted once, and the
-# application's site stopped on a directory that no longer existed.
+# READMEs of the samples, the sources of every module and, when <wrappers> names
+# one, the directory of the generated wrappers, which lies in a build directory
+# and not under <root> (the site's own documented generation, docs/wrappers/wxl
+# of the build, wxl_generate_wrappers in cmake/wxl_ui_profile.cmake); the
+# patterns that keep tests, benchmarks and tooling out; and the directories
+# images in the prose are resolved against. One list, because two sites read
+# it: wxl's own (docs/CMakeLists.txt) and the copy an application builds from
+# its tree for the sake of the tag file. A second copy of the list drifted
+# once, and the application's site stopped on a directory that no longer
+# existed.
 #
 # Module READMEs are one-screen cards for GitHub and stay off the site; the
-# articles about the modules live in docs/.
+# articles about the modules live in docs/. The READMEs of the areas of
+# wxl.core lie under its sources, and a pattern keeps them out.
 function(wxl_doxygen_tree_inputs input_var exclude_var images_var root)
+    # The generated WinUI projection is part of the surface, not an
+    # implementation detail: wxl::Button and wxl::UIElement are what a
+    # consumer writes, and without them the tag file an application's site
+    # reads resolves nothing.
+    set(_wrappers "")
+    if(ARGC GREATER 4 AND NOT ARGV4 STREQUAL "")
+        set(_wrappers "${ARGV4}")
+    endif()
     set(${input_var}
         "${root}/docs"
         "${root}/samples/README.md"
@@ -195,43 +225,56 @@ function(wxl_doxygen_tree_inputs input_var exclude_var images_var root)
         "${root}/samples/Trayed/README.md"
         "${root}/samples/Gallery/README.md"
         "${root}/wxl.core/src"
-        "${root}/wxl.fmt/src"
-        "${root}/wxl.async/src"
-        "${root}/wxl.logging/src"
-        "${root}/wxl.xml/src"
-        # The other reader, and the arena's second consumer.
-        "${root}/wxl.json/src"
-        # The markup family: the HTML subset and the sibling tokenizers over
-        # the shared tree builder.
-        "${root}/wxl.html/src"
+        # The sibling tokenizers of the HTML subset, over its shared tree
+        # builder.
         "${root}/wxl.bb/src"
         "${root}/wxl.rsdn/src"
         "${root}/wxl.highlight/src"
-        # The generated WinUI3 projection is part of the surface, not an
-        # implementation detail: wxl::Button and wxl::UIElement are what a
-        # consumer writes, and without them the tag file an application's
-        # site reads resolves nothing.
         "${root}/wxl.ui/src"
+        ${_wrappers}
         PARENT_SCOPE)
     set(${exclude_var}
         "*/tests/*"
         "*/test/*"
         "*/benchmarks/*"
-        "*/packaging/*"
         "*/tools/*"
+        "*/wxl.core/src/*/README.md"
         PARENT_SCOPE)
     set(${images_var}
         "${root}/samples/Quadratic"
         PARENT_SCOPE)
 endfunction()
 
+# _wxl_doxygen_module_names(<var> <root>)
+#
+# The names of the modules of the wxl tree rooted at <root>, for
+# AUTOLINK_IGNORE_WORDS (Doxyfile.in): every wxl.* directory with a
+# CMakeLists.txt of its own. Read off the tree rather than listed, so a module
+# added to it is in the list without anyone remembering to add it there;
+# CONFIGURE_DEPENDS makes the build that follows its arrival configure again
+# instead of running Doxygen with the list it had before.
+function(_wxl_doxygen_module_names var root)
+    file(GLOB _lists CONFIGURE_DEPENDS "${root}/wxl.*/CMakeLists.txt")
+    set(_names "")
+    foreach(_list IN LISTS _lists)
+        cmake_path(GET _list PARENT_PATH _dir)
+        cmake_path(GET _dir FILENAME _name)
+        list(APPEND _names "${_name}")
+    endforeach()
+    list(SORT _names)
+    set(${var} "${_names}" PARENT_SCOPE)
+endfunction()
+
 # wxl_add_doxygen_site(<target>
 #     PROJECT_NAME <name> [BRIEF <text>] [LANGUAGE <Doxygen language>]
-#     INPUT <path>...  [EXCLUDE <pattern>...]  [STRIP_FROM <dir>]
+#     INPUT <path>...  [EXCLUDE <pattern>...]  [STRIP_FROM <dir>...]
 #     [MAINPAGE <file.md>] [OUTPUT <dir>]
 #     [IMAGES <dir>...]       -- where ![](...) in the prose is resolved
 #     [TAGFILE <file>]        -- write one, for other sites to link against
 #     [TAGS <file>=<url>...]  -- read others, turning mentions into links
+#     [INCLUDE <file>]        -- a Doxyfile fragment read last, over the rest; a
+#                                step of the build that writes it is named in
+#                                DEPENDS
 #     [DEPENDS <target>...])
 #
 # The target is never part of ALL: documentation is built when asked for, not on
@@ -239,14 +282,15 @@ endfunction()
 function(wxl_add_doxygen_site target)
     cmake_parse_arguments(A
         ""
-        "PROJECT_NAME;BRIEF;LANGUAGE;STRIP_FROM;MAINPAGE;OUTPUT;TAGFILE"
-        "INPUT;EXCLUDE;IMAGES;TAGS;DEPENDS"
+        "PROJECT_NAME;BRIEF;LANGUAGE;MAINPAGE;OUTPUT;TAGFILE;INCLUDE"
+        "INPUT;EXCLUDE;IMAGES;TAGS;DEPENDS;STRIP_FROM"
         ${ARGN})
 
+    _wxl_doxygen_pins()
     wxl_doxygen_bootstrap()
 
     if(NOT A_OUTPUT)
-        set(A_OUTPUT "${CMAKE_BINARY_DIR}/docs/${target}")
+        set(A_OUTPUT "${PROJECT_BINARY_DIR}/docs/${target}")
     endif()
     if(NOT A_LANGUAGE)
         set(A_LANGUAGE English)
@@ -256,17 +300,30 @@ function(wxl_add_doxygen_site target)
     _wxl_doxygen_quote(DOXY_EXCLUDE_PATTERNS ${A_EXCLUDE})
     _wxl_doxygen_quote(DOXY_TAGFILES ${A_TAGS})
     _wxl_doxygen_quote(DOXY_IMAGE_PATH ${A_IMAGES})
+    _wxl_doxygen_quote(DOXY_STRIP_FROM_PATH ${A_STRIP_FROM})
+
+    # The module names are those of the wxl tree this file belongs to, whatever
+    # tree the site itself is of: a site that reads wxl's tag file mentions
+    # wxl.core as often as wxl's own does, and the tag file turns the mention
+    # into the same link to the namespace page. Taken from here rather than from
+    # the caller, so a site built with this function needs no argument for it.
+    cmake_path(GET WXL_DOXYGEN_CMAKE_DIR PARENT_PATH _wxl_root)
+    _wxl_doxygen_module_names(_modules "${_wxl_root}")
+    _wxl_doxygen_quote(DOXY_AUTOLINK_IGNORE_WORDS ${_modules})
 
     set(DOXY_PROJECT_NAME     "${A_PROJECT_NAME}")
     set(DOXY_PROJECT_BRIEF    "${A_BRIEF}")
     set(DOXY_LANGUAGE         "${A_LANGUAGE}")
     set(DOXY_OUTPUT_DIRECTORY "${A_OUTPUT}")
-    set(DOXY_STRIP_FROM_PATH  "${A_STRIP_FROM}")
     set(DOXY_MAINPAGE         "${A_MAINPAGE}")
+    set(DOXY_INCLUDE          "")
+    if(A_INCLUDE)
+        set(DOXY_INCLUDE      "@INCLUDE               = \"${A_INCLUDE}\"")
+    endif()
     set(DOXY_GENERATE_TAGFILE "${A_TAGFILE}")
     set(DOXY_HTML_HEADER      "${WXL_DOXYGEN_HTML_HEADER}")
     set(DOXY_MERMAID_JS_URL   "${WXL_DOXYGEN_MERMAID_JS_URL}")
-    set(DOXY_WARN_LOGFILE     "${CMAKE_BINARY_DIR}/docs/${target}.warnings.log")
+    set(DOXY_WARN_LOGFILE     "${PROJECT_BINARY_DIR}/docs/${target}.warnings.log")
 
     _wxl_doxygen_quote(DOXY_HTML_EXTRA_STYLESHEET
         "${WXL_DOXYGEN_THEME_DIR}/doxygen-awesome.css"
@@ -279,7 +336,7 @@ function(wxl_add_doxygen_site target)
     endforeach()
     _wxl_doxygen_quote(DOXY_HTML_EXTRA_FILES ${_extra_files})
 
-    set(_doxyfile "${CMAKE_BINARY_DIR}/docs/${target}.Doxyfile")
+    set(_doxyfile "${PROJECT_BINARY_DIR}/docs/${target}.Doxyfile")
     configure_file("${WXL_DOXYGEN_CMAKE_DIR}/Doxyfile.in" "${_doxyfile}" @ONLY)
 
     # No OUTPUT/DEPENDS pair: a stale site is worse than a redundant two-second

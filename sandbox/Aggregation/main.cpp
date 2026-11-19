@@ -3,7 +3,7 @@
 // got as far as RPC_E_WRONG_THREAD even with a real outer identity and a
 // manually-created DispatcherQueueController. Modeled after
 // M:\source\WxlApp1\WxlApp1\main.cpp (an existing, working unpackaged
-// WinUI3 C++/WinRT app) -- that project's OnLaunched is where real WinUI3
+// WinUI C++/WinRT app) -- that project's OnLaunched is where real WinUI
 // object creation actually happens, driven by Application::Start itself
 // (which sets up whatever thread registration a manually-created
 // DispatcherQueueController alone didn't). This file borrows that
@@ -29,8 +29,8 @@
 
 #include <winrt/Microsoft.UI.Xaml.h>
 
-#include <impl/bootstrap.h>
 #include <impl/hresult.h>
+#include <impl/winrt_helpers.h>
 
 #include <cstdio>
 #include <cwchar>
@@ -70,7 +70,7 @@ private:
     ULONG refs_ = 1;
 };
 
-// Real GUID, verified against generated/cppwinrt earlier in this session
+// Real GUID, the one the cppwinrt projection declares
 // (winrt/impl/Microsoft.UI.Xaml.0.h): E7BEAEE7-160E-50F7-8789-D63463F979FA.
 constexpr GUID IID_IDependencyObject = {
     0xE7BEAEE7, 0x160E, 0x50F7, {0x87, 0x89, 0xD6, 0x34, 0x63, 0xF9, 0x79, 0xFA}
@@ -185,7 +185,7 @@ int main() {
 
     try {
         wxl::impl::ensure_windows_app_runtime_initialized();
-    } catch (wxl::hresult_error const& e) {
+    } catch (wxl::impl::hresult_error const& e) {
         std::printf("ensure_windows_app_runtime_initialized failed: 0x%08X\n", static_cast<unsigned>(e.code()));
         return 1;
     }

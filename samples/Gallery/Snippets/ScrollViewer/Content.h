@@ -5,7 +5,7 @@ struct Model {
     core::observable<int> verticalMode{1};
     core::observable<int> horizontalBar{1};
     core::observable<int> verticalBar{1};
-    core::observable<double> zoom{4};
+    core::observable<float> zoom{4.0f};
 };
 auto const model = gallery::hold<Model>();
 
@@ -23,9 +23,9 @@ auto viewer = ScrollViewer {
     verticalScrollMode = BindOutput {model->verticalMode, [](int chosen) { return static_cast<ScrollMode>(chosen); }},
     horizontalScrollBarVisibility = BindOutput {model->horizontalBar, [](int chosen) { return static_cast<ScrollBarVisibility>(chosen); }},
     verticalScrollBarVisibility = BindOutput {model->verticalBar, [](int chosen) { return static_cast<ScrollBarVisibility>(chosen); }},
-    onLoaded = [model](ScrollViewer const& self) { self.changeView({}, {}, static_cast<float>(model->zoom.get())); },
+    onLoaded += [model](ScrollViewer const& self) { self.changeView({}, {}, model->zoom.get()); },
     // The zoom made with the wheel or a pinch is the zoom of the slider.
-    onViewChanged = [model](ScrollViewer const& self, ScrollViewerViewChangedEventArgs& args) {
+    onViewChanged += [model](ScrollViewer const& self, ScrollViewerViewChangedEventArgs& args) {
         if (!args.isIntermediate()) {
             model->zoom.set(self.zoomFactor());
         }
@@ -63,8 +63,8 @@ auto choice = [](int line, Thickness around, char16_t const* description, std::i
 
 auto options = Grid {
     minWidth = 200,
-    columnDefinitions = u"auto,*",
-    rowDefinitions = u"auto,auto,auto,auto,auto,auto,auto,auto",
+    ColumnDefinitions<u"auto,*">,
+    RowDefinitions<u"auto,auto,auto,auto,auto,auto,auto,auto">,
     caption(u"ZoomMode", 0, Thickness {0, 0, 10, 0}, false),
     choice(0, Thickness {}, u"zoom mode", {u"Disabled", u"Enabled"}, model->zoomMode),
     Slider {
@@ -76,7 +76,7 @@ auto options = Grid {
         maximum = 10.0,
         isEnabled = BindOutput {model->zoomMode, [](int chosen) { return chosen == 1; }},
         value = Bind {model->zoom},
-        onValueChanged = [viewer](Slider const& self) { viewer.changeView({}, {}, static_cast<float>(self.value())); },
+        onValueChanged += [viewer](Slider const& self) { viewer.changeView({}, {}, static_cast<float>(self.value())); },
     },
     caption(u"ScrollMode", 2, Thickness {0, 12}, true),
     caption(u"Horizontal", 3, Thickness {0, 0, 10, 0}, false),

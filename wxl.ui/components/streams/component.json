@@ -1,0 +1,21 @@
+{
+  "name": "streams",
+  "dependencies": [],
+  "sources": [],
+  "libraries": [],
+  "description": "A stream reference the platform opens for a file address too.",
+  "imports": {
+    "types": {
+      "Windows.Storage.Streams.RandomAccessStreamReference": {
+        "members": [],
+        "replacedCalls": {
+          "CreateFromUri": {
+            "comment": "The platform opens such a reference only for http, https, ms-appx and ms-appdata: an address with the file scheme fails at OpenReadAsync with E_NOTIMPL, and an unpackaged application has no ms-appx. A file address gets a reference that opens the file when asked; any other address is the platform's.",
+            "function": "impl::stream_reference_from_uri",
+            "include": "../impl/winrt_helpers.h"
+          }
+        }
+      }
+    }
+  }
+}

@@ -6,7 +6,7 @@ public:
     core::observable<core::u16_text const>& description() { return description_; }
 
     void welcome() {
-        title_.set(core::u16_text {u"Welcome to WinUI 3"});
+        title_.set(core::u16_text {u"Welcome to WinUI"});
         description_.set(core::u16_text {u"This is an example of binding to a view model."});
     }
     void farewell() {
@@ -28,6 +28,6 @@ auto example = StackPanel {
     TextBlock {FontWeight {600}, u"Description:"},
     TextBlock {fontSize = 16, text = BindOutput {model->description()}},
     StackPanel {orientation.horizontal, spacing = 8.0,
-                Button {content = u"Welcome", onClick = [viewModel](auto&&...) { viewModel->welcome(); }},
-                Button {content = u"Goodbye", onClick = [viewModel](auto&&...) { viewModel->farewell(); }}},
+                Button {content = u"Welcome", onClick += [viewModel](auto&&...) { viewModel->welcome(); }},
+                Button {content = u"Goodbye", onClick += [viewModel](auto&&...) { viewModel->farewell(); }}},
 };

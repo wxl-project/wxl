@@ -1,7 +1,7 @@
 // Страница BadgeNotificationManager -- BadgeNotificationManagerPage оригинала.
 
 #include "Pages.h"
-#include "Packaged.h"
+#include "Application.h"
 #include <wxl/Microsoft.Windows.BadgeNotifications.h>
 #include "Shell.h"
 
@@ -10,12 +10,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t countHeader[] = {
-#include "Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsCount.html.embed"
-};
-constexpr char8_t countCode[] = {
-#include "Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsCount.h.embed"
-};
+gallery::LazyLoadedText countHeader{"Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsCount.html"};
+gallery::LazyLoadedText countCode{"Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsCount.h"};
 
 FrameworkElement count() {
 #include "Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsCount.h"
@@ -28,12 +24,8 @@ FrameworkElement count() {
     });
 }
 
-constexpr char8_t glyphExampleHeader[] = {
-#include "Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsGlyph.html.embed"
-};
-constexpr char8_t glyphExampleCode[] = {
-#include "Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsGlyph.h.embed"
-};
+gallery::LazyLoadedText glyphExampleHeader{"Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsGlyph.html"};
+gallery::LazyLoadedText glyphExampleCode{"Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsGlyph.h"};
 
 FrameworkElement glyphExample() {
 #include "Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsGlyph.h"
@@ -48,7 +40,7 @@ FrameworkElement glyphExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::badgeNotificationManagerPage() {
+static wxl::FrameworkElement badgeNotificationManagerPage() {
     return StackPanel {
         InfoBar {
             Margin {0, 10, 0, 0},
@@ -59,3 +51,5 @@ wxl::FrameworkElement gallery::badgeNotificationManagerPage() {
             message = u"This API requires the app to be running in packaged mode (MSIX).",
         },count(), glyphExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"BadgeNotificationManager", badgeNotificationManagerPage);

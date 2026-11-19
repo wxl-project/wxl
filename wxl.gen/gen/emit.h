@@ -15,15 +15,15 @@
 #include "xml_input.h"
 
 // Shared plumbing for the output side of winui-srcgen: opening files,
-// the banner every generated file starts with, the record of what was
-// written (which the generated CMakeLists.txt is built from), and the
-// flat-namespace name registry.
+// the banner every generated file starts with, the include lines, the record
+// of what was written, and the flat-namespace name registry.
 //
 // A writer opens its file with open_output, starts it with the banner and
 // records it with emitted::add. A file written past these would be rewritten
-// on every run whether it changed or not, would not be recognised as stale
-// once no longer produced (prune_stale looks for the banner), and would be
-// missing from the generated CMakeLists.txt.
+// on every run whether it changed or not -- and the build, which compiles
+// again whatever the run touched, would compile it again too -- and would not
+// be recognised as stale once no longer produced (prune_stale looks for the
+// banner and the record).
 
 namespace gen {
 
@@ -55,17 +55,36 @@ private:
 // Every generated file passes through here.
 output_file open_output(std::filesystem::path const& path);
 
-// The #include lines for `includes`, in set order: a name in angle brackets
-// -- a projection header, a standard one a type mapping names (<chrono>) --
-// as it is, any other in quotes.
+// The #include line for `name`, as the writers name a file:
+//
+//   <winrt/...>, <chrono>  a projection header, a standard one a type mapping
+//                          names: as it is;
+//   ../Object.h            a hand-written header of the library the wrappers
+//                          belong to, named relative to its include directory
+//                          (wxl.ui/src) with "../" in front -- the notation
+//                          of the writers, of types.json and of the profiles:
+//                          in angle brackets without the "../". The output
+//                          lies in the build directory, and the header is
+//                          reached through the library's include directory;
+//                          angle brackets and not quotes, so that a file
+//                          beside the generated one, or beside a source that
+//                          includes it, is never taken for it;
+//   Button.h               a file of the run itself: in quotes, after
+//                          `sibling` -- empty for a file at the top of the
+//                          output directory, "../" for one in parts/.
+void write_include(std::ostream& out, std::string_view name, std::string_view sibling = {});
+
+// The #include lines for `includes`, in set order, each as write_include
+// writes it from the top of the output directory.
 void write_includes(std::ostream& out, std::set<std::string> const& includes);
 
 // The documentation of the declaration that follows, as `///` lines at
 // `indent`: the summary, then @deprecated, a @param for each of `params` the
 // documentation describes and @return when `has_result` -- a @param only for a
 // parameter the wxl declaration has, since Doxygen refuses one it does not.
-// The text is escaped for Doxygen and wrapped at 100 columns. Documentation
-// that says nothing writes nothing.
+// The text is escaped for Doxygen and wrapped at 100 columns, and its markup
+// written as the HTML and Markdown Doxygen renders. Documentation that says
+// nothing writes nothing.
 void write_doc(std::ostream& out, std::string_view indent, member_documentation const& doc,
                std::span<std::string_view const> params = {}, bool has_result = false);
 
@@ -79,7 +98,7 @@ void write_umbrella_file(std::filesystem::path const& path, std::vector<std::str
 // dependency order. Every item carries its TypeDef as `type`; `edges(item,
 // follow)` calls `follow` with each TypeDef the item depends on, and one that
 // is not among `items` is ignored. Depth-first; a cycle -- which neither kind
-// of edge should have -- is cut where it is met instead of recursing forever.
+// of edge should have -- is broken where it is met instead of recursing forever.
 template <typename Item, typename Edges>
 std::vector<Item> topological_sort(std::vector<Item> items, Edges edges) {
     std::map<md::TypeDef, Item const*> by_type;
@@ -111,33 +130,45 @@ std::vector<Item> topological_sort(std::vector<Item> items, Edges edges) {
     return order;
 }
 
-// What generation produced, in the order it was produced. The generated
-// CMakeLists.txt lists exactly these names, so anything written outside
-// this record would silently not take part in the build.
+// What generation produced, in the order it was produced: what prune_stale
+// keeps, and what the run reports. A file written outside this record would be
+// taken for stale and removed by the run that wrote it.
 class emitted {
 public:
-    // `path` is the file just written; only its name is recorded, since
-    // the generated CMakeLists.txt sits in the same directory.
-    //
-    // `target` is which target compiles it, and it is empty for all but one:
-    // everything generated belongs to the consuming library, except the
-    // schema's own test, which belongs to the surface test beside it. An
-    // empty one means the library named by --target.
-    void add(std::filesystem::path const& path, std::string_view target = {});
+    // `dir` is the output directory; every file recorded lies under it.
+    explicit emitted(std::filesystem::path dir);
 
-    inline std::vector<std::string> const& files() const noexcept { return files_; }
+    // `path` is the file just written, under the output directory. It is
+    // recorded relative to that directory -- "Button.h",
+    // "parts/wrapper-00.cpp" -- and stays a path: it is compared with what a
+    // listing of the directory hands out. A path outside the directory is a
+    // writer's mistake and throws std::logic_error.
+    void add(std::filesystem::path const& path);
 
-    // The files of one target, in the order they were written. An empty
-    // `target` asks for the ones that named none.
-    std::vector<std::string> files_of(std::string_view target) const;
-
-    // Every target some file named, the empty one included, so the
-    // CMakeLists writer can walk them without knowing which exist.
-    std::vector<std::string> targets() const;
+    inline std::vector<std::filesystem::path> const& files() const noexcept { return files_; }
 
 private:
-    std::vector<std::string> files_;
-    std::vector<std::string> targets_;  // parallel to files_
+    std::filesystem::path dir_;
+    std::vector<std::filesystem::path> files_;
+};
+
+// The out-of-line bodies of one file group -- a group of class wrappers, the
+// args views of a namespace -- as the writers hand them to write_parts
+// (gen/parts.cpp), which spreads them over the translation units of the build.
+struct body_file {
+    // The group, for the comment over its bodies in a part.
+    std::string name;
+    // What a translation unit holding any of the bodies includes, in the order
+    // it is included, as the writers name files (write_include). The order is
+    // the writer's and matters: every wxl public header imports wxl.core, MSVC
+    // refuses a standard header first seen after that import, so a private
+    // header -- which includes its winrt ones, and with them the standard
+    // headers winrt/base.h needs, ahead of any wxl header -- comes first.
+    std::vector<std::string> includes;
+    // One entry per class, in dependency order, base before derived: all the
+    // bodies of that class, and whatever the group defines once (an explicit
+    // instantiation) with its last class. A class with no bodies has no entry.
+    std::vector<std::string> classes;
 };
 
 // The name a WinRT type gets in wxl's flat `namespace wxl`: its bare
@@ -171,14 +202,14 @@ std::string_view without_interface_prefix(std::string_view interface_name);
 std::string interface_field_name(std::string_view interface_name);
 
 // "Microsoft.UI.Xaml.Controls" -> "winrt::Microsoft::UI::Xaml::Controls"
-std::string winrt_namespace(std::string_view metadata_namespace);
+std::string winrt_namespace(std::string_view namespace_name);
 
 // The C++ name cppwinrt gives a type, qualified: the metadata name in its own
 // namespace, except for the numerics, which it spells float2, float3, float4,
 // float3x2, float4x4, plane and quaternion.
-std::string winrt_type_name(std::string_view metadata_namespace, std::string_view name);
+std::string winrt_type_name(std::string_view namespace_name, std::string_view name);
 
 // The cppwinrt projection header a WinRT namespace lives in.
-std::string winrt_include(std::string_view metadata_namespace);
+std::string winrt_include(std::string_view namespace_name);
 
 }  // namespace gen

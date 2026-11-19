@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t reusableHeader[] = {
-#include "Snippets/XamlUICommand/Reusable.html.embed"
-};
-constexpr char8_t reusableCode[] = {
-#include "Snippets/XamlUICommand/Reusable.h.embed"
-};
+gallery::LazyLoadedText reusableHeader{"Snippets/XamlUICommand/Reusable.html"};
+gallery::LazyLoadedText reusableCode{"Snippets/XamlUICommand/Reusable.h"};
 
 FrameworkElement reusable() {
 #include "Snippets/XamlUICommand/Reusable.h"
@@ -27,6 +23,8 @@ FrameworkElement reusable() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::xamlUICommandPage() {
+static wxl::FrameworkElement xamlUICommandPage() {
     return StackPanel {reusable()};
 }
+
+REGISTER_GALLERY_PAGE(L"XamlUICommand", xamlUICommandPage);

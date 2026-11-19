@@ -25,8 +25,8 @@
 #include <winrt/Microsoft.UI.Xaml.Markup.h>
 #include <winrt/Microsoft.UI.Xaml.Media.h>
 
-#include <impl/bootstrap.h>
 #include <impl/hresult.h>
+#include <impl/winrt_helpers.h>
 
 #include <chrono>
 #include <cstdio>
@@ -261,9 +261,12 @@ struct App : ApplicationT<App> {
 }  // namespace
 
 int main() {
-    if (char const* const o = std::getenv("PROBE_OPTS")) {
+    wchar_t* wide = nullptr;
+    if (_wdupenv_s(&wide, nullptr, L"PROBE_OPTS") == 0 && wide) {
+        std::string const o = winrt::to_string(wide);
+        std::free(wide);
         std::string word;
-        for (char const* p = o;; ++p) {
+        for (char const* p = o.c_str();; ++p) {
             if (*p == ',' || *p == 0) {
                 if (!word.empty()) opts.insert(word);
                 word.clear();
@@ -276,7 +279,7 @@ int main() {
     init_apartment(apartment_type::single_threaded);
     try {
         wxl::impl::ensure_windows_app_runtime_initialized();
-    } catch (wxl::hresult_error const& e) {
+    } catch (wxl::impl::hresult_error const& e) {
         std::printf("ensure_windows_app_runtime_initialized failed: 0x%08X\n", static_cast<unsigned>(e.code()));
         return 1;
     }

@@ -3,7 +3,7 @@
 auto const* objects = &gallery::dataObjects(true);
 
 auto const imageOf = [objects](Object const& item) {
-    auto const& object = (*objects)[static_cast<size_t>(intOf(item))];
+    auto const& object = (*objects)[static_cast<size_t>(unboxValue<int64_t>(item))];
     return ItemContainer {width = 200, height = 140, horizontalAlignment = HorizontalAlignment::Left,
                           child = Image {Margin {4}, automationAccessibilityView = AccessibilityView::Raw, horizontalAlignment = HorizontalAlignment::Center,
                                  verticalAlignment = VerticalAlignment::Center, stretch = Stretch::UniformToFill,
@@ -37,10 +37,10 @@ struct Model {
 auto const model = gallery::hold<Model>();
 
 model->view.itemTemplate(imageOf);
-model->view.itemsSource(indexList(static_cast<int64_t>(objects->size())));
+model->view.itemsSource(IndexList(static_cast<int64_t>(objects->size())));
 model->view.add_onItemInvoked([model, objects](auto const&, ItemsViewItemInvokedEventArgs& args) {
     std::u16string words = u"You invoked ";
-    words += (*objects)[static_cast<size_t>(intOf(args.invokedItem()))].title;
+    words += (*objects)[static_cast<size_t>(unboxValue<int64_t>(args.invokedItem()))].title;
     words += u".";
     model->invoked.text(words);
 });
@@ -48,23 +48,27 @@ model->view.add_onSelectionChanged([model, objects](auto const&, auto&&...) {
     auto const item = model->view.selectedItem();
     std::u16string words = item ? u"You have selected " : u"You have selected nothing.";
     if (item) {
-        words += (*objects)[static_cast<size_t>(intOf(item))].title;
+        words += (*objects)[static_cast<size_t>(unboxValue<int64_t>(item))].title;
         words += u".";
     }
     model->selected.text(words);
 });
 
+auto description = HtmlBlock {
+    Margin {0, 0, 0, 15},
+    textWrapping = TextWrapping::Wrap,
+};
+description.theme(MarkupTheme{.paragraphMargin = Thickness {0}});
+description.html(
+    u"<p>You can enable four different selection modes on the right.</p>"
+    u"<p><b>None</b> disables selection all together.</p>"
+    u"<p><b>Single</b> allows for only one item to be selected.</p>"
+    u"<p><b>Multiple</b> lets the user choose any number of items with a click on each.</p>"
+    u"<p><b>Extended</b> allows Ctrl+Click for individual items and Shift+Click for a range.</p>");
+
 auto example = Grid {
-    rowDefinitions = u"auto,*,auto",
-    RichTextBlock {
-        Margin {0, 0, 0, 15},
-        textWrapping = TextWrapping::Wrap,
-        Paragraph {Run {u"You can enable four different selection modes on the right."}},
-        Paragraph {Bold {Run {u"None"}}, Run {u" disables selection all together."}},
-        Paragraph {Bold {Run {u"Single"}}, Run {u" allows for only one item to be selected."}},
-        Paragraph {Bold {Run {u"Multiple"}}, Run {u" lets the user choose any number of items with a click on each."}},
-        Paragraph {Bold {Run {u"Extended"}}, Run {u" allows Ctrl+Click for individual items and Shift+Click for a range."}},
-    },
+    RowDefinitions<u"auto,*,auto">,
+    description,
     Border {row = 1, model->view},
     StackPanel {row = 2, model->invoked, model->selected},
 };

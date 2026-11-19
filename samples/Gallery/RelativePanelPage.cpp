@@ -7,12 +7,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t controlHeader[] = {
-#include "Snippets/RelativePanel/RelativePanelControl.html.embed"
-};
-constexpr char8_t controlCode[] = {
-#include "Snippets/RelativePanel/RelativePanelControl.h.embed"
-};
+gallery::LazyLoadedText controlHeader{"Snippets/RelativePanel/RelativePanelControl.html"};
+gallery::LazyLoadedText controlCode{"Snippets/RelativePanel/RelativePanelControl.h"};
 
 FrameworkElement control() {
 #include "Snippets/RelativePanel/RelativePanelControl.h"
@@ -26,6 +22,8 @@ FrameworkElement control() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::relativePanelPage() {
+static wxl::FrameworkElement relativePanelPage() {
     return StackPanel {control()};
 }
+
+REGISTER_GALLERY_PAGE(L"RelativePanel", relativePanelPage);

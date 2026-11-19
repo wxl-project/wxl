@@ -1,0 +1,536 @@
+#pragma once
+
+// Waiting for an event rather than being called back by it.
+//
+// A handler is the right shape for an answer that is over in one line, and
+// the wrong one as soon as the answer has a middle: a drag is pressed, then
+// moved, then released, and written as three handlers the state between them
+// has to live in a flag somewhere outside all three. Awaited instead, that
+// state is the coroutine's own program counter.
+//
+// What is awaited is a proxy for the event, not a member of the element:
+//
+//     auto keys = wxl::on_event<EventKey::PreviewKeyDown>(keypad);
+//     while (true) {
+//         KeyRoutedEventArgs& args = co_await keys;
+//         ...
+//     }
+//
+// Made separately rather than asked of the element for three reasons. The
+// generator emits nothing for it -- event_adder is the vocabulary already
+// written for the builder syntax, so every event in the profile, and every
+// one added to it later, is awaitable the moment it exists. The subscription
+// becomes an object with a place, so how long it lasts is written down rather
+// than implied. And one name covers both shapes: kept in a variable it is a
+// subscription a loop waits on, written as a temporary it is a single wait --
+//
+//     co_await wxl::on_event<EventKey::Loaded>(page);
+//
+// -- because the temporary lives to the end of the full expression, which is
+// past the suspension inside it.
+//
+// This is emphatically not async::task, which owns one pending result, is
+// consumed by the co_await that takes it, and is resumed through the loop or by
+// the coroutine that makes the result. This one holds a subscription across any
+// number of waits and is resumed by the handler itself, inline, before that
+// handler has returned -- which is not a detail of how it is built but the
+// point of it: args.handled(true) means something only while the framework is
+// still inside the call.
+//
+// **A wait can end without the event happening**: the element has left the
+// tree -- its window closed, a page was navigated away from -- and every
+// wait on it ends there, while the message loop is still turning; or the
+// application is going down, and impl/event_waits.h says so to everyone
+// still suspended. An element can come back (Loaded), so a coroutine that
+// is to live with the element is started from Loaded and ends with
+// Unloaded, over and over. There are two ways to hear the end, and the
+// difference is written at the point of waiting:
+//
+//     KeyRoutedEventArgs& args = co_await keys;        // throws
+//     auto const got = co_await keys.next();           // answers
+//
+// The throwing form is the default because it is what cancellation already
+// does everywhere else in wxl -- an outcome travelling the same way as a value
+// and an error. The answering form is for a body that must let nothing
+// escape, and it loses nothing by not throwing: what it hands back carries the
+// exception when there was one, so it can be read, rethrown or ignored.
+//
+// **And a wait can be asked to end**, by whoever holds the source of a
+// cancellation token it was put under -- given last, as the operations of
+// wxl::async take one:
+//
+//     auto keys = wxl::on_event<EventKey::KeyDown>(keypad, token);
+//     co_await onClick(button, token);
+//
+// Every wait on such a proxy is registered with the token: once it is cancelled, the
+// wait in progress ends, and every later one ends at once, the throwing form
+// with async::operation_canceled_exception and the answering form with an
+// empty error. Asking resumes nobody: the coroutine is resumed by the thread's
+// queue on its next turn, or by the event if that comes first -- unanswered,
+// so it travels on as if nobody waited (impl/event_waits.h). A wait made
+// without a token is the same object it always was, and pays nothing for the
+// other.
+//
+// **An event of the application's own** -- a core::event of its model, with no
+// sender and no element -- is awaited the same way, one wait per co_await, and
+// only under a token: no element leaves the tree to end it, so its owner does.
+//
+//     int const pages = co_await wxl::on_event(model.paginated, token);
+//
+// What comes back is the arguments, one as it is, several as a tuple, none as
+// nothing -- and as values: one the event passes by value is moved, one by
+// reference to const copied, since a reference would dangle once the call is over and the
+// coroutine may keep it past its next suspension. Only a reference to non-const
+// stays one: it is how the coroutine answers the raiser, and it is valid until the
+// coroutine next suspends (impl/core_event_wait.h).
+
+#include "core.h"
+
+#include "events.h"
+#include "impl/core_event_wait.h"
+#include "impl/event_waits.h"
+#include "impl/member.h"
+
+namespace wxl {
+
+class FrameworkElement;
+
+namespace impl {
+
+// A source naming an element of the tree -- one that can be unloaded. A
+// wait on anything else (a type's own event, a Window) ends only with the
+// application.
+template <typename Source>
+concept unloadable_source = requires(Source const& source) {
+    requires std::derived_from<std::remove_cvref_t<decltype(source.object)>, FrameworkElement>;
+};
+
+// Unloaded, named through the source: the generated vocabulary specialises
+// event_adder for it, and a header that names the wait may come before that
+// vocabulary -- so the adder is looked up where a wait is made, not here.
+template <typename Source>
+inline constexpr EventKey unloaded_key = EventKey::Unloaded;
+
+// The subscription, and the thing a coroutine awaits.
+//
+// It is neither copied nor moved, and cannot be: the handler it gives the
+// element captures it by address. Made by on_event() below, which returns it
+// as a prvalue -- so a variable can still be initialised from the call.
+template <typename Source>
+class event_awaitable : public event_wait
+{
+public:
+    // Whatever the source says it hands over: read off the signature of the
+    // add it subscribes through, so the pair (class, event) picks the type
+    // rather than the event alone.
+    using args_t = typename Source::args_t;
+
+    // As a handler is given them: a non-copyable view by reference for
+    // event args proper, the wrapper by const reference for the events whose
+    // "args" are an ordinary object.
+    using args_ref_t = EventArgsRef<args_t>;
+
+    // What the answering form hands back. A reference cannot be the value of
+    // an expected, so it travels wrapped; the other side is the reason the
+    // event will not come -- stopped by request, or stopped by an error, which
+    // it carries. One exception_ptr, as wide as the pointer.
+    using args_value_t = std::reference_wrapper<std::remove_reference_t<args_ref_t>>;
+    using next_result_t = std::expected<args_value_t, async::stop_reason>;
+
+    explicit event_awaitable(Source watched) : source_{std::move(watched)} {
+        // The element is held by value, which is a reference count: the
+        // subscription outlives every temporary in the description tree, and
+        // the unsubscription below has to have something to unsubscribe from.
+        token_ = source_.add(EventHandler<args_t>{[this](Object const&, args_ref_t args) {
+            if (!waiting()) {
+                // Nobody is waiting, so this event is not ours: it is left
+                // unhandled and travels on. Deliberately not queued --
+                // args that carry an answer back to the framework
+                // (Handled, a cancellable request refused) are worthless
+                // once the handler has returned, so a queue would hand the
+                // coroutine something it can no longer answer.
+                return;
+            }
+
+            // Valid for exactly as long as the frame below runs inside
+            // this call, which is what the args type says about itself by
+            // being non-copyable. It is left pointing at args afterwards
+            // and that is harmless: the only reader is await_resume, and
+            // every delivery writes it again first.
+            args_ = &args;
+
+            // Resumes, and touches nothing of ours afterwards -- see
+            // event_wait::deliver.
+            deliver();
+        }});
+
+        // The element leaving the tree ends the wait, and does so while the
+        // message loop still turns, so the coroutine may answer with a
+        // co_await of its own. IsLoaded is asked rather than assumed: Unloaded
+        // says the element left the tree, not that it is still out of it,
+        // and one moved between parents may be back by the time this runs.
+        // Nothing of ours is touched after end(): it may have run the
+        // coroutine to its end, and this object with it.
+        if constexpr (impl::unloadable_source<Source>) {
+            unloaded_ = impl::event_adder<impl::unloaded_key<Source>>::add(source_.object, [this] {
+                if (!source_.object.isLoaded()) end();
+            });
+        }
+    }
+
+    // Taking the handlers off throws nothing, so nothing is caught. A
+    // generated remove reads the interface its add has already fetched and
+    // calls the projection's remove, which is noexcept and does not look at
+    // the HRESULT -- the one an element the framework has let go of answers
+    // with, when the window closes while a coroutine still waits. A
+    // hand-written one (SettingsCard, SettingsExpander) asks the object again
+    // for the interface its add was given, which a live object does not
+    // refuse, and calls its own noexcept remove. A remove of
+    // CompositionWindow says whether the token was there, and checked_remove
+    // stops the process on a no. A destructor is noexcept: a remove that
+    // throws one day ends in std::terminate, which names the exception,
+    // instead of being lost here.
+    ~event_awaitable() {
+        if constexpr (impl::unloadable_source<Source>) {
+            impl::event_adder<impl::unloaded_key<Source>>::remove(source_.object, unloaded_);
+        }
+
+        source_.remove(token_);
+    }
+
+    event_awaitable(event_awaitable const&) = delete;
+    event_awaitable& operator=(event_awaitable const&) = delete;
+
+    // One wait. It lives in the frame of the coroutine that wrote the
+    // co_await, and taking itself off the proxy is what its destructor is
+    // for: a frame destroyed while suspended unhooks on the way out, leaving
+    // no handle behind to be resumed into freed memory.
+    //
+    // `Throwing` picks how the wait reports that it ended instead. It is the
+    // only difference between the two forms, and it is chosen at the point of
+    // waiting rather than by the kind of coroutine, so that one written line
+    // means one thing wherever it is read.
+    template <bool Throwing>
+    class awaiter_t
+    {
+    public:
+        using result_t = std::conditional_t<Throwing, args_ref_t, next_result_t>;
+
+        explicit awaiter_t(event_awaitable& event) noexcept : event_{&event} {}
+
+        ~awaiter_t() {
+            if (armed_) event_->disarm();
+        }
+
+        awaiter_t(awaiter_t const&) = delete;
+        awaiter_t& operator=(awaiter_t const&) = delete;
+
+        // Nothing suspends once the application has begun going down: the
+        // wait ends where it stands rather than joining a list that is being
+        // emptied. Which is also what keeps a coroutine that catches
+        // cancellation and waits again from being ended over and over. Nor
+        // does a wait cancelled before it began.
+        bool await_ready() const noexcept { return canceled_ || impl::event_wait::closing(); }
+
+        // Each hook that checks how it is used is declared twice, as task's
+        // are: a strict build's takes the place of the co_await, any other
+        // build's has the signature it always had.
+
+        void await_suspend(std::coroutine_handle<> waiter) noexcept
+            requires(!async::detail::strict)
+        {
+            event_->arm(waiter);
+            armed_ = true;
+        }
+
+        void await_suspend(std::coroutine_handle<> waiter,
+                           async::detail::site where = async::detail::site::current()) noexcept
+            requires(async::detail::strict)
+        {
+            event_->arm(waiter, where);
+            armed_ = true;
+        }
+
+        result_t await_resume() {
+            armed_ = false;
+
+            if constexpr (Throwing) {
+                if (over()) event_->throw_ended();
+
+                return static_cast<args_ref_t>(*event_->args_);
+            } else {
+                if (over()) return result_t{std::unexpect, event_->reason()};
+
+                return result_t{args_value_t{*event_->args_}};
+            }
+        }
+
+        // Cancelled by the token of the form with one
+        // (async::detail::stoppable_awaiter): a wait that is
+        // suspended is resumed by the queue's next turn, or by the event if it
+        // comes first -- never by cancel() itself; one that has not begun never
+        // suspends. Either way the args are not asked for.
+        void cancel() noexcept {
+            if (armed_) {
+                event_->cancel();
+            } else {
+                canceled_ = true;
+            }
+        }
+
+        // What the answering form answers when its token was cancelled: a
+        // reason without an error, stopped by request.
+        result_t await_stopped() noexcept
+            requires(!Throwing)
+        {
+            return result_t{std::unexpect};
+        }
+
+    private:
+        // Ended while suspended, or never suspended because it was already
+        // too late.
+        bool over() const noexcept { return event_->ended() || impl::event_wait::closing(); }
+
+        event_awaitable* event_;
+
+        // Never both: armed while suspended in the proxy, cancelled before it
+        // suspended and so never to be.
+        bool armed_ = false;
+        bool canceled_ = false;
+    };
+
+    using awaiter = awaiter_t<true>;
+
+    awaiter operator co_await() noexcept { return awaiter{*this}; }
+
+    // Waiting writes down who is waiting, so a const proxy cannot be awaited
+    // -- said here rather than left to overload resolution, which would
+    // otherwise report the absence of await_resume and name nothing that a
+    // reader could act on.
+    awaiter operator co_await() const = delete;
+
+    /// The same wait, reported rather than thrown:
+    ///
+    ///     while (auto const got = co_await keys.next()) {
+    ///         got->get().handled(true);
+    ///     }
+    ///
+    /// For a body that must let nothing escape. What comes back on the error
+    /// side is the exception if there was one, so nothing is lost by not
+    /// throwing -- an empty one is a plain cancellation.
+    awaiter_t<false> next() noexcept { return awaiter_t<false>{*this}; }
+
+private:
+    Source source_;
+    EventToken token_;
+
+    // The Unloaded subscription of an element source; unused for the rest.
+    EventToken unloaded_;
+
+    // What the waiter is about to be given: set only inside the call that
+    // hands the args over.
+    std::remove_reference_t<args_ref_t>* args_ = nullptr;
+};
+
+// The same subscription under a cancellation token: what on_event() and the
+// tags make when they are given one last -- `co_await onClick(button, token)`.
+//
+// Every wait on it is registered with the token (impl::stoppable_event_wait): the wait in
+// progress when the token is cancelled ends, and every later one ends at once,
+// the throwing form with async::operation_canceled_exception and the answering
+// form with an empty error. The token is held here and lent to each wait, which
+// lives inside the co_await of this proxy and so never outlives it. A separate
+// type rather than a field of the plain one: a wait made without a token keeps
+// every byte and every instruction it had.
+template <typename Source>
+class stoppable_event_awaitable
+{
+    using event_t = event_awaitable<Source>;
+
+public:
+    using args_t = typename event_t::args_t;
+    using args_ref_t = typename event_t::args_ref_t;
+    using args_value_t = typename event_t::args_value_t;
+    using next_result_t = typename event_t::next_result_t;
+
+    stoppable_event_awaitable(Source watched, async::stop_token token)
+        : event_{std::move(watched)}, token_{std::move(token)} {}
+
+    stoppable_event_awaitable(stoppable_event_awaitable const&) = delete;
+    stoppable_event_awaitable& operator=(stoppable_event_awaitable const&) = delete;
+
+    template <bool Throwing>
+    using awaiter_t = impl::stoppable_event_wait<typename event_t::template awaiter_t<Throwing>,
+                                                  async::detail::stop_state*>;
+
+    using awaiter = awaiter_t<true>;
+
+    awaiter operator co_await() noexcept {
+        return awaiter{async::detail::stop_state_of(token_), event_};
+    }
+
+    // As on the plain proxy: waiting writes down who is waiting.
+    awaiter operator co_await() const = delete;
+
+    /// The answering form under the token: a cancelled wait answers with an
+    /// empty error rather than throwing.
+    awaiter_t<false> next() noexcept {
+        return awaiter_t<false>{async::detail::stop_state_of(token_), event_};
+    }
+
+private:
+    event_t event_;
+    async::stop_token token_;
+};
+
+// Where a wait gets its event from. Three of them, and they differ only in
+// how the pair of calls is reached -- which is why the wait itself knows
+// nothing about any of it.
+
+// Named by its key, on an object: `on_event<EventKey::Click>(button)`.
+template <EventKey key, typename Obj>
+struct keyed_event {
+    using args_t = typename event_adder<key>::template args_t<Obj>;
+
+    Obj object;
+
+    EventToken add(EventHandler<args_t> const& handler) const {
+        return event_adder<key>::add(object, handler);
+    }
+
+    void remove(EventToken& token) const {
+        checked_remove([&] { return event_adder<key>::remove(object, token); });
+    }
+};
+
+// Named by its own members, on an object:
+// `on_event(button, &Button::add_onClick, &Button::remove_onClick)`.
+template <typename Obj, typename Add, typename Remove>
+struct member_event {
+    using args_t = event_args_of_t<Add>;
+
+    Obj object;
+    Add adder;
+    Remove remover;
+
+    EventToken add(EventHandler<args_t> const& handler) const { return (object.*adder)(handler); }
+
+    void remove(EventToken& token) const {
+        checked_remove([&] { return (object.*remover)(token); });
+    }
+};
+
+// A static member of a type, as the form below takes its pair of calls.
+template <typename F>
+concept function_pointer = std::is_pointer_v<F> && std::is_function_v<std::remove_pointer_t<F>>;
+
+// Named by its own members, on the type -- an event with no object to
+// subscribe on:
+// `on_event(&CompositionTarget::add_onRendering, &CompositionTarget::remove_onRendering)`.
+template <typename Add, typename Remove>
+struct type_event {
+    using args_t = event_args_of_t<Add>;
+
+    Add adder;
+    Remove remover;
+
+    EventToken add(EventHandler<args_t> const& handler) const { return adder(handler); }
+
+    void remove(EventToken& token) const { remover(token); }
+};
+
+}  // namespace impl
+
+/// A wait on an event of this object, named as the builder syntax names it:
+/// `on_event<EventKey::Click>(button)` beside `onClick += handler`.
+template <EventKey key, typename Obj>
+impl::event_awaitable<impl::keyed_event<key, Obj>> on_event(Obj const& source) {
+    return impl::event_awaitable<impl::keyed_event<key, Obj>>{{source}};
+}
+
+/// A wait on an event this object has but the generated vocabulary does not
+/// name, given by its own two members.
+template <typename Obj, typename Add, typename Remove>
+impl::event_awaitable<impl::member_event<Obj, Add, Remove>> on_event(Obj const& source, Add add,
+                                                                     Remove remove) {
+    return impl::event_awaitable<impl::member_event<Obj, Add, Remove>>{{source, add, remove}};
+}
+
+/// And a wait on an event of the type itself, which has no object to be
+/// asked of: only the two members, and they are static -- plain function
+/// pointers, so that an object handed in their place, a core::event among
+/// them, finds the form meant for it or none.
+template <impl::function_pointer Add, impl::function_pointer Remove>
+impl::event_awaitable<impl::type_event<Add, Remove>> on_event(Add add, Remove remove) {
+    return impl::event_awaitable<impl::type_event<Add, Remove>>{{add, remove}};
+}
+
+/// Each of the three under a cancellation token, given last:
+/// `on_event<EventKey::Click>(button, token)`.
+template <EventKey key, typename Obj>
+impl::stoppable_event_awaitable<impl::keyed_event<key, Obj>> on_event(
+    Obj const& source, async::stop_token token) {
+    return impl::stoppable_event_awaitable<impl::keyed_event<key, Obj>>{{source},
+                                                                         std::move(token)};
+}
+
+template <typename Obj, typename Add, typename Remove>
+impl::stoppable_event_awaitable<impl::member_event<Obj, Add, Remove>> on_event(
+    Obj const& source, Add add, Remove remove, async::stop_token token) {
+    return impl::stoppable_event_awaitable<impl::member_event<Obj, Add, Remove>>{
+        {source, add, remove}, std::move(token)};
+}
+
+template <impl::function_pointer Add, impl::function_pointer Remove>
+impl::stoppable_event_awaitable<impl::type_event<Add, Remove>> on_event(
+    Add add, Remove remove, async::stop_token token) {
+    return impl::stoppable_event_awaitable<impl::type_event<Add, Remove>>{{add, remove},
+                                                                           std::move(token)};
+}
+
+/// A wait on the next invocation of an event of the application's own, under a
+/// cancellation token. An event cleared or ended while the coroutine waits ends the wait,
+/// on the queue's next turn, as one whose event will not come.
+template <typename... Args>
+impl::stoppable_event_wait<impl::core_event_wait<core::event<void(Args...)>, Args...>,
+                            async::stop_token>
+on_event(core::event<void(Args...)>& event, async::stop_token token) {
+    return impl::stoppable_event_wait<impl::core_event_wait<core::event<void(Args...)>, Args...>,
+                                       async::stop_token>{std::move(token), event};
+}
+
+/// The same for the signature spelled noexcept.
+template <typename... Args>
+impl::stoppable_event_wait<impl::core_event_wait<core::event<void(Args...) noexcept>, Args...>,
+                            async::stop_token>
+on_event(core::event<void(Args...) noexcept>& event, async::stop_token token) {
+    return impl::stoppable_event_wait<
+        impl::core_event_wait<core::event<void(Args...) noexcept>, Args...>,
+        async::stop_token>{std::move(token), event};
+}
+
+/// The keyed wait through its tag: `onClick(button)` is `on_event<EventKey::Click>(button)`.
+/// A schema tag names the class too, and that is checked here like every other
+/// use of one.
+template <EventKey key, typename Owner>
+template <typename Obj>
+    requires std::derived_from<Obj, Object>
+auto impl::event_tag<key, Owner>::operator()(Obj const& source) const {
+    impl::check_owner<Owner, Obj>();
+
+    return on_event<key>(source);
+}
+
+/// And under a token: `onClick(button, token)`.
+template <EventKey key, typename Owner>
+template <typename Obj, typename Token>
+    requires std::derived_from<Obj, Object>
+auto impl::event_tag<key, Owner>::operator()(Obj const& source, Token token) const {
+    static_assert(std::is_same_v<Token, async::stop_token>,
+                  "wxl: an event is awaited under an async::stop_token");
+    impl::check_owner<Owner, Obj>();
+
+    return on_event<key>(source, std::move(token));
+}
+
+}  // namespace wxl

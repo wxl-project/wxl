@@ -4,8 +4,8 @@
 # напрямую, с журналом рядом с исполняемым файлом, -- потому и живёт здесь, а
 # не в samples.
 wxl_add_executable(sandbox.zoom-gesture-probe
+    UI wxl::ui.full
     main.cpp
 )
 
-target_include_directories(sandbox.zoom-gesture-probe PRIVATE ${WXL_CPPWINRT_PROJECTION_DIR})
 target_link_libraries(sandbox.zoom-gesture-probe PRIVATE Microsoft::CppWinRT runtimeobject.lib user32.lib)

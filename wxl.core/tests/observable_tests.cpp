@@ -19,7 +19,10 @@ TEST(Observable, set_notifies_on_a_real_change) {
     observable<int> value{1};
     int seen = 0;
     int calls = 0;
-    value.on_change([&](int const& v) noexcept { ++calls; seen = v; });
+    value.on_change([&](int const& v) noexcept {
+        ++calls;
+        seen = v;
+    });
 
     value.set(2);
     EXPECT_EQ(calls, 1);
@@ -39,19 +42,19 @@ TEST(Observable, setting_the_same_value_says_nothing) {
     EXPECT_EQ(calls, 1);
 }
 
-TEST(Observable, a_cookie_removes_the_watch) {
+TEST(Observable, a_token_removes_the_watch) {
     observable<int> value{0};
     int calls = 0;
-    cookie_t const cookie = value.on_change([&](int const&) noexcept { ++calls; });
+    event_token token = value.on_change([&](int const&) noexcept { ++calls; });
 
     value.set(1);
     EXPECT_EQ(calls, 1);
 
-    EXPECT_TRUE(value.remove_change(cookie));
+    EXPECT_TRUE(value.remove_change(token));
     value.set(2);
     EXPECT_EQ(calls, 1);  // no longer watching
 
-    EXPECT_FALSE(value.remove_change(cookie));  // gone already
+    EXPECT_FALSE(static_cast<bool>(token));  // emptied by the removal
 }
 
 // A field of its model, not a handle over shared state: there is no second
@@ -106,7 +109,7 @@ TEST(Observable, bindings_hear_before_the_application) {
 // watch_for_binding is heard just like on_change, but the field keeps the watch:
 // there is nothing handed back to remove it with. It is unbind() that drops it,
 // which is how a binding's model->control watch (the one that owns the control)
-// is cut when the model outlives the window -- and what it owned is let go then.
+// is dropped when the model outlives the window -- and what it owned is let go then.
 TEST(Observable, a_binding_watch_is_the_fields_to_drop) {
     observable<int> value{0};
     int calls = 0;
@@ -122,7 +125,7 @@ TEST(Observable, a_binding_watch_is_the_fields_to_drop) {
     EXPECT_EQ(calls, 1);  // the binding watch is gone
 }
 
-// unbind() cuts the binding watches and leaves the caller's on_change watches
+// unbind() drops the binding watches and leaves the caller's on_change watches
 // alone -- an application saving the model on every change keeps saving after a
 // window that bound a control to it has closed.
 TEST(Observable, unbind_spares_the_on_change_watches) {
@@ -172,7 +175,10 @@ TEST(Observable, works_for_nullable_bool) {
     observable<nullable<bool>> tri{nullable<bool>{}};
     int calls = 0;
     nullable<bool> seen;
-    tri.on_change([&](nullable<bool> const& v) noexcept { ++calls; seen = v; });
+    tri.on_change([&](nullable<bool> const& v) noexcept {
+        ++calls;
+        seen = v;
+    });
 
     tri.set(true);
     EXPECT_EQ(calls, 1);
@@ -184,6 +190,27 @@ TEST(Observable, works_for_nullable_bool) {
     tri.set(nullable<bool>{});
     EXPECT_EQ(calls, 2);
     EXPECT_FALSE(seen.has_value());
+}
+
+// An empty NumberBox's NaN, written into a nullable double, is empty, and empty over
+// empty says nothing: the echo of an emptied box ends at the field, where NaN over NaN,
+// equal to nothing, would notify again.
+TEST(Observable, ends_the_echo_of_an_empty_nullable_double) {
+    observable<nullable<double>> entry{2.0};
+    int calls = 0;
+    entry.on_change([&](nullable<double> const&) noexcept { ++calls; });
+
+    entry.set(std::numeric_limits<double>::quiet_NaN());
+    EXPECT_EQ(calls, 1);
+    EXPECT_FALSE(entry.get().has_value());
+
+    entry.set(std::numeric_limits<double>::quiet_NaN());
+    entry.set(nullable<double>{});
+    EXPECT_EQ(calls, 1);
+
+    entry.set(3.0);
+    EXPECT_EQ(calls, 2);
+    EXPECT_EQ(entry.get(), 3.0);
 }
 
 // A model that sets a field itself and hands out only its read-only observable.
@@ -229,6 +256,46 @@ TEST(Observable, follows_a_readonly_observable) {
 
     counter.bump();
     EXPECT_EQ(doubled.get(), 2);
+}
+
+struct Sum {
+    observable<int> a{1}, b{2};
+    observable<int> total{a, b, [](int x, int y) { return x + y; }};
+};
+
+TEST(Observable, follows_its_sources_from_construction) {
+    Sum sum;
+    EXPECT_EQ(sum.total.get(), 3);
+    int calls = 0;
+    sum.total.on_change([&](int const&) noexcept { ++calls; });
+
+    sum.a.set(5);
+    EXPECT_EQ(sum.total.get(), 7);
+    EXPECT_EQ(calls, 1);
+}
+
+struct Point {
+    int x = 0, y = 0;
+    bool operator==(Point const&) const = default;
+};
+
+// The function is invoked, so a pointer to a member selects a member of the source.
+TEST(Observable, follows_a_member_of_a_source) {
+    observable<Point> point{Point{1, 2}};
+    observable<int> x{point, &Point::x};
+    EXPECT_EQ(x.get(), 1);
+    int calls = 0;
+    x.on_change([&](int const&) noexcept { ++calls; });
+
+    point.set(Point{1, 5});
+    EXPECT_EQ(calls, 0);
+    point.set(Point{4, 5});
+    EXPECT_EQ(x.get(), 4);
+    EXPECT_EQ(calls, 1);
+
+    observable<int> y;
+    y.follow(point, &Point::y);
+    EXPECT_EQ(y.get(), 5);
 }
 
 }  // namespace

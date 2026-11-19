@@ -5,25 +5,19 @@
 #include "Pages.h"
 
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
-#include <wxl/Microsoft.UI.Xaml.Documents.h>
 
 using namespace wxl;
 using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t applyingHeader[] = {
-#include "Snippets/XamlStyles/XamlStylesCreatingApplyingStyle.html.embed"
-};
-constexpr char8_t applyingCode[] = {
-#include "Snippets/XamlStyles/XamlStylesCreatingApplyingStyle.h.embed"
-};
-constexpr char8_t implicitHeader[] = {
-#include "Snippets/XamlStyles/XamlStylesStyleWithoutKeyImplicit.html.embed"
-};
-constexpr char8_t implicitCode[] = {
-#include "Snippets/XamlStyles/XamlStylesStyleWithoutKeyImplicit.h.embed"
-};
+gallery::LazyLoadedText definitionText{"Snippets/XamlStyles/Definition.html"};
+gallery::LazyLoadedText styleKindsText{"Snippets/XamlStyles/StyleKinds.html"};
+
+gallery::LazyLoadedText applyingHeader{"Snippets/XamlStyles/XamlStylesCreatingApplyingStyle.html"};
+gallery::LazyLoadedText applyingCode{"Snippets/XamlStyles/XamlStylesCreatingApplyingStyle.h"};
+gallery::LazyLoadedText implicitHeader{"Snippets/XamlStyles/XamlStylesStyleWithoutKeyImplicit.html"};
+gallery::LazyLoadedText implicitCode{"Snippets/XamlStyles/XamlStylesStyleWithoutKeyImplicit.h"};
 
 FrameworkElement applying() {
 #include "Snippets/XamlStyles/XamlStylesCreatingApplyingStyle.h"
@@ -37,20 +31,15 @@ FrameworkElement implicit() {
 
 }  // namespace
 
-FrameworkElement gallery::xamlStylesPage() {
+static FrameworkElement xamlStylesPage() {
     return StackPanel {
         spacing = 12.0,
         TextBlock {Margin {0, 12, 0, 4}, styles.TextBlock.Subtitle, u"Creating and using styles"},
-        RichTextBlock {
-            Paragraph {Run {u"The definition of styles is similar to other resources: app-level, page-level, control-level."}},
-        },
-        RichTextBlock {
-            Paragraph {Run {u"• "}, Bold {Run {u"Styles"}}, Run {u" are reusable collections of property settings for a specific control type."}},
-            Paragraph {Run {u"• A "}, Bold {Run {u"keyed style"}}, Run {u" is used for explicit application, while an "}, Bold {Run {u"implicit style"}},
-                       Run {u" is used for automatic application to all controls of a type."}},
-            Paragraph {Run {u"• Styles improve maintainability, consistency, and reduce repetition in the code."}},
-        },
+        gallery::prose(gallery::snippet(definitionText), Thickness {}),
+        gallery::prose(gallery::snippet(styleKindsText), Thickness {}),
         applying(),
         implicit(),
     };
 }
+
+REGISTER_GALLERY_PAGE(L"XamlStyles", xamlStylesPage);

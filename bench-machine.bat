@@ -13,5 +13,5 @@ set "ROOT=%~dp0"
 pwsh -NoProfile -Command "& '%ROOT%tools\build.ps1' -Config Release -BuildDir build\bench -Target wxl.async.spsc-queue-benchmark -Define 'WXL_BUILD_BENCHMARKS=ON','WXL_BUILD_DOCS=OFF'"
 if errorlevel 1 exit /b %errorlevel%
 
-"%ROOT%build\bench\wxl.async\benchmarks\Release\wxl.async.spsc-queue-benchmark.exe" 9 --machine %BLOCK%
+"%ROOT%build\bench\wxl.core\benchmarks\async\Release\wxl.async.spsc-queue-benchmark.exe" 9 --machine %BLOCK%
 exit /b %errorlevel%

@@ -25,7 +25,7 @@ auto const view = NavigationView {
                                             NavigationViewItem {content = u"Upload file", icon = SymbolIcon {symbol = Symbol::OpenLocal}, tag = u"SamplePage6",
                                                                 toolTip = u"Upload file"}]}],
     content = model->frame,
-    onSelectionChanged = [model](NavigationView const& sender, NavigationViewSelectionChangedEventArgs& args) {
+    onSelectionChanged += [model](NavigationView const& sender, NavigationViewSelectionChangedEventArgs& args) {
         if (args.isSettingsSelected()) {
             gallery::showSettings(model->frame);
             return;
@@ -45,24 +45,22 @@ auto const mode = [view](NavigationViewPaneDisplayMode display, bool open) {
 };
 auto options = StackPanel {
     TextBlock {Margin {0, 12, 0, 0}, u"PanePosition:"},
-    RadioButton {content = u"Left mode", groupName = u"hierachicalGroup", isChecked = true, onChecked = mode(NavigationViewPaneDisplayMode::Left, true)},
-    RadioButton {content = u"Top mode", groupName = u"hierachicalGroup", onChecked = mode(NavigationViewPaneDisplayMode::Top, false)},
-    RadioButton {content = u"LeftCompact mode", groupName = u"hierachicalGroup", onChecked = mode(NavigationViewPaneDisplayMode::LeftCompact, false)},
+    RadioButton {content = u"Left mode", groupName = u"hierachicalGroup", isChecked = true, onChecked += mode(NavigationViewPaneDisplayMode::Left, true)},
+    RadioButton {content = u"Top mode", groupName = u"hierachicalGroup", onChecked += mode(NavigationViewPaneDisplayMode::Top, false)},
+    RadioButton {content = u"LeftCompact mode", groupName = u"hierachicalGroup", onChecked += mode(NavigationViewPaneDisplayMode::LeftCompact, false)},
 };
 
 auto example = Grid {
-    rowDefinitions = u"auto,auto",
-    RichTextBlock {
+    RowDefinitions<u"auto,auto">,
+    HtmlBlock {
         Margin {0, 0, 0, 15},
         textWrapping = TextWrapping::Wrap,
-        Paragraph {Run {u"NavigationView supports hierarchy in Left, LeftCompact, and Top display modes."}, LineBreak {}},
-        Paragraph {Run {u"In the example below, the \"Account\" tab navigates to its own page while \"Document options\" only opens up its subtree of "
-                        u"items. This is done by setting the SelectsOnInvoked property to false on the Document options NavigationView Item."},
-                   LineBreak {}},
-        Paragraph {Run {u"In both Top and Left modes, clicking the arrows on NavigationViewItems will expand or collapse the subtree. Clicking or "
-                        u"tapping elsewhere on the NavigationViewItem will collapse or expand the subtree."},
-                   LineBreak {}},
-        Paragraph {Run {u"Switch between the three pane display modes on the right."}},
+        u"<p>NavigationView supports hierarchy in Left, LeftCompact, and Top display modes.</p>"
+        u"<p>In the example below, the \"Account\" tab navigates to its own page while \"Document options\" only opens up its subtree of "
+        u"items. This is done by setting the SelectsOnInvoked property to false on the Document options NavigationView Item.</p>"
+        u"<p>In both Top and Left modes, clicking the arrows on NavigationViewItems will expand or collapse the subtree. Clicking or "
+        u"tapping elsewhere on the NavigationViewItem will collapse or expand the subtree.</p>"
+        u"<p>Switch between the three pane display modes on the right.</p>",
     },
     view,
 };

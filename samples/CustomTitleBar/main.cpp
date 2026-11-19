@@ -43,7 +43,7 @@ wxl::Teardown wxl_launched() {
         title = L"wxl: свой заголовок окна",
         minSize = {640, 400},
         extendsContentIntoTitleBar = true,
-        titleBar = {
+        titleBar = TitleBar{
             background = brushes.SolidBackgroundFillColor.Secondary,
             leftHeader = TextBlock{L"wxl", vAlign.center, Margin{12, 0, 0, 0}},
             content = TextBox{placeholderText = L"Поиск", width = 320.0, vAlign.center},
@@ -63,9 +63,9 @@ wxl::Teardown wxl_launched() {
         StackPanel{
             orientation.horizontal,
             spacing = 8.0,
-            Button{L"Крупнее", onClick = [zoom] { zoom->factor.set(zoom->factor.get() * 1.25); }},
-            Button{L"Мельче", onClick = [zoom] { zoom->factor.set(zoom->factor.get() / 1.25); }},
-            Button{L"100 %", onClick = [zoom] { zoom->factor.set(1.0); }},
+            Button{L"Крупнее", onClick += [zoom] { zoom->factor.set(zoom->factor.get() * 1.25); }},
+            Button{L"Мельче", onClick += [zoom] { zoom->factor.set(zoom->factor.get() / 1.25); }},
+            Button{L"100 %", onClick += [zoom] { zoom->factor.set(1.0); }},
             TextBlock{vAlign.center, Margin{12, 0, 0, 0}, text = BindOutput{zoom->caption}},
         },
     });

@@ -9,7 +9,11 @@ namespace wxl::core {
 
 // The `lib` segment is initialised before the `user` one the rest of the program lands in, and
 // destroyed after it: that is what puts the pool ahead of the first wxl object and behind the last.
+// C4073 warns that the initialisers go to the library segment, which is the intent here.
+#pragma warning(push)
+#pragma warning(disable : 4073)
 #pragma init_seg(lib)
+#pragma warning(pop)
 
 namespace {
 
@@ -77,21 +81,29 @@ struct free_block {
 
 }  // namespace
 
-// Holds its dispatch slot at get() while the list has blocks and at bump_alloc once it runs dry,
-// so a class that is only allocated from never tests the list at all.
+/// Holds the free list of the size class of `1u << N` bytes. The allocation slots of the class
+/// point at `get()` while the list has blocks and at `bump_alloc` once it is empty, so a class
+/// that is only allocated from never tests the list.
 template <unsigned N>
 struct sta_memory_pool::pool_ {
     /// The slots this class answers: its own, and for the smallest class every slot below it too,
     /// so that a request smaller than a block finds the list the blocks go back to.
     static constexpr unsigned first = pool_index(1u << N);
+    /// The last slot that this class answers: the last slot of the table for the smallest
+    /// class, `first` for any other.
     static constexpr unsigned last = N == MinN ? TableSize - 1 : first;
 
+    /// The head of the free list; null when the list is empty.
     static constinit inline free_block* s_top = nullptr;
 
+    /// Sets every slot of this class in the allocation table to \p fn.
     static void dispatch(alloc_fn fn) noexcept {
         for (unsigned slot = first; slot <= last; ++slot) s_alloc_table[slot] = fn;
     }
 
+    /// Returns the block at the head of the free list. When the list is empty, sets the slots of
+    /// this class to `bump_alloc` and carves the block from the current page, or from a new page
+    /// when the current one is full.
     static void* get() noexcept {
         if (free_block* const block = s_top) [[likely]] {
             s_top = block->next;
@@ -102,6 +114,7 @@ struct sta_memory_pool::pool_ {
         return bump_alloc<N>();
     }
 
+    /// Pushes the block at \p mem onto the free list and sets the slots of this class to `get()`.
     static void put(void* mem) noexcept {
         s_top = ::new (mem) free_block{s_top};
         dispatch(get);

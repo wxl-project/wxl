@@ -25,7 +25,7 @@ FrameworkElement gallery::copyNameButton(std::u16string name) {
         automationName = u"Copy to clipboard",
         toolTip = u"Copy to clipboard",
         content = FontIcon {glyph = u"", fontSize = 14},
-        onClick = [name](auto&&...) {
+        onClick += [name](auto&&...) {
             auto package = DataPackage {};
             package.setText(name);
             Clipboard::setContent(package);
@@ -86,7 +86,7 @@ Grid gallery::designRow(bool shaded, Thickness margin) {
 FrameworkElement gallery::geometryRow(double radius, char16_t const* value, char16_t const* usage, char16_t const* resource,
                                       bool shaded) {
     auto row = gallery::designRow(shaded);
-    row.columnDefinitions(u"148,*,160,auto");
+    row.columnDefinitions(ColumnDefinitions<u"148,*,160,auto">);
     row.children().append(StackPanel {
         orientation.horizontal,
         spacing = 12.0,

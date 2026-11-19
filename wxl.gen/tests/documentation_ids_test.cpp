@@ -11,13 +11,22 @@
 
 #include "wxl.gen.h"
 
+import wxl.core;
+
 // The documentation IDs the generator's own collection gives members: keyed on
 // the class that owns them, a factory's methods as its constructors, the form
 // with a token as the method it is a form of.
 
 namespace {
 
-std::filesystem::path const profiles_dir{WXL_GEN_PROFILES_DIR};
+// u8, so that the path reads the directory as UTF-8 and not in the ANSI code page.
+std::filesystem::path const profiles_dir{u8"" WXL_GEN_PROFILES_DIR};
+// The components the profiles name, as the build finds them.
+std::filesystem::path const components_dir{u8"" WXL_UI_COMPONENTS_DIR};
+
+// The list the configure of this build wrote: the packages its restore resolved
+// and the Windows SDK of its projection.
+std::filesystem::path const restored_packages_file{u8"" WXL_RESTORED_PACKAGES};
 
 type_map const& types() {
     static type_map const map = load_type_map(profiles_dir / "types.json");
@@ -26,10 +35,12 @@ type_map const& types() {
 
 md::cache const& metadata() {
     static std::vector<std::string> const files = [] {
-        auto const profiles = resolve_profiles({profiles_dir / "rich.json"}, default_nuget_root());
+        auto const profiles = resolve_profiles({profiles_dir / "rich.winxl-profile"},
+                                               load_restored_packages(restored_packages_file),
+                                               {.directories = {components_dir}});
         std::vector<std::string> paths;
         for (auto&& file : profiles.metadata) {
-            paths.push_back(file.string());
+            paths.push_back(std::string{wxl::core::unicode::to_utf8(file).chars()});
         }
         return paths;
     }();
@@ -106,11 +117,25 @@ TEST(documentation_ids, the_form_with_a_token_keeps_the_methods_id) {
     for (auto&& member : members) {
         bool const takes_placement = !member.params.empty() && member.params.front().name == "placement";
         EXPECT_EQ(member.doc_id, takes_placement ? placed : "M:Microsoft.UI.Xaml.Controls.ContentDialog.ShowAsync");
-        if (member.under_token) {
+        if (member.cancelable) {
             EXPECT_EQ(gen::parameter_names(member),
-                      takes_placement ? names({"placement", "stop"}) : names({"stop"}));
+                      takes_placement ? names({"placement", "token"}) : names({"token"}));
         }
     }
+}
+
+// The token of a form with one is `token`; a method that has a parameter `token` of its own --
+// StorageItemAccessList.GetFileAsync -- keeps it, as the projection names it, and the token is
+// `cancellation`. A method with both leaves no name, and the generator stops on it.
+TEST(documentation_ids, the_token_of_a_form_with_one_keeps_out_of_the_methods_names) {
+    auto const param = [](std::string name) { return gen::param_info{std::move(name), {}}; };
+
+    EXPECT_EQ(gen::stop_parameter_name({}), "token");
+    EXPECT_EQ(gen::stop_parameter_name({param("placement")}), "token");
+    EXPECT_EQ(gen::stop_parameter_name({param("token")}), "cancellation");
+    EXPECT_EQ(gen::stop_parameter_name({param("token"), param("options")}), "cancellation");
+    EXPECT_THROW(gen::stop_parameter_name({param("token"), param("cancellation")}),
+                 std::runtime_error);
 }
 
 // A method handing back its out parameter keeps it in the ID, drops it from
@@ -124,8 +149,8 @@ TEST(documentation_ids, an_out_result_is_documented_as_the_result) {
     EXPECT_EQ(get_text.doc_id, "M:Microsoft.UI.Text.ITextRange.GetText(Microsoft.UI.Text.TextGetOptions,System.String@)");
     EXPECT_EQ(gen::parameter_names(get_text), names({"options"}));
 
-    documentation_source docs{{L"en"}};
+    documentation_source docs{{L"en"}, load_restored_packages(restored_packages_file).sdk};
     gen::document(&docs, type("Microsoft.UI.Text.ITextRange"), get_text);
     EXPECT_FALSE(get_text.doc.summary.empty());
-    EXPECT_EQ(get_text.doc.returns, "The text in the text range.");
+    EXPECT_EQ(get_text.doc.returns, (doc_text {{.text = "The text in the text range."}}));
 }

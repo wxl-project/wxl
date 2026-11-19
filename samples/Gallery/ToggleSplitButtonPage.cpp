@@ -4,19 +4,15 @@
 #include "Shell.h"
 #include "event_awaitable.h"
 
-import wxl.async;
+import wxl.core;
 
 using namespace wxl;
 using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t listHeader[] = {
-#include "Snippets/ToggleSplitButton/BulletList.html.embed"
-};
-constexpr char8_t listCode[] = {
-#include "Snippets/ToggleSplitButton/BulletList.h.embed"
-};
+gallery::LazyLoadedText listHeader{"Snippets/ToggleSplitButton/BulletList.html"};
+gallery::LazyLoadedText listCode{"Snippets/ToggleSplitButton/BulletList.h"};
 
 FrameworkElement listExample() {
 #include "Snippets/ToggleSplitButton/BulletList.h"
@@ -31,6 +27,8 @@ FrameworkElement listExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::toggleSplitButtonPage() {
+static wxl::FrameworkElement toggleSplitButtonPage() {
     return StackPanel {listExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"ToggleSplitButton", toggleSplitButtonPage);

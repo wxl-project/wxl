@@ -1,26 +1,25 @@
 #include <format>
 
 #include "profile.h"
-#include "xml_input.h"
 
 import std;
 import wxl.core;
-import wxl.json;
 
 using wxl::json::value;
 
 namespace {
 
-std::string env(char const* name) {
-    // getenv rather than _dupenv_s: this is a build-time tool, the value is
-    // read once at startup and never written back.
-    char const* value = std::getenv(name);
-    return value ? std::string{value} : std::string{};
-}
-
 [[noreturn]] void fail(std::filesystem::path const& source, std::string_view message) {
     throw std::runtime_error(
         std::format("{}: {}", wxl::core::unicode::to_utf8(source).chars(), message));
+}
+
+// A name a profile or a package spells, as a path: a file, a folder, a version. Each
+// is a copy of a string wxl::json or wxl::xml checked with the whole document, a piece
+// of one cut at an ASCII character, or a literal; the std::string it is kept in no
+// longer says so, and assume_valid() records it here.
+std::filesystem::path path_of(std::string_view name) {
+    return wxl::core::unicode::to_path(wxl::core::unicode::assume_valid(name));
 }
 
 
@@ -67,7 +66,7 @@ bool bool_or(value const& entry, std::filesystem::path const& source, std::strin
 
 // Every file this stage reads is JSON with comments allowed: the tables in
 // them are decisions, and a decision that cannot carry its reason beside it
-// loses the reason. wxl.json reads comments always, with no switch to set --
+// loses the reason. wxl::json reads comments always, with no switch to set --
 // these files are half of why it does.
 //
 // The document object belongs to the caller. The tree is views into the
@@ -98,17 +97,54 @@ value const& read_json(wxl::json::document& file, std::filesystem::path const& p
     return document;
 }
 
-std::set<std::string> read_string_set(value const& array, std::filesystem::path const& source,
+// An entry whose keys are all known: a key misspelt, or one the entry does not
+// have, would otherwise read exactly like the key left out. `where` names the
+// entry.
+void refuse_other_keys(value const& entry, std::filesystem::path const& source,
+                       std::string_view where, std::initializer_list<std::string_view> known) {
+    for (value const& member : entry.members()) {
+        std::string_view const key = member.name().chars();
+        if (std::ranges::find(known, key) == known.end()) {
+            fail(source, std::format("{}: '{}' is not a key of this entry", where, key));
+        }
+    }
+}
+
+// The strings of an array, in the order the file has them.
+std::vector<std::string> read_strings(value const& array, std::filesystem::path const& source,
                                       std::string_view what) {
     if (!array.is_array()) {
         fail(source, std::format("'{}' must be an array of strings", what));
     }
-    std::set<std::string> names;
+    std::vector<std::string> strings;
     for (auto&& entry : array.elements()) {
         if (!entry.is_string()) {
             fail(source, std::format("'{}' must contain strings only", what));
         }
-        names.insert(text(entry));
+        strings.push_back(text(entry));
+    }
+    return strings;
+}
+
+std::set<std::string> read_string_set(value const& array, std::filesystem::path const& source,
+                                      std::string_view what) {
+    auto const strings = read_strings(array, source, what);
+    return {strings.begin(), strings.end()};
+}
+
+// The names a key lists, in the order the file lists them, or none when the key is not there.
+// A name listed twice is a mistake rather than a repetition to fold.
+std::vector<std::string> read_names(value const& entry, std::filesystem::path const& source,
+                                    std::string_view key) {
+    value const* const field = entry.find(key);
+    if (!field) {
+        return {};
+    }
+    auto names = read_strings(*field, source, key);
+    for (auto at = names.begin(); at != names.end(); ++at) {
+        if (std::ranges::find(names.begin(), at, *at) != at) {
+            fail(source, std::format("'{}' names \"{}\" twice", key, *at));
+        }
     }
     return names;
 }
@@ -196,6 +232,7 @@ std::vector<synthetic_member> read_synthetic_members(value const& entry,
         }
 
         synthetic_member member{name, {}, field("function"), field("include")};
+        member.positional = bool_or(definition, source, "positional", false);
         if (from_metadata) {
             member.type = field("type");
         } else {
@@ -208,52 +245,26 @@ std::vector<synthetic_member> read_synthetic_members(value const& entry,
     // By name, because the order these reach the output should not be the
     // order someone happened to type them into the profile. The map-backed
     // reader this stage used before sorted them as a side effect of how it
-    // stored an object; wxl.json keeps the document's own order, so the
+    // stored an object; wxl::json keeps the document's own order, so the
     // sorting is said out loud here instead.
     std::ranges::sort(members, {}, &synthetic_member::name);
     return members;
 }
 
-// The methods a profile writes as tags. Keyed by the method's own name, each
-// an object that may narrow the value to a more specific class of the
-// metadata. Whether the method exists, takes one argument and returns nothing
-// is the class writer's to check: only it has read the signatures.
-std::vector<setter_method> read_setter_methods(value const& entry,
-                                               std::filesystem::path const& source,
-                                               std::string_view type_name) {
-    value const* const listed = entry.find("setterMethods");
-    if (!listed) {
-        return {};
-    }
-    if (!listed->is_object()) {
-        fail(source, std::format("type '{}': 'setterMethods' must be an object keyed by method "
-                                 "name",
-                                 type_name));
-    }
-
-    std::vector<setter_method> methods;
-    for (value const& definition : listed->members()) {
-        std::string const name{definition.name().chars()};
-        if (!definition.is_object()) {
-            fail(source, std::format("type '{}': setter method '{}' must be an object", type_name,
-                                     name));
-        }
+// The methods a profile writes as tags, by the method's own name, each once.
+// Whether the method exists, takes one argument and returns nothing is the
+// class writer's to check: only it has read the signatures.
+std::set<std::string> read_setter_methods(value const& entry, std::filesystem::path const& source,
+                                          std::string_view type_name) {
+    auto const listed = read_names(entry, source, "setterMethods");
+    std::set<std::string> methods{listed.begin(), listed.end()};
+    for (auto&& name : methods) {
         if (!name.starts_with("Set") || name.size() == 3) {
             fail(source, std::format("type '{}': setter method '{}' has no name after 'Set' to "
                                      "give its tag",
                                      type_name, name));
         }
-        setter_method method{name, {}};
-        if (value const* const type = definition.find("type")) {
-            if (!type->is_string()) {
-                fail(source, std::format("type '{}': setter method '{}': 'type' must be a string",
-                                         type_name, name));
-            }
-            method.type = text(*type);
-        }
-        methods.push_back(std::move(method));
     }
-    std::ranges::sort(methods, {}, &setter_method::method);
     return methods;
 }
 
@@ -288,16 +299,47 @@ std::map<std::string, replaced_call> read_replaced_calls(value const& entry,
     return calls;
 }
 
+// A minimum version a profile names, checked as it is read: a requirement that
+// does not parse -- an empty one among them -- could be compared with nothing.
+// Empty when the key is not there. `where` starts the message.
+std::string minimum_or_empty(value const& entry, std::filesystem::path const& source,
+                             std::string_view key, std::string_view where) {
+    if (!entry.find(key)) {
+        return {};
+    }
+    std::string minimum = string_or(entry, source, key, {});
+    if (!nuget_version::parse(minimum)) {
+        fail(source, std::format("{}'{}' is \"{}\", which is not a NuGet version", where, key,
+                                 minimum));
+    }
+    return minimum;
+}
+
 package_ref read_package(value const& entry, std::filesystem::path const& source) {
     if (!entry.is_object() || !entry.find("id")) {
         fail(source, "every 'packages' entry must be an object with an 'id'");
     }
     package_ref package;
     package.id = required_string(entry, source, "id", "package");
-    // Checked against the SDK release below, where it is known whether this
-    // package is one the release ships.
-    package.version = string_or(entry, source, "version", {});
-    package.override_version = string_or(entry, source, "overrideVersion", {});
+    // A profile says what to project; the version read is the one the build's
+    // restore resolved, so a key that names one is a mistake to report.
+    if (entry.find("version")) {
+        fail(source, std::format("package '{}': 'version' is not a key of a package entry: the "
+                                 "package is read at the version the build's NuGet restore "
+                                 "resolves, and a profile whose types need a certain version "
+                                 "names the lowest one they need as 'minimumVersion'",
+                                 package.id));
+    }
+    if (entry.find("overrideVersion")) {
+        fail(source, std::format("package '{}': 'overrideVersion' is not a key of a package "
+                                 "entry: the build's NuGet restore resolves the version of every "
+                                 "package, and a profile whose types need a newer one names the "
+                                 "lowest one they need as 'minimumVersion' of the package, or as "
+                                 "'minimumWindowsAppSdk' for the whole Windows App SDK release",
+                                 package.id));
+    }
+    package.minimum_version = minimum_or_empty(entry, source, "minimumVersion",
+                                               std::format("package '{}': ", package.id));
     package.metadata_dir = string_or(entry, source, "metadataDir", {});
     if (value const* const listed = entry.find("metadata")) {
         auto const names = read_string_set(*listed, source, "metadata");
@@ -310,41 +352,24 @@ package_ref read_package(value const& entry, std::filesystem::path const& source
     return package;
 }
 
-constexpr std::string_view windows_app_sdk_id = "Microsoft.WindowsAppSDK";
-
-// A nuspec dependency version is either plain (2.3.6) or a NuGet range
-// pinning one release ([2.4.0]); both mean the same thing here.
-std::string trim_version_range(std::string_view text) {
-    auto const first = text.find_first_not_of(" \t[(");
-    if (first == std::string_view::npos) {
-        return {};
-    }
-    auto const rest = text.substr(first);
-    auto const last = rest.find_first_of(" \t,])");
-    return std::string{last == std::string_view::npos ? rest : rest.substr(0, last)};
+// What the restore of the build is, in a message: the list it is read from.
+std::string restore_of(restored_packages const& restored) {
+    return std::format("the restore of the build ({})",
+                       wxl::core::unicode::to_utf8(restored.source).chars());
 }
 
-// Every package version an SDK release ships, read out of its own nuspec:
-// the umbrella package declares one <dependency> per sub-package, which is
-// what makes a single version number in a profile enough.
-std::map<std::string, std::string> read_sdk_dependencies(std::filesystem::path const& nuspec) {
-    std::map<std::string, std::string> versions;
-    for (auto&& [id, version] : nuspec_dependencies(nuspec)) {
-        versions.emplace(wxl::core::ascii_lower(id), trim_version_range(version));
-    }
-    return versions;
-}
+// The version of a text that has been checked to be one, as it was read.
+nuget_version version_of(std::string_view text) { return nuget_version::parse(text).value(); }
 
-// <nuget root>/<id, lowercased>/<version>/<metadata dir>/<file>.winmd. The
-// directory is "metadata" for the WindowsAppSDK packages, and whatever a
-// package from outside the SDK ships its .winmd in -- Win2D puts it under
-// lib/uap10.0.
+// <package directory>/<metadata dir>/<file>.winmd. The directory is "metadata"
+// for the WindowsAppSDK packages, and whatever a package from outside the SDK
+// ships its .winmd in -- Win2D puts it under lib/uap10.0.
 std::vector<std::filesystem::path> resolve_package(package_ref const& package,
-                                                   std::string_view version,
-                                                   std::filesystem::path const& nuget_root,
+                                                   restored_package const& restored,
                                                    std::filesystem::path const& source) {
-    auto const dir = nuget_root / wxl::core::ascii_lower(package.id) / version /
-                     (package.metadata_dir.empty() ? "metadata" : package.metadata_dir);
+    auto const& version = restored.version;
+    auto const dir = restored.directory /
+                     path_of(package.metadata_dir.empty() ? "metadata" : package.metadata_dir);
     if (!std::filesystem::is_directory(dir)) {
         fail(source, std::format("package '{}' {}: no metadata directory at {}", package.id,
                                  version, wxl::core::unicode::to_utf8(dir).chars()));
@@ -366,7 +391,7 @@ std::vector<std::filesystem::path> resolve_package(package_ref const& package,
     }
 
     for (auto&& name : package.metadata) {
-        auto path = dir / name;
+        auto path = dir / path_of(name);
         if (!std::filesystem::is_regular_file(path)) {
             fail(source, std::format("package '{}' {}: no such metadata file: {}", package.id,
                                      version, wxl::core::unicode::to_utf8(path).chars()));
@@ -380,14 +405,14 @@ std::vector<std::filesystem::path> resolve_package(package_ref const& package,
 // the metadata directory: a resource dictionary lives wherever the package
 // ships it, not beside the .winmd.
 std::vector<std::filesystem::path> resolve_resources(package_ref const& package,
-                                                     std::string_view version,
-                                                     std::filesystem::path const& nuget_root,
+                                                     restored_package const& restored,
                                                      std::filesystem::path const& source) {
-    auto const root = nuget_root / wxl::core::ascii_lower(package.id) / version;
+    auto const& version = restored.version;
+    auto const& root = restored.directory;
 
     std::vector<std::filesystem::path> files;
     for (auto&& name : package.resources) {
-        auto path = root / name;
+        auto path = root / path_of(name);
         if (!std::filesystem::is_regular_file(path)) {
             fail(source, std::format("package '{}' {}: no such resource file: {}", package.id,
                                      version, wxl::core::unicode::to_utf8(path).chars()));
@@ -397,34 +422,135 @@ std::vector<std::filesystem::path> resolve_resources(package_ref const& package,
     return files;
 }
 
-// The projected Windows platform metadata (Windows.Foundation.IReference,
-// IVector<T>, EventHandler<T>, ...). WinUI's own .winmd only *references*
-// those; without them the walk stops at every such edge.
-std::filesystem::path windows_metadata_dir() {
-    return std::filesystem::path{env("SystemRoot").empty() ? "C:/Windows" : env("SystemRoot")} /
-           "System32" / "WinMetadata";
+// A numeric identifier, or a numeric part of a version: digits, and at least
+// one of them.
+bool is_numeric(std::string_view text) {
+    return !text.empty() &&
+           std::ranges::all_of(text, [](char c) { return wxl::core::is_ascii_digit(c); });
 }
 
-std::vector<std::filesystem::path> windows_metadata_files(std::filesystem::path const& dir) {
-    std::vector<std::filesystem::path> files;
-    for (auto&& item : std::filesystem::directory_iterator{dir}) {
-        if (item.is_regular_file() && item.path().extension() == ".winmd") {
-            files.push_back(item.path());
+// An identifier of a prerelease label or of build metadata: [0-9A-Za-z-], and
+// at least one of them.
+bool is_identifier(std::string_view text) {
+    return !text.empty() && std::ranges::all_of(text, [](char c) {
+               return wxl::core::is_ascii_digit(c) || (c >= 'A' && c <= 'Z') ||
+                      (c >= 'a' && c <= 'z') || c == '-';
+           });
+}
+
+// The whole of `text` as an Int32, or nothing: what Int32.TryParse takes of
+// the characters a version is written in -- digits, after a '-' for a negative
+// number, within the range of Int32.
+std::optional<std::int32_t> int32_of(std::string_view text) {
+    std::int32_t number = 0;
+    auto const [end, error] = std::from_chars(text.data(), text.data() + text.size(), number);
+    if (error != std::errc{} || end != text.data() + text.size()) {
+        return std::nullopt;
+    }
+    return number;
+}
+
+// Two identifiers of prerelease labels, as NuGet's VersionComparer orders them
+// (CompareRelease): one that Int32.TryParse takes is a number, and two numbers
+// are compared as numbers; a number is below any text; text is compared
+// character by character in upper case, which is how OrdinalIgnoreCase orders
+// ASCII.
+std::weak_ordering compare_identifiers(std::string_view a, std::string_view b) {
+    auto const x_number = int32_of(a);
+    auto const y_number = int32_of(b);
+    if (x_number && y_number) {
+        return *x_number <=> *y_number;
+    }
+    if (x_number || y_number) {
+        return x_number ? std::weak_ordering::less : std::weak_ordering::greater;
+    }
+    for (std::size_t at = 0; at != std::min(a.size(), b.size()); ++at) {
+        auto const x = static_cast<unsigned char>(wxl::core::to_ascii_upper(a[at]));
+        auto const y = static_cast<unsigned char>(wxl::core::to_ascii_upper(b[at]));
+        if (x != y) {
+            return x <=> y;
         }
     }
-    std::sort(files.begin(), files.end());
-    return files;
+    return a.size() <=> b.size();
 }
 
 }  // namespace
 
+std::optional<nuget_version> nuget_version::parse(std::string_view text) {
+    if (auto const plus = text.find('+'); plus != std::string_view::npos) {
+        for (std::string_view const identifier : wxl::core::split(text.substr(plus + 1), '.')) {
+            if (!is_identifier(identifier)) {
+                return std::nullopt;
+            }
+        }
+        text = text.substr(0, plus);
+    }
+
+    // The numeric parts are what System.Version parses: Int32 each, a leading
+    // zero allowed.
+    nuget_version version;
+    auto const dash = text.find('-');
+    std::size_t count = 0;
+    for (std::string_view const part : wxl::core::split(text.substr(0, dash), '.')) {
+        if (count == version.numbers_.size() || !is_numeric(part)) {
+            return std::nullopt;
+        }
+        auto const number = int32_of(part);
+        if (!number) {
+            return std::nullopt;
+        }
+        version.numbers_[count++] = *number;
+    }
+    // A numeric identifier of the label has no leading zero: 0 is one, 00 and 01
+    // are not (SemanticVersionFactory.IsValidPart).
+    if (dash != std::string_view::npos) {
+        for (std::string_view const identifier : wxl::core::split(text.substr(dash + 1), '.')) {
+            if (!is_identifier(identifier) ||
+                (identifier.size() > 1 && identifier.front() == '0' && is_numeric(identifier))) {
+                return std::nullopt;
+            }
+            version.prerelease_.emplace_back(identifier);
+        }
+    }
+    return version;
+}
+
+std::weak_ordering operator<=>(nuget_version const& a, nuget_version const& b) {
+    if (auto const order = a.numbers_ <=> b.numbers_; order != 0) {
+        return order;
+    }
+    if (a.prerelease_.empty() != b.prerelease_.empty()) {
+        return a.prerelease_.empty() ? std::weak_ordering::greater : std::weak_ordering::less;
+    }
+    for (std::size_t at = 0; at != std::min(a.prerelease_.size(), b.prerelease_.size()); ++at) {
+        if (auto const order = compare_identifiers(a.prerelease_[at], b.prerelease_[at]);
+            order != 0) {
+            return order;
+        }
+    }
+    return a.prerelease_.size() <=> b.prerelease_.size();
+}
+
 std::filesystem::path resolve_reference(std::string_view reference,
-                                        std::filesystem::path const& referrer) {
-    std::filesystem::path path{reference};
+                                        std::filesystem::path const& referrer,
+                                        std::filesystem::path const& profiles_dir) {
+    auto path = path_of(reference);
     if (path.has_extension() || path.has_parent_path()) {
         return path.is_absolute() ? path : referrer.parent_path() / path;
     }
-    return referrer.parent_path() / (std::string(reference) + ".json");
+    path += L".winxl-profile";
+    auto beside = referrer.parent_path() / path;
+    if (profiles_dir.empty() || std::filesystem::is_regular_file(beside)) {
+        return beside;
+    }
+    auto packaged = profiles_dir / path;
+    if (std::filesystem::is_regular_file(packaged)) {
+        return packaged;
+    }
+    fail(referrer, std::format("profile '{}' named in extends is not found: not beside it ({}) "
+                               "and not in the profiles directory ({})",
+                               reference, wxl::core::unicode::to_utf8(beside).chars(),
+                               wxl::core::unicode::to_utf8(packaged).chars()));
 }
 
 bool member_filter::allows(std::string_view name) const {
@@ -473,22 +599,14 @@ void member_filter::merge(member_filter const& other) {
     names = std::move(rest);
 }
 
-profile load_profile(std::filesystem::path const& path) {
-    wxl::json::document file;
-    auto const& document = read_json(file, path, "a profile must be a JSON object");
+namespace {
 
-    profile prof;
-    prof.source = path;
-    prof.name = string_or(document, path, "name", path.stem().string());
-    prof.description = string_or(document, path, "description", {});
-
-    if (value const* const extends = document.find("extends")) {
-        auto const names = read_string_set(*extends, path, "extends");
-        prof.extends.assign(names.begin(), names.end());
-    }
-
-    prof.windows_app_sdk = string_or(document, path, "windowsAppSdk", {});
-
+// What the walk is asked to start from -- the packages, the listed types with everything
+// written under them, and the Windows metadata: the keys a profile and the `imports` of a
+// component share. A type listed without "styles" asks for all of its styles when
+// `all_styles_by_default`, and for none otherwise.
+void read_requirements(value const& document, std::filesystem::path const& path, profile& prof,
+                       bool all_styles_by_default) {
     if (value const* const packages = document.find("packages")) {
         if (!packages->is_array()) {
             fail(path, "'packages' must be an array");
@@ -505,10 +623,12 @@ profile load_profile(std::filesystem::path const& path) {
         for (value const& entry : types->members()) {
             std::string const name{entry.name().chars()};
             prof.types.emplace(name, read_member_filter(entry, path, name));
-            value const* const styles = entry.find("styles");
-            prof.styles.emplace(
-                name, styles ? member_filter::allow(read_string_set(*styles, path, "styles"))
-                             : member_filter::all());
+            if (value const* const styles = entry.find("styles")) {
+                prof.styles.emplace(name,
+                                    member_filter::allow(read_string_set(*styles, path, "styles")));
+            } else if (all_styles_by_default) {
+                prof.styles.emplace(name, member_filter::all());
+            }
             if (auto added = read_synthetic_members(entry, path, name); !added.empty()) {
                 prof.synthetic.emplace(name, std::move(added));
             }
@@ -530,6 +650,208 @@ profile load_profile(std::filesystem::path const& path) {
         }
     }
 
+    prof.windows_metadata = bool_or(document, path, "windowsMetadata", false);
+}
+
+// Whether `file`, once normalised, lies inside `directory`: a path that climbs out of it with
+// ".." does not.
+bool inside(std::filesystem::path const& directory, std::filesystem::path const& file) {
+    auto const relative = file.lexically_normal().lexically_relative(directory.lexically_normal());
+    return !relative.empty() && *relative.begin() != std::filesystem::path{".."};
+}
+
+// A type word of a description: not empty, the one thing that has no meaning as a type.
+std::string type_word(value const& field, std::filesystem::path const& source, std::string_view where) {
+    if (!field.is_string() || field.as_string().chars().empty()) {
+        fail(source, std::format("{}: the type must be a type word, a non-empty string", where));
+    }
+    return text(field);
+}
+
+// The members of one kind a description lists, "Name": "Type", in the order the file has them. A
+// property may say instead {"type": "Double", "set": "bind"}: a binding target alone.
+std::vector<described_member> read_described_members(value const& entry,
+                                                     std::filesystem::path const& source,
+                                                     std::string_view where, std::string_view key,
+                                                     bool bindable) {
+    value const* const members = entry.find(key);
+    if (!members) {
+        return {};
+    }
+    if (!members->is_object()) {
+        fail(source, std::format("{}: '{}' must be an object of member names", where, key));
+    }
+    std::vector<described_member> read;
+    for (value const& member : members->members()) {
+        std::string const name{member.name().chars()};
+        std::string const at = std::format("{}.{}", where, name);
+        if (bindable && member.is_object()) {
+            refuse_other_keys(member, source, at, {"type", "set"});
+            if (required_string(member, source, "set", at) != "bind") {
+                fail(source, std::format("{}: 'set' says how the property is set, and the one "
+                                         "word it takes is \"bind\"",
+                                         at));
+            }
+            read.push_back({name, type_word(member["type"], source, at), true});
+        } else {
+            read.push_back({name, type_word(member, source, at), false});
+        }
+    }
+    return read;
+}
+
+// The header a description names: a file of the component, the one that declares the type.
+std::string described_header(value const& entry, component const& comp, std::string_view where) {
+    auto header = required_string(entry, comp.source, "header", where);
+    auto const file = (comp.directory / path_of(header)).lexically_normal();
+    if (!inside(comp.directory, file) || !std::filesystem::is_regular_file(file)) {
+        fail(comp.source, std::format("{}: 'header' \"{}\" is no file of the component", where,
+                                      header));
+    }
+    return header;
+}
+
+void read_descriptions(value const& document, component& comp) {
+    if (value const* const classes = document.find("classes")) {
+        if (!classes->is_object()) {
+            fail(comp.source, "'classes' must be an object keyed by class name");
+        }
+        for (value const& entry : classes->members()) {
+            described_class klass;
+            klass.name = std::string{entry.name().chars()};
+            std::string const where = std::format("class {}", klass.name);
+            if (!entry.is_object()) {
+                fail(comp.source, std::format("{}: a description must be an object", where));
+            }
+            refuse_other_keys(entry, comp.source, where,
+                              {"header", "base", "properties", "collections", "events"});
+            klass.header = described_header(entry, comp, where);
+            if (value const* const base = entry.find("base")) {
+                klass.base = type_word(*base, comp.source, std::format("{}: 'base'", where));
+            }
+            klass.properties =
+                read_described_members(entry, comp.source, where, "properties", true);
+            klass.collections =
+                read_described_members(entry, comp.source, where, "collections", false);
+            klass.events = read_described_members(entry, comp.source, where, "events", false);
+            comp.classes.push_back(std::move(klass));
+        }
+    }
+    if (value const* const enums = document.find("enums")) {
+        if (!enums->is_object()) {
+            fail(comp.source, "'enums' must be an object keyed by enumeration name");
+        }
+        for (value const& entry : enums->members()) {
+            described_enum described;
+            described.name = std::string{entry.name().chars()};
+            std::string const where = std::format("enumeration {}", described.name);
+            if (!entry.is_object()) {
+                fail(comp.source, std::format("{}: a description must be an object", where));
+            }
+            refuse_other_keys(entry, comp.source, where, {"header", "values"});
+            described.header = described_header(entry, comp, where);
+            described.values = read_names(entry, comp.source, "values");
+            if (described.values.empty()) {
+                fail(comp.source, std::format("{}: 'values' names no value", where));
+            }
+            comp.enums.push_back(std::move(described));
+        }
+    }
+}
+
+}  // namespace
+
+char const* element_type_name(std::string_view word) {
+    static constexpr std::pair<std::string_view, char const*> names[] = {
+        {"Boolean", "bool"},     {"Char16", "char16_t"}, {"Int8", "int8_t"},
+        {"UInt8", "uint8_t"},    {"Int16", "int16_t"},   {"UInt16", "uint16_t"},
+        {"Int32", "int32_t"},    {"UInt32", "uint32_t"}, {"Int64", "int64_t"},
+        {"UInt64", "uint64_t"},  {"Single", "float"},    {"Double", "double"},
+        {"String", "hstring"},   {"Object", "Object"},
+    };
+    for (auto&& [name, cpp] : names) {
+        if (name == word) {
+            return cpp;
+        }
+    }
+    return nullptr;
+}
+
+component load_component(std::filesystem::path const& manifest) {
+    wxl::json::document file;
+    auto const& document = read_json(file, manifest, "a component manifest must be a JSON object");
+
+    component comp;
+    comp.source = manifest;
+    comp.directory = manifest.parent_path();
+    refuse_other_keys(document, manifest, "component",
+                      {"name", "imports", "dependencies", "sources", "surface", "libraries",
+                       "description", "classes", "enums"});
+    comp.name = required_string(document, manifest, "name", "component");
+
+    auto const directory_name = wxl::core::unicode::to_utf8(comp.directory.filename());
+    if (comp.name != directory_name.chars()) {
+        fail(manifest, std::format("the component is named \"{}\" and its directory \"{}\": a "
+                                   "component is named as its directory is",
+                                   comp.name, directory_name.chars()));
+    }
+
+    comp.dependencies = read_names(document, manifest, "dependencies");
+    comp.sources = read_names(document, manifest, "sources");
+    comp.libraries = read_names(document, manifest, "libraries");
+    comp.surface = string_or(document, manifest, "surface", {});
+    comp.description = string_or(document, manifest, "description", {});
+    read_descriptions(document, comp);
+
+    // Read as a profile of the chain is, so the merge and the checks of packages and
+    // versions treat it as one and name the manifest.
+    // A component asks for no brushes, and a type it lists without "styles" for none of its
+    // styles: a profile's default of all of them would widen whatever the profiles narrowed. A
+    // type only a component lists has no styles entry, and so keeps all of its styles.
+    comp.imports.name = comp.name;
+    comp.imports.source = manifest;
+    comp.imports.brushes = member_filter::none();
+    if (value const* const imports = document.find("imports")) {
+        if (!imports->is_object()) {
+            fail(manifest, "'imports' must be an object");
+        }
+        refuse_other_keys(*imports, manifest, "'imports'",
+                          {"types", "packages", "windowsMetadata"});
+        read_requirements(*imports, manifest, comp.imports, false);
+    }
+    return comp;
+}
+
+profile load_profile(std::filesystem::path const& path) {
+    wxl::json::document file;
+    auto const& document = read_json(file, path, "a profile must be a JSON object");
+
+    profile prof;
+    prof.source = path;
+    prof.name = string_or(document, path, "name", wxl::core::unicode::to_utf8(path.stem()).chars());
+    prof.description = string_or(document, path, "description", {});
+
+    if (value const* const extends = document.find("extends")) {
+        auto const names = read_string_set(*extends, path, "extends");
+        prof.extends.assign(names.begin(), names.end());
+    }
+
+    prof.components = read_names(document, path, "components");
+
+    // The release read is the one the build's restore resolved, so a key that
+    // names one is a mistake to report.
+    if (document.find("windowsAppSdk")) {
+        fail(path, "'windowsAppSdk' is not a key of a profile: the Windows App SDK release read "
+                   "is the one the build's NuGet restore resolves, and a profile whose types need "
+                   "a certain release names the lowest one they need as 'minimumWindowsAppSdk'");
+    }
+    refuse_other_keys(document, path, "profile",
+                      {"name", "description", "extends", "components", "minimumWindowsAppSdk",
+                       "packages", "types", "windowsMetadata", "discoveredTypes", "brushes"});
+    prof.minimum_windows_app_sdk = minimum_or_empty(document, path, "minimumWindowsAppSdk", {});
+
+    read_requirements(document, path, prof, true);
+
     // Types the walk discovers on its own (through base classes and member
     // signatures) rather than finding listed: "none" generates the type
     // but none of its members, "all" generates everything it declares.
@@ -547,7 +869,6 @@ profile load_profile(std::filesystem::path const& path) {
         prof.brushes = member_filter::allow(read_string_set(*brushes, path, "brushes"));
     }
 
-    prof.windows_metadata = bool_or(document, path, "windowsMetadata", false);
     return prof;
 }
 
@@ -556,6 +877,66 @@ std::filesystem::path canonical_path(std::filesystem::path const& path) {
     auto resolved = std::filesystem::weakly_canonical(path, ec);
     return ec ? path : resolved;
 }
+
+namespace {
+
+// The components selected: those named, closed over `dependencies`, each after its dependencies.
+struct component_resolver {
+    component_search const& search;
+    std::vector<component>& selected;
+    std::vector<std::string> following;  // the chain of `dependencies` being followed, for a cycle
+
+    void select(std::string const& name, std::filesystem::path const& wanted_by) {
+        if (std::ranges::any_of(selected, [&](component const& comp) { return comp.name == name; })) {
+            return;
+        }
+        if (auto const at = std::ranges::find(following, name); at != following.end()) {
+            std::vector<std::string> cycle(at, following.end());
+            cycle.push_back(name);
+            fail(wanted_by, std::format("the components depend on each other in a cycle: {}",
+                                        wxl::core::join(cycle, " -> ")));
+        }
+        auto comp = load_component(find(name, wanted_by));
+        // The file system finds a directory whatever the case of its name, and a name spelled
+        // otherwise would select the component a second time.
+        if (comp.name != name) {
+            fail(wanted_by, std::format("component '{}' is named '{}' ({})", name, comp.name,
+                                        wxl::core::unicode::to_utf8(comp.source).chars()));
+        }
+        following.push_back(name);
+        for (auto&& dependency : comp.dependencies) {
+            select(dependency, comp.source);
+        }
+        following.pop_back();
+        selected.push_back(std::move(comp));
+    }
+
+    std::filesystem::path find(std::string const& name, std::filesystem::path const& wanted_by) const {
+        std::vector<std::filesystem::path> found;
+        std::string searched;
+        for (auto&& directory : search.directories) {
+            auto const manifest = canonical_path(directory / path_of(name) / "component.json");
+            if (std::filesystem::is_regular_file(manifest) &&
+                std::ranges::find(found, manifest) == found.end()) {
+                found.push_back(manifest);
+            }
+            searched += std::format("\n  {}", wxl::core::unicode::to_utf8(directory).chars());
+        }
+        if (found.empty()) {
+            fail(wanted_by, std::format("component '{}' is not found: no {}/component.json in the "
+                                        "component directories (--component-dir):{}",
+                                        name, name, searched.empty() ? " none given" : searched));
+        }
+        if (found.size() > 1) {
+            fail(wanted_by, std::format("component '{}' is found twice: {} and {}", name,
+                                        wxl::core::unicode::to_utf8(found[0]).chars(),
+                                        wxl::core::unicode::to_utf8(found[1]).chars()));
+        }
+        return found.front();
+    }
+};
+
+}  // namespace
 
 // The depth-first load, as a type rather than as a lambda that takes itself.
 // Recursion is what it needs and what a lambda cannot say without becoming a
@@ -567,8 +948,26 @@ struct profile_loader {
     profile_set& result;
     std::set<std::filesystem::path>& loaded;   // canonical paths, load-once
     std::set<std::filesystem::path>& loading;  // cycle detection
-    std::vector<profile>& with_packages;
+    std::vector<profile>& in_load_order;
     bool& windows_metadata;
+    std::filesystem::path const& profiles_dir;  // where a bare name not beside its referrer is
+    // The file each definition kept comes from, by what it defines. Between profiles the extends
+    // chain decides which one is kept; a component giving a definition differently from the one
+    // kept stops the run instead, since nothing orders a component against a profile.
+    std::map<std::string, std::filesystem::path> defined_by;
+
+    // Records that `by` defines `what` when its definition `takes` the place, and refuses a
+    // component's definition that `differs` from the one kept. Returns `takes`.
+    bool define(listing const& by, std::string const& what, bool differs, bool takes) {
+        if (differs && !by.component.empty()) {
+            fail(by.source, std::format("{} differs from its definition in {}", what,
+                                        wxl::core::unicode::to_utf8(defined_by.at(what)).chars()));
+        }
+        if (takes) {
+            defined_by.insert_or_assign(what, by.source);
+        }
+        return takes;
+    }
 
     // Depth-first so that a referenced profile ("base") is merged before
     // the profile that extends it -- merging is a union, so the order
@@ -585,18 +984,48 @@ struct profile_loader {
 
         auto const prof = load_profile(path);
         for (auto&& reference : prof.extends) {
-            load(resolve_reference(reference, prof.source));
+            load(resolve_reference(reference, prof.source, profiles_dir));
+        }
+        for (auto&& name : prof.components) {
+            if (std::ranges::find(result.named_components, name,
+                                  &profile_set::component_request::name) ==
+                result.named_components.end()) {
+                result.named_components.push_back({name, prof.source});
+            }
         }
 
-        // Packages wait for the second pass: the SDK release they are taken
-        // from may be named by a profile further up the chain than this one.
-        with_packages.push_back(prof);
+        merge(prof, {prof.source, {}});
+
+        loading.erase(key);
+        loaded.insert(key);
+        result.loaded.push_back(prof.name);
+    }
+
+    // The components named in the chain, each after its dependencies, merged after the
+    // profiles: a type both list is reported against the profile.
+    void load_components(component_search const& search) {
+        component_resolver resolver{search, result.components};
+        for (auto&& [name, by] : result.named_components) {
+            resolver.select(name, by);
+        }
+        for (auto&& comp : result.components) {
+            merge(comp.imports, {comp.source, comp.name});
+        }
+    }
+
+    // A profile, or the `imports` of a component, joined to the set.
+    void merge(profile const& prof, listing const& by) {
+        // Versions and packages wait for the second pass: the release the set
+        // needs is the highest minimum of all its profiles, and the check of
+        // the release comes before the packages of the release are read.
+        in_load_order.push_back(prof);
 
         for (auto&& [name, filter] : prof.types) {
             auto [it, inserted] = result.types.try_emplace(name, filter);
             if (!inserted) {
                 it->second.merge(filter);
             }
+            result.listed_by.try_emplace(name, by);
         }
         // Synthetic members compose the way the rest of a profile does: an
         // extending profile adds to what it extends, and a name declared
@@ -604,30 +1033,37 @@ struct profile_loader {
         for (auto&& [name, added] : prof.synthetic) {
             auto& known = result.synthetic[name];
             for (auto&& member : added) {
-                if (std::none_of(known.begin(), known.end(), [&](synthetic_member const& existing) {
-                        return existing.name == member.name;
-                    })) {
+                auto const existing = std::ranges::find(known, member.name, &synthetic_member::name);
+                if (define(by, std::format("synthetic member {}.{}", name, member.name),
+                           existing != known.end() && *existing != member, existing == known.end())) {
                     known.push_back(member);
                 }
             }
         }
         for (auto&& [name, converted] : prof.from_text) {
+            auto const existing = result.from_text.find(name);
+            define(by, std::format("fromText of {}", name),
+                   existing != result.from_text.end() && existing->second != converted, true);
             result.from_text[name] = converted;
         }
         // Replaced calls compose by the method's name, the extending profile winning.
         for (auto&& [name, calls] : prof.replaced_calls) {
             for (auto&& [method, call] : calls) {
-                result.replaced_calls[name][method] = call;
+                auto& known = result.replaced_calls[name];
+                auto const existing = known.find(method);
+                define(by, std::format("replaced call {}.{}", name, method),
+                       existing != known.end() && existing->second != call, true);
+                known[method] = call;
             }
         }
-        // Setter methods compose the same way, by the method's name.
+        // Setter methods compose the same way, by the method's name -- which is all
+        // there is to one, so a repetition never differs.
         for (auto&& [name, setters] : prof.setter_methods) {
             auto& known = result.setter_methods[name];
             for (auto&& setter : setters) {
-                if (std::none_of(known.begin(), known.end(), [&](setter_method const& existing) {
-                        return existing.method == setter.method;
-                    })) {
-                    known.push_back(setter);
+                if (define(by, std::format("setter method {}.{}", name, setter), false,
+                           !known.contains(setter))) {
+                    known.insert(setter);
                 }
             }
         }
@@ -640,130 +1076,202 @@ struct profile_loader {
         result.brushes.merge(prof.brushes);
         result.discovered.merge(prof.discovered);
         windows_metadata = windows_metadata || prof.windows_metadata;
-
-        loading.erase(key);
-        loaded.insert(key);
-        result.loaded.push_back(prof.name);
     }
 };
 
+namespace {
+
+std::string list_of(std::vector<std::string> names) {
+    std::ranges::sort(names);
+    return names.empty() ? std::string{"(none)"} : wxl::core::join(names, ", ");
+}
+
+// Every header the generated code includes for a profile or a component, held to where it can
+// be, in the spelling the emitter reads (gen/emit.h, write_include): "../X.h" names a
+// hand-written header relative to the library's include directory, so it is a file of the common
+// directory or of a selected component, and never of a component the profiles do not select --
+// the common directory may hold the components themselves; a plain name is a file of the run, so
+// it must be a header the generator writes. A name in angle brackets is a projection or standard
+// header written as it is; no profile has one, and it is not checked.
+void check_includes(std::vector<profile> const& in_load_order,
+                    std::vector<component> const& components, component_search const& search) {
+    if (!search.common_directory) {
+        return;
+    }
+    auto const common = canonical_path(*search.common_directory);
+    std::vector<std::filesystem::path> roots;
+    for (auto&& directory : search.directories) {
+        roots.push_back(canonical_path(directory));
+    }
+    // The directory of a component the profiles do not select that `file` lies in, if any.
+    auto const of_unselected = [&](std::filesystem::path const& file) {
+        return std::ranges::any_of(roots, [&](std::filesystem::path const& root) {
+            if (!inside(root, file)) {
+                return false;
+            }
+            auto const owner = root / *file.lexically_relative(root).begin();
+            return std::filesystem::is_regular_file(owner / "component.json") &&
+                   std::ranges::none_of(components, [&](component const& comp) {
+                       return comp.directory.lexically_normal() == owner.lexically_normal();
+                   });
+        });
+    };
+    auto const found = [&](std::string const& include) {
+        if (include.starts_with('<')) {
+            return true;
+        }
+        if (!include.starts_with("../")) {
+            return std::ranges::find(search.generated_includes, include) !=
+                   search.generated_includes.end();
+        }
+        auto const file = path_of(std::string_view{include}.substr(3));
+        auto const in = [&](std::filesystem::path const& directory) {
+            auto const resolved = (directory / file).lexically_normal();
+            return inside(directory, resolved) && std::filesystem::is_regular_file(resolved) &&
+                   !of_unselected(resolved);
+        };
+        return in(common) ||
+               std::ranges::any_of(components, [&](component const& comp) { return in(comp.directory); });
+    };
+    auto const check = [&](profile const& prof, std::string const& member,
+                           std::string const& include) {
+        if (include.empty() || found(include)) {
+            return;
+        }
+        auto const where = wxl::core::unicode::to_utf8(*search.common_directory);
+        fail(prof.source,
+             include.starts_with("../")
+                 ? std::format("{} includes \"{}\", which is no file of {} nor of a selected "
+                               "component",
+                               member, include, where.chars())
+                 : std::format("{} includes \"{}\": a name without \"../\" must be a header the "
+                               "generator writes",
+                               member, include));
+    };
+    for (auto&& prof : in_load_order) {
+        for (auto&& [type, members] : prof.synthetic) {
+            for (auto&& member : members) {
+                auto const name = std::format("{}.{}", type, member.name);
+                check(prof, name, member.include);
+                check(prof, name, member.cpp_include);
+            }
+        }
+        for (auto&& [type, converted] : prof.from_text) {
+            check(prof, std::format("{} (fromText)", type), converted.include);
+        }
+        for (auto&& [type, calls] : prof.replaced_calls) {
+            for (auto&& [method, call] : calls) {
+                check(prof, std::format("{}.{}", type, method), call.include);
+            }
+        }
+    }
+}
+
+}  // namespace
+
 profile_set resolve_profiles(std::vector<std::filesystem::path> const& paths,
-                             std::filesystem::path const& nuget_root) {
+                             restored_packages const& restored, component_search const& search,
+                             std::filesystem::path const& profiles_dir) {
     profile_set result;
 
     std::set<std::filesystem::path> loaded;   // canonical paths, load-once
     std::set<std::filesystem::path> loading;  // cycle detection
     std::set<std::filesystem::path> metadata;
     std::set<std::filesystem::path> resources;
-    std::vector<profile> with_packages;  // resolved once the SDK release is known
+    std::vector<profile> in_load_order;
     bool windows_metadata = false;
 
-    profile_loader loader{result, loaded, loading, with_packages, windows_metadata};
+    profile_loader loader{result, loaded, loading, in_load_order, windows_metadata, profiles_dir};
     for (auto&& path : paths) {
         loader.load(path);
     }
-
-    // One SDK release across the whole set. Profiles that name none inherit
-    // it; two that name different ones are asking for a mixture nobody
-    // ships, which is the thing this key exists to prevent.
-    profile const* chose_sdk = nullptr;
-    for (auto&& prof : with_packages) {
-        if (prof.windows_app_sdk.empty()) {
-            continue;
-        }
-        if (chose_sdk && chose_sdk->windows_app_sdk != prof.windows_app_sdk) {
-            fail(prof.source, std::format("asks for {} {}, while {} asks for {}",
-                                          windows_app_sdk_id, prof.windows_app_sdk,
-                                          wxl::core::unicode::to_utf8(chose_sdk->source).chars(),
-                                          chose_sdk->windows_app_sdk));
-        }
-        chose_sdk = &prof;
+    loader.load_components(search);
+    check_includes(in_load_order, result.components, search);
+    result.restored_from = restored.source;
+    result.sdk = restored.sdk;
+    result.windows_metadata = windows_metadata;
+    if (restored_package const* const release = restored.find(windows_app_sdk_id)) {
+        result.windows_app_sdk = release->version;
     }
 
-    std::map<std::string, std::string> package_versions;
-    if (chose_sdk) {
-        auto const dir = nuget_root / wxl::core::ascii_lower(windows_app_sdk_id) / chose_sdk->windows_app_sdk;
-        auto const nuspec = dir / std::format("{}.nuspec", wxl::core::ascii_lower(windows_app_sdk_id));
-        if (!std::filesystem::is_regular_file(nuspec)) {
-            fail(chose_sdk->source, std::format("{} {} is not in the package root: no {}",
-                                                windows_app_sdk_id, chose_sdk->windows_app_sdk,
-                                                wxl::core::unicode::to_utf8(nuspec).chars()));
+    // The release the set needs is the highest of its minimums, named by the
+    // first profile in load order that asks for it.
+    profile const* needs_release = nullptr;
+    for (auto&& prof : in_load_order) {
+        if (!prof.minimum_windows_app_sdk.empty() &&
+            (!needs_release || version_of(needs_release->minimum_windows_app_sdk) <
+                                   version_of(prof.minimum_windows_app_sdk))) {
+            needs_release = &prof;
         }
-        package_versions = read_sdk_dependencies(nuspec);
-        package_versions.emplace(wxl::core::ascii_lower(windows_app_sdk_id), chose_sdk->windows_app_sdk);
+    }
+    if (needs_release) {
+        auto const& minimum = needs_release->minimum_windows_app_sdk;
+        restored_package const* const release = restored.find(windows_app_sdk_id);
+        if (!release) {
+            fail(needs_release->source,
+                 std::format("'minimumWindowsAppSdk' asks for {} {} or newer, and {} has no {}: "
+                             "add a reference to {} {} or newer to the restore of the build (a "
+                             "minimum in tools/packages.json) and run tools\\build.ps1 "
+                             "-UpdatePackages in the wxl tree",
+                             windows_app_sdk_id, minimum, restore_of(restored), windows_app_sdk_id,
+                             windows_app_sdk_id, minimum));
+        }
+        if (version_of(release->version) < version_of(minimum)) {
+            fail(needs_release->source,
+                 std::format("'minimumWindowsAppSdk' asks for {} {} or newer, and {} resolved {} "
+                             "{}: raise the minimum of {} in tools/packages.json and run "
+                             "tools\\build.ps1 -UpdatePackages in the wxl tree",
+                             windows_app_sdk_id, minimum, restore_of(restored), release->id,
+                             release->version, windows_app_sdk_id));
+        }
     }
 
-    // A version a profile puts in place of the release's own applies to the
-    // package wherever any profile of the set lists it.
-    std::map<std::string, std::string> overridden;
-    for (auto&& prof : with_packages) {
+    for (auto&& prof : in_load_order) {
         for (auto&& package : prof.packages) {
-            if (!package.override_version.empty()) {
-                overridden[wxl::core::ascii_lower(package.id)] = package.override_version;
-            }
-        }
-    }
-
-    for (auto&& prof : with_packages) {
-        for (auto&& package : prof.packages) {
-            auto const shipped = package_versions.find(wxl::core::ascii_lower(package.id));
-            if (auto const over = overridden.find(wxl::core::ascii_lower(package.id));
-                over != overridden.end()) {
-                for (auto&& file : resolve_package(package, over->second, nuget_root, prof.source)) {
-                    metadata.insert(file);
-                }
-                for (auto&& file : resolve_resources(package, over->second, nuget_root, prof.source)) {
-                    resources.insert(file);
-                }
-                continue;
-            }
-
-            // A package the release ships takes its version from the release
-            // and may not name one: a hand-picked version there is the
-            // mixture nobody ships, which is what naming the release once
-            // exists to prevent. A package from outside the release has no
-            // such declaration to read, so its own version is the only
-            // answer -- and the only place the two rules meet is here.
-            if (shipped != package_versions.end() && !package.version.empty()) {
+            restored_package const* const found = restored.find(package.id);
+            if (!found) {
+                auto const wanted = package.minimum_version.empty()
+                                        ? package.id
+                                        : std::format("{} {} or newer", package.id,
+                                                      package.minimum_version);
                 fail(prof.source,
-                     std::format("package '{}' carries a 'version', but {} ships it and declares "
-                                 "{}; the SDK release is named once, as 'windowsAppSdk', and its "
-                                 "packages take their versions from it",
-                                 package.id, windows_app_sdk_id, shipped->second));
+                     std::format("package '{}' is not in {}: add a reference to {} to the restore "
+                                 "of the build (a minimum in tools/packages.json) and run "
+                                 "tools\\build.ps1 -UpdatePackages in the wxl tree",
+                                 package.id, restore_of(restored), wanted));
             }
-            if (shipped == package_versions.end() && package.version.empty()) {
+            if (!package.minimum_version.empty() &&
+                version_of(found->version) < version_of(package.minimum_version)) {
                 fail(prof.source,
-                     chose_sdk ? std::format("package '{}' is not one {} {} ships, so it has to "
-                                             "name its own 'version'",
-                                             package.id, windows_app_sdk_id,
-                                             chose_sdk->windows_app_sdk)
-                               : std::format("package '{}' needs a version: either name one "
-                                             "here, or name an SDK release as 'windowsAppSdk' "
-                                             "for it to come from",
-                                             package.id));
+                     std::format("package '{}': 'minimumVersion' asks for {} or newer, and {} "
+                                 "resolved {}: raise the minimum in tools/packages.json and run "
+                                 "tools\\build.ps1 -UpdatePackages in the wxl tree",
+                                 package.id, package.minimum_version, restore_of(restored),
+                                 found->version));
             }
-
-            std::string version = package.version;
-            if (version.empty()) {
-                version = shipped->second;
-            }
-
-            for (auto&& file : resolve_package(package, version, nuget_root, prof.source)) {
+            for (auto&& file : resolve_package(package, *found, prof.source)) {
                 metadata.insert(file);
             }
-            for (auto&& file : resolve_resources(package, version, nuget_root, prof.source)) {
+            for (auto&& file : resolve_resources(package, *found, prof.source)) {
                 resources.insert(file);
             }
         }
     }
 
+    // The projected Windows platform metadata (Windows.Foundation.IReference,
+    // IVector<T>, EventHandler<T>, ...): WinUI's own .winmd only *references*
+    // those, and without them the walk stops at every such edge. The files are
+    // those the build's projection of the platform was made from, so a
+    // wrapper and the projection it calls see the same Windows SDK.
     if (windows_metadata) {
-        if (auto const dir = windows_metadata_dir(); std::filesystem::is_directory(dir)) {
-            for (auto&& file : windows_metadata_files(dir)) {
-                metadata.insert(file);
+        for (auto&& file : restored.sdk.metadata) {
+            if (!std::filesystem::is_regular_file(file)) {
+                fail(restored.source,
+                     std::format("Windows SDK {}: no metadata file {}; configure the build again",
+                                 restored.sdk.version,
+                                 wxl::core::unicode::to_utf8(file).chars()));
             }
-        } else {
-            result.missing_windows_metadata = dir;
+            metadata.insert(file);
         }
     }
 
@@ -772,51 +1280,108 @@ profile_set resolve_profiles(std::vector<std::filesystem::path> const& paths,
     return result;
 }
 
-// NuGet's own answer to "where is the global packages folder", read out of
-// its configuration: `<add key="globalPackagesFolder" value="..."/>`.
-//
-// Asking the tool rather than guessing from the environment is what makes
-// this work on a machine that moved the cache: the conventional
-// %USERPROFILE%\.nuget\packages usually still exists there, holding an older
-// partial copy, so guessing does not fail loudly -- it silently reads the
-// wrong tree and reports packages as missing that are installed.
-//
-// A targeted scan rather than a parse: one key, one attribute, and the
-// alternative is linking the whole XML reader into the generator for it.
-std::filesystem::path nuget_config_packages_folder() {
-    auto const appdata = env("APPDATA");
-    if (appdata.empty()) {
-        return {};
+void check_build_components(profile_set const& profiles,
+                            std::vector<std::string> const& build_components) {
+    std::vector<std::string> names;
+    std::string sources;
+    for (auto&& [name, by] : profiles.named_components) {
+        names.push_back(name);
+        sources += std::format("\n  {}: {}", name, wxl::core::unicode::to_utf8(by).chars());
     }
-
-    std::ifstream file{std::filesystem::path{appdata} / "NuGet" / "NuGet.Config"};
-    if (!file) {
-        return {};
+    std::set<std::string> const build(build_components.begin(), build_components.end());
+    std::set<std::string> const named(names.begin(), names.end());
+    if (build != named) {
+        throw std::runtime_error(std::format(
+            "the components the build names (--component) are not those the profiles name in "
+            "\"components\":\n  build:    {}\n  profiles: {}{}",
+            list_of(build_components), list_of(names), sources));
     }
-    std::string const text{std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{}};
-
-    auto const key = text.find("globalPackagesFolder");
-    if (key == std::string::npos) {
-        return {};
-    }
-    auto const value = text.find("value=", key);
-    if (value == std::string::npos) {
-        return {};
-    }
-    auto const open = text.find('"', value);
-    auto const close = open == std::string::npos ? std::string::npos : text.find('"', open + 1);
-    if (close == std::string::npos) {
-        return {};
-    }
-    return std::filesystem::path{text.substr(open + 1, close - open - 1)};
 }
 
+restored_package const* restored_packages::find(std::string_view id) const {
+    for (auto&& package : packages) {
+        if (wxl::core::equal_ignore_ascii_case(std::string_view{package.id}, id)) {
+            return &package;
+        }
+    }
+    return nullptr;
+}
+
+restored_packages load_restored_packages(std::filesystem::path const& path) {
+    // Asked here rather than left to read_json: what is missing is a step of the
+    // build, and the message says which.
+    if (!std::filesystem::is_regular_file(path)) {
+        throw std::runtime_error(std::format(
+            "no list of the restored packages at {}: the configure of a build writes it, as "
+            "<build>/wxl.packages/restored-packages.json, from the result of its NuGet restore; "
+            "configure the build first",
+            wxl::core::unicode::to_utf8(path).chars()));
+    }
+    wxl::json::document file;
+    auto const& document =
+        read_json(file, path, "a list of the restored packages must be a JSON object");
+
+    restored_packages restored;
+    restored.source = path;
+
+    value const& packages = document["packages"];
+    if (!packages.is_array()) {
+        fail(path, "'packages' must be an array");
+    }
+    for (value const& entry : packages.elements()) {
+        if (!entry.is_object()) {
+            fail(path, "every 'packages' entry must be an object");
+        }
+        restored_package package{required_string(entry, path, "id", "package"),
+                                 required_string(entry, path, "version", "package"),
+                                 path_of(required_string(entry, path, "directory", "package"))};
+        if (!nuget_version::parse(package.version)) {
+            fail(path, std::format("package '{}': \"{}\" is not a NuGet version", package.id,
+                                   package.version));
+        }
+        if (restored.find(package.id)) {
+            fail(path, std::format("package '{}' is listed twice", package.id));
+        }
+        restored.packages.push_back(std::move(package));
+    }
+
+    value const& sdk = document["windowsSdk"];
+    if (!sdk.is_object() || !sdk["version"].is_string() || !sdk["metadata"].is_array() ||
+        sdk["metadata"].elements().empty()) {
+        fail(path, "'windowsSdk' must be an object with a string 'version' and an array "
+                   "'metadata' of the .winmd files the projection of the platform is made from");
+    }
+    restored.sdk.version = text(sdk["version"]);
+    // The name of a folder of the SDK's references as well (References\<version>),
+    // so it is held to the form the configure writes it in: four numbers
+    // separated by dots, 10.0.26100.0.
+    std::size_t parts = 0;
+    bool numeric = true;
+    for (std::string_view const part :
+         wxl::core::split(std::string_view{restored.sdk.version}, '.')) {
+        ++parts;
+        numeric = numeric && is_numeric(part);
+    }
+    if (parts != 4 || !numeric) {
+        fail(path, std::format("'windowsSdk.version' is \"{}\", which is not a Windows SDK "
+                               "version of four numbers separated by dots",
+                               restored.sdk.version));
+    }
+    for (value const& entry : sdk["metadata"].elements()) {
+        if (!entry.is_string()) {
+            fail(path, "'windowsSdk.metadata' must contain strings only");
+        }
+        restored.sdk.metadata.push_back(path_of(text(entry)));
+    }
+    return restored;
+}
 
 type_map load_type_map(std::filesystem::path const& path) {
     wxl::json::document file;
     auto const& document = read_json(file, path, "a type map must be a JSON object");
 
     type_map map;
+    map.source = path;
     if (value const* const listed = document.find("predefined")) {
         map.predefined = read_string_set(*listed, path, "predefined");
     }
@@ -861,23 +1426,7 @@ type_map load_type_map(std::filesystem::path const& path) {
         if (!members->is_object()) {
             fail(path, "'handWrittenMembers' must be an object");
         }
-        if (value const* const array = members->find("properties")) {
-            if (!array->is_array()) {
-                fail(path, "'handWrittenMembers.properties' must be an array");
-            }
-            for (value const& entry : array->elements()) {
-                if (!entry.is_object()) {
-                    fail(path, "every hand-written property must be an object");
-                }
-                map.hand_written_properties.push_back(
-                    {required_string(entry, path, "property", "hand-written property"),
-                     required_string(entry, path, "value", "hand-written property"),
-                     string_or(entry, path, "include", {})});
-            }
-        }
-        if (value const* const events = members->find("events")) {
-            map.hand_written_events = read_string_set(*events, path, "handWrittenMembers.events");
-        }
+        refuse_other_keys(*members, path, "'handWrittenMembers'", {"boundMembers"});
         if (value const* const array = members->find("boundMembers")) {
             if (!array->is_array()) {
                 fail(path, "'handWrittenMembers.boundMembers' must be an array");
@@ -886,31 +1435,60 @@ type_map load_type_map(std::filesystem::path const& path) {
                 if (!entry.is_object()) {
                     fail(path, "every bound member must be an object");
                 }
+                std::string const where = std::format(
+                    "bound member {}.{}", required_string(entry, path, "class", "bound member"),
+                    required_string(entry, path, "property", "bound member"));
+                refuse_other_keys(entry, path, where,
+                                  {"class", "property", "value", "direction", "function", "include"});
+                // Output alone is no pair: a property with a setter takes BindOutput
+                // through the setter, and one without has nothing to show it with.
                 std::string direction = required_string(entry, path, "direction", "bound member");
-                if (direction != "input" && direction != "output" && direction != "both") {
-                    fail(path, "a bound member's 'direction' is \"input\", \"output\" or \"both\"");
+                if (direction != "input" && direction != "both") {
+                    fail(path, std::format("{}: 'direction' is \"input\" or \"both\"", where));
                 }
                 map.bound_members.push_back(
                     {required_string(entry, path, "class", "bound member"),
                      required_string(entry, path, "property", "bound member"),
                      required_string(entry, path, "value", "bound member"), std::move(direction),
-                     string_or(entry, path, "include", {})});
+                     required_string(entry, path, "function", "bound member"),
+                     required_string(entry, path, "include", "bound member")});
             }
         }
     }
-    return map;
-}
 
-std::filesystem::path default_nuget_root() {
-    // The environment first: it is the documented override, and CI sets it.
-    if (auto const packages = env("NUGET_PACKAGES"); !packages.empty()) {
-        return packages;
+    if (value const* const array = document.find("bindingPairs")) {
+        if (!array->is_array()) {
+            fail(path, "'bindingPairs' must be an array");
+        }
+        for (value const& entry : array->elements()) {
+            if (!entry.is_object()) {
+                fail(path, "every binding pair must be an object");
+            }
+            type_map::binding_pair pair{required_string(entry, path, "class", "binding pair"),
+                                        required_string(entry, path, "property", "binding pair"),
+                                        {}};
+            std::string const where =
+                std::format("binding pair {}.{}", pair.class_name, pair.property);
+            refuse_other_keys(entry, path, where, {"class", "property", "events"});
+            value const& events = entry["events"];
+            if (!events.is_array() || events.elements().empty()) {
+                fail(path, std::format("{}: 'events' must be an array naming at least one event",
+                                       where));
+            }
+            for (value const& event : events.elements()) {
+                if (!event.is_string()) {
+                    fail(path, std::format("{}: 'events' must contain strings only", where));
+                }
+                std::string name = text(event);
+                if (std::ranges::contains(pair.events, name)) {
+                    fail(path, std::format("{}: the event {} is named twice", where, name));
+                }
+                pair.events.push_back(std::move(name));
+            }
+            map.binding_pairs.push_back(std::move(pair));
+        }
     }
-    if (auto const configured = nuget_config_packages_folder();
-        !configured.empty() && std::filesystem::is_directory(configured)) {
-        return configured;
-    }
-    return std::filesystem::path{env("USERPROFILE")} / ".nuget" / "packages";
+    return map;
 }
 
 std::vector<symbol> load_symbol_names(std::filesystem::path const& path) {

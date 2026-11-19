@@ -1,4 +1,9 @@
-// Compile-time check of the declarative surface.
+// Compile-time check of the declarative surface over full's vocabulary.
+//
+// Part of wxl.ui.full.surface-test only: many of the classes written here
+// only full generates. The surface tests of the other profiles compile their
+// generated schema_surface.cpp and the fragments of the components they
+// select, without this file.
 //
 // It is built as its own target *without* the cppwinrt include path, so it
 // proves two things at once: that the builder syntax below compiles against
@@ -6,7 +11,7 @@
 // header at all -- if a winrt:: name ever leaked into a public header, this
 // translation unit would stop compiling rather than quietly get slower.
 //
-// Nothing here runs: the WinUI3 runtime is not up in a test, and activating
+// Nothing here runs: the WinUI runtime is not up in a test, and activating
 // a real control without it fails. This is about the syntax and the types.
 //
 // The same target compiles wxl/schema_surface.cpp: one line per
@@ -21,27 +26,19 @@
 // The one thing it cannot check is the negative: that the owner check
 // *refuses* another class's member. The check is a static_assert inside a
 // function body, and a body is not instantiated by a requires-expression, so
-// there is no way to assert that it fires.
+// there is no way to assert that it fails.
+//
+// What a component of the profile layer brings is checked beside its sources,
+// in the surface fragment its manifest names (key "surface"): the profile's
+// surface test compiles the fragments of the components it selects. This file
+// keeps the rest: the generated classes and what no component owns yet.
 
-#include "BbBlock.h"
 #include "Bind.h"
 #include "event_awaitable.h"
 #include "method.h"
-#include "Card.h"
-#include "CompositionWindow.h"
-#include "CustomLayout.h"
-#include "DrawingSurface.h"
-#include "FocusEffect.h"
-#include "FormattedBlock.h"
-#include "HtmlBlock.h"
-#include "RsdnBlock.h"
-#include "ShowDialog.h"
-#include "SplitPanel.h"
-#include "TextureCache.h"
-#include "ThemeBrush.h"
-#include "Panels.h"
 #include "Relief.h"
 #include "UiThread.h"
+#include "WaitableTimer.h"
 #include "ui.h"
 #include <wxl/Microsoft.UI.Dispatching.h>
 #include "schema.h"
@@ -66,7 +63,7 @@ using namespace wxl::dsl;
     Button explicit_names{
         content = L"Click",
         horizontalAlignment = HorizontalAlignment::Center,
-        onClick = [](Object const&, RoutedEventArgs&) {},
+        onClick += [](Object const&, RoutedEventArgs&) {},
     };
 
     Button short_form{
@@ -75,8 +72,8 @@ using namespace wxl::dsl;
         vAlign.center,
     };
 
-    TextBlock text{
-        L"WinUI 3 in C++ Without XAML!",
+    TextBlock line{
+        L"WinUI in C++ Without XAML!",
         hAlign.center,
     };
 
@@ -86,113 +83,14 @@ using namespace wxl::dsl;
     };
 }
 
-// FormattedBlock: the declarative form only creates -- properties of the
-// RichTextBlock underneath -- while content arrives through the procedural
-// appenders. Both halves have to compile without a winrt header in sight.
-[[maybe_unused]] void formatted_block() {
-    FormattedBlock block{
-        fontSize = 14.0,
-        isTextSelectionEnabled = true,
-    };
-
-    block.onLink([](zstring_view) {});
-    block.onError([](HtmlError const& error) {
-        (void)error.kind;
-        (void)error.detail;
-    });
-    block.appendParagraph();
-    block.appendParagraph({.margin = Thickness{0, 0, 0, 8}, .alignment = TextAlignment::Center});
-    block.pushStyle({.bold = true});
-    block.appendText(L"WinUI 3");
-    block.popStyle();
-    block.appendText(L" in C++ Without XAML!");
-    block.appendLineBreak();
-    block.appendLink(L"wxl", L"https://example.invalid/wxl");
-    block.pushLink(L"note:1");
-    block.appendText(L"сноска");
-    block.popLink();
-    block.appendScript(L"2", 0.62, 0.25);
-    block.appendImage(L"Assets/logo.png", {24, 24}, L"логотип");
-    block.appendElement(Button{content = L"Click"});
-    block.clear();
-}
-
-// FocusEffect: attached to the window like ZoomEffect, the look as the bare
-// argument, an element that shows its own focus left out.
-[[maybe_unused]] void focus_effect(UIElement const& tree) {
-    auto const focus = FocusEffect {FocusLook::Lift};
-    CompositionWindow const window {focus};
-    focus.look(FocusLook::Glow);
-    FocusEffect::exclude(tree);
-}
-
-// CompositionWindow takes the window's material under the island, as Window does.
-[[maybe_unused]] void composition_window_backdrop() {
-    CompositionWindow const window {systemBackdrop = MicaBackdrop {}};
-    window.systemBackdrop(MicaBackdrop {});
-}
-
-// HtmlBlock: markup as the positional string, styles registered by name --
-// and none of it needing a winrt header, the parser being a module behind
-// the library's own wall.
-[[maybe_unused]] void html_block() {
-    HtmlBlock markup{
-        L"Привет, <b>мир</b>! <a href='faq'>Подробности</a>.",
-        isTextSelectionEnabled = true,
-        lineHeight = 22.0,
-        lineStackingStrategy = LineStackingStrategy::BlockLineHeight,
-    };
-
-    markup.registerStyle(L"quote", {.text = {.italic = true},
-                                    .block = {.margin = Thickness{24, 4, 0, 4}}});
-    markup.registerStyles({
-        {L"warn", {.text = {.color = rgb(192, 57, 43), .bold = true}}},
-        {L"note", {.text = {.color = rgb(96, 96, 96)}}},
-    });
-    markup.onLink([](zstring_view) {});
-    markup.onError([](HtmlError const&) {});
-    markup.theme(HtmlTheme{.quoteColor = {rgb(128, 128, 128)},
-                           .preRadius = 6,
-                           .preElevation = 24,
-                           .preBackground = rgb(242, 242, 242),
-                           .listIndent = 32});
-    markup.baseDirectory(LR"(C:\docs)");
-    markup.append(L"<p style=\"note\">дописано <i>куском</i></p>");
-    markup.html(L"<h1>Заново</h1>");
-}
-
-// Братья HtmlBlock над общим MarkupBlock: своя только дверь разметки, всё
-// остальное — тема, база картинок, onLink/onError — семейное.
-[[maybe_unused]] void bb_and_rsdn_blocks() {
-    BbBlock forum{
-        L"Привет, [b]мир[/b]! [url=https://example.invalid]пример[/url]",
-        isTextSelectionEnabled = true,
-    };
-    forum.theme(HtmlTheme{});
-    forum.baseDirectory(LR"(C:\docs)");
-    forum.onLink([](zstring_view) {});
-    forum.onError([](HtmlError const&) {});
-    forum.append(L"[quote=Вася]дописано[/quote]");
-    forum.bb(L"[list][*]заново[/list]");
-
-    RsdnBlock post{
-        L"AVK>цитата\nответ [c#]var x = 1;[/c#]",
-    };
-    post.onError([](HtmlError const&) {});
-    post.append(L"[q]ещё[/q]");
-    post.rsdn(L"[h1]Заново[/h1]");
-}
-
 // A collection-valued property is subscripted, not assigned to, and the
 // items arrive as a parameter pack -- each keeps its own type instead of
 // being sliced to a common base before the collection sees it.
 [[maybe_unused]] void children_list() {
     StackPanel panel{
         hAlign.center,
-        children[
-            TextBlock{L"WinUI 3 in C++ Without XAML!", hAlign.center},
-            Button{content = L"Click"}
-        ],
+        children[TextBlock{L"WinUI in C++ Without XAML!", hAlign.center},
+                 Button{content = L"Click"}],
     };
 }
 
@@ -204,7 +102,7 @@ using namespace wxl::dsl;
         hAlign.center,
         orientation.horizontal,
         Image{source = L"Assets/logo.png", hAlign.right},
-        TextBlock{L"WinUI 3 in C++ Without XAML!"},
+        TextBlock{L"WinUI in C++ Without XAML!"},
         Button{content = L"Click"},
     };
 
@@ -216,11 +114,11 @@ using namespace wxl::dsl;
 // A repeated child, and the properties a child carries for its parent's
 // layout: the count is part of repeat's type, and `row` reaches
 // Grid::setRow(child, value) although it is written inside the child. The
-// rows are the same property the collection form subscripts, said as text.
+// rows are the same property the collection form subscripts, parsed from text.
 [[maybe_unused]] void repeated_children() {
     Grid grid{
-        rowDefinitions = L"2*,*,*",
-        columnDefinitions = L"*,*",
+        RowDefinitions<u"2*,*,*">,
+        ColumnDefinitions<u"*,*">,
         TextBlock{L"header", row = 0, columnSpan = 2},
         [](repeat<4> index) {
             return Button{
@@ -238,11 +136,12 @@ using namespace wxl::dsl;
 // there only where the elements are text.
 [[maybe_unused]] void iterated_children() {
     StackPanel keypad{
-        [](iterate<L"789"> key) {
+        [](iterate<L"789"> digit) {
             return Button{
-                key.text(),
-                onClick = [key](Object const&, RoutedEventArgs&) {
-                    wchar_t const pressed = key;
+                digit.text(),
+                onClick +=
+                [digit](Object const&, RoutedEventArgs&) {
+                    wchar_t const pressed = digit;
                     (void)pressed;
                 },
             };
@@ -271,8 +170,8 @@ using namespace wxl::dsl;
     static_assert(from_value.count == 1 && from_value.items[from_value.count] == L'\0');
 
     static constexpr int spans[]{1, 2, 4};
-    Grid layout{
-        columnDefinitions = L"*,*,*,*",
+    Grid table{
+        ColumnDefinitions<u"*,*,*,*">,
         [](iterate<0, 1, 2> at) { return TextBlock{L"head", column = at}; },
         [](iterate<spans> span) { return TextBlock{L"body", row = 1, columnSpan = span}; },
         [](iterate<L"ab", L'c'> mixed) { return TextBlock{mixed.text(), row = 2}; },
@@ -304,156 +203,66 @@ using namespace wxl::dsl;
 
     OverlappedPresenter const presenter = OverlappedPresenter::create();
     presenter.preferredMinimumWidth(600);
-    core::nullable<int32_t> const width = presenter.preferredMinimumWidth();
+    core::nullable<int32_t> const smallest = presenter.preferredMinimumWidth();
     presenter.preferredMaximumWidth({});
     window.appWindow().setPresenter(presenter);
-    (void)width;
+    (void)smallest;
 }
 
 // A method written as a tag: Window.SetTitleBar takes one argument and hands
-// nothing back, and the profile narrows it to the TitleBar control -- so the
-// tag takes one built, builds one from braces, and a lone TitleBar inside the
-// window's braces is routed to it by type. The button colours are nullable:
-// empty hands the colour back to the system.
-[[maybe_unused]] void window_title_bar(Window const& window, TitleBar const& built) {
+// nothing back, so the tag takes what the method takes -- any element, a
+// TitleBar control built in place or a plain Grid alike. The button colours
+// are nullable: empty hands the colour back to the system.
+[[maybe_unused]] void window_title_bar(Window const& window, TitleBar const& built,
+                                       Grid const& grid) {
     Window assigned{extendsContentIntoTitleBar = true, titleBar = built};
-    Window braced{
+    Window inPlace{
         extendsContentIntoTitleBar = true,
-        titleBar = {leftHeader = TextBlock{L"App"}, rightHeader = Button{L"Sign in"}},
+        titleBar = TitleBar{leftHeader = TextBlock{L"App"}, rightHeader = Button{L"Sign in"}},
     };
-    Window routed{built};
+    Window gridded{titleBar = grid};
     window.titleBar(built);
+    window.titleBar(grid);
 
     AppWindowTitleBar const bar = window.appWindow().titleBar();
     bar.preferredHeightOption(TitleBarHeightOption::Tall);
     bar.buttonBackgroundColor(colors.transparent);
     bar.buttonHoverBackgroundColor({});
-    core::nullable<Color> const background = bar.buttonBackgroundColor();
-    (void)background;
+    core::nullable<Color> const buttonBack = bar.buttonBackgroundColor();
+    (void)buttonBack;
 }
 
-// wxl's own window written the same way: a handle, so every member is const
-// and the tags apply to it; its title bar is placed by the window itself, so
-// it is built right in the braces; its own events take the same tags, and a
-// copy captured by a lambda is the same window.
-[[maybe_unused]] void composition_window(TitleBar const& built, Grid const& page, async::cancellation_token stop) {
-    CompositionWindow window{
-        title = L"App",
-        minSize = {820, 560},
-        extendsContentIntoTitleBar = true,
-        titleBar = {leftHeader = TextBlock{L"App"}, rightHeader = Button{L"Sign in"}},
-        zoomFactor = 1.25,
-        onClosing = [](Object const&, WindowClosingEventArgs& args) { args.cancel(!args.cancel()); },
-        onClosed = [] {},
-        onGeometryChanged = [] {},
-        onClientSizeChanged = [](Object const&, ClientSize const& client) { (void)client.scale; },
-        onKeyDown = [](Object const&, VirtualKey const& key) { (void)key; },
-        page,
-    };
-    CompositionWindow routed{built, page};
-    CompositionWindow const legacy{L"App", SizeInt32{820, 560}};
-
-    // The scene's background is a tag as well: a colour, or a picture with the
-    // way it covers the window and the colour under it.
-    CompositionWindow const tiled{
-        background = BackgroundImage{L"Assets/paper.png", BackgroundFill::TileMirrored},
-        page,
-    };
-    CompositionWindow const coloured{background = rgb(32, 32, 32)};
-    // A picture loaded on the way, under the token the exit ends its wait with.
-    tiled.backgroundAsync(BackgroundImage{L"Assets/cover.png", BackgroundFill::None, rgb(0, 0, 0)}, stop);
-    coloured.backgroundAsync(std::filesystem::path{L"Assets/cover.png"}, stop);
-
-    auto const closeLater = [window] { window.close(); };
-    (void)closeLater;
-    window.zoomFactor(window.zoomFactor() * 1.1);
-    window.appWindow().title(legacy.title());
-    auto sizes = wxl::on_event<EventKey::ClientSizeChanged>(window);
-    (void)sizes;
-
-    // A request to close, refusable, awaited the same way: its args arrive by
-    // reference, to be answered before the coroutine next suspends.
-    auto closings = wxl::on_event<EventKey::Closing>(window);
-    static_assert(std::is_same_v<decltype(closings)::args_ref_t, WindowClosingEventArgs&>);
-    (void)closings;
-}
-
-// backgroundAsync takes the token its load stands under, and has no form without one: the wait for
-// the picture is a frame that has to be over before the exit.
-template <class Image>
-concept loads_background_without_a_token =
-    requires(CompositionWindow const& window, Image const& image) { window.backgroundAsync(image); };
-
-static_assert(!loads_background_without_a_token<BackgroundImage> &&
-              !loads_background_without_a_token<std::filesystem::path>);
-
-// A texture from the cache, under a token as every operation of the platform's.
-[[maybe_unused]] async::task<CompositionDrawingSurface> cached_texture(TextureCache& cache,
-                                                                       async::cancellation_token stop) {
-    return cache.getAsync(std::filesystem::path{L"C:/Books/cover.png"}, std::move(stop));
-}
-
-// An application that refuses to close until its own exit is over: the handler is
-// a member, and it answers through the args.
-struct RefusesUntilDone {
-    bool finished = false;
-
-    void closing(Object const&, WindowClosingEventArgs& args) const {
-        if (!finished) args.cancel(true);
-    }
-
-    void build() const {
-        CompositionWindow window{onClosing = method(this, &RefusesUntilDone::closing)};
-        window.add_onClosing(method(this, &RefusesUntilDone::closing));
-    }
+// One reading of a member for every spelling: const or not, noexcept or not.
+struct Spellings {
+    int plain(char, double);
+    void constant(int) const;
+    void quiet() noexcept;
+    bool both(Object const&, float) const noexcept;
 };
 
-// An owner that keeps its watches on the window's events as members: each calls a noexcept
-// member of its own, with the event's args or with nothing, and comes off with the owner. One
-// is put on the window later, and the window answers whether a token was there.
-struct WatchesTheWindow {
-    explicit WatchesTheWindow(CompositionWindow const& window)
-        : sizeWatch{window, *this}, closingWatch{window, *this}, keyWatch{window, *this} {}
-
-    void moved() noexcept {}
-    void sized(ClientSize const& client) noexcept { (void)client.scale; }
-    void closing(WindowClosingEventArgs& args) noexcept { args.cancel(true); }
-    void keyPressed(VirtualKey const& key) noexcept { (void)key; }
-
-    void placed(CompositionWindow const& window) {
-        geometryWatch.attach(window, *this);
-        bool const attached = geometryWatch.attached();
-        bool const removed = window.remove_onGeometryChanged(EventToken{});
-        (void)attached;
-        (void)removed;
-    }
-
-    WindowWatch<EventKey::GeometryChanged, &WatchesTheWindow::moved> geometryWatch;
-    WindowWatch<EventKey::ClientSizeChanged, &WatchesTheWindow::sized> sizeWatch;
-    WindowWatch<EventKey::Closing, &WatchesTheWindow::closing> closingWatch;
-    WindowWatch<EventKey::KeyDown, &WatchesTheWindow::keyPressed> keyWatch;
-};
-
-[[maybe_unused]] void window_watches(CompositionWindow const& window) {
-    WatchesTheWindow watching{window};
-    watching.placed(window);
+template <auto Member, typename Class, typename Result, typename Parameters, bool Const,
+          bool Noexcept>
+constexpr bool reads_as() {
+    using traits = impl::member_function_traits<decltype(Member)>;
+    return std::is_same_v<typename traits::class_t, Class> &&
+           std::is_same_v<typename traits::result_t, Result> &&
+           std::is_same_v<typename traits::parameters_t, Parameters> && traits::is_const == Const &&
+           traits::is_noexcept == Noexcept;
 }
 
-// The even stack: children claim a star row (column) apiece instead of
-// being numbered by hand, and everything of Grid's -- spacing here -- still
-// applies, because a Rows is a Grid.
-[[maybe_unused]] void even_stacks() {
-    Rows rows{
-        rowSpacing = 8.0,
-        TextBlock{L"top third"},
-        Button{L"middle third"},
-        TextBlock{L"bottom third"},
-    };
-    Columns columns{
-        Button{L"left half"},
-        Button{L"right half"},
-    };
-}
+static_assert(
+    reads_as<&Spellings::plain, Spellings, int, std::tuple<char, double>, false, false>());
+static_assert(reads_as<&Spellings::constant, Spellings, void, std::tuple<int>, true, false>());
+static_assert(reads_as<&Spellings::quiet, Spellings, void, std::tuple<>, false, true>());
+static_assert(
+    reads_as<&Spellings::both, Spellings, bool, std::tuple<Object const&, float>, true, true>());
+
+// The readers of a call operator: a handler that cannot throw names its sender, a generic one
+// names none, and a body that cannot throw names its steps.
+static_assert(
+    std::is_same_v<impl::handler_sender_t<decltype([](Button const&) noexcept {})>, Button>);
+static_assert(std::is_same_v<impl::handler_sender_t<decltype([](auto const&) {})>, void>);
+static_assert(impl::iterating<decltype([](repeat<3>) noexcept { return Button{}; })>);
 
 // Elevation, the web-card way: the shadow names what is cast and the
 // translation's z lifts the caster, and only the pair reads as depth. A
@@ -502,7 +311,7 @@ struct WatchesTheWindow {
         background = brushes.Card.BackgroundFillColor.Default,
         borderBrush = brushes.Card.StrokeColorDefault,
     };
-    TextBlock text{L"secondary", foreground = brushes.Text.FillColor.Secondary};
+    TextBlock secondary{L"secondary", foreground = brushes.Text.FillColor.Secondary};
 }
 
 // A synthetic property with two homes: the same text is the hover hint
@@ -520,7 +329,7 @@ struct WatchesTheWindow {
 [[maybe_unused]] void theme_flip(Grid const& page) {
     page.requestedTheme(page.actualTheme() == ElementTheme::Dark ? ElementTheme::Light
                                                                  : ElementTheme::Dark);
-    EventToken const token = page.add_onActualThemeChanged([page](Object const&, Object const&) {
+    EventToken token = page.add_onActualThemeChanged([page](Object const&, Object const&) {
         page.background(brushes.SolidBackgroundFillColor.Base(page.actualTheme()));
     });
     page.remove_onActualThemeChanged(token);
@@ -529,8 +338,8 @@ struct WatchesTheWindow {
 // A named framework resource, reached as a path and routed by its type: a
 // Style can only be the Style property.
 [[maybe_unused]] void named_style() {
-    TextBlock title{
-        L"WinUI 3 in C++ Without XAML!",
+    TextBlock heading{
+        L"WinUI in C++ Without XAML!",
         styles.TextBlock.Title,
         hAlign.center,
     };
@@ -543,17 +352,17 @@ struct WatchesTheWindow {
 // the one carrying a template is a constant object whose template is made
 // at start-up, in the pool that stands from before main().
 namespace library_presets {
-    inline constexpr Preset shape{CornerRadius{12}, translation = {0, 0, 32}};
+constexpr Preset shape{CornerRadius{12}, translation = {0, 0, 32}};
 
-    inline Preset const card{
-        shape,
-        background = brushes.Card.BackgroundFillColor.Default,
-        shadow = Template<ThemeShadow>{},
-    };
+Preset const card{
+    shape,
+    background = brushes.Card.BackgroundFillColor.Default,
+    shadow = Template<ThemeShadow>{},
+};
 
-    inline Preset const stamp{
-        Template<Button>{content = L"fresh per application"},
-    };
+Preset const stamp{
+    Template<Button>{content = L"fresh per application"},
+};
 }
 
 [[maybe_unused]] void deferred_values() {
@@ -588,8 +397,8 @@ namespace library_presets {
 // object a property asks for is a template's to build.
 [[maybe_unused]] void own_preset() {
     constexpr Preset glow{
-        center = Point {0.33, 0.33},
-        gradientOrigin = {0.33, 0.33},
+        center = Point{0.33f, 0.33f},
+        gradientOrigin = {0.33f, 0.33f},
         radiusX = 1.1,
         radiusY = 1.3,
     };
@@ -611,8 +420,8 @@ namespace library_presets {
 // the same way it would be written inside the object's.
 [[maybe_unused]] void templates_of_presets() {
     constexpr Preset shape{
-        center = Point {0.33, 0.33},
-        gradientOrigin = {0.33, 0.33},
+        center = Point{0.33f, 0.33f},
+        gradientOrigin = {0.33f, 0.33f},
         radiusX = 1.1,
         radiusY = 1.3,
     };
@@ -637,8 +446,8 @@ namespace library_presets {
 
     Border given{borderBrush = ink};
 
-    SolidColorBrush const brush = ink.build();
-    Border same{borderBrush = brush};
+    SolidColorBrush const built = ink.build();
+    Border same{borderBrush = built};
 
     constexpr Preset inkLook{color = rgb(124, 135, 104)};
     SolidColorBrush worn{inkLook};
@@ -650,28 +459,26 @@ namespace library_presets {
 [[maybe_unused]] void preset_fits_by_its_members() {
     constexpr Preset wide{fontSize = 18.0, hAlign.stretch};
 
-    Button key{L"7", wide};
-    TextBox entry{wide};
-    TextBlock label{wide};
-}
-
-// The braced handler shorthand: the body is assignments applied to the
-// object the event is attached to.
-[[maybe_unused]] void handler_shorthand() {
-    Button button{
-        content = L"Click",
-        onClick = {content = L"Thank You!"},
-    };
+    Button seven{L"7", wide};
+    TextBox box{wide};
+    TextBlock note{wide};
 }
 
 // A binding written on a property, in the one form its shape allows. Bind
-// takes a property the control shows and writes itself -- a pair in
-// impl/binding.h; BindOutput takes any property with a setter; BindInput takes
-// a pair, both ways or input alone. Each written elsewhere is refused with the
-// form to write instead, which no line here can show: a static_assert in a
-// body is not something a requires-expression can see. The model is one
-// refcounted object whose observables are its fields, not handles.
+// takes a property the control shows and writes itself -- a binding pair
+// (<wxl/BindingPairs.h>), which serves the classes derived from its own;
+// BindOutput takes any property with a setter; BindInput takes a pair, both
+// ways or input alone. Each written elsewhere, or written unnamed, is refused
+// with the form to write instead, which no line here can show: a
+// static_assert in a body is not something a requires-expression can see. The
+// model is one refcounted object whose observables are its fields, not
+// handles.
 namespace {
+struct Reading {
+    std::u16string label;
+    bool ready = false;
+};
+
 struct BoundModel : core::sta_refcounted {
     core::observable<std::u16string> title{u"WXL"};
     core::observable<bool> busy;
@@ -679,6 +486,9 @@ struct BoundModel : core::sta_refcounted {
     core::observable<Color> tint;
     core::observable<int> row;
     core::observable<double> amount;
+    core::observable<float> level;
+    core::observable<core::nullable<double>> entry;
+    core::observable<Reading> reading;
 };
 }  // namespace
 
@@ -687,57 +497,65 @@ struct BoundModel : core::sta_refcounted {
 
     // Both ways: the control writes the property itself.
     TextBox{text = Bind{model->name}};
-    ToggleSwitch{isOn = Bind{model->busy}};      // named
-    ToggleSwitch{Bind{model->busy}};             // by the data's type
-    ComboBox{selectedIndex = Bind{model->row}};
+    ToggleSwitch{isOn = Bind{model->busy}};
+    ComboBox{selectedIndex = Bind{model->row}};  // Selector's pair
     NumberBox{value = Bind{model->amount}};
-    CheckBox{isChecked = Bind{model->busy}};
-    CheckBox{Bind{model->busy}};
+    NumberBox{value = Bind{model->level}};  // a double property binds a float as well
+    NumberBox{value = Bind{model->entry}};  // and a nullable double: an empty box is empty
+    Slider{value = Bind{model->entry}};
+    CheckBox{isChecked = Bind{model->busy}};  // ToggleButton's pair
     ToggleButton{isChecked = Bind{model->busy}};
     RadioButtons{selectedIndex = Bind{model->row}};
     Slider{value = Bind{model->amount}};
+    Slider{value = Bind{model->level}};
     RatingControl{value = Bind{model->amount}};
+    RatingControl{value = Bind{model->level}};
     ColorPicker{color = Bind{model->tint}};
-    Slider{Bind{model->amount}};
+    ToggleMenuFlyoutItem{isChecked = Bind{model->busy}};
+    RadioMenuFlyoutItem{isChecked = Bind{model->busy}};
+    PipsPager{selectedPageIndex = Bind{model->row}};
+    PagerControl{selectedPageIndex = Bind{model->row}};
 
     // From the field: the control shows, pair or no pair.
-    TextBlock{text = BindOutput{model->title}};  // no pair: the only form a TextBlock's text takes
-    Button{isEnabled = BindOutput{model->busy}}; // named: bool alone could not choose
+    TextBlock{text = BindOutput{model->title}};   // no pair: the only form a TextBlock's text takes
+    Button{isEnabled = BindOutput{model->busy}};  // named: bool alone could not choose
     ProgressRing{isActive = BindOutput{model->busy}};
-    TextBox{text = BindOutput{model->name}};     // a pair, one half: what is typed stays in the box
+    TextBox{text = BindOutput{model->name}};  // a pair, one half: what is typed stays in the box
     NumberBox{value = BindOutput{model->row}};
 
     // Into the field: the control writes, nothing written back.
     TextBox{text = BindInput{model->name}};
     ToggleSwitch{isOn = BindInput{model->busy}};
     ComboBox{selectedIndex = BindInput{model->row}};
-    NumberBox{intermediateValue = BindInput{model->amount}};  // input alone: the number as typed
+    NumberBox{value = BindInput{model->entry}};
+    NumberBox{intermediateValue = BindInput{model->entry}};  // input alone: the number as typed
     CheckBox{isChecked = BindInput{model->busy}};
     CheckBox{isChecked = BindOutput{model->busy}};
 
     // Through a function: two ways when it is its own inverse, one way for any.
     CheckBox{isChecked = BindInput{model->busy, std::logical_not{}}};
-    CheckBox{BindInput{model->busy, std::logical_not{}}};
     CheckBox{isChecked = Bind{model->busy, std::logical_not{}}};
-    CheckBox{Bind{model->busy, std::logical_not{}}};
     Button{isEnabled = BindOutput{model->busy, std::logical_not{}}};
 
-    // And unnamed, by the data's type, the way Bind{} goes.
-    ToggleSwitch{BindInput{model->busy}};
-    ToggleSwitch{BindOutput{model->busy}};
+    // Through a pointer to a member: the control shows one member of the value.
+    TextBlock{text = BindOutput{model->reading, &Reading::label}};
+    Button{isEnabled = BindOutput{model->reading, &Reading::ready}};
+
+    // Applied to a control built already, as a ComboBox filled at run time is.
+    ComboBox combo;
+    Apply{combo, selectedIndex = Bind{model->row}};
 }
 
 // State the control takes only on its own terms, bound as a pair that answers
 // back: isFocused on any element, verticalOffset on a ScrollViewer. Bind and
 // BindInput, never BindOutput -- the field says what the control did, not what
-// was asked -- and never unnamed: a bool would otherwise mean focus to every
-// element.
+// was asked.
 [[maybe_unused]] void binding_state_pairs() {
     auto const model = core::make_refcounted<BoundModel>();
 
     TextBox{isFocused = Bind{model->busy}};
-    Border{isFocused = Bind{model->busy}};       // a panel too: UIElement declares the focus
-    Grid{isFocused = BindInput{model->busy}};    // only told
+    Border{isFocused = Bind{model->busy}};     // a panel too: UIElement declares the focus
+    Grid{isFocused = BindInput{model->busy}};  // only told
     Button{isFocused = Bind{model->busy, std::logical_not{}}};
     TextBox{schema::TextBox::isFocused = Bind{model->busy}};  // inherited from UIElement's anchor
     ScrollViewer{verticalOffset = Bind{model->amount}};
@@ -745,10 +563,125 @@ struct BoundModel : core::sta_refcounted {
     ScrollViewer{schema::ScrollViewer::verticalOffset = Bind{model->amount}};
 }
 
+// A number is taken as the property's own type, converted at the `=`: a float
+// property takes a float and an int literal, a double one widens both, and a
+// binding keeps its field's type. A narrowing -- `rotation = 0.4` -- is a
+// warning on the line that writes it, which no assertion here can see.
+[[maybe_unused]] void numbers_take_the_property_type() {
+    auto const model = core::make_refcounted<BoundModel>();
+
+    Border{rotation = 0.4f};
+    Border{rotation = 2};
+    TextBlock{fontSize = 0.4f};
+    TextBlock{fontSize = 2};
+    Border{rotation = BindOutput{model->level}};
+    TextBlock{fontSize = BindOutput{model->level}};
+
+    static_assert(std::same_as<decltype(rotation = 2), impl::setter_op<PropertyKey::Rotation, float>>);
+    static_assert(
+        std::same_as<decltype(fontSize = 0.4f), impl::setter_op<PropertyKey::FontSize, double>>);
+}
+
+template <typename Tag, typename Value>
+concept assignable = requires(Tag const& tag, Value value) { tag = value; };
+
+// A character and a truth value convert to a number, and are never meant as one:
+// a tag of a number refuses both.
+static_assert(!assignable<decltype(fontSize), char>);
+static_assert(!assignable<decltype(rotation), char16_t>);
+static_assert(!assignable<decltype(fontSize), bool>);
+static_assert(!assignable<decltype(rotation), bool>);
+
+// A tag of a truth value takes a truth value alone: a number, a character and a
+// pointer each convert to one, and none of them is meant as one.
+static_assert(assignable<decltype(isEnabled), bool>);
+static_assert(std::same_as<decltype(isEnabled = true), impl::setter_op<PropertyKey::IsEnabled, bool>>);
+static_assert(!assignable<decltype(isEnabled), double>);
+static_assert(!assignable<decltype(isEnabled), int>);
+static_assert(!assignable<decltype(isEnabled), char>);
+static_assert(!assignable<decltype(isEnabled), char16_t const*>);
+
+// A name the classes declare with different types takes each of them: opacity
+// is a double on a UIElement and a float on a Visual. A number written as one
+// of them is taken as that one; an integer is a conversion away from both, so
+// it is kept as it is and the setter of the object converts it. A truth value
+// is refused, a conversion away from both alike, and so is a character.
+[[maybe_unused]] void numbers_on_a_name_of_several_types() {
+    auto const model = core::make_refcounted<BoundModel>();
+    float const level = 0.5f;
+    double const amount = 0.5;
+
+    Border{opacity = 1};
+    Border{opacity = 0.5};
+    Border{opacity = 0.5f};
+    Border{opacity = level};
+    Border{opacity = amount};
+    Border{opacity = BindOutput{model->amount}};
+
+    constexpr PropertyKey prop = PropertyKey::Opacity;
+    static_assert(std::same_as<decltype(opacity = 1), impl::setter_op<prop, int>>);
+    static_assert(std::same_as<decltype(opacity = 0.5), impl::setter_op<prop, double>>);
+    static_assert(std::same_as<decltype(opacity = 0.5f), impl::setter_op<prop, float>>);
+    static_assert(std::same_as<decltype(opacity = level), impl::setter_op<prop, float>>);
+    static_assert(std::same_as<decltype(opacity = amount), impl::setter_op<prop, double>>);
+    static_assert(std::same_as<decltype(opacity = BindOutput{model->level}),
+                               impl::setter_op<prop, BindOutput<float>>>);
+    static_assert(!assignable<decltype(opacity), bool>);
+    static_assert(!assignable<decltype(opacity), char>);
+    static_assert(!assignable<decltype(opacity), char16_t>);
+}
+
+// What is not a number goes to the setter as written. Content is an Object on a
+// ContentControl and a UIElement on a Flyout, and a template given to it is still
+// the template in the op: the object is built where the op is applied, not at
+// the `=`.
+[[maybe_unused]] void objects_on_a_name_of_several_types() {
+    Button{content = Template<Border>{}};
+    Flyout{content = Template<Border>{}};
+
+    static_assert(std::same_as<decltype(content = Template<Border>{}),
+                               impl::setter_op<PropertyKey::Content, Template<Border>>>);
+}
+
+// A list with a brush in it takes a colour as the tag of a brush does. No name of
+// the profiles is such a list, so the tag is written here.
+inline constexpr impl::property_tag<PropertyKey::Background, impl::one_of<Brush, double>>
+    brushOrNumber{};
+
+[[maybe_unused]] void colours_on_a_list_with_a_brush() {
+    Border{brushOrNumber = rgb(16, 18, 21)};
+
+    static_assert(std::same_as<decltype(brushOrNumber = rgb(16, 18, 21)),
+                               impl::setter_op<PropertyKey::Background, impl::solid_color_brush>>);
+}
+
+template <typename Obj, typename Value>
+concept placement_takes = requires(Obj const& object, Value const& value) {
+    impl::property_setter<PropertyKey::Placement>::set(object, value);
+};
+
+// Placement is a FlyoutPlacementMode on a flyout and a PlacementMode on a
+// tooltip, and its values are written once: a name both have is one value the
+// setter of either takes as its own, a name one of them has is that one's. The
+// other refuses it.
+[[maybe_unused]] void values_on_a_name_of_several_enumerations() {
+    MenuFlyout{placement = placement.bottom};
+    ToolTip{placement = placement.bottom};
+    MenuFlyout{placement = placement.full};
+    ToolTip{placement = placement.mouse};
+
+    static_assert(static_cast<FlyoutPlacementMode>(placement.bottom) == FlyoutPlacementMode::Bottom);
+    static_assert(static_cast<PlacementMode>(placement.bottom) == PlacementMode::Bottom);
+    static_assert(placement.full == FlyoutPlacementMode::Full);
+    static_assert(placement.mouse == PlacementMode::Mouse);
+    static_assert(placement_takes<ToolTip, std::remove_cvref_t<decltype(placement.bottom)>>);
+    static_assert(!placement_takes<ToolTip, std::remove_cvref_t<decltype(placement.full)>>);
+}
+
 // Copy construction must not be hijacked by the variadic constructor -- the
 // single-argument case is what the constraint on it exists for.
-[[maybe_unused]] void copying(Button const& source) {
-    Button copy = source;
+[[maybe_unused]] void copying(Button const& original) {
+    Button copy = original;
     Button moved{Button{}};
     (void)copy;
     (void)moved;
@@ -759,9 +692,9 @@ struct BoundModel : core::sta_refcounted {
 // from the exclusion the copy constructor needs, and only the pointed-to
 // type tells the two apart.
 [[maybe_unused]] void singleUnnamedString() {
-    TextBlock caption{L"the only argument"};
+    TextBlock only{L"the only argument"};
     Button action{L"Click"};
-    (void)caption;
+    (void)only;
     (void)action;
 }
 
@@ -773,8 +706,8 @@ struct BoundModel : core::sta_refcounted {
     app.move({120, 80});
     app.moveAndResize({120, 80, 1000, 700});
     app.title(L"wxl");
-    SizeInt32 const size = app.size();
-    (void)size;
+    SizeInt32 const measured = app.size();
+    (void)measured;
 }
 
 // Timing and the UI thread, both reached through the window's dispatcher.
@@ -789,7 +722,7 @@ struct BoundModel : core::sta_refcounted {
 
     // Tick carries no arguments of its own, so the handler is handed a plain
     // wxl::Object -- the same bridge out of WinRT the sender comes through.
-    EventToken const tick = timer.add_onTick([](Object const&, Object const&) {});
+    EventToken tick = timer.add_onTick([](Object const&, Object const&) {});
     timer.remove_onTick(tick);
 
     timer.start();
@@ -804,11 +737,11 @@ struct BoundModel : core::sta_refcounted {
 }
 
 // The procedural side of the same members: ordinary calls, all const.
-[[maybe_unused]] void procedural(TextBlock const& text, Button const& button) {
-    text.text(L"changed");
-    hstring const current = text.text();
+[[maybe_unused]] void procedural(TextBlock const& block, Button const& button) {
+    block.text(L"changed");
+    hstring const current = block.text();
     button.content(L"Click");
-    EventToken const token = button.add_onClick([](Object const&, RoutedEventArgs&) {});
+    EventToken token = button.add_onClick([](Object const&, RoutedEventArgs&) {});
     button.remove_onClick(token);
     (void)current;
 }
@@ -823,8 +756,8 @@ struct BoundModel : core::sta_refcounted {
 // changing one is not.
 [[maybe_unused]] void event_arguments(Button const& button, ListView const& list) {
     button.add_onClick([](Object const&, RoutedEventArgs& args) {
-        Object const source = args.originalSource();
-        (void)source;
+        Object const origin = args.originalSource();
+        (void)origin;
     });
 
     button.add_onKeyDown([](Object const&, KeyRoutedEventArgs& args) {
@@ -854,8 +787,8 @@ struct BoundModel : core::sta_refcounted {
 // is a call the args make on the pointer, not a property of theirs. Written as
 // exact types rather than as `requires` because a member call rejected for the
 // const-ness of `this` is not a substitution failure in MSVC but an error.
-static_assert(std::is_same_v<decltype(&KeyRoutedEventArgs::key),
-                             VirtualKey (KeyRoutedEventArgs::*)() const>);
+static_assert(
+    std::is_same_v<decltype(&KeyRoutedEventArgs::key), VirtualKey (KeyRoutedEventArgs::*)() const>);
 
 [[maybe_unused]] constexpr auto args_are_read_through_const =
     static_cast<bool (KeyRoutedEventArgs::*)() const>(&KeyRoutedEventArgs::handled);
@@ -902,7 +835,7 @@ static_assert(std::is_same_v<decltype(&PointerRoutedEventArgs::getCurrentPoint),
 // wxl can write nullable<T> without asking: a type nobody has given a
 // sentinel still does not compile.
 [[maybe_unused]] void projected_nullables(ToggleButton const& toggle, ScrollViewer const& scroll,
-                                          TimePicker const& time, DatePicker const& date) {
+                                          TimePicker const& time, DatePicker const& picker) {
     toggle.isChecked(true);
     toggle.isChecked({});
     core::nullable<bool> const checked = toggle.isChecked();
@@ -917,7 +850,7 @@ static_assert(std::is_same_v<decltype(&PointerRoutedEventArgs::getCurrentPoint),
     // A length of time empties into the maximum it never counts to; a point
     // in time into WinRT's own zero, the year 1601, which no picker offers.
     time.selectedTime(core::duration{std::chrono::hours{9}});
-    core::nullable<DateTime> const picked = date.selectedDate();
+    core::nullable<DateTime> const picked = picker.selectedDate();
     static_assert(sizeof(core::nullable<core::duration>) == sizeof(core::duration));
     static_assert(sizeof(core::nullable<DateTime>) == sizeof(DateTime));
     (void)picked;
@@ -930,7 +863,6 @@ static_assert(std::is_same_v<decltype(&PointerRoutedEventArgs::getCurrentPoint),
     static_assert(!core::nullable<std::size_t>{}.has_value());
     static_assert(!core::nullable<double>{}.has_value());
 }
-
 
 // The composition surface, which the rich profile added and which is where
 // an application puts drawing of its own.
@@ -964,11 +896,11 @@ static_assert(std::is_same_v<decltype(&PointerRoutedEventArgs::getCurrentPoint),
     crop.rightInset(60.0f);
     sheet.clip(crop);
 
-    DropShadow shadow = compositor.createDropShadow();
-    shadow.blurRadius(24.0f);
-    shadow.opacity(0.35f);
-    shadow.offset({-8, 4, 0});
-    sheet.shadow(shadow);
+    DropShadow drop = compositor.createDropShadow();
+    drop.blurRadius(24.0f);
+    drop.opacity(0.35f);
+    drop.offset({-8, 4, 0});
+    sheet.shadow(drop);
 
     // The sheen: a gradient whose opacity is animated rather than redrawn.
     CompositionLinearGradientBrush sheen = compositor.createLinearGradientBrush();
@@ -985,140 +917,32 @@ static_assert(std::is_same_v<decltype(&PointerRoutedEventArgs::getCurrentPoint),
     fade.delayTime(std::chrono::milliseconds{80});
     fade.insertKeyFrame(1.0f, 1.0f, compositor.createLinearEasingFunction());
 
-    Vector3KeyFrameAnimation rise = compositor.createVector3KeyFrameAnimation();
-    rise.duration(std::chrono::milliseconds{200});
-    rise.insertKeyFrame(0.0f, Vector3{0, 12, 0});
-    rise.insertKeyFrame(1.0f, Vector3{0, 0, 0});
+    Vector3KeyFrameAnimation lift = compositor.createVector3KeyFrameAnimation();
+    lift.duration(std::chrono::milliseconds{200});
+    lift.insertKeyFrame(0.0f, Vector3{0, 12, 0});
+    lift.insertKeyFrame(1.0f, Vector3{0, 0, 0});
 
     sheet.startAnimation(L"Opacity", fade);
-    sheet.startAnimation(L"Offset", rise);
+    sheet.startAnimation(L"Offset", lift);
 
     Visual hosted = ElementCompositionPreview::getElementVisual(host);
     hosted.opacity(1.0f);
     ElementCompositionPreview::setElementChildVisual(host, root);
 }
 
-// The application's own Direct2D on a surface the compositor shows.
-//
-// Everything below the last line is interop -- a D3D11 device, a D2D device,
-// ICompositorInterop, BeginDraw -- and none of it appears here, which is the
-// point: what reaches an application is a size in pixels, a callback holding
-// a device context, and a brush.
-//
-// ID2D1DeviceContext is only forward-declared by DrawingSurface.h, so this
-// translation unit names the pointer without parsing Direct2D at all.
-void own_drawing(Compositor const& compositor, FrameworkElement const& host, XamlRoot const& root) {
-    auto const scale = static_cast<float>(root.rasterizationScale());
-    auto const width = static_cast<float>(host.actualWidth());
-    auto const height = static_cast<float>(host.actualHeight());
-    SizeInt32 const wanted{static_cast<int32_t>(width * scale),
-                           static_cast<int32_t>(height * scale)};
-
-    DrawingSurface page{compositor, wanted};
-    page.resize(wanted);
-    SizeInt32 const pixels = page.size();
-    (void)pixels;
-
-    // False: nothing drawn -- no size yet, or the device is lost and the watch below
-    // will say when to draw again. A Direct2D call inside the paint hands its answer to
-    // throwIfDeviceLost before deciding what a failure means; DeviceLost ends the paint,
-    // and draw() catches it.
-    bool const drew = page.draw([](ID2D1DeviceContext*) { DrawingSurface::throwIfDeviceLost(0); });
-    (void)drew;
-    DrawingSurface::DeviceLost const lost;
-    std::exception const& named = lost;
-    (void)named.what();
-
-    SpriteVisual sprite = compositor.createSpriteVisual();
-    sprite.brush(page.brush());
-    sprite.size({width, height});
-
-    // The brush has a transform of its own, over the picture it paints: one
-    // drawn surface turned, moved or scaled inside the sprite, in the
-    // sprite's own units. Matrix3x2 is a wxl type like the vectors, and a
-    // braced literal is the whole of writing one.
-    CompositionSurfaceBrush turned = page.brush();
-    turned.centerPoint({width / 2, height / 2});
-    turned.rotationAngleInDegrees(180.0f);
-    turned.rotationAngle(3.14159265f);
-    turned.scale({1, 1});
-    turned.offset({0, 0});
-    turned.anchorPoint({0, 0});
-    turned.transformMatrix({-1, 0, 0, -1, width, height});
-    Matrix3x2 const placed = turned.transformMatrix();
-    (void)placed;
-    ElementCompositionPreview::setElementChildVisual(host, sprite);
-}
-
-// An owner of surfaces hears that the device under them was replaced: a member
-// of its own, noexcept and taking nothing, held by a watch on the compositor the
-// surfaces were made on -- where it drops what it made from the old device and
-// draws again.
-struct DrawnPage {
-    explicit DrawnPage(Compositor const& compositor) : deviceWatch_{compositor, *this} {}
-
-    void deviceReplaced() noexcept {}
-
-    RenderingDeviceWatch<&DrawnPage::deviceReplaced> deviceWatch_;
-};
-
-void device_replaced(Compositor const& compositor) {
-    DrawnPage const page{compositor};
-    RenderingDeviceWatch<&DrawnPage::deviceReplaced> later;
-    bool const attached = later.attached();
-    (void)attached;
-    (void)page;
-}
-
-// A surface longer than any texture of the device, drawn in parts: the boundaries of the
-// whole, a part no longer than the device draws at once, painted in the coordinates of the
-// whole, and the parts to keep named when the rest can go. The device is the same as a
-// DrawingSurface's, and so is its loss.
-void own_drawing_in_parts(Compositor const& compositor, FrameworkElement const& host) {
-    VirtualDrawingSurface text{compositor, SizeInt32{640, 60000}};
-    text.resize(SizeInt32{640, 80000});
-    SizeInt32 const pixels = text.size();
-    std::int32_t const most = text.maxUpdateSide();
-
-    RectInt32 const part{0, 40000, pixels.width, most < 1024 ? most : 1024};
-    bool const drew =
-        text.draw(part, [](ID2D1DeviceContext*) { DrawingSurface::throwIfDeviceLost(0); });
-    (void)drew;
-    RectInt32 const kept[] = {part};
-    text.trim(kept);
-    text.trim({});
-
-    SpriteVisual sprite = compositor.createSpriteVisual();
-    sprite.brush(text.brush());
-    sprite.size({640.0f, 80000.0f});
-    ElementCompositionPreview::setElementChildVisual(host, sprite);
-}
-
-// The same surface as the member pointers say it: drawing and trimming change pixels, not
-// the wrapper, and the longest side is a question of the device the surface is on.
-using SurfacePaint = std::function<void(ID2D1DeviceContext*)>;
-static_assert(VirtualDrawingSurface::maxSide == 16777216);
-static_assert(std::is_same_v<decltype(&VirtualDrawingSurface::draw),
-                             bool (VirtualDrawingSurface::*)(RectInt32, SurfacePaint const&) const>);
-static_assert(std::is_same_v<decltype(&VirtualDrawingSurface::trim),
-                             void (VirtualDrawingSurface::*)(std::span<RectInt32 const>) const>);
-static_assert(std::is_same_v<decltype(&VirtualDrawingSurface::maxUpdateSide),
-                             std::int32_t (VirtualDrawingSurface::*)() const>);
-static_assert(std::is_same_v<decltype(&VirtualDrawingSurface::resize),
-                             void (VirtualDrawingSurface::*)(SizeInt32)>);
-
 // Where a scroller is going, before it is shown there: the view of the next frame and the one
 // a fling comes to rest at -- the parts a VirtualDrawingSurface under the content draws ahead.
 void drawing_ahead_of_the_scroll() {
-    ScrollViewer{onViewChanging = [](ScrollViewer const&, ScrollViewerViewChangingEventArgs& args) {
-        double const next = args.nextView().verticalOffset();
-        double const rest = args.finalView().verticalOffset();
-        bool const flung = args.isInertial();
-        (void)args.nextView().horizontalOffset();
-        (void)next;
-        (void)rest;
-        (void)flung;
-    }};
+    ScrollViewer{onViewChanging +=
+                 [](ScrollViewer const&, ScrollViewerViewChangingEventArgs& args) {
+                     double const next = args.nextView().verticalOffset();
+                     double const rest = args.finalView().verticalOffset();
+                     bool const flung = args.isInertial();
+                     (void)args.nextView().horizontalOffset();
+                     (void)next;
+                     (void)rest;
+                     (void)flung;
+                 }};
 }
 
 // Work handed to the UI thread, both ways round.
@@ -1127,18 +951,26 @@ void drawing_ahead_of_the_scroll() {
 // std::function of the delegate's own signature, so a lambda goes in
 // unwrapped. It may only be called on the UI thread, because the wrapper it
 // is called on may only be touched there -- which is what UiThread is for:
-// constructed here, copied into whatever runs elsewhere, called from there.
+// taken here, copied into whatever runs elsewhere, called from there.
 void handing_work_over(DispatcherQueue const& queue) {
     bool const taken = queue.tryEnqueue([] {});
     (void)taken;
     bool const soon = queue.tryEnqueue(DispatcherQueuePriority::Low, [] {});
     (void)soon;
 
-    UiThread const ui{queue};
-    auto const background = [ui](std::wstring found) {
+    UiThread const ui = UiThread::current();
+    auto const worker = [ui](std::wstring found) {
         ui.post([found = std::move(found)] { (void)found; });
     };
-    background(L"a book");
+    worker(L"a file");
+}
+
+// A wait for a quiet moment on the UI thread's queue, which nobody names.
+async::task<> after_a_quiet_moment(async::stop_token token) {
+    WaitableTimer timer{std::chrono::milliseconds{1500}, std::move(token)};
+    timer.restart();
+    co_await timer;
+    timer.signal();
 }
 
 // A class that is only its statics derives from Statics, not from Object.
@@ -1172,41 +1004,6 @@ static_assert(!std::is_default_constructible_v<ElementCompositionPreview>,
     Button{}.command(ramp);
 }
 
-// The library looks are Borders of their own, and the look goes on ahead of
-// the caller's setters, so anything in it is a default the page can argue
-// with -- here the face, for a card that lies over artwork and must not
-// drown it. A card passes wherever its base does, and one written with a
-// single child claims the positional route Border already has.
-[[maybe_unused]] void library_looks(UIElement const& content) {
-    Card plain{content};
-    OverlayCard over_picture{content};
-
-    Card over_artwork{
-        hAlign.right,
-        vAlign.top,
-        Margin{0, 64, 72, 0},
-        background = SolidColorBrush{rgba(28, 18, 8, 0.424)},
-        content,
-    };
-
-    // The copy guard in setter_pack: one argument of the look's own type is
-    // a copy, not a setter pack of one.
-    Card const copied{plain};
-    Border const& asBorder = copied;
-    static_assert(std::derived_from<Card, Border>);
-    (void)asBorder;
-
-    // And a look is storable, not merely spendable: a screen keeps the card
-    // it built the way it keeps any other control. The wrapper sentinel
-    // builds the empty state through a maker derived from the look, which
-    // hands its own base a null Impl -- so this line is the whole test of
-    // the Impl constructor a hand-written control needs.
-    core::nullable<OverlayCard> kept = nullptr;
-    kept = over_picture;
-    core::nullable<Border> const widened = kept;
-    (void)widened;
-}
-
 // The two spellings of a brush resource, and the difference between them.
 // The path follows the element's theme -- the setter keeps the key and
 // subscribes -- while the call form reads one named theme and pins it there,
@@ -1224,7 +1021,7 @@ static_assert(!std::is_default_constructible_v<ElementCompositionPreview>,
 
 // A colour written for a brush is a solid brush of that colour -- in the
 // syntax only: the setter itself still takes a brush and nothing else.
-inline constexpr Preset tinted{background = colors.white, borderBrush = Color{255, 0, 0, 0}};
+constexpr Preset tinted{background = colors.white, borderBrush = Color{255, 0, 0, 0}};
 
 [[maybe_unused]] void colours_for_brushes() {
     Border scrim{background = rgba(224, 224, 208, 0.627), tinted};
@@ -1237,28 +1034,11 @@ inline constexpr Preset tinted{background = colors.white, borderBrush = Color{25
 }
 
 template <typename Value>
-concept background_takes = requires(Border const& border, Value value) { border.background(value); };
+concept background_takes =
+    requires(Border const& border, Value value) { border.background(value); };
 
 static_assert(!std::is_convertible_v<Color, Brush>);
 static_assert(!background_takes<Color>);
-
-// A hand-written wrapper is read from a sender like any generated control.
-// EventHandler adapts a handler that names the concrete type, and it does so
-// through try_as, which builds the wrapper from an Impl -- so the protected
-// constructor these four declare is what this compiles into existence. A
-// handler that could not name its own type would have to capture the control,
-// which is the one thing a wxl handler must not do.
-[[maybe_unused]] void hand_written_looks_as_senders() {
-    Card{}.add_onActualThemeChanged([](Card const& self, Object const&) { self.padding({8}); });
-    OverlayCard{}.add_onActualThemeChanged(
-        [](OverlayCard const& self, Object const&) { self.padding({8}); });
-    Rows{}.add_onActualThemeChanged([](Rows const& self, Object const&) { self.rowSpacing(4); });
-    Columns{}.add_onActualThemeChanged(
-        [](Columns const& self, Object const&) { self.columnSpacing(4); });
-}
-
-
-
 
 // Dressing an object that already exists. The runtime form of a description,
 // written the way a description is: same braces, same commas, target first.
@@ -1267,16 +1047,16 @@ static_assert(!background_takes<Color>);
 // this rather than an application.
 [[maybe_unused]] void apply_dresses_what_already_exists(Button const& button,
                                                         StackPanel const& panel) {
-    Apply {button, content = L"Switch", isEnabled = false};
-    Apply {button, Margin {16, 0}, Padding {3}};
-    Apply {button, styles.ButtonBase.TextBlockButton};
-    Apply {button, onClick = [](Button const& self) { self.isEnabled(false); }};
-    Apply {button, Preset{content = L"Switch"}};
-    Apply {panel, TextBlock {L"a child goes in the same way"}};
+    Apply{button, content = L"Switch", isEnabled = false};
+    Apply{button, Margin{16, 0}, Padding{3}};
+    Apply{button, styles.ButtonBase.TextBlockButton};
+    Apply{button, onClick += [](Button const& self) { self.isEnabled(false); }};
+    Apply{button, Preset{content = L"Switch"}};
+    Apply{panel, TextBlock{L"a child goes in the same way"}};
 
     // A pack of one, and a pack of none: both legal, neither special.
-    Apply {button, content = L"Switch"};
-    Apply {button};
+    Apply{button, content = L"Switch"};
+    Apply{button};
 
     static_assert(!std::is_constructible_v<Apply, decltype(content = L"a")>,
                   "the first argument is the target, and only a control may stand there");
@@ -1292,32 +1072,9 @@ static_assert(!background_takes<Color>);
 // Asserting the deletion itself would be better still, and is not possible
 // here: MSVC reports a deleted operator as a hard error rather than letting a
 // requires-expression turn it into false.
-// A brush of the framework's own, replaced for one control. What is proved
-// here is the route: it is an unnamed argument like any other, so it goes into
-// a description, into a preset, and into an Apply without any of the three
-// knowing about it -- and it is refused on an object that has no resources of
-// its own, which is everything that is not a FrameworkElement.
-[[maybe_unused]] void theme_brushes_go_in_the_braces() {
-    Button{
-        content = L"Go",
-        background = SolidColorBrush{rgb(16, 18, 21)},
-        ThemeBrush{L"ButtonBackgroundPointerOver", SolidColorBrush{rgb(27, 31, 37)}},
-    };
-
-    auto const look = Preset{
-        ThemeBrush{L"ButtonBackgroundPressed", SolidColorBrush{rgb(9, 10, 12)}},
-    };
-
-    Button const button{look};
-
-    Apply{button, ThemeBrush{L"ButtonForegroundPointerOver", SolidColorBrush{rgb(255, 255, 255)}}};
-
-    static_assert(!std::invocable<ThemeBrush, SolidColorBrush const&>);
-}
-
 [[maybe_unused]] void the_comma_is_not_a_separator() {
     static_assert(impl::describes<std::remove_cvref_t<decltype(content = L"a")>>);
-    static_assert(impl::describes<std::remove_cvref_t<decltype(onClick = [](Button const&) {})>>);
+    static_assert(impl::describes<std::remove_cvref_t<decltype(onClick += [](Button const&) {})>>);
     static_assert(impl::describes<std::remove_cvref_t<decltype(content)>>);
     static_assert(impl::describes<std::remove_cvref_t<decltype(orientation)>>);
     static_assert(impl::describes<std::remove_cvref_t<decltype(onClick)>>);
@@ -1327,7 +1084,6 @@ static_assert(!background_takes<Color>);
     static_assert(impl::describes<Preset<>>);
     static_assert(impl::describes<decltype(Preset{content = L"a"})>);
     static_assert(impl::describes<Template<Button>>);
-    static_assert(impl::describes<ThemeBrush>);
 
     // And what it deliberately does not reach. A control is an ordinary object,
     // and so is an enum shortcut like hAlign.center -- poisoning the comma for
@@ -1336,6 +1092,13 @@ static_assert(!background_takes<Color>);
     // mistake surfaces at the very next step.
     static_assert(!impl::describes<Button>);
     static_assert(!impl::describes<std::remove_cvref_t<decltype(hAlign.center)>>);
+}
+
+// TextWrap shortcut: textWrap.simple, textWrap.wholeWords, textWrap.none.
+[[maybe_unused]] void text_wrap_shortcut() {
+    TextBlock{L"Wrapping", textWrap.simple};
+    TextBlock{L"Whole words only", textWrap.wholeWords};
+    TextBlock{L"No wrapping", textWrap.none};
 }
 
 template <typename T>
@@ -1371,39 +1134,39 @@ concept declares_snaps_to_tag = requires { typename T::SnapsToTag; };
 // Every element of it is compiled by the generated schema_surface.cpp beside
 // this file; what is here is the part a generator cannot write down -- what
 // it is *for*, and the one thing it can do that the flat vocabulary cannot.
-[[maybe_unused]] void the_schema_names_the_class(LinearGradientBrush const& brush) {
+[[maybe_unused]] void the_schema_names_the_class(LinearGradientBrush const& gradient) {
     namespace x = dsl::schema;
 
-    // Two classes declare StartPoint with different types, so the flat tag
-    // has none and `startPoint = {0, 0}` cannot compile through it: a braced
-    // list initialises a parameter of a known type, and template deduction
-    // never gives it one. Through the class the type is known again.
-    impl::apply_argument(brush, x::LinearGradientBrush::startPoint = {0.0f, 0.0f});
-    impl::apply_argument(brush, x::LinearGradientBrush::endPoint = Point{1.0f, 1.0f});
+    // Two classes declare StartPoint with different types, Point and Vector2,
+    // so the flat tag takes both and `startPoint = {0, 0}` cannot compile
+    // through it: the braced list fits either. Through the class the type is
+    // one again.
+    impl::apply_argument(gradient, x::LinearGradientBrush::startPoint = {0.0f, 0.0f});
+    impl::apply_argument(gradient, x::LinearGradientBrush::endPoint = Point{1.0f, 1.0f});
 
     // And it is the same op the bare name produces, so the two forms mix
     // inside one set of braces.
-    Button {
+    Button{
         x::Button::flyout = MenuFlyout{},
         x::ContentControl::content = L"Click me",
         content = L"and the flat name still means the same thing",
-        x::Button::onClick = [](Object const&, RoutedEventArgs&) {},
+        x::Button::onClick += [](Object const&, RoutedEventArgs&) {},
     };
 }
 
 // A handler may take the sender alone. Most events carry args nobody reads, and
 // the parameter written only to be ignored is what this form removes -- both
 // spellings are here so neither disappears, and so the two concepts behind them
-// stay disjoint (a change that let one swallow the other would break this).
+// stay disjoint (a change that let one take in the other would break this).
 [[maybe_unused]] void handlers_may_drop_the_args() {
     Button{
         content = L"Switch",
-        onClick = [](Button const& self) { self.isEnabled(false); },
+        onClick += [](Button const& self) { self.isEnabled(false); },
     };
 
     Button{
         content = L"Switch",
-        onClick = [](Button const& self, RoutedEventArgs&) { self.isEnabled(false); },
+        onClick += [](Button const& self, RoutedEventArgs&) { self.isEnabled(false); },
     };
 
     ToggleSwitch{}.add_onToggled([](ToggleSwitch const& self) { self.isOn(false); });
@@ -1416,11 +1179,11 @@ concept declares_snaps_to_tag = requires { typename T::SnapsToTag; };
     core::function const type = [](wchar_t) {};
 
     Grid{
-        [type](iterate<L"789"> key) {
+        [type](iterate<L"789"> digit) {
             return Button{
-                key.text(),
-                column = key.index,
-                onClick = [type, symbol = key.value] { type(symbol); },
+                digit.text(),
+                column = digit.index,
+                onClick += [type, symbol = digit.value] { type(symbol); },
             };
         },
     };
@@ -1435,8 +1198,8 @@ concept declares_snaps_to_tag = requires { typename T::SnapsToTag; };
 // member goes; a member that starts a coroutine keeps its task in a field.
 struct HandlersAsMembers {
     void clicked(Button const& self, RoutedEventArgs& args) {
-        Object const source = args.originalSource();
-        (void)source;
+        Object const origin = args.originalSource();
+        (void)origin;
         self.isEnabled(false);
     }
     void toggled(ToggleSwitch const& self) { self.isOn(false); }
@@ -1455,18 +1218,18 @@ struct HandlersAsMembers {
 
     void build(DispatcherQueue const& queue) {
         Button{
-            onClick = method(this, &HandlersAsMembers::clicked),
-            onLoaded = method(this, &HandlersAsMembers::loaded),
+            onClick += method(this, &HandlersAsMembers::clicked),
+            onLoaded += method(this, &HandlersAsMembers::loaded),
         };
-        ToggleSwitch{onToggled = method(this, &HandlersAsMembers::toggled)};
-        Button{onClick = method(this, &HandlersAsMembers::pressed)};
+        ToggleSwitch{onToggled += method(this, &HandlersAsMembers::toggled)};
+        Button{onClick += method(this, &HandlersAsMembers::pressed)};
 
         // The same value after the braces, and as a delegate parameter.
         Button{}.add_onClick(method(this, &HandlersAsMembers::clicked));
         queue.tryEnqueue(method(this, &HandlersAsMembers::pressed));
     }
 
-    void build() const { TextBox{onKeyDown = method(this, &HandlersAsMembers::keyDown)}; }
+    void build() const { TextBox{onKeyDown += method(this, &HandlersAsMembers::keyDown)}; }
 
     // Last: it goes first, and stops the coroutine before anything it touches.
     async::task<> enabling;
@@ -1485,12 +1248,12 @@ static_assert(!impl::droppable_result<bool> && !impl::droppable_result<async::ta
 static_assert([] {
     struct Probe {
         int sender = 0;
-        constexpr void take(int const& from, int& args) {
-            sender = from;
+        constexpr void take(int const& sent, int& args) {
+            sender = sent;
             args = 2;
         }
-        constexpr void keep(int const& from, int& args) noexcept {
-            sender += from;
+        constexpr void keep(int const& sent, int& args) noexcept {
+            sender += sent;
             args += 3;
         }
     };
@@ -1514,7 +1277,7 @@ struct Watcher {
     void clicked(Button const&, RoutedEventArgs&) noexcept {}
 
     void watch() { count.on_change(method(this, &Watcher::counted)); }
-    void build() { Button{onClick = method(this, &Watcher::clicked)}; }
+    void build() { Button{onClick += method(this, &Watcher::clicked)}; }
 };
 
 using counted_call = decltype(method(std::declval<Watcher*>(), &Watcher::counted));
@@ -1526,40 +1289,7 @@ static_assert(core::invocable<counted_call, void(int const&) noexcept>);
 static_assert(std::is_invocable_v<recounted_call, int const&> &&
               !std::is_nothrow_invocable_v<recounted_call, int const&>);
 static_assert(!core::invocable<recounted_call, void(int const&) noexcept>);
-static_assert(TypedSenderHandler<clicked_call, RoutedEventArgs>);
-
-// Tabs at the bottom of a window and the dialog that answers by events: both
-// arrived for the forum client, and both are here so that a change to the
-// profile or to showDialog's signature stops this translation unit rather
-// than an application.
-[[maybe_unused]] void tabs_and_dialogs(Window const& window, async::cancellation_token stop) {
-    SelectorBar tabs{
-        hAlign.center,
-        onSelectionChanged = [](Object const&, SelectorBarSelectionChangedEventArgs&) {},
-        SelectorBarItem{L"Forums", icon = FontIcon{glyph = L""}},
-        SelectorBarItem{L"Watched", icon = FontIcon{glyph = L""}},
-    };
-
-    tabs.selectedItem(tabs.items()[0]);
-
-    ContentDialog about{
-        closeButtonText = L"Close",
-        content = TextBlock{L"Nothing to say yet"},
-    };
-
-    // The wait for the answer is a task its owner keeps; here, until the function returns.
-    async::task<> const overWindow = showDialog(about, window, stop);
-    async::task<> const overContent = showDialog(about, window.content(), stop);
-}
-
-// showDialog takes the token its owner closes the dialog with, and has no form without one: the
-// wait for the answer is a body that has to be over before the exit, and a dialog nobody can close
-// would keep it alive there.
-template <class Host>
-concept shows_dialog_without_a_token =
-    requires(ContentDialog const& dialog, Host const& host) { showDialog(dialog, host); };
-
-static_assert(!shows_dialog_without_a_token<Window> && !shows_dialog_without_a_token<UIElement>);
+static_assert(impl::typed_sender_handler<clicked_call, RoutedEventArgs>);
 
 // One property, two vocabularies. SymbolIcon already knows the font, so a
 // glyph is named and nothing else is said -- with WinRT's Symbol where the
@@ -1585,7 +1315,7 @@ static_assert(!shows_dialog_without_a_token<Window> && !shows_dialog_without_a_t
 // The pointer's shape over an element is a property like any other -- set
 // declaratively on a plain Border, no control subclass in between. It stands
 // on UIElement.ProtectedCursor, "protected" in the metadata and reachable all
-// the same: see impl/cursor.h.
+// the same: see impl/element_helpers.h.
 [[maybe_unused]] void cursor_over_an_element() {
     Border sizer{width = 6, cursor = InputSystemCursorShape::SizeWestEast};
 
@@ -1605,8 +1335,8 @@ static_assert(!std::is_convertible_v<Color const&, SolidColorBrush>,
 // rather than in Color.h, which half of wxl.ui includes.
 static_assert(sizeof(Color) == 4);
 static_assert(alignof(Color) == 1);
-static_assert(offsetof(Color, A) == 0 && offsetof(Color, R) == 1 && offsetof(Color, G) == 2
-              && offsetof(Color, B) == 3);
+static_assert(offsetof(Color, A) == 0 && offsetof(Color, R) == 1 && offsetof(Color, G) == 2 &&
+              offsetof(Color, B) == 3);
 
 // The CSS functions: alpha is a fraction, rounded to the nearest byte.
 static_assert(rgb(131, 50, 50) == Color{255, 131, 50, 50});
@@ -1614,41 +1344,41 @@ static_assert(rgba(131, 50, 50, 0.2) == Color{51, 131, 50, 50});
 static_assert(rgba(0, 0, 0, 0) == colors.transparent);
 static_assert(rgba(255, 255, 255, 1.0) == colors.white);
 
-// color_helper::lightness() moves along OKLCH L: the ends are black and white,
+// ColorHelper::lightness() moves along OKLCH L: the ends are black and white,
 // a zero step is the identity, equal steps either way from a grey land
 // symmetric greys, and alpha rides along.
-static_assert(color_helper::lightness(colors.black, 1.0) == colors.white);
-static_assert(color_helper::lightness(colors.white, -1.0) == colors.black);
-static_assert(color_helper::lightness(rgb(131, 50, 50), 0.0) == rgb(131, 50, 50));
-static_assert(color_helper::lightness(colors.gray, 0.2) == rgb(189, 189, 189));
-static_assert(color_helper::lightness(colors.gray, -0.2) == rgb(72, 72, 72));
-static_assert(color_helper::lightness(rgba(30, 20, 200, 0.5), -0.1).A == 128);
+static_assert(ColorHelper::lightness(colors.black, 1.0) == colors.white);
+static_assert(ColorHelper::lightness(colors.white, -1.0) == colors.black);
+static_assert(ColorHelper::lightness(rgb(131, 50, 50), 0.0) == rgb(131, 50, 50));
+static_assert(ColorHelper::lightness(colors.gray, 0.2) == rgb(189, 189, 189));
+static_assert(ColorHelper::lightness(colors.gray, -0.2) == rgb(72, 72, 72));
+static_assert(ColorHelper::lightness(rgba(30, 20, 200, 0.5), -0.1).A == 128);
 
 // shade() is a product in linear light: a quarter of white is not a quarter
 // of the byte, one is the identity, zero is black, a colour keeps its hue
 // because the channels scale together, too much light clips at white, and
 // alpha rides along.
-static_assert(color_helper::shade(colors.white, 0.25) == rgb(137, 137, 137));
-static_assert(color_helper::shade(colors.gray, 0.5) == rgb(92, 92, 92));
-static_assert(color_helper::shade(rgb(200, 60, 30), 0.3) == rgb(116, 31, 13));
-static_assert(color_helper::shade(rgb(200, 60, 30), 1.0) == rgb(200, 60, 30));
-static_assert(color_helper::shade(rgba(200, 60, 30, 0.5), 0.0) == rgba(0, 0, 0, 0.5));
-static_assert(color_helper::shade(colors.gray, 8.0) == colors.white);
+static_assert(ColorHelper::shade(colors.white, 0.25) == rgb(137, 137, 137));
+static_assert(ColorHelper::shade(colors.gray, 0.5) == rgb(92, 92, 92));
+static_assert(ColorHelper::shade(rgb(200, 60, 30), 0.3) == rgb(116, 31, 13));
+static_assert(ColorHelper::shade(rgb(200, 60, 30), 1.0) == rgb(200, 60, 30));
+static_assert(ColorHelper::shade(rgba(200, 60, 30, 0.5), 0.0) == rgba(0, 0, 0, 0.5));
+static_assert(ColorHelper::shade(colors.gray, 8.0) == colors.white);
 
 // highlight() is a sum in linear light: the light's colour comes through and
 // the surface's saturation goes; all of a white light is white.
-static_assert(color_helper::highlight(rgb(200, 60, 30), colors.white, 0.0) == rgb(200, 60, 30));
-static_assert(color_helper::highlight(rgb(200, 60, 30), colors.white, 0.2) == rgb(228, 136, 127));
-static_assert(color_helper::highlight(colors.gray, rgb(255, 200, 100), 0.5) == rgb(220, 188, 144));
-static_assert(color_helper::highlight(colors.black, colors.white, 1.0) == colors.white);
+static_assert(ColorHelper::highlight(rgb(200, 60, 30), colors.white, 0.0) == rgb(200, 60, 30));
+static_assert(ColorHelper::highlight(rgb(200, 60, 30), colors.white, 0.2) == rgb(228, 136, 127));
+static_assert(ColorHelper::highlight(colors.gray, rgb(255, 200, 100), 0.5) == rgb(220, 188, 144));
+static_assert(ColorHelper::highlight(colors.black, colors.white, 1.0) == colors.white);
 
 // illuminate() is Lambert: a face square to a white lamp with no ambient
 // shows its albedo, a face turned away shows only the ambient, the slopes in
 // between get the cosine's share of the key, and a direction's length does
 // not matter.
 namespace {
-constexpr Light lampAbove {{0, 0, 1}, colors.white, colors.black};
-constexpr Light lampAtLeft {{-1, -1, 1.2}, rgb(255, 246, 232), rgb(64, 68, 90)};
+constexpr Light lampAbove{{0, 0, 1}, colors.white, colors.black};
+constexpr Light lampAtLeft{{-1, -1, 1.2}, rgb(255, 246, 232), rgb(64, 68, 90)};
 }  // namespace
 static_assert(Light::illuminate(rgb(200, 60, 30), lampAbove, {0, 0, 1}) == rgb(200, 60, 30));
 static_assert(Light::illuminate(rgb(200, 60, 30), lampAbove, {0, 0, 5}) == rgb(200, 60, 30));
@@ -1658,55 +1388,61 @@ static_assert(Light::illuminate(rgb(200, 60, 30), lampAtLeft, {-1, -1, 1.5}) == 
 static_assert(Light::illuminate(rgb(200, 60, 30), lampAtLeft, {1, 1, 1.5}) == rgb(48, 9, 4));
 static_assert(Light::illuminate(rgba(200, 60, 30, 0.5), lampAbove, {0, 0, 1}).A == 128);
 
-// relief_helper: a raised relief turns its near face to the lamp and its far
+// Relief: a raised relief turns its near face to the lamp and its far
 // face away, a sunken one is the same two faces swapped, the flat top gets
 // the lamp's cosine, and under a lamp straight overhead the two faces of a
 // relief are one.
 namespace {
-constexpr auto raisedRed = relief_helper::raised(rgb(200, 60, 30), lampAtLeft);
-constexpr auto sunkenRed = relief_helper::sunken(rgb(200, 60, 30), lampAtLeft);
-constexpr auto underhead = relief_helper::raised(rgb(200, 60, 30), lampAbove);
+constexpr auto raisedRed = Relief::raised(rgb(200, 60, 30), lampAtLeft);
+constexpr auto sunkenRed = Relief::sunken(rgb(200, 60, 30), lampAtLeft);
+constexpr auto underhead = Relief::raised(rgb(200, 60, 30), lampAbove);
 }  // namespace
 static_assert(raisedRed.nearLamp == rgb(202, 58, 28) && raisedRed.farFromLamp == rgb(81, 19, 8));
-static_assert(sunkenRed.nearLamp == raisedRed.farFromLamp && sunkenRed.farFromLamp == raisedRed.nearLamp);
-static_assert(relief_helper::flat(rgb(200, 60, 30), lampAtLeft) == rgb(170, 48, 22));
+static_assert(sunkenRed.nearLamp == raisedRed.farFromLamp &&
+              sunkenRed.farFromLamp == raisedRed.nearLamp);
+static_assert(Relief::flat(rgb(200, 60, 30), lampAtLeft) == rgb(170, 48, 22));
 static_assert(underhead.nearLamp == rgb(200, 60, 30) && underhead.farFromLamp == rgb(200, 60, 30));
-static_assert(relief_helper::raised(rgb(200, 60, 30), lampAtLeft, 0.0).nearLamp == rgb(170, 48, 22));
+static_assert(Relief::raised(rgb(200, 60, 30), lampAtLeft, 0.0).nearLamp == rgb(170, 48, 22));
 
 // falloff() is one under the lamp, falls by the inverse square and the
 // cosine, and depends only on the ratio of distance to height; under() puts
 // it on the key and leaves the ambient alone.
-static_assert(relief_helper::falloff(0.0, 1.0) == 1.0);
-static_assert(relief_helper::falloff(1.3, 2.0) - relief_helper::falloff(0.65, 1.0) < 1e-12
-              && relief_helper::falloff(0.65, 1.0) - relief_helper::falloff(1.3, 2.0) < 1e-12);
-static_assert(relief_helper::under(rgb(200, 60, 30), lampAtLeft, 0.0, 1.0) == rgb(205, 59, 28));
-static_assert(relief_helper::under(rgb(200, 60, 30), lampAtLeft, 0.65, 1.0) == rgb(164, 46, 21));
-static_assert(relief_helper::under(rgb(200, 60, 30), lampAtLeft, 1.3, 1.0) == rgb(112, 29, 12));
-static_assert(relief_helper::under(rgb(200, 60, 30), lampAtLeft, 1.3, 2.0) == rgb(164, 46, 21));
+static_assert(Relief::falloff(0.0, 1.0) == 1.0);
+static_assert(Relief::falloff(1.3, 2.0) - Relief::falloff(0.65, 1.0) < 1e-12 &&
+              Relief::falloff(0.65, 1.0) - Relief::falloff(1.3, 2.0) < 1e-12);
+static_assert(Relief::under(rgb(200, 60, 30), lampAtLeft, 0.0, 1.0) == rgb(205, 59, 28));
+static_assert(Relief::under(rgb(200, 60, 30), lampAtLeft, 0.65, 1.0) == rgb(164, 46, 21));
+static_assert(Relief::under(rgb(200, 60, 30), lampAtLeft, 1.3, 1.0) == rgb(112, 29, 12));
+static_assert(Relief::under(rgb(200, 60, 30), lampAtLeft, 1.3, 2.0) == rgb(164, 46, 21));
 
 // towards() places a lamp by two angles: azimuth the classical way round the
 // screen, elevation above it. Straight overhead is the viewer's axis.
 namespace {
 constexpr auto leftUp = Direction::from_angles(120, 60);
 constexpr auto overhead = Direction::from_angles(45, 90);
-constexpr bool close_to(double value, double expected) {
-    return value - expected < 1e-6 && expected - value < 1e-6;
+constexpr bool close_to(double actual, double expected) {
+    return actual - expected < 1e-6 && expected - actual < 1e-6;
 }
 }  // namespace
-static_assert(close_to(leftUp.x, -0.25) && close_to(leftUp.y, -0.433013) && close_to(leftUp.z, 0.866025));
+static_assert(close_to(leftUp.x, -0.25) && close_to(leftUp.y, -0.433013) &&
+              close_to(leftUp.z, 0.866025));
 static_assert(close_to(overhead.x, 0.0) && close_to(overhead.y, 0.0) && close_to(overhead.z, 1.0));
 
 // across() is the gradient axis of a face under the lamp: from the lamp's
 // side to the far side through the middle, whatever the lamp's height; a
 // lamp overhead leaves both ends in the middle.
 namespace {
-constexpr auto axisLeftUp = relief_helper::across({Direction::from_angles(120, 60), colors.white, colors.black});
-constexpr auto axisLow = relief_helper::across({Direction::from_angles(120, 20), colors.white, colors.black});
-constexpr auto axisOverhead = relief_helper::across({Direction::from_angles(120, 90), colors.white, colors.black});
+constexpr auto axisLeftUp =
+    Relief::across({Direction::from_angles(120, 60), colors.white, colors.black});
+constexpr auto axisLow =
+    Relief::across({Direction::from_angles(120, 20), colors.white, colors.black});
+constexpr auto axisOverhead =
+    Relief::across({Direction::from_angles(120, 90), colors.white, colors.black});
 }  // namespace
-static_assert(close_to(axisLeftUp.startX, 0.25) && close_to(axisLeftUp.startY, 0.5 - 0.4330127)
-              && close_to(axisLeftUp.endX, 0.75) && close_to(axisLeftUp.endY, 0.5 + 0.4330127));
-static_assert(close_to(axisLow.startX, axisLeftUp.startX) && close_to(axisLow.endY, axisLeftUp.endY));
+static_assert(close_to(axisLeftUp.startX, 0.25) && close_to(axisLeftUp.startY, 0.5 - 0.4330127) &&
+              close_to(axisLeftUp.endX, 0.75) && close_to(axisLeftUp.endY, 0.5 + 0.4330127));
+static_assert(close_to(axisLow.startX, axisLeftUp.startX) &&
+              close_to(axisLow.endY, axisLeftUp.endY));
 static_assert(close_to(axisOverhead.startX, 0.5) && close_to(axisOverhead.endY, 0.5));
 
 // cushion() samples the shoulder ring by ring, outermost first: at full rise
@@ -1714,24 +1450,30 @@ static_assert(close_to(axisOverhead.startX, 0.5) && close_to(axisOverhead.endY, 
 // in the ambient, the inner ring is nearly the top; at no rise every ring is
 // the top; a negative rise swaps the sides.
 namespace {
-constexpr Light lampHigh {Direction::from_angles(120, 60), rgb(255, 246, 232), rgb(64, 68, 90)};
-constexpr auto cushionRed = relief_helper::cushion<4>(rgb(200, 60, 30), lampHigh, 1.0);
-constexpr auto flatRed = relief_helper::cushion<4>(rgb(200, 60, 30), lampHigh, 0.0);
-constexpr auto dentRed = relief_helper::cushion<4>(rgb(200, 60, 30), lampHigh, -1.0);
-constexpr Color topRed = relief_helper::flat(rgb(200, 60, 30), lampHigh);
+constexpr Light lampHigh{Direction::from_angles(120, 60), rgb(255, 246, 232), rgb(64, 68, 90)};
+constexpr auto cushionRed = Relief::cushion<4>(rgb(200, 60, 30), lampHigh, 1.0);
+constexpr auto flatRed = Relief::cushion<4>(rgb(200, 60, 30), lampHigh, 0.0);
+constexpr auto dentRed = Relief::cushion<4>(rgb(200, 60, 30), lampHigh, -1.0);
+constexpr Color topRed = Relief::flat(rgb(200, 60, 30), lampHigh);
 }  // namespace
 static_assert(topRed == rgb(192, 55, 26));
-static_assert(cushionRed[0].nearLamp == rgb(192, 55, 26) && cushionRed[0].farFromLamp == rgb(48, 9, 4));
-static_assert(cushionRed[1].nearLamp == rgb(204, 59, 28) && cushionRed[1].farFromLamp == rgb(134, 36, 16));
-static_assert(cushionRed[2].nearLamp == rgb(204, 59, 28) && cushionRed[2].farFromLamp == rgb(167, 47, 22));
-static_assert(cushionRed[3].nearLamp == rgb(198, 57, 27) && cushionRed[3].farFromLamp == rgb(186, 53, 25));
-static_assert(flatRed[0].nearLamp == topRed && flatRed[0].farFromLamp == topRed && flatRed[3].nearLamp == topRed
-              && flatRed[3].farFromLamp == topRed);
-static_assert(dentRed[0].nearLamp == cushionRed[0].farFromLamp && dentRed[0].farFromLamp == cushionRed[0].nearLamp
-              && dentRed[2].nearLamp == cushionRed[2].farFromLamp);
+static_assert(cushionRed[0].nearLamp == rgb(192, 55, 26) &&
+              cushionRed[0].farFromLamp == rgb(48, 9, 4));
+static_assert(cushionRed[1].nearLamp == rgb(204, 59, 28) &&
+              cushionRed[1].farFromLamp == rgb(134, 36, 16));
+static_assert(cushionRed[2].nearLamp == rgb(204, 59, 28) &&
+              cushionRed[2].farFromLamp == rgb(167, 47, 22));
+static_assert(cushionRed[3].nearLamp == rgb(198, 57, 27) &&
+              cushionRed[3].farFromLamp == rgb(186, 53, 25));
+static_assert(flatRed[0].nearLamp == topRed && flatRed[0].farFromLamp == topRed &&
+              flatRed[3].nearLamp == topRed && flatRed[3].farFromLamp == topRed);
+static_assert(dentRed[0].nearLamp == cushionRed[0].farFromLamp &&
+              dentRed[0].farFromLamp == cushionRed[0].nearLamp &&
+              dentRed[2].nearLamp == cushionRed[2].farFromLamp);
 
 // Color is a bare aggregate, the way it crosses the ABI.
-static_assert(std::is_aggregate_v<Color> && std::is_trivially_copyable_v<Color> && sizeof(Color) == 4);
+static_assert(std::is_aggregate_v<Color> && std::is_trivially_copyable_v<Color> &&
+              sizeof(Color) == 4);
 
 // What a string parameter takes: whatever carries a zero after its text, in
 // either unit, and an hstring a getter hands back -- so a value read off one
@@ -1783,17 +1525,14 @@ using layout_wait_t = decltype(on_event<EventKey::LayoutUpdated>(std::declval<Te
 // EventKey, two classes, two different args. A subscription made from a key
 // has to land on the right one of them.
 static_assert(std::is_same_v<click_wait_t::args_t, RoutedEventArgs>);
-static_assert(std::is_same_v<split_click_wait_t::args_t,
-                             SplitButtonClickEventArgs>);
+static_assert(std::is_same_v<split_click_wait_t::args_t, SplitButtonClickEventArgs>);
 
 // And they reach the coroutine exactly as they reach a handler: event args
 // proper by non-const reference, since they are a non-copyable view the
 // runtime owns; the events whose args are an ordinary object by const
 // reference, since that one is a wrapper the coroutine must not replace.
-static_assert(
-    std::is_same_v<click_wait_t::args_ref_t, RoutedEventArgs&>);
-static_assert(
-    std::is_same_v<layout_wait_t::args_ref_t, Object const&>);
+static_assert(std::is_same_v<click_wait_t::args_ref_t, RoutedEventArgs&>);
+static_assert(std::is_same_v<layout_wait_t::args_ref_t, Object const&>);
 
 // Neither copied nor moved: the handler it hands the element captures it by
 // address, so a proxy that could travel would leave that handler pointing at
@@ -1807,55 +1546,63 @@ static_assert(std::is_same_v<decltype(on_event<EventKey::Click>(std::declval<But
 // The two forms differ in one thing and say so in their result: the bare wait
 // hands back the args, the answering one hands back either the args or the
 // reason there are none. A reference cannot be the value of an expected, so
-// it travels wrapped; the error side is a nullable exception_ptr, whose empty
-// state is a null pointer and therefore costs nothing.
+// it travels wrapped; the other side is the stop reason.
 using key_wait_t = decltype(on_event<EventKey::KeyDown>(std::declval<Button const&>()));
 
-static_assert(std::is_same_v<decltype(std::declval<key_wait_t&>().operator co_await().await_resume()),
-                             KeyRoutedEventArgs&>);
+static_assert(
+    std::is_same_v<decltype(std::declval<key_wait_t&>().operator co_await().await_resume()),
+                   KeyRoutedEventArgs&>);
 static_assert(std::is_same_v<decltype(std::declval<key_wait_t&>().next().await_resume()),
                              std::expected<std::reference_wrapper<KeyRoutedEventArgs>,
-                                           core::nullable<std::exception_ptr>>>);
+                                           async::stop_reason>>);
 
-// And the empty error state really is free: a null exception_ptr is what
-// "cancelled, and that is all there is to say" is spelled as.
-static_assert(sizeof(core::nullable<std::exception_ptr>) == sizeof(std::exception_ptr));
+// And the reason costs no more than the error it may carry: stopped by request
+// is a null exception_ptr.
+static_assert(sizeof(async::stop_reason) == sizeof(std::exception_ptr));
+
+// A string is not a stop reason until it is asked to be one.
+static_assert(!std::is_convertible_v<char const*, async::stop_reason>);
+static_assert(!std::is_convertible_v<std::string_view, async::stop_reason>);
+static_assert(std::is_constructible_v<async::stop_reason, char const*>);
 
 // Awaiting writes down who is waiting, so the proxy has to be non-const.
 // Only the positive half is assertable: the const overload is deleted rather
 // than absent, and MSVC reports naming a deleted function as an error where
 // it stands instead of letting a requires-expression answer false.
-static_assert(
-    requires(click_wait_t& proxy) { proxy.operator co_await(); });
+static_assert(requires(click_wait_t& proxy) { proxy.operator co_await(); });
 
-// Under a cancellation token, given last as wxl.async's operations take one.
+// Under a cancellation token, given last as wxl::async's operations take one.
 // The proxy is a type of its own, so a wait made without a token keeps every
 // byte it had: its awaiter is the pointer and two flags it can be cancelled
 // through, and the idle wait the size it was.
-using click_wait_under_t = decltype(on_event<EventKey::Click>(std::declval<Button const&>(),
-                                                              std::declval<async::cancellation_token>()));
-using key_wait_under_t = decltype(on_event<EventKey::KeyDown>(std::declval<Button const&>(),
-                                                              std::declval<async::cancellation_token>()));
+using cancelable_click_wait_t = decltype(on_event<EventKey::Click>(
+    std::declval<Button const&>(), std::declval<async::stop_token>()));
+using cancelable_key_wait_t = decltype(on_event<EventKey::KeyDown>(
+    std::declval<Button const&>(), std::declval<async::stop_token>()));
 
-static_assert(std::is_same_v<click_wait_under_t,
-                             cancellable_event_awaitable<impl::keyed_event<EventKey::Click, Button>>>);
+static_assert(
+    std::is_same_v<cancelable_click_wait_t,
+                   impl::stoppable_event_awaitable<impl::keyed_event<EventKey::Click, Button>>>);
 static_assert(std::is_same_v<decltype(onClick(std::declval<Button const&>(),
-                                              std::declval<async::cancellation_token>())),
-                             click_wait_under_t>);
-static_assert(!std::is_move_constructible_v<click_wait_under_t>);
+                                              std::declval<async::stop_token>())),
+                             cancelable_click_wait_t>);
+static_assert(!std::is_move_constructible_v<cancelable_click_wait_t>);
 
 // The two forms answer as they do without a token.
-static_assert(std::is_same_v<decltype(std::declval<key_wait_under_t&>().operator co_await().await_resume()),
-                             KeyRoutedEventArgs&>);
-static_assert(std::is_same_v<decltype(std::declval<key_wait_under_t&>().next().await_resume()),
+static_assert(std::is_same_v<
+              decltype(std::declval<cancelable_key_wait_t&>().operator co_await().await_resume()),
+              KeyRoutedEventArgs&>);
+static_assert(std::is_same_v<decltype(std::declval<cancelable_key_wait_t&>().next().await_resume()),
                              key_wait_t::next_result_t>);
 
 static_assert(sizeof(click_wait_t::awaiter) == 2 * sizeof(void*));
-static_assert(sizeof(click_wait_under_t) == sizeof(click_wait_t) + sizeof(async::cancellation_token));
-static_assert(async::detail::cancellable_awaiter<click_wait_t::awaiter>);
-static_assert(async::detail::cancellable_awaiter<UiThread::Idle>);
-static_assert(sizeof(UiThread::Idle) ==
-              sizeof(impl::waiting_event) + sizeof(std::shared_ptr<UiThread::Idle*>) + sizeof(void*));
+static_assert(sizeof(cancelable_click_wait_t) ==
+              sizeof(click_wait_t) + sizeof(async::stop_token));
+static_assert(async::detail::stoppable_awaiter<click_wait_t::awaiter>);
+static_assert(async::detail::stoppable_awaiter<UiThread::Idle>);
+static_assert(sizeof(UiThread::Idle) == sizeof(impl::event_wait) +
+                                            sizeof(core::intrusive_ptr<impl::idle_link>) +
+                                            sizeof(void*));
 
 // The protocol itself, proven the only way it can be: by a coroutine. Never
 // called -- activating a control needs a runtime that is not up here -- and
@@ -1870,7 +1617,7 @@ struct probe_task {
     };
 };
 
-[[maybe_unused]] probe_task awaiting_an_event(Button button, TextBlock text) {
+[[maybe_unused]] probe_task awaiting_an_event(Button button, TextBlock block) {
     // Kept in a variable: one subscription, waited on as many times as the
     // loop goes round.
     auto clicks = on_event<EventKey::Click>(button);
@@ -1882,13 +1629,13 @@ struct probe_task {
         // Answering the framework from inside a coroutine, which is the one
         // thing this whole shape has to keep possible: the handler resumes
         // the frame before it returns, so Handled set here is set in time.
-        KeyRoutedEventArgs& key = co_await on_event<EventKey::KeyDown>(button);
-        key.handled(true);
+        KeyRoutedEventArgs& keyArgs = co_await on_event<EventKey::KeyDown>(button);
+        keyArgs.handled(true);
 
         // And as a temporary: one wait, subscribed and unsubscribed by the
         // full expression it is written in. The temporary outlives the
         // suspension inside it, which is what makes this legal.
-        Object const& sender = co_await on_event<EventKey::LayoutUpdated>(text);
+        Object const& sender = co_await on_event<EventKey::LayoutUpdated>(block);
         static_cast<void>(sender);
 
         // The same wait named by its own two members instead of by a key --
@@ -1898,47 +1645,47 @@ struct probe_task {
             co_await on_event(button, &Button::add_onClick, &Button::remove_onClick);
         static_cast<void>(again);
 
-        // The same wait through the tag the braces use -- `onClick = handler`
+        // The same wait through the tag the braces use -- `onClick += handler`
         // to handle, `onClick(button)` to await -- and through the schema,
         // which also checks that a Button is what the tag was declared on.
-        static_assert(std::is_same_v<decltype(onClick(button)),
-                                     decltype(on_event<EventKey::Click>(button))>);
+        static_assert(
+            std::is_same_v<decltype(onClick(button)), decltype(on_event<EventKey::Click>(button))>);
         RoutedEventArgs& tagged = co_await onClick(button);
         static_cast<void>(tagged);
         RoutedEventArgs& owned = co_await schema::Button::onClick(button);
         static_cast<void>(owned);
 
-        // The answering form, for a body that must let nothing escape. An
-        // empty error side is a plain cancellation; a full one carries what
-        // went wrong, so nothing is lost by not throwing.
+        // The answering form, for a body that must let nothing escape. Stopped
+        // by request is the plain end; stopped by an error carries what went
+        // wrong, so nothing is lost by not throwing.
         if (auto const got = co_await on_event<EventKey::KeyUp>(button).next()) {
             got->get().handled(true);
-        } else if (got.error()) {
-            std::rethrow_exception(*got.error());
+        } else if (got.error().stopped_due_to_error()) {
+            std::rethrow_exception(got.error().error());
         }
     }
 }
 
 // The same waits under a cancellation token, given last -- and the idle wait
 // beside them, with and without one.
-[[maybe_unused]] probe_task awaiting_under_a_token(Button button, async::cancellation_token stop) {
-    auto clicks = on_event<EventKey::Click>(button, stop);
+[[maybe_unused]] probe_task awaiting_under_a_token(Button button, async::stop_token token) {
+    auto clicks = on_event<EventKey::Click>(button, token);
     RoutedEventArgs& args = co_await clicks;
     static_cast<void>(args);
 
-    RoutedEventArgs& tagged = co_await onClick(button, stop);
+    RoutedEventArgs& tagged = co_await onClick(button, token);
     static_cast<void>(tagged);
-    RoutedEventArgs& owned = co_await schema::Button::onClick(button, stop);
+    RoutedEventArgs& owned = co_await schema::Button::onClick(button, token);
     static_cast<void>(owned);
     RoutedEventArgs& again =
-        co_await on_event(button, &Button::add_onClick, &Button::remove_onClick, stop);
+        co_await on_event(button, &Button::add_onClick, &Button::remove_onClick, token);
     static_cast<void>(again);
 
-    if (auto const got = co_await on_event<EventKey::KeyUp>(button, stop).next()) {
+    if (auto const got = co_await on_event<EventKey::KeyUp>(button, token).next()) {
         got->get().handled(true);
     }
 
-    co_await UiThread::onIdle(stop);
+    co_await UiThread::onIdle(token);
     co_await UiThread::onIdle();
 }
 
@@ -1948,11 +1695,12 @@ struct probe_task {
 static_assert(std::is_same_v<decltype(std::declval<ContentDialog const&>().showAsync()),
                              async::task<ContentDialogResult>>);
 static_assert(std::is_same_v<decltype(std::declval<ContentDialog const&>().showAsync(
-                                 std::declval<async::cancellation_token>())),
+                                 std::declval<async::stop_token>())),
                              async::task<ContentDialogResult>>);
 
-[[maybe_unused]] async::task<bool> asking_under_a_token(ContentDialog dialog, async::cancellation_token stop) {
-    co_return co_await dialog.showAsync(std::move(stop)) == ContentDialogResult::Primary;
+[[maybe_unused]] async::task<bool> asking_under_a_token(ContentDialog dialog,
+                                                        async::stop_token token) {
+    co_return co_await dialog.showAsync(std::move(token)) == ContentDialogResult::Primary;
 }
 
 // An event of the application's own, a core::event, awaited under a token: one wait per
@@ -1960,29 +1708,32 @@ static_assert(std::is_same_v<decltype(std::declval<ContentDialog const&>().showA
 // tuple, none as nothing -- as values, but for a reference to non-const, the channel the
 // coroutine answers through.
 using count_wait_t = decltype(on_event(std::declval<core::event<void(int)>&>(),
-                                       std::declval<async::cancellation_token>()));
+                                       std::declval<async::stop_token>()));
 
 static_assert(std::is_same_v<decltype(std::declval<count_wait_t&>().await_resume()), int>);
 static_assert(std::is_same_v<decltype(on_event(std::declval<core::event<void(int&) noexcept>&>(),
-                                               std::declval<async::cancellation_token>())
+                                               std::declval<async::stop_token>())
                                           .await_resume()),
                              int&>);
-static_assert(std::is_same_v<decltype(on_event(std::declval<core::event<void(std::u16string const&, int)>&>(),
-                                               std::declval<async::cancellation_token>())
-                                          .await_resume()),
-                             std::tuple<std::u16string, int>>);
-static_assert(std::is_same_v<decltype(on_event(std::declval<core::event<void(std::u16string const&)>&>(),
-                                               std::declval<async::cancellation_token>())
-                                          .await_resume()),
-                             std::u16string>);
+static_assert(
+    std::is_same_v<decltype(on_event(std::declval<core::event<void(std::u16string const&, int)>&>(),
+                                     std::declval<async::stop_token>())
+                                .await_resume()),
+                   std::tuple<std::u16string, int>>);
+static_assert(
+    std::is_same_v<decltype(on_event(std::declval<core::event<void(std::u16string const&)>&>(),
+                                     std::declval<async::stop_token>())
+                                .await_resume()),
+                   std::u16string>);
 static_assert(std::is_same_v<decltype(on_event(std::declval<core::event<void()>&>(),
-                                               std::declval<async::cancellation_token>())
+                                               std::declval<async::stop_token>())
                                           .await_resume()),
                              void>);
 static_assert(!std::is_move_constructible_v<count_wait_t>);
-static_assert(async::detail::cancellable_awaiter<impl::core_event_wait<core::event<void(int)>, int>>);
+static_assert(
+    async::detail::stoppable_awaiter<impl::core_event_wait<core::event<void(int)>, int>>);
 
-// A reference to const comes as a copy, so a type whose copy would be cut down to its static
+// A reference to const comes as a copy, so a type whose copy would be sliced to its static
 // type -- or that has none -- is refused where the wait is made, with a static_assert that says
 // what to declare instead. The assert stands on a concept, which is what can be checked here:
 // ordinary types pass, a polymorphic one does not, and a reference to non-const is never copied.
@@ -1995,320 +1746,18 @@ static_assert(impl::invocation_answerable<std::u16string const&>);
 static_assert(impl::invocation_answerable<sliced_answer&>);
 static_assert(!impl::invocation_answerable<sliced_answer const&>);
 
-[[maybe_unused]] probe_task awaiting_an_event_of_the_model(core::event<void(int)>& counted,
-                                                           core::event<void(std::u16string const&, int) noexcept>& renamed,
-                                                           core::event<void()>& reset,
-                                                           async::cancellation_token stop) {
-    int const count = co_await on_event(counted, stop);
+[[maybe_unused]] probe_task awaiting_an_event_of_the_model(
+    core::event<void(int)>& counted,
+    core::event<void(std::u16string const&, int) noexcept>& renamed, core::event<void()>& reset,
+    async::stop_token token) {
+    int const count = co_await on_event(counted, token);
     static_cast<void>(count);
 
-    auto const [name, times] = co_await on_event(renamed, stop);
-    static_cast<void>(name);
+    auto const [who, times] = co_await on_event(renamed, token);
+    static_cast<void>(who);
     static_cast<void>(times);
 
-    co_await on_event(reset, stop);
-}
-
-// HaloEffect and GaussianBlurEffect -- written by hand, so their schema
-// lines are too.
-[[maybe_unused]] void HaloEffect_color_assigned(::wxl::HaloEffect const& object, ::wxl::Color value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HaloEffect::color = value);
-}
-[[maybe_unused]] void HaloEffect_blurRadius_assigned(::wxl::HaloEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HaloEffect::blurRadius = value);
-}
-[[maybe_unused]] void HaloEffect_opacity_assigned(::wxl::HaloEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HaloEffect::opacity = value);
-}
-[[maybe_unused]] void HaloEffect_offset_assigned(::wxl::HaloEffect const& object, ::wxl::Vector3 value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HaloEffect::offset = value);
-}
-[[maybe_unused]] void HaloEffect_zIndex_assigned(::wxl::HaloEffect const& object, int32_t value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HaloEffect::zIndex = value);
-}
-[[maybe_unused]] void GaussianBlurEffect_color_assigned(::wxl::GaussianBlurEffect const& object, ::wxl::Color value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::GaussianBlurEffect::color = value);
-}
-[[maybe_unused]] void GaussianBlurEffect_blurRadius_assigned(::wxl::GaussianBlurEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::GaussianBlurEffect::blurRadius = value);
-}
-[[maybe_unused]] void GaussianBlurEffect_opacity_assigned(::wxl::GaussianBlurEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::GaussianBlurEffect::opacity = value);
-}
-[[maybe_unused]] void GaussianBlurEffect_gamma_assigned(::wxl::GaussianBlurEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::GaussianBlurEffect::gamma = value);
-}
-[[maybe_unused]] void GaussianBlurEffect_zIndex_assigned(::wxl::GaussianBlurEffect const& object, int32_t value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::GaussianBlurEffect::zIndex = value);
-}
-// The braces as a text block writes them: the generic tags, a bare colour,
-// and both effects attached to a TextBlock, a halo under the glyphs and a glow
-// over them.
-[[maybe_unused]] void glows_in_braces() {
-    using namespace ::wxl;
-    using namespace ::wxl::dsl;
-    HaloEffect const halo{color = rgb(92, 138, 32), blurRadius = 14.0f};
-    HaloEffect const bare{rgb(92, 138, 32)};
-    GaussianBlurEffect const glow{rgb(0, 0, 0), blurRadius = 3.0f, gamma = 0.5, opacity = 0.9, zIndex = 1};
-    TextBlock{u"0", halo, bare, glow};
-}
-
-
-
-// GlassEffect -- written by hand, so its schema lines are too.
-[[maybe_unused]] void GlassEffect_color_assigned(::wxl::GlassEffect const& object, ::wxl::Color value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::GlassEffect::color = value);
-}
-[[maybe_unused]] void GlassEffect_blurRadius_assigned(::wxl::GlassEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::GlassEffect::blurRadius = value);
-}
-[[maybe_unused]] void GlassEffect_opacity_assigned(::wxl::GlassEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::GlassEffect::opacity = value);
-}
-// The pane under a panel, with a bare tint and the tags.
-[[maybe_unused]] void glass_in_braces() {
-    using namespace ::wxl;
-    using namespace ::wxl::dsl;
-    GlassEffect const pane{rgba(255, 255, 255, 0.2), blurRadius = 24.0f, opacity = 0.9};
-    Border{pane, GlassEffect{blurRadius = 12.0f}};
-}
-
-// Button3DEffect -- written by hand, so its schema lines are too.
-[[maybe_unused]] void Button3DEffect_foreground_assigned(::wxl::Button3DEffect const& object, ::wxl::Color value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::foreground = value);
-}
-[[maybe_unused]] void Button3DEffect_background_assigned(::wxl::Button3DEffect const& object, ::wxl::Color value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::background = value);
-}
-[[maybe_unused]] void Button3DEffect_shadow_assigned(::wxl::Button3DEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::shadow = value);
-}
-[[maybe_unused]] void Button3DEffect_emboss_assigned(::wxl::Button3DEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::emboss = value);
-}
-[[maybe_unused]] void Button3DEffect_specularAmount_assigned(::wxl::Button3DEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::specularAmount = value);
-}
-[[maybe_unused]] void Button3DEffect_specularShine_assigned(::wxl::Button3DEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::specularShine = value);
-}
-[[maybe_unused]] void Button3DEffect_rim_assigned(::wxl::Button3DEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::rim = value);
-}
-[[maybe_unused]] void Button3DEffect_slope_assigned(::wxl::Button3DEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::slope = value);
-}
-[[maybe_unused]] void Button3DEffect_rounded_assigned(::wxl::Button3DEffect const& object, bool value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::rounded = value);
-}
-[[maybe_unused]] void Button3DEffect_smooth_assigned(::wxl::Button3DEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::smooth = value);
-}
-[[maybe_unused]] void Button3DEffect_rise_assigned(::wxl::Button3DEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::rise = value);
-}
-[[maybe_unused]] void Button3DEffect_travel_assigned(::wxl::Button3DEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::travel = value);
-}
-[[maybe_unused]] void Button3DEffect_azimuth_assigned(::wxl::Button3DEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::azimuth = value);
-}
-[[maybe_unused]] void Button3DEffect_elevation_assigned(::wxl::Button3DEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::elevation = value);
-}
-[[maybe_unused]] void Button3DEffect_lampColor_assigned(::wxl::Button3DEffect const& object, ::wxl::Color value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::lampColor = value);
-}
-[[maybe_unused]] void Button3DEffect_ambientColor_assigned(::wxl::Button3DEffect const& object, ::wxl::Color value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::ambientColor = value);
-}
-[[maybe_unused]] void Button3DEffect_castBlur_assigned(::wxl::Button3DEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::castBlur = value);
-}
-[[maybe_unused]] void Button3DEffect_holeShadow_assigned(::wxl::Button3DEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::holeShadow = value);
-}
-[[maybe_unused]] void Button3DEffect_holeSoftness_assigned(::wxl::Button3DEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::holeSoftness = value);
-}
-[[maybe_unused]] void Button3DEffect_pressDivesLamp_assigned(::wxl::Button3DEffect const& object, bool value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::pressDivesLamp = value);
-}
-[[maybe_unused]] void Button3DEffect_pressFlashes_assigned(::wxl::Button3DEffect const& object, bool value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::pressFlashes = value);
-}
-[[maybe_unused]] void Button3DEffect_pressMovesLabel_assigned(::wxl::Button3DEffect const& object, bool value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::pressMovesLabel = value);
-}
-[[maybe_unused]] void Button3DEffect_pressShades_assigned(::wxl::Button3DEffect const& object, bool value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::pressShades = value);
-}
-[[maybe_unused]] void Button3DEffect_diveDepth_assigned(::wxl::Button3DEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::diveDepth = value);
-}
-[[maybe_unused]] void Button3DEffect_diveGain_assigned(::wxl::Button3DEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::diveGain = value);
-}
-[[maybe_unused]] void Button3DEffect_shadeAmount_assigned(::wxl::Button3DEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::shadeAmount = value);
-}
-[[maybe_unused]] void Button3DEffect_labelShade_assigned(::wxl::Button3DEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::Button3DEffect::labelShade = value);
-}
-// The braces as a button writes them: the generic tags, a colour where the
-// foreground is a brush elsewhere, and the effect attached to a Button.
-[[maybe_unused]] void Button3DEffect_in_braces() {
-    using namespace ::wxl;
-    using namespace ::wxl::dsl;
-    Button3DEffect const key{foreground = rgb(237, 239, 242), background = rgba(68, 72, 79, 0.933), shadow = 0.7,
-                             emboss = -1};
-    Button{u"7", key};
-    // The lights over the pointer, written bare: one pair given to two kinds
-    // of key, and one light written in place.
-    HoverLight const spot{size = 200, fullSize = 100, diffuseAmount = 0.4};
-    BorderLight const glow{size = 340, fullSize = 200};
-    Button3DEffect const lit{background = rgb(68, 72, 79), spot, glow};
-    Button3DEffect const other{background = rgb(48, 68, 116), spot, glow};
-    Button3DEffect const dark{background = rgb(48, 68, 116), HoverLight{intensity = 0}};
-    Button{u"8", lit};
-    Button{u"+", other};
-    Button{u"-", dark};
-}
-
-// BevelEffect -- written by hand, so its schema lines are too.
-[[maybe_unused]] void BevelEffect_strokeThickness_assigned(::wxl::BevelEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BevelEffect::strokeThickness = value);
-}
-[[maybe_unused]] void BevelEffect_blurRadius_assigned(::wxl::BevelEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BevelEffect::blurRadius = value);
-}
-[[maybe_unused]] void BevelEffect_offset_assigned(::wxl::BevelEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BevelEffect::offset = value);
-}
-[[maybe_unused]] void BevelEffect_margin_assigned(::wxl::BevelEffect const& object, ::wxl::Thickness value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BevelEffect::margin = value);
-}
-[[maybe_unused]] void BevelEffect_margin_braced(::wxl::BevelEffect const& object) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BevelEffect::margin = {1, 2});
-}
-[[maybe_unused]] void BevelEffect_cornerRadius_assigned(::wxl::BevelEffect const& object, ::wxl::CornerRadius value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BevelEffect::cornerRadius = value);
-}
-// The bare forms the braces take: two colours, lit side first, a tagged
-// margin and a corner radius by its own type.
-[[maybe_unused]] void BevelEffect_bare(::wxl::BevelEffect const& object) {
-    using namespace ::wxl;
-    using namespace ::wxl::dsl;
-    BevelEffect const raised{rgba(255, 255, 255, 0.27), rgba(0, 0, 0, 0.38),
-                             strokeThickness = 2, blurRadius = 1, offset = 2, Margin{1}, CornerRadius{6}};
-    Button const key{u"=", raised};
-    (void)object;
-    (void)key;
-}
-
-// MagnifyEffect -- written by hand, so its schema lines are too.
-[[maybe_unused]] void MagnifyEffect_scale_assigned(::wxl::MagnifyEffect const& object, ::wxl::Size value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::MagnifyEffect::scale = value);
-}
-[[maybe_unused]] void MagnifyEffect_scale_braced(::wxl::MagnifyEffect const& object) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::MagnifyEffect::scale = {1.3, 1.1});
-}
-[[maybe_unused]] void MagnifyEffect_maximum_assigned(::wxl::MagnifyEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::MagnifyEffect::maximum = value);
-}
-[[maybe_unused]] void MagnifyEffect_minimum_assigned(::wxl::MagnifyEffect const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::MagnifyEffect::minimum = value);
-}
-[[maybe_unused]] void MagnifyEffect_duration_assigned(::wxl::MagnifyEffect const& object, ::wxl::core::duration value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::MagnifyEffect::duration = value);
-}
-[[maybe_unused]] void MagnifyEffect_delayTime_assigned(::wxl::MagnifyEffect const& object, ::wxl::core::duration value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::MagnifyEffect::delayTime = value);
-}
-// What grows is positional, among the scale and the tags.
-[[maybe_unused]] void MagnifyEffect_target_positional() {
-    using namespace ::wxl::dsl;
-    ::wxl::MagnifyEffect const content{1.2, ::wxl::MagnifyTarget::Content, maximum = 1.35};
-    ::wxl::MagnifyEffect const alone{::wxl::MagnifyTarget::Content};
-    ::wxl::Button const button{u"Play", content};
-    (void)alone;
-    (void)button;
-}
-
-// RevealEffect and its two lights -- written by hand, so their schema lines are too.
-[[maybe_unused]] void HoverLight_size_assigned(::wxl::HoverLight const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HoverLight::size = value);
-}
-[[maybe_unused]] void HoverLight_height_assigned(::wxl::HoverLight const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HoverLight::height = value);
-}
-[[maybe_unused]] void HoverLight_intensity_assigned(::wxl::HoverLight const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HoverLight::intensity = value);
-}
-[[maybe_unused]] void HoverLight_diffuseAmount_assigned(::wxl::HoverLight const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HoverLight::diffuseAmount = value);
-}
-[[maybe_unused]] void HoverLight_color_assigned(::wxl::HoverLight const& object, ::wxl::Color value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HoverLight::color = value);
-}
-[[maybe_unused]] void HoverLight_constantAttenuation_assigned(::wxl::HoverLight const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HoverLight::constantAttenuation = value);
-}
-[[maybe_unused]] void HoverLight_linearAttenuation_assigned(::wxl::HoverLight const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HoverLight::linearAttenuation = value);
-}
-[[maybe_unused]] void BorderLight_size_assigned(::wxl::BorderLight const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BorderLight::size = value);
-}
-[[maybe_unused]] void BorderLight_height_assigned(::wxl::BorderLight const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BorderLight::height = value);
-}
-[[maybe_unused]] void BorderLight_intensity_assigned(::wxl::BorderLight const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BorderLight::intensity = value);
-}
-[[maybe_unused]] void BorderLight_diffuseAmount_assigned(::wxl::BorderLight const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BorderLight::diffuseAmount = value);
-}
-[[maybe_unused]] void BorderLight_color_assigned(::wxl::BorderLight const& object, ::wxl::Color value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BorderLight::color = value);
-}
-[[maybe_unused]] void BorderLight_constantAttenuation_assigned(::wxl::BorderLight const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BorderLight::constantAttenuation = value);
-}
-[[maybe_unused]] void BorderLight_linearAttenuation_assigned(::wxl::BorderLight const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BorderLight::linearAttenuation = value);
-}
-[[maybe_unused]] void BorderLight_strokeThickness_assigned(::wxl::BorderLight const& object, double value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BorderLight::strokeThickness = value);
-}
-[[maybe_unused]] void BorderLight_cornerRadius_assigned(::wxl::BorderLight const& object, ::wxl::CornerRadius value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::BorderLight::cornerRadius = value);
-}
-[[maybe_unused]] void RevealEffect_zIndex_assigned(::wxl::RevealEffect const& object, int32_t value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::RevealEffect::zIndex = value);
-}
-// The braces as they are written: the generic tags on each light, whole
-// numbers where the setter takes a double, a corner radius by its own type,
-// the lights bare in the effect and the effect attached to a Button.
-[[maybe_unused]] void RevealEffect_in_braces() {
-    using namespace ::wxl;
-    using namespace ::wxl::dsl;
-    HoverLight const hover{size = 140, height = 120, intensity = 1.0, diffuseAmount = 0.69};
-    BorderLight const border{size = 340, height = 120, intensity = 1.0, diffuseAmount = 1.24, strokeThickness = 1.5,
-                             color = rgb(255, 255, 255), constantAttenuation = 1.0, linearAttenuation = 0.0,
-                             CornerRadius{4}};
-    RevealEffect const reveal{hover, border, zIndex = 1};
-    Button{u"7", reveal};
-    Border{RevealEffect{HoverLight{size = 90}}};
-}
-
-// SplitPanel -- written by hand: its orientation and pane placement take the tags
-// of StackPanel and SplitView.
-[[maybe_unused]] void SplitPanel_vertical_trailing(::wxl::UIElement const& top, ::wxl::UIElement const& bottom) {
-    using namespace ::wxl::dsl;
-    ::wxl::SplitPanel const split{orientation.vertical, panePlacement.right, openPaneLength = 200.0,
-                                  content = top, pane = bottom};
-    (void)split;
+    co_await on_event(reset, token);
 }
 
 // UiThread::onIdle -- written by hand: awaited in a task, between steps of work.
@@ -2320,115 +1769,19 @@ static_assert(!impl::invocation_answerable<sliced_answer const&>);
 
 }  // namespace
 
-// A ScrollViewer that hands the wheel it cannot use to the scroller above it.
-[[maybe_unused]] void wheel_to_parent() {
-    ScrollViewer{wheelToParent = true, horizontalScrollBarVisibility = ScrollBarVisibility::Auto};
-}
-
-// A layout written as two functions, in a LayoutPanel.
-[[maybe_unused]] void custom_layout() {
-    auto const custom = CustomLayout{
-        [](Collection<UIElement> const& children, Size available) { return available; },
-        [](Collection<UIElement> const& children, Size final) { return final; },
-    };
-    LayoutPanel{layout = custom};
-}
-
-// SettingsCard -- written by hand, so its schema lines are too.
-[[maybe_unused]] void SettingsCard_header_assigned(::wxl::SettingsCard const& object, ::wxl::Object const& value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsCard::header = value);
-}
-[[maybe_unused]] void SettingsCard_description_assigned(::wxl::SettingsCard const& object, ::wxl::hstring const& value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsCard::description = value);
-}
-[[maybe_unused]] void SettingsCard_headerIcon_assigned(::wxl::SettingsCard const& object, ::wxl::IconElement const& value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsCard::headerIcon = value);
-}
-[[maybe_unused]] void SettingsCard_actionIcon_assigned(::wxl::SettingsCard const& object, ::wxl::IconElement const& value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsCard::actionIcon = value);
-}
-[[maybe_unused]] void SettingsCard_isClickEnabled_assigned(::wxl::SettingsCard const& object, bool value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsCard::isClickEnabled = value);
-}
-[[maybe_unused]] void SettingsCard_isActionIconVisible_assigned(::wxl::SettingsCard const& object, bool value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsCard::isActionIconVisible = value);
-}
-[[maybe_unused]] void SettingsCard_contentAlignment_assigned(::wxl::SettingsCard const& object, ::wxl::SettingsCardContentAlignment value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsCard::contentAlignment = value);
-}
-// The braces as the settings page writes them: the named members, the setting as the unnamed child, a click.
-[[maybe_unused]] void SettingsCard_in_braces() {
-    using namespace ::wxl;
-    using namespace ::wxl::dsl;
-    SettingsCard{header = TextBlock{u"App theme"}, description = u"Select which app theme to display", headerIcon = FontIcon{glyph = u"x"},
-                 isClickEnabled = true, contentAlignment = SettingsCardContentAlignment::Vertical,
-                 onClick = [](Object const&, RoutedEventArgs&) {}, Button{u"Setting"}};
-}
-
-// SettingsExpander -- written by hand, so its schema lines are too.
-[[maybe_unused]] void SettingsExpander_header_assigned(::wxl::SettingsExpander const& object, ::wxl::Object const& value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsExpander::header = value);
-}
-[[maybe_unused]] void SettingsExpander_description_assigned(::wxl::SettingsExpander const& object, ::wxl::hstring const& value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsExpander::description = value);
-}
-[[maybe_unused]] void SettingsExpander_headerIcon_assigned(::wxl::SettingsExpander const& object, ::wxl::IconElement const& value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsExpander::headerIcon = value);
-}
-[[maybe_unused]] void SettingsExpander_isExpanded_assigned(::wxl::SettingsExpander const& object, bool value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::SettingsExpander::isExpanded = value);
-}
-// The braces as the settings page writes them: the head, its setting as the unnamed child, the cards of the list.
-[[maybe_unused]] void SettingsExpander_in_braces() {
-    using namespace ::wxl;
-    using namespace ::wxl::dsl;
-    SettingsExpander{header = TextBlock{u"Sound"}, description = u"Audible feedback", isExpanded = true,
-                     onExpanding = [](Object const&, Object const&) {}, ToggleSwitch{},
-                     items[SettingsCard{header = TextBlock{u"Spatial audio"}}]};
-}
-
-// HeaderedContentControl -- written by hand, so its schema line is too.
-[[maybe_unused]] void HeaderedContentControl_header_assigned(::wxl::HeaderedContentControl const& object, ::wxl::Object const& value) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::HeaderedContentControl::header = value);
-}
-[[maybe_unused]] void HeaderedContentControl_in_braces() {
-    using namespace ::wxl;
-    using namespace ::wxl::dsl;
-    HeaderedContentControl{header = TextBlock{u"Name"}, TextBox{}};
-}
-// AvailableSizeLayout -- written by hand, so its schema lines are too. The two properties are reported, never taken:
-// BindInput is the one form they accept.
-[[maybe_unused]] void AvailableSizeLayout_availableWidth_bound(::wxl::AvailableSizeLayout const& object, ::wxl::core::observable<double>& field) {
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::AvailableSizeLayout::availableWidth = ::wxl::BindInput{field});
-    ::wxl::impl::apply_argument(object, ::wxl::dsl::schema::AvailableSizeLayout::availableHeight = ::wxl::BindInput{field});
-}
-[[maybe_unused]] void AvailableSizeLayout_in_braces(::wxl::core::observable<double>& width, ::wxl::core::observable<double>& height) {
-    using namespace ::wxl;
-    using namespace ::wxl::dsl;
-    LayoutPanel{layout = AvailableSizeLayout{availableWidth = BindInput{width}, availableHeight = BindInput{height}}, TextBlock{u"page"}};
-}
-
-// itemContainerStyle -- a synthetic member: the preset every container wears, once, as the control makes it.
-[[maybe_unused]] void ListViewBase_itemContainerStyle_preset() {
-    using namespace ::wxl;
-    using namespace ::wxl::dsl;
-    GridView{itemContainerStyle = Preset{margin = Thickness{0, 0, 12, 12}, horizontalContentAlignment = HorizontalAlignment::Stretch}, TextBlock{u"item"}};
-    ListView{itemContainerStyle = Preset{padding = Thickness{4}}, TextBlock{u"item"}};
-}
-
-// A list bound to an observable_list: itemsSource = BindOutput{list, fn} on the four list controls, named, unnamed and
-// through the schema; a read-only list; an item held by pointer whose own field is bound inside its element; the item
+// A list bound to an observable_list: itemsSource = BindOutput{list, fn} on the four list controls, named and through
+// the schema; a read-only list; an item held by pointer whose own field is bound inside its element; the item
 // back from what a click hands out (boundItem); the selection as a field of any Selector.
 namespace {
-struct ShelfCard : ::wxl::core::sta_refcounted {
-    explicit ShelfCard(::wxl::core::u16_text t) : title(std::move(t)) {}
+struct BoardCard : ::wxl::core::sta_refcounted {
+    explicit BoardCard(::wxl::core::u16_text t) : title(std::move(t)) {}
 
     ::wxl::core::u16_text const title;
     ::wxl::core::observable<::wxl::core::u16_text> progress;
 };
 
-struct Shelf {
-    ::wxl::core::observable_list<::wxl::core::intrusive_ptr<ShelfCard>> cards;
+struct Board {
+    ::wxl::core::observable_list<::wxl::core::intrusive_ptr<BoardCard>> cards;
     ::wxl::core::observable_list<::wxl::core::u16_text> words;
     ::wxl::core::observable<int> chosen;
 
@@ -2436,37 +1789,39 @@ struct Shelf {
 };
 }  // namespace
 
-[[maybe_unused]] void bound_lists(Shelf& shelf) {
+[[maybe_unused]] void bound_lists(Board& board) {
     using namespace ::wxl;
     using namespace ::wxl::dsl;
-    auto const row = [](core::u16_text const& word) { return TextBlock{text = word}; };
+    auto const line = [](core::u16_text const& word) { return TextBlock{text = word}; };
 
-    ListView{itemsSource = BindOutput{shelf.words, row}};
-    GridView{itemsSource = BindOutput{shelf.words, row}};
-    ItemsRepeater{itemsSource = BindOutput{shelf.words, row}};
-    ItemsView{itemsSource = BindOutput{shelf.words, [](core::u16_text const& word) {
-                  return ItemContainer{child = TextBlock{text = word}};
-              }}};
-    ListView{BindOutput{shelf.words, row}};  // unnamed: what a list control binds a list to is its items
-    ItemsRepeater{BindOutput{shelf.words, row}};
-    ListView{itemsSource = BindOutput{shelf.shown(), row}};  // read-only: only the model changes it
-    ListView{schema::ItemsControl::itemsSource = BindOutput{shelf.words, row}};
+    ListView{itemsSource = BindOutput{board.words, line}};
+    GridView{itemsSource = BindOutput{board.words, line}};
+    ItemsRepeater{itemsSource = BindOutput{board.words, line}};
+    ItemsView{itemsSource = BindOutput{board.words, [](core::u16_text const& word) {
+                                           return ItemContainer{child = TextBlock{text = word}};
+                                       }}};
+    // read-only: only the model changes it
+    ListView{itemsSource = BindOutput{board.shown(), line}};
+    ListView{schema::ItemsControl::itemsSource = BindOutput{board.words, line}};
 
     ListView{
         isItemClickEnabled = true,
-        itemsSource = BindOutput{shelf.cards, [](core::intrusive_ptr<ShelfCard> const& card) {
-            return StackPanel{TextBlock{text = card->title}, TextBlock{text = BindOutput{card->progress}}};
-        }},
-        onItemClick = [&cards = shelf.cards](ListView const&, ItemClickEventArgs& args) {
-            if (core::intrusive_ptr<ShelfCard> const* card = boundItem(cards, args.clickedItem())) {
+        itemsSource = BindOutput{board.cards,
+                                 [](core::intrusive_ptr<BoardCard> const& card) {
+                                     return StackPanel{
+                                         TextBlock{text = card->title},
+                                         TextBlock{text = BindOutput{card->progress}}};
+                                 }},
+        onItemClick +=
+        [&cards = board.cards](ListView const&, ItemClickEventArgs& args) {
+            if (core::intrusive_ptr<BoardCard> const* card = boundItem(cards, args.clickedItem())) {
                 (*card)->progress.set(core::u16_text{u"opened"});
             }
         },
-        selectedIndex = Bind{shelf.chosen},
+        selectedIndex = Bind{board.chosen},
     };
-    ListView{itemsSource = BindOutput{shelf.words, row}, selectedIndex = BindInput{shelf.chosen}};
-    GridView{itemsSource = BindOutput{shelf.words, row}, selectedIndex = BindOutput{shelf.chosen}};
-    ListView{Bind{shelf.chosen}};  // unnamed: an int on a selector is its index
-    FlipView{selectedIndex = Bind{shelf.chosen}};
-    ComboBox{Bind{shelf.chosen}};
+    ListView{itemsSource = BindOutput{board.words, line}, selectedIndex = BindInput{board.chosen}};
+    GridView{itemsSource = BindOutput{board.words, line}, selectedIndex = BindOutput{board.chosen}};
+    FlipView{selectedIndex = Bind{board.chosen}};
+    ComboBox{selectedIndex = Bind{board.chosen}};
 }

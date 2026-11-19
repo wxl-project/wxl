@@ -45,6 +45,7 @@
 #include <cmath>
 #include <cstdarg>
 #include <cstdio>
+#include <share.h>
 #include <functional>
 #include <limits>
 #include <string>
@@ -439,7 +440,7 @@ xaml::FrameworkElement makeBar() {
     middle.Orientation(controls::Orientation::Horizontal);
     middle.VerticalAlignment(xaml::VerticalAlignment::Center);
     controls::TextBlock crumbs;
-    crumbs.Text(L"WinAPI / Длинное название темы");
+    crumbs.Text(L"Папка / Длинное название файла");
     crumbs.VerticalAlignment(xaml::VerticalAlignment::Center);
     crumbs.Margin({8, 0, 8, 0});
     middle.Children().Append(crumbs);
@@ -452,7 +453,7 @@ xaml::FrameworkElement makeBar() {
 
     if (probe->options.titleBarControl) {
         controls::TitleBar titleBar;
-        titleBar.Title(L"Беседка");
+        titleBar.Title(L"Пример");
         titleBar.Subtitle(L"проба");
         controls::FontIconSource icon;
         icon.Glyph(std::wstring(1, wchar_t{0xE8BD}));
@@ -475,7 +476,7 @@ xaml::FrameworkElement makeBar() {
         grid.ColumnDefinitions().Append(column);
     }
     controls::TextBlock name;
-    name.Text(L"Беседка");
+    name.Text(L"Пример");
     name.VerticalAlignment(xaml::VerticalAlignment::Center);
     name.Margin({12, 0, 12, 0});
     grid.Children().Append(name);
@@ -720,7 +721,7 @@ wxl::Teardown wxl_launched() {
     std::wstring logPath{path};
     logPath.resize(logPath.find_last_of(L'\\') + 1);
     logPath += L"titlebar-probe.log";
-    logFile = ::_wfopen(logPath.c_str(), L"w");
+    logFile = ::_wfsopen(logPath.c_str(), L"w", _SH_DENYNO);
     startTick = ::GetTickCount64();
 
     probe = new Probe{};

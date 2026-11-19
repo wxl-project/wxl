@@ -3,7 +3,7 @@
 //
 // Every one of these is a self-check: it says nothing to a caller and cannot
 // be provoked by one, it only has to hold for the std::bit_cast conversions in
-// conversions.h and event_token.h to be what they claim. So it belongs in a
+// conversions.h to be what they claim. So it belongs in a
 // test -- and a test is what this is, in the only place that can hold it. The
 // cppwinrt projection is private to this library on purpose (a consumer must
 // never need a winrt header), so a test target outside cannot name
@@ -19,7 +19,6 @@
 #include <winrt/base.h>
 
 #include "conversions.h"
-#include "event_token.h"
 
 namespace wxl::impl {
 namespace {
@@ -36,19 +35,20 @@ static_assert(mirrors<Rect>(winrt::Windows::Foundation::Rect{1, 2, 3, 4}, [](Rec
     return v.offset.x == 1 && v.offset.y == 2 && v.size.width == 3 && v.size.height == 4;
 }));
 
-static_assert(mirrors<Color>(winrt::Windows::UI::Color{1, 2, 3, 4}, [](Color v) {
-    return v.A == 1 && v.R == 2 && v.G == 3 && v.B == 4;
-}));
+static_assert(mirrors<Color>(winrt::Windows::UI::Color{1, 2, 3, 4},
+                             [](Color v) { return v.A == 1 && v.R == 2 && v.G == 3 && v.B == 4; }));
 
 // The four edges and the four corners, in the order the framework writes them.
-static_assert(mirrors<Thickness>(winrt::Microsoft::UI::Xaml::Thickness{1, 2, 3, 4}, [](Thickness v) {
-    return v.left == 1 && v.top == 2 && v.right == 3 && v.bottom == 4;
-}));
+static_assert(mirrors<Thickness>(winrt::Microsoft::UI::Xaml::Thickness{1, 2, 3, 4},
+                                 [](Thickness v) {
+                                     return v.left == 1 && v.top == 2 && v.right == 3 &&
+                                            v.bottom == 4;
+                                 }));
 
 static_assert(mirrors<CornerRadius>(winrt::Microsoft::UI::Xaml::CornerRadius{1, 2, 3, 4},
                                     [](CornerRadius v) {
-                                        return v.topLeft == 1 && v.topRight == 2
-                                            && v.bottomRight == 3 && v.bottomLeft == 4;
+                                        return v.topLeft == 1 && v.topRight == 2 &&
+                                               v.bottomRight == 3 && v.bottomLeft == 4;
                                     }));
 
 // The numerics a composition object is written in: cppwinrt spells them
@@ -65,11 +65,8 @@ static_assert(mirrors<Matrix4x4>(
                                                    15, 16},
     [](Matrix4x4 v) { return v.m11 == 1 && v.m14 == 4 && v.m41 == 13 && v.m44 == 16; }));
 
-// And the subscription token: one int64_t on both sides, which is what makes
-// the bit_cast in event_token.h the right tool rather than a reinterpret_cast
-// through pointers.
-static_assert(sizeof(EventToken) == sizeof(winrt::event_token));
-static_assert(alignof(EventToken) == alignof(winrt::event_token));
+// The subscription token is not here: EventToken is not copied, so it crosses by its number
+// (conversions.h) rather than by a bit_cast of the object, and its layout is nobody's business.
 
 }  // namespace
 }  // namespace wxl::impl

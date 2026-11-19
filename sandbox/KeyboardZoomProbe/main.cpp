@@ -1,11 +1,12 @@
 // Проба клавиш масштаба у окна с островом XAML.
 //
-// ZoomEffect ловит Ctrl с «+», «-» и «0» в PreviewKeyDown корня острова. В
-// Беседке сразу после запуска эти клавиши не работают: фокус Windows стоит на
+// ZoomEffect ловит Ctrl с «+», «-» и «0» в PreviewKeyDown корня острова.
+// Замечено в приложении, окно которого после запуска оставляет фокус
+// клавиатуры у себя: эти клавиши тогда не работают -- фокус Windows стоит на
 // самом окне верхнего уровня, клавиша приходит в его оконную процедуру и до
-// XAML не доходит. Вопрос пользователя -- перехватывается ли клавиша на самом
-// верхнем уровне окна. Проба выясняет, где её можно поймать при любом
-// положении фокуса:
+// XAML не доходит. Вопрос в том, перехватывается ли клавиша на самом верхнем
+// уровне окна. Проба выясняет, где её можно поймать при любом положении
+// фокуса:
 //
 //   - оконная процедура окна верхнего уровня (WM_KEYDOWN);
 //   - хуки потока интерфейса WH_GETMESSAGE и WH_KEYBOARD -- проходит ли
@@ -25,7 +26,7 @@
 // фокуса отдаёт его острову (NavigateFocus(Restore)).
 //
 // С ключом --window-like окно ведёт фокус, как Microsoft.UI.Xaml.Window
-// (DesktopWindowImpl в исходниках WinUI 3, microsoft-ui-xaml): WM_ACTIVATE не
+// (DesktopWindowImpl в исходниках WinUI, microsoft-ui-xaml): WM_ACTIVATE не
 // отдаёт DefWindowProc, при активации отдаёт фокус острову и возвращает его
 // элементу XAML, Tab за крайний элемент возвращает в остров. Этапы W1-W5 в
 // windowLikePhases().
@@ -70,6 +71,7 @@
 
 #include <cstdarg>
 #include <cstdio>
+#include <share.h>
 #include <functional>
 #include <string>
 #include <utility>
@@ -846,7 +848,7 @@ wxl::Teardown wxl_launched() {
     std::wstring logPath{path};
     logPath.resize(logPath.find_last_of(L'\\') + 1);
     logPath += L"keyboard-zoom-probe.log";
-    logFile = ::_wfopen(logPath.c_str(), L"w");
+    logFile = ::_wfsopen(logPath.c_str(), L"w", _SH_DENYNO);
     startTick = ::GetTickCount64();
 
     probe = new Probe{};

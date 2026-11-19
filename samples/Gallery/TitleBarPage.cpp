@@ -8,12 +8,10 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t configurationHeader[] = {
-#include "Snippets/TitleBar/TitlebarConfiguration.html.embed"
-};
-constexpr char8_t configurationCode[] = {
-#include "Snippets/TitleBar/TitlebarConfiguration.h.embed"
-};
+gallery::LazyLoadedText introText{"Snippets/TitleBar/Intro.html"};
+
+gallery::LazyLoadedText configurationHeader{"Snippets/TitleBar/TitlebarConfiguration.html"};
+gallery::LazyLoadedText configurationCode{"Snippets/TitleBar/TitlebarConfiguration.h"};
 
 FrameworkElement configurationExample() {
 #include "Snippets/TitleBar/TitlebarConfiguration.h"
@@ -26,12 +24,8 @@ FrameworkElement configurationExample() {
     });
 }
 
-constexpr char8_t dragRegionsHeader[] = {
-#include "Snippets/TitleBar/TitlebarDragRegions.html.embed"
-};
-constexpr char8_t dragRegionsCode[] = {
-#include "Snippets/TitleBar/TitlebarDragRegions.h.embed"
-};
+gallery::LazyLoadedText dragRegionsHeader{"Snippets/TitleBar/TitlebarDragRegions.html"};
+gallery::LazyLoadedText dragRegionsCode{"Snippets/TitleBar/TitlebarDragRegions.h"};
 
 FrameworkElement dragRegions() {
 #include "Snippets/TitleBar/TitlebarDragRegions.h"
@@ -43,12 +37,8 @@ FrameworkElement dragRegions() {
     });
 }
 
-constexpr char8_t endToEndHeader[] = {
-#include "Snippets/TitleBar/EndEndTitlebarSample.html.embed"
-};
-constexpr char8_t endToEndCode[] = {
-#include "Snippets/TitleBar/EndEndTitlebarSample.h.embed"
-};
+gallery::LazyLoadedText endToEndHeader{"Snippets/TitleBar/EndEndTitlebarSample.html"};
+gallery::LazyLoadedText endToEndCode{"Snippets/TitleBar/EndEndTitlebarSample.h"};
 
 FrameworkElement endToEnd() {
 #include "Snippets/TitleBar/EndEndTitlebarSample.h"
@@ -62,17 +52,10 @@ FrameworkElement endToEnd() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::titleBarPage() {
+static wxl::FrameworkElement titleBarPage() {
     return StackPanel {
         Margin {0, 12, 0, 0},
-        RichTextBlock {
-            Paragraph {
-                Run {u"For full title bar customization without using the TitleBar control, see the "},
-                Hyperlink {
-                    onClick = [](Object const&, HyperlinkClickEventArgs&) { navigate({Place::Item, L"AppWindowTitleBar"}); },
-                    Run {u"AppWindowTitleBar"},
-                },
-                Run {u" sample"},
-            },
-        },configurationExample(), dragRegions(), endToEnd()};
+        gallery::prose(gallery::snippet(introText), Thickness {}), configurationExample(), dragRegions(), endToEnd()};
 }
+
+REGISTER_GALLERY_PAGE(L"TitleBar", titleBarPage);

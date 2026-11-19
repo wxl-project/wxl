@@ -1,12 +1,11 @@
 #include "Icons.h"
 
-#include "ApplicationFolder.h"
+#include "Application.h"
 
 #include <string>
 
 import std;
 import wxl.core;
-import wxl.json;
 
 namespace gallery {
 
@@ -26,7 +25,7 @@ std::vector<Icon> load() {
     std::vector<Icon> result;
     try {
         wxl::json::document document;
-        auto const& root = document.load_file(wxl::applicationFolder() / L"Assets" / L"Data" / L"IconsData.json");
+        auto const& root = document.load_file(wxl::Application::folder() / L"Assets" / L"Data" / L"IconsData.json");
         for (auto const& node : root.elements()) {
             Icon icon;
             icon.name = utf16(node["Name"]);

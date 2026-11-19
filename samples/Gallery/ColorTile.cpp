@@ -25,15 +25,15 @@ SystemBackdropElement backdropHost(gallery::ColorBackdrop backdrop) {
 }
 
 Hyperlink linkTo(char16_t const* title, wchar_t const* id) {
-    return Hyperlink {onClick = [id](auto&&...) { gallery::navigate({gallery::Place::Item, id}); }, Run {title}};
+    return Hyperlink {onClick += [id](auto&&...) { gallery::navigate({gallery::Place::Item, id}); }, Run {title}};
 }
 
 }  // namespace
 
 gallery::ColorTileParts gallery::makeColorTile(ColorTileInfo const& info) {
     ColorTileParts parts {
-        .root = Grid {row = info.row, column = info.column, columnDefinitions = u"*,auto"},
-        .body = Grid {Padding {12}, rowSpacing = 6.0, rowDefinitions = u"auto,auto,*,auto,auto", columnDefinitions = u"*,auto"},
+        .root = Grid {row = info.row, column = info.column, ColumnDefinitions<u"*,auto">},
+        .body = Grid {Padding {12}, rowSpacing = 6.0, RowDefinitions<u"auto,auto,*,auto,auto">, ColumnDefinitions<u"*,auto">},
         .texts = {},
         .copyIcon = FontIcon {glyph = u"", fontSize = 14},
     };
@@ -62,7 +62,7 @@ gallery::ColorTileParts gallery::makeColorTile(ColorTileInfo const& info) {
             automationName = u"Copy brush name",
             toolTip = u"Copy brush name",
             content = parts.copyIcon,
-            onClick = [name = std::u16string {info.key}](auto&&...) {
+            onClick += [name = std::u16string {info.key}](auto&&...) {
                 auto package = DataPackage {};
                 package.setText(name);
                 Clipboard::setContent(package);
@@ -88,7 +88,7 @@ gallery::ColorTileParts gallery::makeColorTile(ColorTileInfo const& info) {
 gallery::ColorExampleParts gallery::makeColorExample(char16_t const* exampleTitle, char16_t const* description,
                                                      FrameworkElement const& content) {
     ColorExampleParts parts {
-        .root = Grid {Margin {0, 36, 0, 8}, Padding {12}, rowSpacing = 4.0, rowDefinitions = u"auto,auto,auto",
+        .root = Grid {Margin {0, 36, 0, 8}, Padding {12}, rowSpacing = 4.0, RowDefinitions<u"auto,auto,auto">,
                       borderBrush = brushes.Card.StrokeColorDefault, BorderThickness {1}, cornerRadius = CornerRadius {8}},
         .title = TextBlock {styles.TextBlock.Subtitle, exampleTitle},
         .description = TextBlock {row = 1, opacity = 0.8, styles.TextBlock.Caption, description},
@@ -100,15 +100,9 @@ gallery::ColorExampleParts gallery::makeColorExample(char16_t const* exampleTitl
 }
 
 FrameworkElement gallery::tileGrid(int columns, int rows, std::vector<FrameworkElement> tiles) {
-    std::u16string columnList;
-    for (int i = 0; i < columns; ++i) {
-        columnList += i ? u",*" : u"*";
-    }
-    std::u16string rowList;
-    for (int i = 0; i < rows; ++i) {
-        rowList += i ? u",auto" : u"auto";
-    }
-    auto grid = Grid {columnDefinitions = columnList, rowDefinitions = rowList};
+    std::vector<GridLength> const columnLengths(static_cast<std::size_t>(columns), GridLength {1.0, GridUnitType::Star});
+    std::vector<GridLength> const rowLengths(static_cast<std::size_t>(rows), GridLength {1.0, GridUnitType::Auto});
+    auto grid = Grid {columnDefinitions = columnLengths, rowDefinitions = rowLengths};
     for (auto const& tile : tiles) {
         grid.children().append(tile);
     }

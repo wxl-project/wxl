@@ -3,10 +3,8 @@
 // вложенных друг в друга и в настоящие описания.
 
 #include "Pages.h"
-#include "LoadXaml.h"
-#include "Box.h"
-#include "ItemBuilder.h"
-#include "StringList.h"
+#include "Resource.h"
+#include "ItemTemplate.h"
 
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 #include <wxl/Microsoft.UI.Xaml.Documents.h>
@@ -17,36 +15,16 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t controlHeader[] = {
-#include "Snippets/Templates/TemplatesCustomizeLookTextboxControltemplate.html.embed"
-};
-constexpr char8_t controlCode[] = {
-#include "Snippets/Templates/TemplatesCustomizeLookTextboxControltemplate.h.embed"
-};
-constexpr char8_t dataHeader[] = {
-#include "Snippets/Templates/TemplatesCustomizeComboboxItemtemplateDatatemplate.html.embed"
-};
-constexpr char8_t dataCode[] = {
-#include "Snippets/Templates/TemplatesCustomizeComboboxItemtemplateDatatemplate.h.embed"
-};
-constexpr char8_t panelHeader[] = {
-#include "Snippets/Templates/TemplatesCustomizeItemscontrolItemspaneltemplate.html.embed"
-};
-constexpr char8_t panelCode[] = {
-#include "Snippets/Templates/TemplatesCustomizeItemscontrolItemspaneltemplate.h.embed"
-};
-constexpr char8_t presetsHeader[] = {
-#include "Snippets/Templates/TemplatesPresetsNested.html.embed"
-};
-constexpr char8_t presetsCode[] = {
-#include "Snippets/Templates/TemplatesPresetsNested.h.embed"
-};
-constexpr char8_t templatesHeader[] = {
-#include "Snippets/Templates/TemplatesBuiltWhereApplied.html.embed"
-};
-constexpr char8_t templatesCode[] = {
-#include "Snippets/Templates/TemplatesBuiltWhereApplied.h.embed"
-};
+gallery::LazyLoadedText controlHeader{"Snippets/Templates/TemplatesCustomizeLookTextboxControltemplate.html"};
+gallery::LazyLoadedText controlCode{"Snippets/Templates/TemplatesCustomizeLookTextboxControltemplate.h"};
+gallery::LazyLoadedText dataHeader{"Snippets/Templates/TemplatesCustomizeComboboxItemtemplateDatatemplate.html"};
+gallery::LazyLoadedText dataCode{"Snippets/Templates/TemplatesCustomizeComboboxItemtemplateDatatemplate.h"};
+gallery::LazyLoadedText panelHeader{"Snippets/Templates/TemplatesCustomizeItemscontrolItemspaneltemplate.html"};
+gallery::LazyLoadedText panelCode{"Snippets/Templates/TemplatesCustomizeItemscontrolItemspaneltemplate.h"};
+gallery::LazyLoadedText presetsHeader{"Snippets/Templates/TemplatesPresetsNested.html"};
+gallery::LazyLoadedText presetsCode{"Snippets/Templates/TemplatesPresetsNested.h"};
+gallery::LazyLoadedText templatesHeader{"Snippets/Templates/TemplatesBuiltWhereApplied.html"};
+gallery::LazyLoadedText templatesCode{"Snippets/Templates/TemplatesBuiltWhereApplied.h"};
 
 FrameworkElement controlTemplate() {
 #include "Snippets/Templates/TemplatesCustomizeLookTextboxControltemplate.h"
@@ -75,18 +53,20 @@ FrameworkElement builtTemplates() {
 
 }  // namespace
 
-FrameworkElement gallery::templatesPage() {
+static FrameworkElement templatesPage() {
     return StackPanel {
         spacing = 12.0,
         Margin {0, 12, 0, 0},
-        RichTextBlock {
-            Paragraph {fontWeight = FontWeight {600}, Run {u"Templates of XAML"}},
-            Paragraph {Run {u"There are 3 types of templates in XAML:"}},
-            Paragraph {Run {u"• ControlTemplate: customizes the structure of a control. It names the parts of the control, so it is markup."}},
-            Paragraph {Run {u"• DataTemplate: changes how individual items are displayed in a control like a ComboBox or ListView. "
-                            u"Here it is a function from the item to an element."}},
-            Paragraph {Run {u"• ItemsPanelTemplate: defines how a collection of items is laid out. Markup as well."}},
-        },
+        gallery::prose(
+            u8"<p><span style=\"semibold\">Templates of XAML</span></p>"
+            u8"<p>There are 3 types of templates in XAML:</p>"
+            u8"<ul>"
+            u8"<li>ControlTemplate: customizes the structure of a control. It names the parts of the control, so it is markup.</li>"
+            u8"<li>DataTemplate: changes how individual items are displayed in a control like a ComboBox or ListView. "
+            u8"Here it is a function from the item to an element.</li>"
+            u8"<li>ItemsPanelTemplate: defines how a collection of items is laid out. Markup as well.</li>"
+            u8"</ul>",
+            Thickness {}),
         controlTemplate(),
         dataTemplate(),
         itemsPanelTemplate(),
@@ -107,3 +87,5 @@ FrameworkElement gallery::templatesPage() {
         builtTemplates(),
     };
 }
+
+REGISTER_GALLERY_PAGE(L"Templates", templatesPage);

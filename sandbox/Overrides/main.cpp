@@ -21,10 +21,55 @@
 // mocks below are test-only stand-ins: minimal, non-realistic COM objects
 // (their sub-interfaces don't share one COM identity the way a real
 // aggregate must) that exist purely to make wxl's own construction/dispatch
-// code run without a live WinUI3 runtime.
+// code run without a live WinUI runtime.
 #include <iostream>
 
 #include <wxl/impl/UIElement.h>
+
+// Once wxl::release_only_ptr of wxl.ui: a bare COM interface pointer with the one reference wxl
+// owns, released on destruction and never added to. wxl.ui no longer has it; the recipe keeps it,
+// as the impl::UIElement of its time took it.
+namespace wxl {
+
+template <typename T>
+class release_only_ptr {
+public:
+    release_only_ptr() noexcept = default;
+    explicit release_only_ptr(T* ptr) noexcept : ptr_(ptr) {}
+
+    release_only_ptr(release_only_ptr const&) = delete;
+    release_only_ptr& operator=(release_only_ptr const&) = delete;
+
+    release_only_ptr(release_only_ptr&& other) noexcept : ptr_(std::exchange(other.ptr_, nullptr)) {}
+
+    release_only_ptr& operator=(release_only_ptr&& other) noexcept {
+        if (this != &other) {
+            reset();
+            ptr_ = std::exchange(other.ptr_, nullptr);
+        }
+        return *this;
+    }
+
+    ~release_only_ptr() {
+        reset();
+    }
+
+    void reset() noexcept {
+        if (ptr_) {
+            ptr_->Release();
+            ptr_ = nullptr;
+        }
+    }
+
+    T* get() const noexcept { return ptr_; }
+    T* operator->() const noexcept { return ptr_; }
+    explicit operator bool() const noexcept { return ptr_ != nullptr; }
+
+private:
+    T* ptr_{};
+};
+
+}  // namespace wxl
 
 namespace {
 

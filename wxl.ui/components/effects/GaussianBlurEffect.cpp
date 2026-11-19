@@ -1,0 +1,115 @@
+// wxl::GaussianBlurEffect -- the effect graph behind it; see
+// GaussianBlurEffect.h.
+//
+// The projection comes first, and with it every standard header it needs: the
+// wxl headers below carry the wxl.core import.
+#include <winrt/Microsoft.Graphics.Canvas.Effects.h>
+#include <winrt/Microsoft.UI.Composition.h>
+#include <winrt/Microsoft.UI.Xaml.Hosting.h>
+#include <winrt/Microsoft.UI.Xaml.h>
+#include <winrt/Windows.Foundation.Collections.h>
+#include <winrt/Windows.Foundation.Numerics.h>
+#include <winrt/Windows.Graphics.Effects.h>
+
+#include <algorithm>
+#include <bit>
+#include <functional>
+#include <utility>
+
+#include "GaussianBlurEffect.h"
+#include "Object.impl.h"
+#include <wxl/Microsoft.UI.Composition.impl.h>
+#include <wxl/Microsoft.UI.Xaml.impl.h>
+#include "impl/effect_helpers.h"
+
+namespace wxl {
+
+namespace composition = winrt::Microsoft::UI::Composition;
+namespace canvas = winrt::Microsoft::Graphics::Canvas;
+namespace effects = winrt::Microsoft::Graphics::Canvas::Effects;
+namespace xaml = winrt::Microsoft::UI::Xaml;
+
+struct GaussianBlurEffect::Impl : core::sta_refcounted {
+    Color color = rgb(0, 0, 0);
+    float blurRadius = 9.0f;
+    float opacity = 1.0f;
+    float gamma = 1.0f;
+    int32_t z = -1;
+};
+
+GaussianBlurEffect::GaussianBlurEffect() : impl_{new Impl, /*add_ref=*/false} {}
+GaussianBlurEffect::GaussianBlurEffect(GaussianBlurEffect const& other) noexcept = default;
+GaussianBlurEffect& GaussianBlurEffect::operator=(GaussianBlurEffect const& other) noexcept =
+    default;
+GaussianBlurEffect::~GaussianBlurEffect() = default;
+
+void GaussianBlurEffect::color(Color value) const { impl_->color = value; }
+void GaussianBlurEffect::blurRadius(float value) const { impl_->blurRadius = value; }
+void GaussianBlurEffect::opacity(float value) const {
+    impl_->opacity = std::clamp(value, 0.0f, 1.0f);
+}
+void GaussianBlurEffect::gamma(float value) const { impl_->gamma = std::max(value, 0.01f); }
+void GaussianBlurEffect::zIndex(int32_t value) const { impl_->z = value; }
+
+void GaussianBlurEffect::attach(UIElement const& wrapper,
+                                std::function<CompositionBrush()> maskOf) const {
+    auto const element = Object::Impl::as<xaml::UIElement>(wrapper);
+    auto const host = xaml::Hosting::ElementCompositionPreview::GetElementVisual(element);
+
+    // The layer is made once the element is drawn, and the mask is taken
+    // then too: before that there are no glyphs to take the alpha of.
+    impl::when_drawn(host.as<composition::ContainerVisual>(), [host, maskOf = std::move(maskOf),
+                                                               impl = impl_](auto const& children) {
+        auto const compositor = host.Compositor();
+        auto const mask = Object::Impl::as<composition::CompositionBrush>(maskOf());
+
+        // The graph: the glyphs' alpha, blurred; its alpha raised to gamma;
+        // the colour kept where that alpha is. A DropShadow's blur radius is
+        // about three deviations of the Gaussian, so the same number gives
+        // the same reach here.
+        effects::GaussianBlurEffect blur;
+        blur.Source(composition::CompositionEffectSourceParameter{L"mask"});
+        blur.BlurAmount(impl->blurRadius / 3.0f);
+        blur.BorderMode(effects::EffectBorderMode::Soft);
+
+        effects::GammaTransferEffect bend;
+        bend.Source(blur);
+        bend.AlphaExponent(impl->gamma);
+        bend.RedDisable(true);
+        bend.GreenDisable(true);
+        bend.BlueDisable(true);
+
+        effects::ColorSourceEffect fill;
+        Color tint = impl->color;
+        tint.A = static_cast<uint8_t>(tint.A * impl->opacity + 0.5f);
+        fill.Color(std::bit_cast<winrt::Windows::UI::Color>(tint));
+
+        effects::CompositeEffect glow;
+        glow.Mode(canvas::CanvasComposite::DestinationIn);
+        glow.Sources().Append(fill);
+        glow.Sources().Append(bend);
+
+        auto const brush = compositor.CreateEffectFactory(glow).CreateBrush();
+        brush.SetSourceParameter(L"mask", mask);
+
+        // The glow reaches past the glyphs by the blur, so the layer is the
+        // element's size plus that margin all round, and the mask is drawn
+        // at its own size in the middle of it.
+        float const margin = impl->blurRadius;
+        if (auto const surface = mask.try_as<composition::CompositionSurfaceBrush>()) {
+            surface.Stretch(composition::CompositionStretch::None);
+            surface.HorizontalAlignmentRatio(0.5f);
+            surface.VerticalAlignmentRatio(0.5f);
+        }
+
+        auto const layer = compositor.CreateSpriteVisual();
+        layer.Brush(brush);
+        layer.RelativeSizeAdjustment({1.0f, 1.0f});
+        layer.Size({2.0f * margin, 2.0f * margin});
+        layer.Offset({-margin, -margin, 0.0f});
+
+        impl::insert_layer(children, layer, impl->z);
+    });
+}
+
+}  // namespace wxl

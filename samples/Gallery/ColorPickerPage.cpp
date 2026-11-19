@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t propertiesHeader[] = {
-#include "Snippets/ColorPicker/Properties.html.embed"
-};
-constexpr char8_t propertiesCode[] = {
-#include "Snippets/ColorPicker/Properties.h.embed"
-};
+gallery::LazyLoadedText propertiesHeader{"Snippets/ColorPicker/Properties.html"};
+gallery::LazyLoadedText propertiesCode{"Snippets/ColorPicker/Properties.h"};
 
 FrameworkElement properties() {
 #include "Snippets/ColorPicker/Properties.h"
@@ -28,6 +24,8 @@ FrameworkElement properties() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::colorPickerPage() {
+static wxl::FrameworkElement colorPickerPage() {
     return StackPanel {properties()};
 }
+
+REGISTER_GALLERY_PAGE(L"ColorPicker", colorPickerPage);

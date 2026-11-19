@@ -1,5 +1,7 @@
 // Квадратное уравнение: три коэффициента на входе, дискриминант и корни на выходе.
-// Модель — поля с оповещением, интерфейс — одно выражение, привязанное к ним.
+// Модель — поля с оповещением, интерфейс одним выражением, привязанным к модели.
+
+#include <complex>
 
 #include "Bind.h"
 #include "Card.h"
@@ -8,7 +10,7 @@
 #include "launch.h"
 #include "ui.h"
 
-import wxl.fmt;
+import wxl.core;
 
 using namespace wxl;
 using namespace wxl::core;
@@ -16,32 +18,40 @@ using namespace wxl::dsl;
 
 namespace {
 
-// Девять значащих цифр — у double и у обеих частей complex одинаково.
-u16_text to_string(auto value) {
-    return format(u"{:.9g}", value);
+u16_text toText(double value) { return format(u"{:.9g}", value); }
+
+u16_text toText(std::complex<double> value) {
+    if (value.imag() == 0.0)
+        return format(u"{:.9g}", value.real());
+
+    if (value.imag() > 0.0)
+        return format(u"{:.9g}+{:.9g}i", value.real(), value.imag());
+
+    return format(u"{:.9g}{:.9g}i", value.real(), value.imag());
 }
 
+// Ответ сравнивается, и равный ответ поля вывода не перезаписывает: observable::set
+// молчит, когда значение не изменилось.
 struct Answer {
     u16_text D, x1, x2;
-};
 
-// Пустое поле NumberBox — это NaN, и текст, который числом ещё не стал, — тоже.
-constexpr double blank = std::numeric_limits<double>::quiet_NaN();
+    bool operator==(Answer const&) const = default;
+};
 
 // Корни через q = −(b + sign(b)·√D)/2 как q/a и c/q: без вычитания близких чисел,
 // которое съедает точность меньшего по модулю корня. При a = 0 уравнение линейное.
-static Answer solve(double a, double b, double c) {
+// Пустой коэффициент — поле пусто или набранное числом ещё не стало — даёт прочерки.
+Answer solve(nullable<double> ka, nullable<double> kb, nullable<double> kc) {
     u16_text const none{u"—"};
 
-    if (std::isnan(a) || std::isnan(b) || std::isnan(c))
-        return {none, none, none};
+    if (!ka || !kb || !kc) return {none, none, none};
+
+    double const a = *ka, b = *kb, c = *kc;
 
     if (a == 0) {
-        if (b != 0)
-            return {none, to_string(-c / b), none};
+        if (b != 0) return {none, toText(-c / b), none};
 
-        if (c == 0)
-            return {none, u16_text{u"ℝ"}, none};
+        if (c == 0) return {none, u16_text{u"ℝ"}, none};
 
         return {none, u16_text{u"∅"}, none};
     }
@@ -63,58 +73,50 @@ static Answer solve(double a, double b, double c) {
         second = std::max(one, other);
     }
 
-    return {to_string(d), to_string(first), to_string(second)};
+    return {toText(d), toText(first), toText(second)};
 }
 
 // Коэффициенты пишут поля ввода, ответы показывают поля вывода. Любая правка
-// коэффициента пересчитывает ответы, пока все три — числа.
-class Equation : public noncopyable
-{
-    observable<Answer> answer;
-
-public:
-    observable<double> a{blank}, b{blank}, c{blank};
-    observable<u16_text> D, x1, x2;
-
-    Equation() {
-        answer                      // три числа → ответ
-            .follow(a, b, c, solve)
-            .on_change([this](Answer const& answer) noexcept {
-                D.set(answer.D);
-                x1.set(answer.x1);  // ответ → три текста
-                x2.set(answer.x2);
-            });
-    }
+// коэффициента пересчитывает ответ, пока все три — числа. Коэффициенты объявлены
+// выше ответа: поля строятся в порядке объявления, а ответ при постройке читает их.
+// Коэффициент пуст, пока в поле нет числа, и пустым начинается.
+struct Equation : sta_refcounted {
+    observable<nullable<double>> a, b, c;
+    observable<Answer> answer{a, b, c, solve};
 };
 
-const Preset common {
+namespace presets {
+
+// Пресеты — это набор их аргументов, и здесь они константы
+constexpr Preset common {
     fontSize = 18,
     hAlign.center,
     vAlign.center,
 };
 
-const Preset txt {
-    common, // Пресеты могут вкладываться друг в друга
-    FontWeight {600},
+constexpr Preset txt {
+    common,  // Пресеты могут вкладываться друг в друга
+    FontWeight{600},
     foreground = colors.blue,
 };
 
-const Preset input {
+constexpr Preset input {
     common,
     width = 200,
 };
 
-const Preset output {
+constexpr Preset output {
     common,
     width = 300,
     isReadOnly = true,
 };
 
+}  // namespace presets
 }  // namespace
 
 wxl::Teardown wxl_launched() {
     // Время жизни модели требуется продлить
-    auto const model = std::make_shared<Equation>();
+    auto const model = make_refcounted<Equation>();
     Equation & eq = *model;
 
     auto window = CompositionWindow {
@@ -137,49 +139,49 @@ wxl::Teardown wxl_launched() {
                     orientation.horizontal,
                     spacing = 10,
                     NumberBox {
-                        input,
+                        presets::input,
                         placeholderText = u"a",
                         intermediateValue = BindInput {eq.a},
-                        onLoaded = [](NumberBox const& control) {
+                        onLoaded += [](NumberBox const& control) {
                             control.focus(FocusState::Programmatic);
                         },
                     },
-                    TextBlock {txt, u"· x² +"},
+                    TextBlock {presets::txt, u"· x² +"},
                     NumberBox {
-                        input,
+                        presets::input,
                         placeholderText = u"b",
                         intermediateValue = BindInput {eq.b},
                     },
-                    TextBlock {txt, u"· x +"},
+                    TextBlock {presets::txt, u"· x +"},
                     NumberBox {
-                        input,
+                        presets::input,
                         placeholderText = u"c",
                         intermediateValue = BindInput {eq.c},
                     },
-                    TextBlock {txt, u"= 0"},
+                    TextBlock {presets::txt, u"= 0"},
                 },
                 StackPanel {
                     orientation.horizontal,
                     spacing = 10,
-                    TextBlock {txt, u"D ="},
+                    TextBlock {presets::txt, u"D ="},
                     TextBox {
-                        output,
-                        text = BindOutput {eq.D},
+                        presets::output,
+                        text = BindOutput {eq.answer, &Answer::D},
                     },
                 },
                 StackPanel {
                     orientation.horizontal,
                     spacing = 10,
-                    TextBlock {txt, u"x₁ ="},
+                    TextBlock {presets::txt, u"x₁ ="},
                     TextBox {
-                        output,
-                        text = BindOutput {eq.x1},
+                        presets::output,
+                        text = BindOutput {eq.answer, &Answer::x1},
                     },
-                    TextBlock {txt, u",", Margin {0, 0, 16, 0}},
-                    TextBlock {txt, u"x₂ ="},
+                    TextBlock {presets::txt, u",", Margin {0, 0, 16, 0}},
+                    TextBlock {presets::txt, u"x₂ ="},
                     TextBox {
-                        output,
-                        text = BindOutput {eq.x2},
+                        presets::output,
+                        text = BindOutput {eq.answer, &Answer::x2},
                     },
                 },
             },

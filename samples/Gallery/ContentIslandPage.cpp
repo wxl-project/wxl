@@ -12,12 +12,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t basicHeader[] = {
-#include "Snippets/ContentIsland/BasicContentIslandContent.html.embed"
-};
-constexpr char8_t basicCode[] = {
-#include "Snippets/ContentIsland/BasicContentIslandContent.h.embed"
-};
+gallery::LazyLoadedText basicHeader{"Snippets/ContentIsland/BasicContentIslandContent.html"};
+gallery::LazyLoadedText basicCode{"Snippets/ContentIsland/BasicContentIslandContent.h"};
 
 FrameworkElement basic() {
 #include "Snippets/ContentIsland/BasicContentIslandContent.h"
@@ -31,6 +27,8 @@ FrameworkElement basic() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::contentIslandPage() {
+static wxl::FrameworkElement contentIslandPage() {
     return StackPanel {basic()};
 }
+
+REGISTER_GALLERY_PAGE(L"ContentIsland", contentIslandPage);

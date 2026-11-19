@@ -3,19 +3,15 @@
 #include "Pages.h"
 #include "Shell.h"
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
-import wxl.async;
+import wxl.core;
 
 using namespace wxl;
 using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t basicHeader[] = {
-#include "Snippets/ContentDialog/BasicContentDialogContent.html.embed"
-};
-constexpr char8_t basicCode[] = {
-#include "Snippets/ContentDialog/BasicContentDialogContent.h.embed"
-};
+gallery::LazyLoadedText basicHeader{"Snippets/ContentDialog/BasicContentDialogContent.html"};
+gallery::LazyLoadedText basicCode{"Snippets/ContentDialog/BasicContentDialogContent.h"};
 
 FrameworkElement basic() {
 #include "Snippets/ContentDialog/BasicContentDialogContent.h"
@@ -27,12 +23,8 @@ FrameworkElement basic() {
     });
 }
 
-constexpr char8_t withoutDefaultHeader[] = {
-#include "Snippets/ContentDialog/ContentDialogWithoutDefault.html.embed"
-};
-constexpr char8_t withoutDefaultCode[] = {
-#include "Snippets/ContentDialog/ContentDialogWithoutDefault.h.embed"
-};
+gallery::LazyLoadedText withoutDefaultHeader{"Snippets/ContentDialog/ContentDialogWithoutDefault.html"};
+gallery::LazyLoadedText withoutDefaultCode{"Snippets/ContentDialog/ContentDialogWithoutDefault.h"};
 
 FrameworkElement withoutDefault() {
 #include "Snippets/ContentDialog/ContentDialogWithoutDefault.h"
@@ -46,6 +38,8 @@ FrameworkElement withoutDefault() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::contentDialogPage() {
+static wxl::FrameworkElement contentDialogPage() {
     return StackPanel {basic(), withoutDefault()};
 }
+
+REGISTER_GALLERY_PAGE(L"ContentDialog", contentDialogPage);

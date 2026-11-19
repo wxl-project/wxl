@@ -8,15 +8,13 @@
 // (`ControlExample` оригинала) пишет `controlExample` из Presenter.cpp.
 //
 // Код каждого примера — файл `Snippets/<Контрол>/X.h`: он включается #include
-// в функцию, строящую пример, и он же, вшитый байтами, показывается под
-// примером. `X.h.embed` делает CMake (embed.cmake): это ровно то, что вернул
-// бы `#embed "X.h"`, а MSVC 14.51 его пока не знает. Показанное и работающее —
-// один текст. Введение к примеру — `X.html` рядом.
+// в функцию, строящую пример, и он же, прочитанный рядом с exe при первом
+// обращении (LazyLoadedText), показывается под примером. Показанное и
+// работающее — один текст. Введение к примеру — `X.html` рядом.
 
 #include "Catalog.h"
 #include "pch.h"
 
-#include <cstddef>
 #include <span>
 #include <string>
 #include <string_view>
@@ -24,14 +22,37 @@
 
 namespace gallery {
 
-// Байты файла из Snippets/, вшитые в exe. char8_t, потому что байты идут
-// числами 0..255, а `char` старше 127 в фигурных скобках — сужение.
+// Байты сниппета, прочитанные с диска при первом обращении (LazyLoadedText).
 using Snippet = std::u8string_view;
 
-template <std::size_t N>
-constexpr Snippet snippet(const char8_t (&bytes)[N]) {
-    return Snippet{bytes, N};
-}
+// Сниппет, который читается с диска при первом обращении. Держит
+// относительный путь (узкий ASCII,
+// напр. "Snippets/RadialGradientBrush/RadialGradientBrushSample.html") как
+// string_view на строковый литерал — копии нет, литерал живёт всё время — и
+// прочитанные байты; load_or_get() читает один раз и отдаёт std::u8string_view над
+// ними. Пустое bytes_ значит «ещё не читано»: неудачное чтение бросает и
+// приложение останавливается, так что пустых байтов после чтения не бывает.
+// UTF-8 не проверяет — это делает snippetText. Чтение синхронное: страница
+// строится на STA-потоке, и чтение маленькое. Неудачное чтение бросает
+// std::runtime_error с путём, словами системы о коде и самим кодом — той же
+// формы, что у xml/json в wxl.core. Некопируемый: держит ссылку на литерал.
+class LazyLoadedText : public wxl::core::noncopyable {
+public:
+    explicit LazyLoadedText(std::string_view relative);
+
+    // Байты файла: при первом вызове читает файл с диска и держит его до
+    // конца жизни; неудачное чтение бросает std::runtime_error.
+    Snippet load_or_get();
+
+private:
+    std::string_view relative_; // путь относительно папки exe (на литерал)
+    std::string bytes_;         // прочитанные байты (пустая — ещё не читано)
+};
+
+// Тот же snippet(), что зовут страницы, но из LazyLoadedText: страница зовёт
+// snippet(sampleHeader) и не знает, откуда байты. Ссылка не const —
+// load_or_get() при первом вызове читает файл в байты.
+Snippet snippet(LazyLoadedText& lazy);
 
 // Что кладёт в раскладку один пример.
 struct ExampleParts {
@@ -59,11 +80,23 @@ PageSize& pageSize();
 // Один ControlExample: введение, показ с параметрами и исходник под ним.
 wxl::FrameworkElement controlExample(ExampleParts const& parts);
 
+// Текст сниппета: из UTF-8 в UTF-16, без BOM, без CR и без пустых строк по краям. Общий для Presenter (введение и
+// исходник) и prose (проза страницы).
+std::wstring snippetText(Snippet bytes);
+
+// Абзац прозы страницы из .html рядом со сниппетами: тот же HtmlBlock, что Presenter ставит введением к примеру, плюс
+// один обработчик ссылок — item:<id> ведёт на страницу контрола, http/https запускает адрес, иная схема бросает;
+// восстановления парсера тоже бросают (onError), а не молчат. Обработчик ссылок установлен всегда, поэтому BlockedLink
+// — клик, погашенный политикой по умолчанию, когда обработчика ссылок нет, — здесь не бывает.
+// Отступ — как у RichTextBlock/TextBlock оригинала на этом месте страницы (обычно {0}, у некоторых страниц сверху).
+// Выбор текста — по умолчанию как у RichTextBlock (true); контент InfoBar передаёт false, как в оригинале.
+wxl::FrameworkElement prose(Snippet html, wxl::Thickness margin, bool textSelection = true);
+
 // Рост под указателем для кнопок самого приложения (заголовок страницы,
 // настройки, копирование кода), а не примеров: как у кнопок панели в примере
 // Effects.
-inline wxl::MagnifyEffect appPop() {
-    return wxl::MagnifyEffect {1.2, wxl::dsl::maximum = 1.35, wxl::dsl::minimum = 0.95};
+inline wxl::MagnifyEffect appButtonHoverEffect() {
+    return wxl::MagnifyEffect {1.2f, wxl::dsl::maximum = 1.35f, wxl::dsl::minimum = 0.95f};
 }
 
 // Страница-образец окон примеров Windowing (SamplePage1..4 оригинала): плитки
@@ -75,148 +108,52 @@ wxl::FrameworkElement sampleSettingsPage();
 
 // Выбор цвета: образец на кнопке и ColorPicker в её выпадающей части
 // (ColorSelector оригинала). Цвет — поле модели.
-wxl::FrameworkElement colorSelector(wxl::core::observable<wxl::Color>& color, char16_t const* name);
+wxl::FrameworkElement colorSelector(wxl::core::observable<wxl::Color>& color, std::u16string_view name);
 
 // Функция, строящая страницу примеров одного контрола.
 using ControlPage = wxl::FrameworkElement (*)();
 
 // Страница контрола по идентификатору из каталога или nullptr, если контрол
-// ещё не перенесён (в оригинале это IncludedInBuild).
+// ещё не зарегистрирован (в оригинале это IncludedInBuild). Реализация — в
+// PageRegistry.cpp.
 ControlPage pageFor(std::wstring_view uniqueId);
 
-// Страница контрола: примеры друг под другом.
-wxl::FrameworkElement buttonPage();
-wxl::FrameworkElement dropDownButtonPage();
-wxl::FrameworkElement hyperlinkButtonPage();
-wxl::FrameworkElement repeatButtonPage();
-wxl::FrameworkElement toggleButtonPage();
-wxl::FrameworkElement splitButtonPage();
-wxl::FrameworkElement toggleSplitButtonPage();
-wxl::FrameworkElement checkBoxPage();
-wxl::FrameworkElement colorPickerPage();
-wxl::FrameworkElement comboBoxPage();
-wxl::FrameworkElement radioButtonPage();
-wxl::FrameworkElement ratingControlPage();
-wxl::FrameworkElement sliderPage();
-wxl::FrameworkElement toggleSwitchPage();
-wxl::FrameworkElement textBlockPage();
-wxl::FrameworkElement textBoxPage();
-wxl::FrameworkElement passwordBoxPage();
-wxl::FrameworkElement numberBoxPage();
-wxl::FrameworkElement autoSuggestBoxPage();
-wxl::FrameworkElement borderPage();
-wxl::FrameworkElement canvasPage();
-wxl::FrameworkElement expanderPage();
-wxl::FrameworkElement gridPage();
-wxl::FrameworkElement relativePanelPage();
-wxl::FrameworkElement splitViewPage();
-wxl::FrameworkElement stackPanelPage();
-wxl::FrameworkElement variableSizedWrapGridPage();
-wxl::FrameworkElement viewboxPage();
-wxl::FrameworkElement typographyPage();
-wxl::FrameworkElement geometryPage();
-wxl::FrameworkElement spacingPage();
-wxl::FrameworkElement colorPage();
-wxl::FrameworkElement iconographyPage();
-wxl::FrameworkElement accessibilityColorContrastPage();
-wxl::FrameworkElement accessibilityKeyboardPage();
-wxl::FrameworkElement accessibilityScreenReaderPage();
-wxl::FrameworkElement scratchPadPage();
-wxl::FrameworkElement xamlStylesPage();
-wxl::FrameworkElement glassPage();
-wxl::FrameworkElement magnifyPage();
-wxl::FrameworkElement bevelPage();
-wxl::FrameworkElement button3DPage();
-wxl::FrameworkElement gaussianBlurPage();
-wxl::FrameworkElement haloPage();
-wxl::FrameworkElement xamlResourcesPage();
-wxl::FrameworkElement bindingPage();
-wxl::FrameworkElement boundCollectionPage();
-wxl::FrameworkElement settingsCardPage();
-wxl::FrameworkElement headeredContentControlPage();
-wxl::FrameworkElement settingsExpanderPage();
-wxl::FrameworkElement templatesPage();
-wxl::FrameworkElement customXamlConditionalsPage();
-wxl::FrameworkElement animatedVisualPlayerPage();
-wxl::FrameworkElement captureElementPreviewPage();
-wxl::FrameworkElement inkCanvasPage();
+// Реестр страниц контролов: каждая страница регистрирует себя макросом
+// REGISTER_GALLERY_PAGE в своём файле; конструктор ставит запись в общий
+// односвязный список, голова которого живёт в PageRegistry.cpp. noncopyable:
+// запись держится в списке по адресу, копия или перемещение разорвали бы его.
+class PageRegistry : wxl::core::noncopyable {
+public:
+    PageRegistry(std::wstring_view pageId, ControlPage factory);
+
+private:
+    friend ControlPage pageFor(std::wstring_view uniqueId);
+
+    std::wstring_view pageId_;
+    ControlPage factory_;
+    PageRegistry* next_;
+};
+
+// Соединяет два токена в одно имя: две ступени, потому что у операнда `##`
+// макрос не разворачивается, и __LINE__ должен стать числом до склейки.
+#define GALLERY_CONCAT_(a, b) a##b
+#define GALLERY_CONCAT(a, b) GALLERY_CONCAT_(a, b)
+
+// Регистрирует страницу контрола в её файле. Имя переменной — по __LINE__,
+// чтобы несколько страниц в одном файле не спорили за имя.
+#define REGISTER_GALLERY_PAGE(pageId, factory) \
+    static inline const ::gallery::PageRegistry GALLERY_CONCAT(gallery_reg_, __LINE__)(pageId, factory)
+
+// Страница контрола, для которой регистрации пока нет: pageFor её не находит,
+// но объявление оставлено, чтобы функция была на виду, когда регистрация
+// появится.
 wxl::FrameworkElement mapControlPage();
-wxl::FrameworkElement mediaPlayerElementPage();
-wxl::FrameworkElement soundPage();
-wxl::FrameworkElement personPicturePage();
-wxl::FrameworkElement imagePage();
-wxl::FrameworkElement tabViewPage();
-wxl::FrameworkElement navigationViewPage();
-wxl::FrameworkElement pivotPage();
-wxl::FrameworkElement selectorBarPage();
-wxl::FrameworkElement breadcrumbBarPage();
-wxl::FrameworkElement connectedAnimationPage();
-wxl::FrameworkElement xamlCompInteropPage();
-wxl::FrameworkElement parallaxViewPage();
-wxl::FrameworkElement pageTransitionPage();
-wxl::FrameworkElement themeTransitionPage();
-wxl::FrameworkElement implicitTransitionPage();
-wxl::FrameworkElement easingFunctionPage();
-wxl::FrameworkElement teachingTipPage();
-wxl::FrameworkElement popupPage();
-wxl::FrameworkElement flyoutPage();
-wxl::FrameworkElement contentDialogPage();
-wxl::FrameworkElement itemsRepeaterPage();
-wxl::FrameworkElement itemsViewPage();
-wxl::FrameworkElement listViewPage();
-wxl::FrameworkElement gridViewPage();
-wxl::FrameworkElement flipViewPage();
-wxl::FrameworkElement treeViewPage();
-wxl::FrameworkElement pullToRefreshPage();
-wxl::FrameworkElement contentIslandPage();
-wxl::FrameworkElement jumpListPage();
-wxl::FrameworkElement storagePickersPage();
-wxl::FrameworkElement clipboardPage();
-wxl::FrameworkElement appNotificationPage();
-wxl::FrameworkElement badgeNotificationManagerPage();
-wxl::FrameworkElement compositionWindowPage();
-wxl::FrameworkElement systemBackdropsPage();
-wxl::FrameworkElement appWindowPage();
-wxl::FrameworkElement appWindowTitleBarPage();
-wxl::FrameworkElement titleBarPage();
-wxl::FrameworkElement windowingPage();
-wxl::FrameworkElement compactSizingPage();
-wxl::FrameworkElement systemBackdropElementPage();
-wxl::FrameworkElement acrylicPage();
-wxl::FrameworkElement animatedIconPage();
-wxl::FrameworkElement radialGradientBrushPage();
-wxl::FrameworkElement linePage();
-wxl::FrameworkElement shapePage();
-wxl::FrameworkElement iconElementPage();
-wxl::FrameworkElement themeShadowPage();
-wxl::FrameworkElement scrollViewPage();
-wxl::FrameworkElement annotatedScrollBarPage();
-wxl::FrameworkElement pipsPagerPage();
+
+// PagerControl не регистрируется: уже пустой `PagerControl {}` роняет XAML
+// (0xC000027B) на установленном рантайме 2.5.1. Причина не установлена;
+// контрол числится экспериментальным. Страница написана (PagerControlPage.cpp)
+// и собирается; регистрация включается, когда экземпляр заработает.
 wxl::FrameworkElement pagerControlPage();
-wxl::FrameworkElement scrollViewerPage();
-wxl::FrameworkElement calendarViewPage();
-wxl::FrameworkElement timePickerPage();
-wxl::FrameworkElement datePickerPage();
-wxl::FrameworkElement calendarDatePickerPage();
-wxl::FrameworkElement standardUICommandPage();
-wxl::FrameworkElement xamlUICommandPage();
-wxl::FrameworkElement swipeControlPage();
-wxl::FrameworkElement commandBarFlyoutPage();
-wxl::FrameworkElement menuFlyoutPage();
-wxl::FrameworkElement menuBarPage();
-wxl::FrameworkElement commandBarPage();
-wxl::FrameworkElement layoutPanelPage();
-wxl::FrameworkElement wrapPanelPage();
-wxl::FrameworkElement appBarSeparatorPage();
-wxl::FrameworkElement appBarToggleButtonPage();
-wxl::FrameworkElement appBarButtonPage();
-wxl::FrameworkElement toolTipPage();
-wxl::FrameworkElement progressRingPage();
-wxl::FrameworkElement progressBarPage();
-wxl::FrameworkElement infoBarPage();
-wxl::FrameworkElement infoBadgePage();
-wxl::FrameworkElement richTextBlockPage();
-wxl::FrameworkElement richEditBoxPage();
 
 // Плитка контрола (ControlItemTemplate оригинала) и сетка плиток: GridView,
 // клик по плитке — переход на страницу контрола.
@@ -232,8 +169,8 @@ inline std::wstring wide(std::u16string_view text) {
 }
 
 // Каталог для примеров с поиском: все слова запроса есть в тексте (без учёта
-// регистра); названия перенесённых контролов, подходящие под запрос; контрол
-// по названию; путь к картинке из каталога (`ms-appx:///Assets/…`).
+// регистра); названия зарегистрированных контролов, подходящие под запрос;
+// контрол по названию; путь к картинке из каталога (`ms-appx:///Assets/…`).
 bool containsWords(std::u16string_view text, std::u16string_view query);
 std::vector<std::u16string> controlTitles(std::u16string_view query);
 ControlInfo const* controlByTitle(std::u16string_view title);

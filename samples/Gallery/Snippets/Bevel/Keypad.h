@@ -50,7 +50,7 @@ auto const housing = Preset {
     hAlign.center,
     CornerRadius {16},
     background = gradient(rgb(109, 116, 166), rgb(62, 67, 112)),
-    BevelEffect {rgba(255, 255, 255, 0.3), rgba(0, 0, 0, 0.4), offset = 4},
+    BevelEffect {rgba(255, 255, 255, 0.3), rgba(0, 0, 0, 0.4), offset = 4.0f},
 };
 
 auto example =
@@ -58,8 +58,8 @@ Grid {
     housing,
     Padding {18},
     columnSpacing = 10,
-    rowDefinitions = u"64",
-    columnDefinitions = u"64,64,148,64",
+    RowDefinitions<u"64">,
+    ColumnDefinitions<u"64,64,148,64">,
     Button {u"7", keyLayout, graphite, row = 0, column = 0},
     Button {u"8", keyLayout, graphite, row = 0, column = 1},
     Button {u"0", keyLayout, graphite, row = 0, column = 2},

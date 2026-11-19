@@ -35,10 +35,23 @@
 
 namespace wxl {
 
+namespace impl {
+
+// Which class an Impl activates, given as the type of its activator -- impl::activator<T> or
+// impl::composable_activator<T, Factory> (impl/activator.h): a tag the Impl's own constructor
+// takes, so that the object it stands for is made there, into its own field, and nobody else
+// writes that field afterwards.
+template <typename Activator>
+struct activation {
+};
+
+}  // namespace impl
+
 // Reference-counted without interlocked operations and allocated from the
 // STA pool -- which is what core::sta_refcounted is, and both halves of it
 // rest on the same single-main-STA-thread guarantee the rest of wxl does.
-class Object::Impl : public core::sta_refcounted {
+class Object::Impl : public core::sta_refcounted
+{
 public:
     // What this wrapper stands for on the WinRT side. Every level restates
     // it, so anything needing the real type of a wxl type asks the wrapper
@@ -48,12 +61,29 @@ public:
     explicit Impl(winrt::Windows::Foundation::IInspectable inspectable) noexcept
         : inspectable_(std::move(inspectable)) {}
 
-    Impl() noexcept = default;
+    // An object activated by this constructor: the cached factory writes the raw pointer the
+    // activation ABI produces straight into the field's slot, with no temporary smart pointer
+    // and no extra AddRef/Release on the way. Every level inherits it (`using base_t::Impl::Impl`),
+    // so a generated wrapper builds its own Impl activated: `new Impl{impl::activation<...>{}}`.
+    template <typename Activator>
+    explicit Impl(impl::activation<Activator>) : inspectable_(activated<Activator>()) {}
 
     // The wrapped WinRT object itself. Every interface field further down
     // the chain is a QueryInterface of exactly this.
     winrt::Windows::Foundation::IInspectable inspectable_;
 
+private:
+    // The object the activating constructor stands for, made into the local's own slot -- the
+    // same reinterpretation winrt::put_abi performs, a winrt smart pointer being one raw pointer --
+    // and returned, which elides the copy or at worst moves the pointer.
+    template <typename Activator>
+    static winrt::Windows::Foundation::IInspectable activated() {
+        winrt::Windows::Foundation::IInspectable object{nullptr};
+        Activator::activate(reinterpret_cast<::IInspectable**>(winrt::put_abi(object)));
+        return object;
+    }
+
+public:
     // Hands this object to a call as the interface that field holds. Every
     // level declares one per field of its own, so a caller with a wrapper in
     // hand converts by passing it -- naming no field and knowing no level.
@@ -65,7 +95,7 @@ public:
     // do for that interface and stores the result; every later call reads
     // the field back.
     template <auto member>
-    member_type<member> const& get();
+    typename core::impl::member_owner<decltype(member)>::member_t const& get();
 
     // The Impl chain of another wrapper, at the level that wrapper stands
     // for. Reaching a wrapper's own Impl is what the conversion operators
@@ -100,7 +130,7 @@ public:
     // property with no value set -- would otherwise cost a pool allocation
     // for an object that is not there, and hand back a wrapper whose
     // `operator bool` says it is. DispatcherQueueTimer::Tick is the one that
-    // shows it: its args are always null, and it fires on a timer.
+    // shows it: its args are always null, and it is raised on a timer.
     template <typename T, typename WinRT>
     static T wrap(WinRT&& object) {
         if (!object) return empty<T>();
@@ -143,8 +173,9 @@ public:
 };
 
 template <auto member>
-member_type<member> const& Object::Impl::get() {
-    auto& field = static_cast<class_type<member>&>(*this).*member;
+typename core::impl::member_owner<decltype(member)>::member_t const& Object::Impl::get() {
+    using level_t = typename core::impl::member_owner<decltype(member)>::type;
+    auto& field = static_cast<level_t&>(*this).*member;
     if (!field) {
         // First use of this interface on this object: one real
         // QueryInterface, cached in the field for the object's lifetime.
@@ -157,13 +188,13 @@ member_type<member> const& Object::Impl::get() {
         // Button's constructor never filled. Filling every level eagerly
         // would be one QueryInterface per level per construction, which is
         // what this cache exists to avoid.
-        field = inspectable_.as<member_type<member>>();
+        field = inspectable_.as<typename core::impl::member_owner<decltype(member)>::member_t>();
     }
     return field;
 }
 
 template <auto member>
-const member_type<member>& Object::get() const {
+const typename core::impl::member_owner<decltype(member)>::member_t& Object::get() const {
     return impl_->get<member>();
 }
 
@@ -183,17 +214,12 @@ T Object::try_as() const {
 
 template <typename T>
 bool Object::is() const {
-    return impl_ != nullptr && static_cast<bool>(impl_->inspectable_.try_as<typename T::Impl::winrt_t>());
+    return impl_ != nullptr &&
+           static_cast<bool>(impl_->inspectable_.try_as<typename T::Impl::winrt_t>());
 }
 
-inline ::IInspectable** Object::put_abi() noexcept {
-    // The same reinterpretation winrt::put_abi performs: a winrt smart
-    // pointer is one raw pointer, so the address of the slot is the address
-    // of the member.
-    return reinterpret_cast<::IInspectable**>(&impl_->inspectable_);
-}
-
-class DependencyObject::Impl : public Object::Impl {
+class DependencyObject::Impl : public Object::Impl
+{
 public:
     using Object::Impl::Impl;
 

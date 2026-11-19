@@ -1,5 +1,8 @@
 # wxl.gen.ui
 
 Визуальный редактор профилей генератора (`wxl.gen/profiles`) — приложение на
-`wxl::ui`, как любой пример. Собрать и запустить — `run-gen-ui.cmd` из корня
-дерева. Профили и генератор — [docs/projection.md](../docs/projection.md).
+`wxl::ui.editor`, библиотеке своего профиля `editor.winxl-profile`: это `rich`
+и члены, которые зовёт окно редактора. Собрать и запустить — `run-gen-ui.cmd` из корня
+дерева: сценарий передаёт редактору ключом `--packages` список пакетов, которые
+восстановила сборка `build/x64-dynamic`. Профили и генератор —
+[docs/projection.md](../docs/projection.md).

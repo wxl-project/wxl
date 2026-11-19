@@ -18,6 +18,12 @@
 // Диагностика: launch.cpp печатает сообщение необработанной ошибки XAML в stderr (в этом случае: 0x80040111,
 // Windows.ApplicationModel.LimitedAccessFeatures).
 
+// _wfsopen и _SH_DENYNO объявлены в заголовках библиотеки C, и они включаются раньше ui.h: core.h, до которого ui.h доходит
+// через свои заголовки, импортирует wxl.core, а стандартный заголовок, не встреченный до импорта, MSVC после
+// него не принимает.
+#include <cstdio>
+#include <share.h>
+
 #include "ui.h"
 #include "SettingsCard.h"
 #include "SettingsExpander.h"
@@ -25,8 +31,8 @@
 #include <wxl/Microsoft.UI.Xaml.Media.h>
 #include <wxl/Microsoft.UI.Dispatching.h>
 #include <wxl/brushes.h>
-#include "LoadXaml.h"
-#include "StringList.h"
+#include "Resource.h"
+#include "Box.h"
 
 import std;
 
@@ -83,7 +89,7 @@ FrameworkElement card(std::u16string head, std::u16string descr) {
             background = brushes.Card.BackgroundFillColor.Default,
             CornerRadius {4}, Padding {16, 12}, minHeight = 68,
             Grid {
-                columnDefinitions = u"*,auto",
+                ColumnDefinitions<u"*,auto">,
                 StackPanel {TextBlock {head, textWrapping.wrapWholeWords}, TextBlock {descr, textWrapping.wrapWholeWords}},
                 ComboBox {column = 1, ComboBoxItem {content = u"Left"}, ComboBoxItem {content = u"Top"}, selectedIndex = 0},
             },
@@ -130,9 +136,9 @@ FrameworkElement dslStack() {
             L"<ControlTemplate TargetType='ContentControl'><ContentPresenter TextWrapping='WrapWholeWords' FontSize='12'/>"
             L"</ControlTemplate></ContentControl.Template></ContentControl>").try_as<ContentControl>();
         if (has("cc")) {
-            control.content(stringBox(u""));
+            control.content(boxValue(u""));
         } else {
-            control.add_onLoaded([control](auto&&...) { control.content(stringBox(u"")); });
+            control.add_onLoaded([control](auto&&...) { control.content(boxValue(u"")); });
         }
         s.children().append(control);
         return s;
@@ -141,13 +147,13 @@ FrameworkElement dslStack() {
         // ContentPresenter из XAML со свойствами из шаблона SettingsCard; пустая строка кладётся в Content из C++.
         std::wstring attrs = has("cp2") ? L" TextWrapping='WrapWholeWords'" : has("cp3") ? L" FontSize='12'" : L" TextWrapping='WrapWholeWords' FontSize='12' Foreground='{ThemeResource TextFillColorSecondaryBrush}'";
         auto const presenter = loadXaml(L"<ContentPresenter xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'" + attrs + L"/>").try_as<ContentPresenter>();
-        presenter.content(stringBox(u""));
+        presenter.content(boxValue(u""));
         s.children().append(presenter);
         return s;
     }
     if (has("cp")) {
         // Голый ContentPresenter с пустой строкой в Content, как у SettingsCard с description = u"".
-        s.children().append(ContentPresenter {content = stringBox(u"")});
+        s.children().append(ContentPresenter {content = boxValue(u"")});
         return s;
     }
     for (int i = 0; i < 4; ++i) s.children().append(card(u"Setting " + std::u16string(1, char16_t(u'0' + i)), u"Some description of the setting"));
@@ -176,7 +182,7 @@ FrameworkElement dslPage() {
                                             : FrameworkElement(ScrollViewer {name = u"V", row = 1, Padding {36, 0}, content = stack});
     return Grid {
         name = u"G",
-        rowDefinitions = u"auto,*",
+        RowDefinitions<u"auto,*">,
         TextBlock {u"Settings", Margin {36, 24, 36, 0}, maxWidth = 1064, styles.TextBlock.Title},
         scroller,
     };
@@ -221,12 +227,11 @@ void dump(char const* when) {
 }  // namespace
 
 wxl::Teardown wxl_launched() {
-    if (char const* const o = std::getenv("SHIFT_OPTS")) {
-        for (auto const word : std::string_view {o} | std::views::split(',')) opts.insert(std::string(std::string_view(word)));
-    }
-    char const* const path = std::getenv("SHIFT_LOG");
-    logFile = std::fopen(path ? path : "shift.log", "w");
-    std::fprintf(logFile, "opts: %s\n", std::getenv("SHIFT_OPTS") ? std::getenv("SHIFT_OPTS") : "");
+    std::string const words {core::unicode::repaired(core::environment::variable(L"SHIFT_OPTS")).to_utf8().chars()};
+    for (auto const word : std::string_view {words} | std::views::split(',')) opts.insert(std::string(std::string_view(word)));
+    std::filesystem::path const path {core::environment::variable(L"SHIFT_LOG")};
+    logFile = _wfsopen(path.empty() ? L"shift.log" : path.c_str(), L"w", _SH_DENYNO);
+    std::fprintf(logFile, "opts: %s\n", words.c_str());
 
     L("start"); hostBox = Border {};
     auto nav = NavigationView {
@@ -239,7 +244,7 @@ wxl::Teardown wxl_launched() {
     L("nav built"); navigationView = nav;
     mainWindow = Window {
         title = u"Shift probe",
-        content = Grid {rowDefinitions = u"auto,*", TextBlock {u"title bar"}, nav},
+        content = Grid {RowDefinitions<u"auto,*">, TextBlock {u"title bar"}, nav},
     };
     L("window built"); if (!has("resizelate")) mainWindow->appWindow().resize({1280, 800});
     if (!has("late")) {

@@ -5,7 +5,9 @@
 #include <cstdint>
 #include <exception>
 #include <filesystem>
+#include <format>
 #include <limits>
+#include <stdexcept>
 #include <string>
 #include <vector>
 #include <string_view>
@@ -33,10 +35,62 @@ using namespace editor;
 
 namespace {
 
-// Профиль, который открывается по умолчанию, — из дерева исходников, где
-// лежат профили генератора.
-std::filesystem::path defaultProfile() {
-    return std::filesystem::path {u8"" WXL_GEN_PROFILES} / u8"base.json";
+// Профили генератора и компоненты, которые редактор открывает по умолчанию.
+// Установленный редактор — тот, у которого на два уровня выше своего каталога
+// есть share/wxl/profiles (пакет WinXL: bin/wxl.gen.ui рядом с share/wxl), —
+// открывает их оттуда; собранный в рабочем дереве — из дерева исходников.
+struct DefaultDirectories {
+    std::filesystem::path profiles;
+    std::filesystem::path components;
+};
+
+DefaultDirectories defaultDirectories() {
+    auto const installed =
+        core::environment::application_folder().parent_path().parent_path() / u8"share" / u8"wxl";
+#ifdef WXL_GEN_PROFILES
+    if (!std::filesystem::is_directory(installed / u8"profiles")) {
+        return {std::filesystem::path {u8"" WXL_GEN_PROFILES}, std::filesystem::path {u8"" WXL_GEN_COMPONENTS}};
+    }
+#endif
+    return {installed / u8"profiles", installed / u8"components"};
+}
+
+// Список пакетов восстановления той сборки, из которой редактор запускают, —
+// ключом --packages, как у генератора. Своих версий и папки пакетов NuGet
+// редактор не ищет: без ключа он показывает, как его запустить.
+struct LaunchArguments {
+    std::filesystem::path packages;
+    std::filesystem::path componentDir;
+};
+
+LaunchArguments launchArguments() {
+    auto const arguments = core::environment::command_line();
+    std::filesystem::path packages;
+    std::filesystem::path componentDir;
+    for (std::size_t at = 1; at < arguments.size(); ++at) {
+        std::wstring_view const argument {arguments[at]};
+        bool const isComponentDir = argument == L"--component-dir";
+        if (argument != L"--packages" && !isComponentDir) {
+            throw std::runtime_error(std::format(
+                "unknown argument: {}. wxl.gen.ui takes --packages "
+                "<build>/wxl.packages/restored-packages.json and, to override the components "
+                "it opens, --component-dir <dir>",
+                core::unicode::repaired(argument).to_utf8().chars()));
+        }
+        if (++at == arguments.size()) {
+            throw std::runtime_error(std::format(
+                "{} needs a value", isComponentDir ? "--component-dir" : "--packages"));
+        }
+        (isComponentDir ? componentDir : packages) = std::wstring_view {arguments[at]};
+    }
+    if (packages.empty()) {
+        throw std::runtime_error(
+            "wxl.gen.ui reads the packages of a profile from the list of the restored packages of "
+            "a build. Start it with --packages <build>/wxl.packages/restored-packages.json, the "
+            "list the configure of that build writes from its NuGet restore: in the wxl tree, "
+            "run-gen-ui.cmd builds the editor and starts it with the list of build\\x64-dynamic.");
+    }
+    return {packages, componentDir};
 }
 
 // Знаки кнопок панели — размер 20 шрифта Fluent UI System Icons (Assets):
@@ -120,7 +174,11 @@ struct DocumentationReading {
 wxl::Teardown wxl_launched() {
     core::intrusive_ptr<Editor> document;
     try {
-        document = Editor::open(defaultProfile());
+        auto const arguments = launchArguments();
+        auto const directories = defaultDirectories();
+        document = Editor::open(directories.profiles / u8"base.winxl-profile", arguments.packages,
+                                arguments.componentDir.empty() ? directories.components
+                                                               : arguments.componentDir);
     } catch (std::exception const& error) {
         auto window = Window {
             title = u"wxl.gen.ui",
@@ -172,9 +230,11 @@ wxl::Teardown wxl_launched() {
     // Значок строки — перед первым словом сведений, как в дереве. Разметка
     // разбирается под кегль блока, поэтому новый кегль разбирает её заново.
     // Наблюдатели настроек и сведений держат редактор и настройки простыми
-    // указателями: живут они столько же, сколько окно, — до Teardown.
+    // указателями: живут они столько же, сколько окно, — до Teardown. Пока поле
+    // кегля пусто, сведения строятся под кегль, который у блока уже есть.
     auto const showInfo = [details, preferences = settings.get()](Description const& info) {
-        double const size = preferences->detailsFontSize.get();
+        auto const chosen = preferences->detailsFontSize.get();
+        double const size = chosen ? *chosen : details.fontSize();
         details.fontSize(size);
         details.lineHeight(std::round(size * 22.0 / 16.0));
         if (!info.icon) {
@@ -218,7 +278,10 @@ wxl::Teardown wxl_launched() {
         editor->englishDocumentation(english);
         saveSettings(*raw);
     });
-    settings->detailsFontSize.on_change([raw = settings.get(), editor = document.get(), showInfo](int) noexcept {
+    // Опустевшее поле кегля не меняет ничего: ни сведений, ни реестра.
+    settings->detailsFontSize.on_change([raw = settings.get(), editor = document.get(), showInfo](
+                                            core::nullable<double> const& size) noexcept {
+        if (!size) return;
         showInfo(editor->info.get());
         saveSettings(*raw);
     });
@@ -261,7 +324,7 @@ wxl::Teardown wxl_launched() {
     // эффект, и анимации у всех кнопок общие. Кнопка ловит указатель всей
     // площадью, а растёт её знак: у кнопки, которая растёт сама, XAML
     // закрывает подсказку через миг после того, как показал.
-    auto const pop = MagnifyEffect {1.2, MagnifyTarget::Content, maximum = 1.35, minimum = 0.95};
+    auto const pop = MagnifyEffect {1.2f, MagnifyTarget::Content, maximum = 1.35f, minimum = 0.95f};
 
     auto const toolButton = Preset {
         styles.Button.CommandBarFlyoutEllipsis,
@@ -297,8 +360,8 @@ wxl::Teardown wxl_launched() {
     // под ними, меньше, сведения о выбранном — как у просмотрщиков библиотек
     // типов.
     auto const editorView = SplitPanel {
-        openPaneLength = 520.0,
-        spacing = 8.0,
+        openPaneLength = 520.0f,
+        spacing = 8.0f,
         // Дерево — на сплошном фоне, белом в светлой теме.
         pane = Border {
             framed,
@@ -308,8 +371,8 @@ wxl::Teardown wxl_launched() {
         content = SplitPanel {
             orientation.vertical,
             panePlacement.right,
-            openPaneLength = 180.0,
-            spacing = 8.0,
+            openPaneLength = 180.0f,
+            spacing = 8.0f,
             content = Border {
                 framed,
                 background = brushes.SolidBackgroundFillColor.Quarternary,
@@ -342,30 +405,30 @@ wxl::Teardown wxl_launched() {
             TextBlock {u"Settings", styles.TextBlock.Subtitle},
             ToggleSwitch {
                 header = u"Hide dependency properties",
-                Bind {settings->hideDependencyProperties},
+                isOn = Bind {settings->hideDependencyProperties},
             },
             ToggleSwitch {
                 header = u"Hide event args",
-                Bind {settings->hideEventArgs},
+                isOn = Bind {settings->hideEventArgs},
             },
             ToggleSwitch {
                 header = u"Hide pre-defined types",
-                Bind {settings->hidePredefined},
+                isOn = Bind {settings->hidePredefined},
             },
             ToggleSwitch {
                 header = u"Show signatures in trees",
-                Bind {settings->showSignatures},
+                isOn = Bind {settings->showSignatures},
             },
             ToggleSwitch {
                 header = u"Documentation in English",
-                Bind {settings->englishDocumentation},
+                isOn = Bind {settings->englishDocumentation},
             },
             NumberBox {
                 header = u"Details font size",
                 minimum = 12.0,
                 maximum = 24.0,
                 spinButtonPlacementMode = NumberBoxSpinButtonPlacementMode::Inline,
-                Bind {settings->detailsFontSize},
+                value = Bind {settings->detailsFontSize},
             },
             TextBlock {u"Keyboard focus"},
             ComboBox {
@@ -373,7 +436,7 @@ wxl::Teardown wxl_launched() {
                 ComboBoxItem {u"System frame"},
                 ComboBoxItem {u"Lift"},
                 ComboBoxItem {u"Glow"},
-                Bind {settings->focusLook},
+                selectedIndex = Bind {settings->focusLook},
             },
         },
     };
@@ -392,7 +455,7 @@ wxl::Teardown wxl_launched() {
         isPaneToggleButtonVisible = false,
         isPaneOpen = false,
         isSettingsVisible = false,
-        onSelectionChanged = [left, document, host, editorView, settingsPage, places = history.get()](
+        onSelectionChanged += [left, document, host, editorView, settingsPage, places = history.get()](
                                  Object const& sender, NavigationViewSelectionChangedEventArgs&) {
             auto const item = sender.try_as<NavigationView>().selectedItem().try_as<FrameworkElement>();
             if (item && std::u16string_view {item.name()} == settingsName) {
@@ -406,13 +469,13 @@ wxl::Teardown wxl_launched() {
             places->visit({std::u16string {(resources ? resourcesTab : typesTab).view()}, document->typeName.get()});
         },
         content = Grid {
-            rowDefinitions = u"40,*,auto",
+            RowDefinitions<u"40,*,auto">,
             Card {
                 topPanel,
                 // Панель профиля пока макет: действий на кнопках нет; работает
                 // только отбор показанного.
                 Grid {
-                    columnDefinitions = u"auto,*",
+                    ColumnDefinitions<u"auto,*">,
                     StackPanel {
                         orientation.horizontal,
                         spacing = 4,
@@ -487,8 +550,8 @@ wxl::Teardown wxl_launched() {
     // Раскрытая панель — по самому длинному пункту: отступ под значок, текст и
     // поле справа.
     double longest = 0;
-    for (zstring_view const label : {typesTab, resourcesTab, settingsName}) {
-        TextBlock const text {label};
+    for (zstring_view const tab : {typesTab, resourcesTab, settingsName}) {
+        TextBlock const text {tab};
         text.measure({std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()});
         longest = std::max(longest, static_cast<double>(text.desiredSize().width));
     }
@@ -535,15 +598,15 @@ wxl::Teardown wxl_launched() {
         // Mica, как у Gallery: заголовок и панель навигации прозрачны, сквозь
         // них виден материал.
         systemBackdrop = MicaBackdrop {},
-        titleBar = {
+        titleBar = TitleBar {
             title = BindOutput {document->title},
             // Стрелка на месте всегда, как в Gallery; возвращаться некуда — она
             // неактивна.
             isBackButtonVisible = true,
             isBackButtonEnabled = BindOutput {history->canGoBack},
-            onBackRequested = [goBack] { goBack(); },
+            onBackRequested += [goBack] { goBack(); },
             isPaneToggleButtonVisible = true,
-            onPaneToggleRequested = [navigation] { navigation.isPaneOpen(!navigation.isPaneOpen()); },
+            onPaneToggleRequested += [navigation] { navigation.isPaneOpen(!navigation.isPaneOpen()); },
             rightHeader = StackPanel {
                 orientation.horizontal,
                 spacing = 4,
@@ -553,21 +616,21 @@ wxl::Teardown wxl_launched() {
                     toolButton,
                     toolTip = u"Уменьшить масштаб",
                     isEnabled = BindOutput {zoom.model().canZoomOut()},
-                    onClick = [zoom] { zoom.model().zoomOut(); },
+                    onClick += [zoom] { zoom.model().zoomOut(); },
                     content = FontIcon {toolGlyph, glyph = glyphs::zoomOut},
                 },
                 Button {
                     toolButton,
                     width = 64.0,
                     toolTip = u"Масштаб 100 %",
-                    onClick = [zoom] { zoom.model().resetZoom(); },
+                    onClick += [zoom] { zoom.model().resetZoom(); },
                     content = TextBlock {text = BindOutput {label->text}},
                 },
                 Button {
                     toolButton,
                     toolTip = u"Увеличить масштаб",
                     isEnabled = BindOutput {zoom.model().canZoomIn()},
-                    onClick = [zoom] { zoom.model().zoomIn(); },
+                    onClick += [zoom] { zoom.model().zoomIn(); },
                     content = FontIcon {toolGlyph, glyph = glyphs::zoomIn},
                 },
             },

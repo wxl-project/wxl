@@ -7,22 +7,22 @@ export namespace wxl::core {
 /// typesafe object to field offset
 template <typename t_obj, typename t_member>
 std::ptrdiff_t field_offset(t_member t_obj::* member_ptr) {
-    return reinterpret_cast<std::ptrdiff_t>(&reinterpret_cast<const volatile char&>(
-        static_cast<t_obj*>(nullptr)->*member_ptr));
+    return reinterpret_cast<std::ptrdiff_t>(
+        &reinterpret_cast<const volatile char&>(static_cast<t_obj*>(nullptr)->*member_ptr));
 }
 
 /// makes typed object from source address and offset
 template <typename t_obj>
 t_obj* typed_offset(void* source, std::ptrdiff_t offset) {
-    char* s = reinterpret_cast<char*>(source);
+    char* s = static_cast<char*>(source);
     return reinterpret_cast<t_obj*>(s + offset);
 }
 
 /// makes typed object from const source address and offset
 template <typename t_obj>
 const t_obj* typed_offset(const void* source, std::ptrdiff_t offset) {
-    const char* s = reinterpret_cast<const char*>(source);
-    return reinterpret_cast<t_obj*>(s + offset);
+    const char* s = static_cast<const char*>(source);
+    return reinterpret_cast<const t_obj*>(s + offset);
 }
 
 /// typesafe obect from field address

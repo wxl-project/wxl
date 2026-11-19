@@ -40,7 +40,7 @@ void report(std::string_view what,
 // the exception that got there and stops through abort() above. MSVC keeps a terminate
 // handler for each thread, so it is set where wxl starts code on a thread: by wWinMain on
 // the thread of the windows, by the entry of each thread of a thread_group, by each callback
-// wxl hands the thread pool -- wxl.async's work, wxl.ui's wait for a lost rendering device --
+// wxl hands the thread pool -- wxl::async's work, wxl.ui's wait for a lost rendering device --
 // for as long as it runs, and by terminate_with_exception on whichever thread a coroutine
 // nobody holds fails. A thread wxl does not start keeps the runtime's own until then -- and
 // what wxl runs on one without a handler of its own, a completion on a thread of the
@@ -51,32 +51,33 @@ namespace impl {
 
 /**
  * A report put together in a fixed buffer, owned by the caller: what does not fit is
- * dropped, and a report that was cut ends in "...", after the last whole code point that
+ * dropped, and a report that was truncated ends in "...", after the last whole code point that
  * fits. Nothing is allocated -- the terminate may have come from a std::bad_alloc.
  */
-class terminate_report {
+class terminate_report
+{
 public:
-    /// Room for "..." at least, which a cut report ends in.
+    /// Room for "..." at least, which a truncated report ends in.
     template <std::size_t N>
     explicit terminate_report(char (&text)[N]) noexcept : text_{text} {
         static_assert(N >= 3, "wxl: a terminate report needs room for \"...\"");
     }
 
-    /// Bytes as they are; a cut that falls inside a sequence of UTF-8 goes back to its start.
+    /// Bytes as they are; truncation that falls inside a sequence of UTF-8 goes back to its start.
     void put(std::string_view part) noexcept;
 
     /// UTF-16 as Windows hands it out, written as UTF-8, a lone surrogate as U+FFFD.
     void put(std::wstring_view part) noexcept;
 
-    /// The report so far. Once cut, it takes nothing more.
+    /// The report so far. Once truncated, it takes nothing more.
     std::string_view text() const noexcept { return {text_.data(), used_}; }
 
 private:
-    void cut() noexcept;
+    void truncate() noexcept;
 
     std::span<char> text_;
     std::size_t used_ = 0;
-    bool cut_ = false;
+    bool truncated_ = false;
 };
 
 /**
@@ -133,7 +134,7 @@ std::terminate_handler set_terminate_with_reason() noexcept;
  * The handler is set for the calling thread first, so that a thread wxl did not start --
  * a console's loop, a test -- names it too.
  */
-[[noreturn]] void terminate_with_exception(std::exception_ptr error) noexcept;
+[[noreturn]] void terminate_with_exception(const std::exception_ptr& error) noexcept;
 
 }  // namespace impl
 

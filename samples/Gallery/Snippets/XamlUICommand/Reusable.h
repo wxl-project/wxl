@@ -7,11 +7,11 @@ auto custom = XamlUICommand {
     label = u"Custom Command",
     iconSource = SymbolIconSource {symbol = Symbol::Favorite},
     keyboardAccelerators[KeyboardAccelerator {key = VirtualKey::D, modifiers = VirtualKeyModifiers::Control}],
-    onExecuteRequested = [output](XamlUICommand const&, ExecuteRequestedEventArgs&) { output.text(u"You fired the custom command"); },
+    onExecuteRequested += [output](XamlUICommand const&, ExecuteRequestedEventArgs&) { output.text(u"You fired the custom command"); },
 };
 
 auto example = Grid {
-    rowDefinitions = u"auto,auto,*",
+    RowDefinitions<u"auto,auto,*">,
     TextBlock {
         Margin {0, 0, 0, 12},
         textWrapping = TextWrapping::Wrap,

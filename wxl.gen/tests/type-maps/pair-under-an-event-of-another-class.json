@@ -1,0 +1,7 @@
+// A binding pair under an event its class does not have -- Checked is
+// ToggleButton's: refused against the metadata, before the walk.
+{
+    "bindingPairs": [
+        { "class": "Microsoft.UI.Xaml.Controls.ToggleSwitch", "property": "IsOn", "events": ["Checked"] }
+    ]
+}

@@ -16,8 +16,10 @@ export namespace wxl::core {
 /// gigabytes of it, and a name for each of the two ways a file gets opened.
 /// What it does not add is a policy: nothing here throws, nothing here logs,
 /// and nothing here decides what a failure means. That decision belongs to the
-/// caller, and in this tree the caller is `wxl::async::async_file`, which turns
-/// a failure into the exception its coroutine catches.
+/// caller, and in this tree the callers are `wxl::async::async_file` and the
+/// xml and json readers, each turning a failure into its own exception.
+/// read_all() alone allocates, and `std::bad_alloc` is the only thing that can
+/// leave it.
 ///
 /// The two ways of opening are two named functions rather than one function
 /// with a flag, because reading and writing differ in more than a bit: what is
@@ -34,9 +36,11 @@ public:
     /// exactly one thing to check.
     file() = default;
 
+    /// Constructs a file that takes over the handle of \p other, which is left closed.
     inline file(file&& other) noexcept
         : handle_(std::exchange(other.handle_, INVALID_HANDLE_VALUE)) {}
 
+    /// Exchanges the handles of this file and \p other and returns a reference to this file.
     inline file& operator=(file&& other) noexcept {
         std::swap(handle_, other.handle_);
         return *this;
@@ -61,9 +65,9 @@ public:
     /// \return the file, opened or not -- ask opened(), and ask the system
     ///         (`GetLastError`) why not, before anything else is called.
     inline static file open_read(const wchar_t* path) noexcept {
-        return file(::CreateFileW(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
-                                  nullptr, OPEN_EXISTING,
-                                  FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, nullptr));
+        return file(::CreateFileW(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+                                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
+                                  nullptr));
     }
 
     /// Creates a file for writing, emptying one that is already there.
@@ -82,13 +86,14 @@ public:
     /// such a file: they pass none.
     ///@{
     inline static file open_read_overlapped(const wchar_t* path) noexcept {
-        return file(::CreateFileW(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
-                                  nullptr, OPEN_EXISTING,
-                                  FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN |
-                                      FILE_FLAG_OVERLAPPED,
-                                  nullptr));
+        return file(::CreateFileW(
+            path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN | FILE_FLAG_OVERLAPPED, nullptr));
     }
 
+    /// Creates a file for overlapped writing, emptying one that is already there, for a caller
+    /// that passes its own `OVERLAPPED` to every call and keeps the position itself. `read()`
+    /// and `write()` are not for such a file: they pass no `OVERLAPPED`.
     inline static file create_overlapped(const wchar_t* path) noexcept {
         return file(::CreateFileW(path, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
                                   FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, nullptr));
@@ -104,6 +109,7 @@ public:
                (attributes & FILE_ATTRIBUTE_DIRECTORY) == 0;
     }
 
+    /// Tests whether the file is open.
     inline bool opened() const noexcept { return handle_ != INVALID_HANDLE_VALUE; }
 
     /// The file's length, or none when it cannot be had.
@@ -137,6 +143,67 @@ public:
         return done;
     }
 
+    /// The whole of a file, by name: opened, measured, read and closed.
+    ///
+    /// Bytes, not text: whoever reads them as text checks them there
+    /// (`unicode::checked`), and no codepage is asked for or applied. An empty
+    /// file is an empty string, not an error.
+    ///
+    /// The length is measured once and the read stops there: a file that grew
+    /// after the measure is read up to the measured length, and one that shrank
+    /// is an error (`ERROR_HANDLE_EOF`) -- unlike `async_file::read_all`, which
+    /// answers with what it got.
+    ///
+    /// \param path as in open_read(): the characters, not a `path`.
+    /// \return the bytes, or the error code of the call that failed. The one
+    ///         exception to "nothing here throws" is `std::bad_alloc` from the
+    ///         string: a failure to read is returned, not thrown.
+    inline static std::expected<std::string, std::error_code> read_all(const wchar_t* path) {
+        const auto failure = [] {
+            return std::unexpected(std::error_code(static_cast<int>(::GetLastError()),
+                                                   std::system_category()));
+        };
+
+        file source = open_read(path);
+
+        if (!source.opened()) return failure();
+
+        const nullable<std::uint64_t> length = source.size();
+
+        if (!length) return failure();
+
+        std::string bytes;
+
+        // resize_and_overwrite rather than resize, which would first fill a whole
+        // file's worth of buffer with zeroes nobody will ever read.
+        bytes.resize_and_overwrite(static_cast<std::size_t>(*length),
+                                   [&source](char* const data, const std::size_t room) {
+                                       // The last error is cleared right before the
+                                       // read, so what it holds after is the read's
+                                       // own, not a leftover from the allocation.
+                                       ::SetLastError(ERROR_SUCCESS);
+                                       return source.read(
+                                           std::as_writable_bytes(std::span(data, room)));
+                                   });
+
+        if (bytes.size() != *length) {
+            // A short read: either the read failed, or the file shrank since it
+            // was measured. The last error tells them apart -- cleared above, so
+            // a clean end of file leaves ERROR_SUCCESS or ERROR_HANDLE_EOF, and
+            // both mean the shrank case: the end came before the measured
+            // length, with no failure of the read to report. A read that failed
+            // left its own code, and that is what is reported.
+            const DWORD why = ::GetLastError();
+            const bool clean_end = why == ERROR_SUCCESS || why == ERROR_HANDLE_EOF;
+
+            return std::unexpected(std::error_code(
+                static_cast<int>(clean_end ? ERROR_HANDLE_EOF : why),
+                std::system_category()));
+        }
+
+        return bytes;
+    }
+
     /// Writes the whole buffer, in the same chunks and for the same reason.
     /// \return how much went out; less than asked for means the system refused.
     inline std::size_t write(std::span<const std::byte> from) noexcept {
@@ -168,6 +235,7 @@ public:
     /// content not.
     inline bool flush() noexcept { return opened() && ::FlushFileBuffers(handle_) != 0; }
 
+    /// Closes the handle; does nothing when the file is not open.
     inline void close() noexcept {
         if (opened()) ::CloseHandle(std::exchange(handle_, INVALID_HANDLE_VALUE));
     }

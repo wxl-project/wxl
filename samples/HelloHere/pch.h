@@ -1,8 +1,10 @@
 #pragma once
 
 #include "ui.h"
+#include "Bind.h"
 #include "Card.h"
 #include "HtmlBlock.h"
 #include "Panels.h"
 #include "launch.h"
+#include "WindowNative.h"
 #include <wxl/brushes.h>

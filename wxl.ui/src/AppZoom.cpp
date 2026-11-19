@@ -6,8 +6,9 @@ namespace {
 
 // Ступени меню масштаба Chrome и Edge от 50 до 300 %. Две трети -- дробью, а
 // не 0.67: подпись «67 %» округляет, а множитель должен быть точным.
-constexpr double levels[] {AppZoom::minZoomFactor, 2.0 / 3.0, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0,
-                           2.5, AppZoom::maxZoomFactor};
+constexpr double levels[]{
+    AppZoom::minZoomFactor, 2.0 / 3.0, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5,
+    AppZoom::maxZoomFactor};
 
 // Номер ступени 100 %.
 constexpr uint32_t defaultLevel = [] {
@@ -38,48 +39,33 @@ constexpr uint32_t nearestLevel(double factor) {
     return levelCount - 1;
 }
 
-class SteppedZoom final : public AppZoom {
-public:
-    SteppedZoom() { setLevel(defaultLevel); }
-
-    core::observable<double const>& zoomFactor() override { return zoomFactor_; }
-    core::observable<bool const>& canZoomIn() override { return canZoomIn_; }
-    core::observable<bool const>& canZoomOut() override { return canZoomOut_; }
-
-    void zoomIn() override {
-        if (level_ + 1 < levelCount) {
-            setLevel(level_ + 1);
-        }
-    }
-
-    void zoomOut() override {
-        if (level_ > 0) {
-            setLevel(level_ - 1);
-        }
-    }
-
-    void resetZoom() override { setLevel(defaultLevel); }
-
-    void setZoomFactor(double factor) override { setLevel(nearestLevel(factor)); }
-
-private:
-    void setLevel(uint32_t level) {
-        level_ = level;
-        zoomFactor_.set(levels[level]);
-        canZoomIn_.set(level + 1 < levelCount);
-        canZoomOut_.set(level > 0);
-    }
-
-    uint32_t level_ = defaultLevel;
-    core::observable<double> zoomFactor_;
-    core::observable<bool> canZoomIn_;
-    core::observable<bool> canZoomOut_;
-};
-
 }  // namespace
 
-core::intrusive_ptr<AppZoom> AppZoom::make() {
-    return {new SteppedZoom {}, /*add_ref=*/false};
+AppZoom::AppZoom() { set_level(defaultLevel); }
+
+core::intrusive_ptr<AppZoom> AppZoom::make() { return {new AppZoom{}, /*add_ref=*/false}; }
+
+void AppZoom::zoomIn() {
+    if (level_ + 1 < levelCount) {
+        set_level(level_ + 1);
+    }
+}
+
+void AppZoom::zoomOut() {
+    if (level_ > 0) {
+        set_level(level_ - 1);
+    }
+}
+
+void AppZoom::resetZoom() { set_level(defaultLevel); }
+
+void AppZoom::setZoomFactor(double factor) { set_level(nearestLevel(factor)); }
+
+void AppZoom::set_level(uint32_t level) {
+    level_ = level;
+    zoom_factor_.set(levels[level]);
+    can_zoom_in_.set(level + 1 < levelCount);
+    can_zoom_out_.set(level > 0);
 }
 
 }  // namespace wxl

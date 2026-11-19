@@ -3,8 +3,7 @@
 #include "Pages.h"
 #include "Shell.h"
 #include "MotionPages.h"
-#include "StringList.h"
-#include "ResourceBrush.h"
+#include "Box.h"
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 #include <wxl/Microsoft.UI.Xaml.Shapes.h>
 
@@ -13,12 +12,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t listViewHeader[] = {
-#include "Snippets/ParallaxView/ParallaxViewParallaxListview.html.embed"
-};
-constexpr char8_t listViewCode[] = {
-#include "Snippets/ParallaxView/ParallaxViewParallaxListview.h.embed"
-};
+gallery::LazyLoadedText listViewHeader{"Snippets/ParallaxView/ParallaxViewParallaxListview.html"};
+gallery::LazyLoadedText listViewCode{"Snippets/ParallaxView/ParallaxViewParallaxListview.h"};
 
 FrameworkElement listView() {
 #include "Snippets/ParallaxView/ParallaxViewParallaxListview.h"
@@ -30,12 +25,8 @@ FrameworkElement listView() {
     });
 }
 
-constexpr char8_t scrollViewHeader[] = {
-#include "Snippets/ParallaxView/ParallaxViewParallaxScrollview.html.embed"
-};
-constexpr char8_t scrollViewCode[] = {
-#include "Snippets/ParallaxView/ParallaxViewParallaxScrollview.h.embed"
-};
+gallery::LazyLoadedText scrollViewHeader{"Snippets/ParallaxView/ParallaxViewParallaxScrollview.html"};
+gallery::LazyLoadedText scrollViewCode{"Snippets/ParallaxView/ParallaxViewParallaxScrollview.h"};
 
 FrameworkElement scrollView() {
 #include "Snippets/ParallaxView/ParallaxViewParallaxScrollview.h"
@@ -49,6 +40,8 @@ FrameworkElement scrollView() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::parallaxViewPage() {
+static wxl::FrameworkElement parallaxViewPage() {
     return StackPanel {listView(), scrollView()};
 }
+
+REGISTER_GALLERY_PAGE(L"ParallaxView", parallaxViewPage);

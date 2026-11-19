@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t sampleHeader[] = {
-#include "Snippets/SystemBackdropElement/SystembackdropelementSample.html.embed"
-};
-constexpr char8_t sampleCode[] = {
-#include "Snippets/SystemBackdropElement/SystembackdropelementSample.h.embed"
-};
+gallery::LazyLoadedText sampleHeader{"Snippets/SystemBackdropElement/SystembackdropelementSample.html"};
+gallery::LazyLoadedText sampleCode{"Snippets/SystemBackdropElement/SystembackdropelementSample.h"};
 
 FrameworkElement sample() {
 #include "Snippets/SystemBackdropElement/SystembackdropelementSample.h"
@@ -28,7 +24,7 @@ FrameworkElement sample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::systemBackdropElementPage() {
+static wxl::FrameworkElement systemBackdropElementPage() {
     return StackPanel {
         sample(),
         TextBlock {
@@ -39,3 +35,5 @@ wxl::FrameworkElement gallery::systemBackdropElementPage() {
         },
     };
 }
+
+REGISTER_GALLERY_PAGE(L"SystemBackdropElement", systemBackdropElementPage);

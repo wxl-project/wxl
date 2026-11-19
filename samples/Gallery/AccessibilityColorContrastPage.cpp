@@ -6,7 +6,6 @@
 #include "Shell.h"
 
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
-#include <wxl/Microsoft.UI.Xaml.Documents.h>
 
 #include <cmath>
 #include <format>
@@ -15,6 +14,8 @@ using namespace wxl;
 using namespace wxl::dsl;
 
 namespace {
+
+gallery::LazyLoadedText introText{"Snippets/AccessibilityColorContrast/Intro.html"};
 
 // Относительная яркость по WCAG: https://www.w3.org/WAI/GL/wiki/Relative_luminance
 double relativeLuminance(Color c) {
@@ -113,8 +114,8 @@ FrameworkElement inlineColorPicker(char16_t const* header, core::observable<Colo
     return Grid {
         column = at,
         rowSpan = 2,
-        rowDefinitions = u"auto,auto",
-        columnDefinitions = u"auto,*",
+        RowDefinitions<u"auto,auto">,
+        ColumnDefinitions<u"auto,*">,
         TextBlock {columnSpan = 2, Margin {0, 0, 0, 12}, vAlign.bottom, styles.TextBlock.BodyStrong, header},
         SplitButton {
             row = 1,
@@ -143,7 +144,7 @@ FrameworkElement check(core::observable<bool>& passed, int rowNumber, char16_t c
     return Grid {
         row = rowNumber,
         columnSpacing = 8.0,
-        columnDefinitions = u"auto,auto,*",
+        ColumnDefinitions<u"auto,auto,*">,
         Grid {
             Margin {left, 0, 0, 0},
             Ellipse {width = 30, height = 30, vAlign.center, fill = BindOutput {passed, [](bool ok) { return solid(ok ? passGreen : failRed); }}},
@@ -159,7 +160,7 @@ FrameworkElement check(core::observable<bool>& passed, int rowNumber, char16_t c
 
 }  // namespace
 
-FrameworkElement gallery::accessibilityColorContrastPage() {
+static FrameworkElement accessibilityColorContrastPage() {
     auto const model = gallery::hold<Model>();
     model->follow(model->text, model->textHex);
     model->follow(model->backdrop, model->backdropHex);
@@ -169,8 +170,8 @@ FrameworkElement gallery::accessibilityColorContrastPage() {
         Padding {8},
         columnSpacing = 8.0,
         rowSpacing = 8.0,
-        rowDefinitions = u"auto,auto,auto",
-        columnDefinitions = u"auto,auto,auto,*",
+        RowDefinitions<u"auto,auto,auto">,
+        ColumnDefinitions<u"auto,auto,auto,*">,
         inlineColorPicker(u"Text Color", model->text, model->textHex, 0),
         inlineColorPicker(u"Background Color", model->backdrop, model->backdropHex, 1),
         TextBlock {column = 3, Margin {12, 0, 0, 0}, vAlign.center, styles.TextBlock.BodyStrong, u"Contrast Ratio"},
@@ -181,11 +182,11 @@ FrameworkElement gallery::accessibilityColorContrastPage() {
             minHeight = 300,
             Margin {12, 0, 12, 12},
             cornerRadius = CornerRadius {4},
-            columnDefinitions = u"*,*",
+            ColumnDefinitions<u"*,*">,
             Grid {
                 Padding {8},
                 background = brushes.Control.FillColor.Default,
-                rowDefinitions = u"*,*,*",
+                RowDefinitions<u"*,*,*">,
                 check(model->normalPass, 0, u"Regular text", u"Requires at least 4.5:1", 12),
                 check(model->largePass, 1, u"Large text (14 pt. bold or 18pt. regular)", u"Requires at least 3:1", 12),
                 check(model->componentsPass, 2, u"Graphical objects and UI components", u"Requires at least 3:1", 10),
@@ -194,7 +195,7 @@ FrameworkElement gallery::accessibilityColorContrastPage() {
                 column = 1,
                 Padding {8},
                 background = BindOutput {model->backdrop, textBrush},
-                rowDefinitions = u"*,*,*",
+                RowDefinitions<u"*,*,*">,
                 TextBlock {Padding {12, 0, 12, 0}, vAlign.center, textWrapping = TextWrapping::WrapWholeWords,
                            foreground = BindOutput {model->text, textBrush}, u"The quick brown fox jumped over the lazy fox."},
                 StackPanel {
@@ -224,25 +225,7 @@ FrameworkElement gallery::accessibilityColorContrastPage() {
 
     return StackPanel {
         spacing = 12.0,
-        RichTextBlock {
-            Paragraph {
-                Run {u"Accessibility is about building experiences that make your Windows application usable by people of all abilities. "
-                     u"For more information about designing accessible apps: "},
-                Hyperlink {navigateUri = u"https://learn.microsoft.com/windows/apps/design/accessibility/accessibility-overview",
-                           Run {u"Accessibility overview"}},
-                Run {u"."},
-                LineBreak {},
-                LineBreak {},
-                Run {u"To ensure optimal accessibility and usability, apps should strive to use high-contrast and easy-to-read color "
-                     u"combinations for text and its background. Not only will this benefit users with lower visual acuity, but this will "
-                     u"also ensure visibility and legibility under a wide range of lighting conditions, screens, and device settings."},
-                LineBreak {},
-                LineBreak {},
-                Run {u"Check out the "},
-                Hyperlink {navigateUri = u"https://accessibilityinsights.io/", Run {u"Accessibility Insights"}},
-                Run {u" app to help you find and fix accessibility issues in your Windows apps."},
-            },
-        },
+        gallery::prose(gallery::snippet(introText), Thickness {}),
         TextBlock {Margin {0, 20, 0, 0}, styles.TextBlock.Subtitle, u"Color Contrast Checker"},
         TextBlock {Margin {0, 0, 0, 10}, styles.TextBlock.Body, textWrapping = TextWrapping::Wrap,
                    u"Use this tool to calculate the contrast ratio of two colors and measure them against the Web Content Accessibility "
@@ -256,3 +239,5 @@ FrameworkElement gallery::accessibilityColorContrastPage() {
         },
     };
 }
+
+REGISTER_GALLERY_PAGE(L"AccessibilityColorContrast", accessibilityColorContrastPage);

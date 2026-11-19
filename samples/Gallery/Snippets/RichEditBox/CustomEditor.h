@@ -5,7 +5,7 @@ auto editor = RichEditBox {
     automationName = u"Custom editor",
     height = 200,
     minWidth = 300,
-    onTextChanged = [current](RichEditBox const& self) {
+    onTextChanged += [current](RichEditBox const& self) {
         self.document().selection().characterFormat().foregroundColor(*current);
     },
 };
@@ -37,30 +37,30 @@ auto const pick = [](Flyout flyout, Button swatch, RichEditBox editor,
 const Preset cell {Padding {0}, minWidth = 0, minHeight = 0, Margin {6}};
 
 auto toolbar = Grid {
-    columnDefinitions = u"auto,auto,*,auto",
+    ColumnDefinitions<u"auto,auto,*,auto">,
     Button {
         tool,
-        gallery::appPop(),
+        gallery::appButtonHoverEffect(),
         automationName = u"Bold",
         toolTip = u"Bold",
         content = FontIcon {glyph = u"\uE8DD"},
-        onClick = [editor](Object const&, RoutedEventArgs&) {
+        onClick += [editor](Object const&, RoutedEventArgs&) {
             editor.document().selection().characterFormat().bold(FormatEffect::Toggle);
         },
     },
     Button {
         tool,
-        gallery::appPop(),
+        gallery::appButtonHoverEffect(),
         column = 1,
         automationName = u"Italic",
         toolTip = u"Italic",
         content = FontIcon {glyph = u"\uE8DB"},
-        onClick = [editor](Object const&, RoutedEventArgs&) {
+        onClick += [editor](Object const&, RoutedEventArgs&) {
             editor.document().selection().characterFormat().italic(FormatEffect::Toggle);
         },
     },
     DropDownButton {
-        gallery::appPop(),
+        gallery::appButtonHoverEffect(),
         column = 3,
         background = colors.transparent,
         BorderThickness {0},
@@ -69,7 +69,7 @@ auto toolbar = Grid {
         content = SymbolIcon {symbol = Symbol::FontColor},
         flyout = Flyout {
             placement = FlyoutPlacementMode::Bottom,
-            onOpened = [model, pick, editor, current](Object const& sender) {
+            onOpened += [model, pick, editor, current](Object const& sender) {
                 auto const flyout = sender.try_as<Flyout>();
                 auto const swatches = flyout.content().try_as<VariableSizedWrapGrid>().children();
                 model->picking.clear();
@@ -129,8 +129,8 @@ auto findBar = StackPanel {
         width = 224,
         Margin {10, 0, 0, 0},
         placeholderText = u"Enter search text",
-        onGotFocus = highlightMatches,
-        onTextChanged = highlightMatches,
-        onLostFocus = [removeHighlights] { removeHighlights(); },
+        onGotFocus += highlightMatches,
+        onTextChanged += highlightMatches,
+        onLostFocus += [removeHighlights] { removeHighlights(); },
     },
 };

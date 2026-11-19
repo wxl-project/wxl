@@ -4,9 +4,9 @@
 //
 //   1. Доходит ли жест масштабирования (два пальца) до ScrollViewer-датчика у
 //      корня острова, если под пальцами -- список в своём ScrollViewer с
-//      выключенным масштабом? Так ловил жест ZoomView Беседки, но у каждого
-//      списка свой; здесь датчик один на всё окно, и жест должен дойти до него
-//      по цепочке масштабирования (IsZoomChainingEnabled).
+//      выключенным масштабом? Жест можно ловить у каждого списка его
+//      собственным датчиком; здесь датчик один на всё окно, и жест должен дойти
+//      до него по цепочке масштабирования (IsZoomChainingEnabled).
 //   2. Можно ли погасить Ctrl+колесо до XAML -- хуком WH_GETMESSAGE на потоке
 //      интерфейса, -- чтобы список его не получал и не прокручивался, а
 //      масштаб оставался за эффектом? Средствами XAML нельзя: колесо
@@ -46,6 +46,7 @@
 
 #include <cstdarg>
 #include <cstdio>
+#include <share.h>
 #include <string>
 
 #include "launch.h"
@@ -394,7 +395,7 @@ wxl::Teardown wxl_launched() {
     std::wstring logPath{path};
     logPath.resize(logPath.find_last_of(L'\\') + 1);
     logPath += L"zoom-gesture-probe.log";
-    logFile = ::_wfopen(logPath.c_str(), L"w");
+    logFile = ::_wfsopen(logPath.c_str(), L"w", _SH_DENYNO);
     startTick = ::GetTickCount64();
 
     probe = new Probe{};

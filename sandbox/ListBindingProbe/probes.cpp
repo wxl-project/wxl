@@ -32,6 +32,7 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
+#include <share.h>
 #include <cstring>
 #include <deque>
 #include <functional>
@@ -279,7 +280,7 @@ struct weak_source_vtable : unknown_abi {
 };
 
 // cppwinrt зовёт каждую таблицу ABI `type`; два базовых класса одного имени MSVC не примет -- поэтому слой с именем на
-// каждый интерфейс (как interface_vtable в impl/value_box.h).
+// каждый интерфейс (как interface_vtable в impl/sta_com.h).
 template <typename Interface>
 struct vtable_of : winrt::impl::abi_t<Interface> {};
 
@@ -1544,7 +1545,7 @@ void plan(Script& script) {
 }  // namespace
 
 void start(WxlListMaker makeList) {
-    logFile = ::_wfopen((exeDirectoryW() + L"list-binding-probe.txt").c_str(), L"w");
+    logFile = ::_wfsopen((exeDirectoryW() + L"list-binding-probe.txt").c_str(), L"w", _SH_DENYNO);
     current = new Run;
     auto& r = run();
     r.makeList = makeList;

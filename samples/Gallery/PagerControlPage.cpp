@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t basicHeader[] = {
-#include "Snippets/PagerControl/Basic.html.embed"
-};
-constexpr char8_t basicCode[] = {
-#include "Snippets/PagerControl/Basic.h.embed"
-};
+gallery::LazyLoadedText basicHeader{"Snippets/PagerControl/Basic.html"};
+gallery::LazyLoadedText basicCode{"Snippets/PagerControl/Basic.h"};
 
 FrameworkElement basic() {
     return gallery::controlExample({
@@ -25,12 +21,8 @@ FrameworkElement basic() {
     });
 }
 
-constexpr char8_t displayModesHeader[] = {
-#include "Snippets/PagerControl/DisplayModes.html.embed"
-};
-constexpr char8_t displayModesCode[] = {
-#include "Snippets/PagerControl/DisplayModes.h.embed"
-};
+gallery::LazyLoadedText displayModesHeader{"Snippets/PagerControl/DisplayModes.html"};
+gallery::LazyLoadedText displayModesCode{"Snippets/PagerControl/DisplayModes.h"};
 
 FrameworkElement displayModes() {
     return gallery::controlExample({
@@ -42,12 +34,8 @@ FrameworkElement displayModes() {
     });
 }
 
-constexpr char8_t unboundedHeader[] = {
-#include "Snippets/PagerControl/Unbounded.html.embed"
-};
-constexpr char8_t unboundedCode[] = {
-#include "Snippets/PagerControl/Unbounded.h.embed"
-};
+gallery::LazyLoadedText unboundedHeader{"Snippets/PagerControl/Unbounded.html"};
+gallery::LazyLoadedText unboundedCode{"Snippets/PagerControl/Unbounded.h"};
 
 FrameworkElement unbounded() {
     return gallery::controlExample({

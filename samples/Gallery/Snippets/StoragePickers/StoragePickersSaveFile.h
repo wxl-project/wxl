@@ -77,7 +77,7 @@ auto const selectFolder = [](Model* model, Button button) -> async::task<> {
 auto example = StackPanel {
     spacing = 8,
     model->content,
-    Button {content = u"Save a file", onClick = [model, save](Button const& button) { model->saving = save(model.get(), button); }},
+    Button {content = u"Save a file", onClick += [model, save](Button const& button) { model->saving = save(model.get(), button); }},
     model->saved,
 };
 
@@ -92,7 +92,7 @@ auto options = StackPanel {
     model->commit,
     choice(u"Suggested start location", locationNames, model->location),
     Grid {
-        columnDefinitions = u"*,auto",
+        ColumnDefinitions<u"*,auto">,
         model->folder,
         Button {
             column = 1,
@@ -101,7 +101,7 @@ auto options = StackPanel {
             automationName = u"Select folder",
             toolTip = u"Select folder",
             content = FontIcon {glyph = u"\uF89A"},
-            onClick = [model, selectFolder](Button const& button) { model->selectingFolder = selectFolder(model.get(), button); },
+            onClick += [model, selectFolder](Button const& button) { model->selectingFolder = selectFolder(model.get(), button); },
         },
     },
 };

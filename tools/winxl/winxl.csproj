@@ -1,0 +1,68 @@
+<!--
+  winxl: the command-line utility of the wxl tree (docs/building.md, "winxl").
+
+  Built by the target winxl of the CMake tree under WXL_WINXL (cmake/wxl_winxl.cmake),
+  which runs `dotnet publish -c Release -r win-x64` with WxlVersion set to the version of
+  the tree, project() of the root CMakeLists.txt. The publish is one self-contained
+  executable compiled ahead of time (Native AOT), a single file by construction: it needs
+  no .NET runtime on the machine it runs on, and the .NET SDK only where it is built.
+-->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>winxl</AssemblyName>
+    <RootNamespace>Wxl.Winxl</RootNamespace>
+
+    <!-- The Windows SDK projection of this TFM (CsWinRT) carries
+         Windows.Management.Deployment.PackageManager, which `runtime install` calls. The
+         lowest Windows the tool claims is 10.0.18362.0 (1903): the runtime packages it
+         installs require 10.0.17763.0 (the TargetDeviceFamily MinVersion of the MSIX
+         manifests of Microsoft.WindowsAppSDK.Runtime 2.5.4-experimental), and the name
+         ProcessorArchitecture.Arm64 the tool reads from a manifest exists from 18362. -->
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.18362.0</SupportedOSPlatformVersion>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <PublishAot>true</PublishAot>
+    <SelfContained>true</SelfContained>
+    <!-- No culture data: the tool compares names and versions ordinally and formats
+         nothing by culture. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+
+    <!-- `winxl` with the version option prints the informational version, which is the version of
+         the tree and nothing else: no commit hash appended by the SDK. -->
+    <Version>$(WxlVersion)</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+
+  <!-- A ContinuousIntegrationBuild, as the build of the package WinXL makes it
+       (WXL_REPRODUCIBLE_BUILD, cmake/wxl_winxl.cmake), is the same bytes from any
+       directory at any time. The compiler maps the sources to /_N/ by the source
+       roots; the artifacts directory, which the build of the tree puts in its build
+       directory, is a source root of its own, so the path of the .pdb the assembly
+       names is /_N/obj/... and neither it nor, through it, the module version id
+       Native AOT copies into the executable carries the build directory. The linker
+       of Native AOT writes a hash in place of the time of the link (/Brepro) and
+       the name of the .pdb without its directory (/PDBALTPATH, %_PDB% being the
+       linker's own name for the file). -->
+  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(ArtifactsPath)' != ''">
+    <SourceRoot Include="$([MSBuild]::EnsureTrailingSlash('$(ArtifactsPath)'))" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
+    <LinkerArg Include="/Brepro" />
+    <LinkerArg Include="/PDBALTPATH:%_PDB%" />
+  </ItemGroup>
+
+  <!-- Without the version of the tree the SDK would stamp its default, 1.0.0, and
+       the version option would print a version the tree never had. -->
+  <Target Name="WxlRequireVersion" BeforeTargets="BeforeBuild">
+    <Error Condition="'$(WxlVersion)' == ''"
+           Text="WxlVersion is not set. winxl prints the version of the wxl tree, which its build passes in: build the CMake target winxl (configure with -DWXL_WINXL=ON), or pass -p:WxlVersion=&lt;the version of project() in the root CMakeLists.txt&gt;." />
+  </Target>
+
+</Project>

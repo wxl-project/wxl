@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t labelsSideHeader[] = {
-#include "Snippets/CommandBar/LabelsSide.html.embed"
-};
-constexpr char8_t labelsSideCode[] = {
-#include "Snippets/CommandBar/LabelsSide.h.embed"
-};
+gallery::LazyLoadedText labelsSideHeader{"Snippets/CommandBar/LabelsSide.html"};
+gallery::LazyLoadedText labelsSideCode{"Snippets/CommandBar/LabelsSide.h"};
 
 FrameworkElement labelsSide() {
 #include "Snippets/CommandBar/LabelsSide.h"
@@ -28,6 +24,8 @@ FrameworkElement labelsSide() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::commandBarPage() {
+static wxl::FrameworkElement commandBarPage() {
     return StackPanel {labelsSide()};
 }
+
+REGISTER_GALLERY_PAGE(L"CommandBar", commandBarPage);

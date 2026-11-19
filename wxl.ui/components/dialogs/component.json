@@ -1,0 +1,16 @@
+{
+  "name": "dialogs",
+  "dependencies": [
+    "schema"
+  ],
+  "sources": [
+    "Announce.cpp",
+    "Announce.h",
+    "impl/show_dialog.h",
+    "ShowDialog.cpp",
+    "ShowDialog.h"
+  ],
+  "surface": "dialogs.surface.cpp",
+  "libraries": [],
+  "description": "Content dialogs and screen reader announcements."
+}

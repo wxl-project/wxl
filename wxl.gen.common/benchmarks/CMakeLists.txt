@@ -38,9 +38,8 @@ wxl_add_benchmark(wxl.gen.common.documentation-file-benchmark
     INPUTS  "${_wxl_doc_benchmark_document}"
 )
 
-target_link_libraries(wxl.gen.common.documentation-file-benchmark PRIVATE wxl.gen.common wxl::xml wxl::core)
+target_link_libraries(wxl.gen.common.documentation-file-benchmark PRIVATE wxl.gen.common wxl::core)
 
 set_target_properties(wxl.gen.common.documentation-file-benchmark PROPERTIES
-    CXX_MODULE_STD ON
     CXX_SCAN_FOR_MODULES ON
 )

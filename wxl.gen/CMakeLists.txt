@@ -1,4 +1,4 @@
-# wxl.gen -- the generator's code, an ordinary library: reads WinUI3 .winmd
+# wxl.gen -- the generator's code, an ordinary library: reads WinUI .winmd
 # metadata and writes wxl's wrappers. The profiles and the metadata walk it
 # shares with the profile editor come from wxl.gen.common through md.h; what
 # is here is the output side:
@@ -40,9 +40,10 @@ wxl_add_module_library(wxl.gen STATIC
         gen/event_args.cpp
         gen/classes.cpp
         gen/dsl.cpp
+        gen/binding_pairs.cpp
         gen/schema.cpp
         gen/doc_language.cpp
-        gen/cmake.cpp
+        gen/parts.cpp
 )
 
 source_group("gen" REGULAR_EXPRESSION "gen/.*")
@@ -62,8 +63,6 @@ wxl_set_target_folders(wxl.gen)
 add_executable(winui-srcgen main.cpp)
 
 set_target_properties(winui-srcgen PROPERTIES
-    CXX_MODULE_STD ON
-
     # main.cpp imports std after its headers; scanning ordinary sources is
     # CMP0155-gated and the project leaves that policy at OLD. Same reason as
     # in wxl_add_module_library().
@@ -74,17 +73,41 @@ target_compile_features(winui-srcgen PRIVATE cxx_std_23)
 
 target_link_libraries(winui-srcgen PRIVATE wxl.gen)
 
+# The manifest of wxl's executables, a console tool's included: the same
+# template the applications get, UTF-8 for the process's code page among it.
+wxl_target_manifest(winui-srcgen)
+
+# The generator a step of the build runs (cmake/wxl_ui_profile.cmake), under the
+# name an installed wxl gives its own (cmake/wxl-config.cmake.in): a copy under
+# one name for every configuration, refreshed after each link. The step runs it
+# by that name, so its command is the same in Debug and in Release and a build
+# of the other configuration of one build directory does not run the generator
+# again only because the command names another file. Everything the generator
+# links is static (wxl.gen, wxl.gen.common, wxl.core), and its manifest is
+# embedded, so the executable alone is all there is to copy. Beside it, the
+# directory of its profiles and of the tables every run is given.
+add_executable(wxl::winui-srcgen ALIAS winui-srcgen)
+set(_wxl_gen_shared "${CMAKE_CURRENT_BINARY_DIR}/winui-srcgen${CMAKE_EXECUTABLE_SUFFIX}")
+add_custom_command(TARGET winui-srcgen POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "$<TARGET_FILE:winui-srcgen>" "${_wxl_gen_shared}"
+    VERBATIM)
+set_target_properties(winui-srcgen PROPERTIES
+    WXL_SHARED_FILE "${_wxl_gen_shared}"
+    WXL_PROFILES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/profiles")
+
 # Before the profiles below, not after: this lays the sources out by directory
 # with source_group(TREE), and the explicit grouping of the profiles has to be
 # the one that wins.
 wxl_set_target_folders(winui-srcgen)
 
-# Input profiles -- not compiled, listed so they show up in the IDE tree.
-file(GLOB _wxl_gen_profiles CONFIGURE_DEPENDS "profiles/*.json")
+# Input profiles and the tables beside them (types.json, fluent-symbols.json) --
+# not compiled, listed so they show up in the IDE tree.
+file(GLOB _wxl_gen_profiles CONFIGURE_DEPENDS "profiles/*.winxl-profile" "profiles/*.json")
 target_sources(winui-srcgen PRIVATE ${_wxl_gen_profiles})
 source_group("profiles" FILES ${_wxl_gen_profiles})
 set_source_files_properties(${_wxl_gen_profiles} PROPERTIES HEADER_FILE_ONLY ON)
 
-if(BUILD_TESTING)
+if(WXL_TESTS)
     add_subdirectory(tests)
 endif()

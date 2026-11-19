@@ -3,7 +3,8 @@
 #include "Pages.h"
 #include "Shell.h"
 #include "Box.h"
-#include "ItemBuilder.h"
+#include "IndexList.h"
+#include "ItemTemplate.h"
 #include "CustomDataObject.h"
 #include <wxl/Microsoft.UI.Dispatching.h>
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
@@ -14,12 +15,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t basicViewHeader[] = {
-#include "Snippets/ItemsView/BasicItemsview.html.embed"
-};
-constexpr char8_t basicViewCode[] = {
-#include "Snippets/ItemsView/BasicItemsview.h.embed"
-};
+gallery::LazyLoadedText basicViewHeader{"Snippets/ItemsView/BasicItemsview.html"};
+gallery::LazyLoadedText basicViewCode{"Snippets/ItemsView/BasicItemsview.h"};
 
 FrameworkElement basicView() {
 #include "Snippets/ItemsView/BasicItemsview.h"
@@ -31,12 +28,8 @@ FrameworkElement basicView() {
     });
 }
 
-constexpr char8_t swappableHeader[] = {
-#include "Snippets/ItemsView/ItemsviewSwappableLayouts.html.embed"
-};
-constexpr char8_t swappableCode[] = {
-#include "Snippets/ItemsView/ItemsviewSwappableLayouts.h.embed"
-};
+gallery::LazyLoadedText swappableHeader{"Snippets/ItemsView/ItemsviewSwappableLayouts.html"};
+gallery::LazyLoadedText swappableCode{"Snippets/ItemsView/ItemsviewSwappableLayouts.h"};
 
 FrameworkElement swappable() {
 #include "Snippets/ItemsView/ItemsviewSwappableLayouts.h"
@@ -49,12 +42,8 @@ FrameworkElement swappable() {
     });
 }
 
-constexpr char8_t invocationHeader[] = {
-#include "Snippets/ItemsView/ItemsviewItemInvocationSelection.html.embed"
-};
-constexpr char8_t invocationCode[] = {
-#include "Snippets/ItemsView/ItemsviewItemInvocationSelection.h.embed"
-};
+gallery::LazyLoadedText invocationHeader{"Snippets/ItemsView/ItemsviewItemInvocationSelection.html"};
+gallery::LazyLoadedText invocationCode{"Snippets/ItemsView/ItemsviewItemInvocationSelection.h"};
 
 FrameworkElement invocation() {
 #include "Snippets/ItemsView/ItemsviewItemInvocationSelection.h"
@@ -69,6 +58,8 @@ FrameworkElement invocation() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::itemsViewPage() {
+static wxl::FrameworkElement itemsViewPage() {
     return StackPanel {basicView(), swappable(), invocation()};
 }
+
+REGISTER_GALLERY_PAGE(L"ItemsView", itemsViewPage);

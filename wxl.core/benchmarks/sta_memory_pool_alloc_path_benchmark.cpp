@@ -53,12 +53,11 @@ double ns_per(std::chrono::steady_clock::duration d, uint64_t ops) {
 // not feared: a pool built that way reported 0.00 ns per round here, and 0.27 with a plain
 // barrier around the pair. A signal fence between the two makes the intermediate state of the
 // free list observable, so the pair has to happen. It emits no instructions.
-inline void barrier() noexcept { std::atomic_signal_fence(std::memory_order_seq_cst); }
+void barrier() noexcept { std::atomic_signal_fence(std::memory_order_seq_cst); }
 
 double pure_pop(unsigned depth, unsigned rounds) {
     std::vector<void*> blocks(depth);
-    for (unsigned i = 0; i < depth; ++i)
-        blocks[i] = pool::alloc<Size>();
+    for (unsigned i = 0; i < depth; ++i) blocks[i] = pool::alloc<Size>();
 
     std::chrono::steady_clock::duration total{};
 
@@ -74,7 +73,7 @@ double pure_pop(unsigned depth, unsigned rounds) {
         total += std::chrono::steady_clock::now() - t0;
     }
 
-    return ns_per(total, uint64_t(depth) * rounds);
+    return ns_per(total, static_cast<uint64_t>(depth) * rounds);
 }
 
 // The one live block travels through here, so that what the free is handed is a value the
@@ -134,8 +133,7 @@ double fresh(unsigned count) {
 template <typename Fn>
 double best_of(Fn run, int repeats) {
     double best = run();
-    for (int r = 1; r < repeats; ++r)
-        best = std::min(best, run());
+    for (int r = 1; r < repeats; ++r) best = std::min(best, run());
     return best;
 }
 

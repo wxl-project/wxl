@@ -6,9 +6,10 @@
 // headers cannot share a translation unit with that import. The result is the
 // exit code.
 //
-// The field is a real observable, watched the way binding.cpp watches it, so
-// what is checked includes the field set again from inside its own watch: the
-// application hears where the element ended, never a value it could not take.
+// The field is a real observable, watched the way focus_pair.cpp and
+// vertical_offset_pair.cpp watch it, so what is checked includes the field set
+// again from inside its own watch: the application hears where the element
+// ended, never a value it could not take.
 //
 // Checked: a request made out of the tree waits for Loaded; refused focus
 // returns the field to false, and the next request is a change again; false on
@@ -79,7 +80,7 @@ struct fake_viewer {
     }
 };
 
-// Both ways, as binding.cpp binds: the watch first, then the field settled once.
+// Both ways, as focus_pair.cpp binds: the watch first, then the field settled once.
 template <class Element>
 void bind_focus(Element const& element, observable<bool>& field) {
     field.watch_for_binding(
@@ -174,10 +175,11 @@ int main() {
 
         offset.set(900.0);
         check(viewer.jumps == 1 && viewer.going == 500.0 && offset.get() == 500.0,
-              "past the extent: cut to it, and the viewer asked once");
+              "past the extent: clamped to it, and the viewer asked once");
         bool never_past = true;
         for (double const value : heard) never_past = never_past && value == 500.0;
-        check(!heard.empty() && never_past, "past the extent: the application hears the cut value");
+        check(!heard.empty() && never_past,
+              "past the extent: the application hears the clamped value");
         viewer.arrive(offset);
 
         offset.set(-20.0);

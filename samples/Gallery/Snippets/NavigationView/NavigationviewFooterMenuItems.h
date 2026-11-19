@@ -17,7 +17,7 @@ auto const view = NavigationView {
                     NavigationViewItem {content = u"Your Cart", icon = SymbolIcon {symbol = Symbol::Shop}, tag = u"SamplePage5"},
                     NavigationViewItem {content = u"Help", icon = SymbolIcon {symbol = Symbol::Help}, tag = u"SamplePage5"}],
     content = model->frame,
-    onSelectionChanged = [model](NavigationView const&, NavigationViewSelectionChangedEventArgs& args) {
+    onSelectionChanged += [model](NavigationView const&, NavigationViewSelectionChangedEventArgs& args) {
         gallery::showSample(model->frame, gallery::sampleNumber(args.selectedItem().try_as<NavigationViewItem>().tag()),
                             args.recommendedNavigationTransitionInfo());
     },
@@ -27,18 +27,18 @@ view.selectedItem(view.menuItems()[0]);
 auto options = StackPanel {RadioButtons {
     header = u"Pane position:",
     selectedIndex = 0,
-    RadioButton {content = u"Left mode", onChecked = [view](auto&&...) {
+    RadioButton {content = u"Left mode", onChecked += [view](auto&&...) {
                      view.paneDisplayMode(NavigationViewPaneDisplayMode::Left);
                      view.isPaneOpen(true);
                  }},
-    RadioButton {content = u"Top mode", onChecked = [view](auto&&...) {
+    RadioButton {content = u"Top mode", onChecked += [view](auto&&...) {
                      view.paneDisplayMode(NavigationViewPaneDisplayMode::Top);
                      view.isPaneOpen(false);
                  }},
 }};
 
 auto example = Grid {
-    rowDefinitions = u"*,auto",
+    RowDefinitions<u"*,auto">,
     TextBlock {Margin {0, 0, 0, 12}, textWrapping = TextWrapping::WrapWholeWords,
                u"You can add clickable menu items to the footer of your NavigationView that participate in the same selection model as items in "
                u"the main menu. In Top PaneDisplayMode, these items will appear aligned to the right of the NavigationView. In Left PaneDisplayMode, "

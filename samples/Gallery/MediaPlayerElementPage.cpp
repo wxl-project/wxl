@@ -8,9 +8,9 @@
 #include <wxl/Windows.Media.Core.h>
 #include <wxl/Windows.Media.Playback.h>
 #include <wxl/Windows.Storage.h>
-#include "PickerFileTypes.h"
+#include "FileTypeChoice.h"
 
-import wxl.async;
+import wxl.core;
 
 
 using namespace wxl;
@@ -18,12 +18,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t transportControlsHeader[] = {
-#include "Snippets/MediaPlayerElement/MediaplayerelementTransportControls.html.embed"
-};
-constexpr char8_t transportControlsCode[] = {
-#include "Snippets/MediaPlayerElement/MediaplayerelementTransportControls.h.embed"
-};
+gallery::LazyLoadedText transportControlsHeader{"Snippets/MediaPlayerElement/MediaplayerelementTransportControls.html"};
+gallery::LazyLoadedText transportControlsCode{"Snippets/MediaPlayerElement/MediaplayerelementTransportControls.h"};
 
 FrameworkElement transportControls() {
 #include "Snippets/MediaPlayerElement/MediaplayerelementTransportControls.h"
@@ -36,12 +32,8 @@ FrameworkElement transportControls() {
     });
 }
 
-constexpr char8_t autoplayHeader[] = {
-#include "Snippets/MediaPlayerElement/MediaplayerelementAutoplaysVideo.html.embed"
-};
-constexpr char8_t autoplayCode[] = {
-#include "Snippets/MediaPlayerElement/MediaplayerelementAutoplaysVideo.h.embed"
-};
+gallery::LazyLoadedText autoplayHeader{"Snippets/MediaPlayerElement/MediaplayerelementAutoplaysVideo.html"};
+gallery::LazyLoadedText autoplayCode{"Snippets/MediaPlayerElement/MediaplayerelementAutoplaysVideo.h"};
 
 FrameworkElement autoplay() {
 #include "Snippets/MediaPlayerElement/MediaplayerelementAutoplaysVideo.h"
@@ -55,6 +47,8 @@ FrameworkElement autoplay() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::mediaPlayerElementPage() {
+static wxl::FrameworkElement mediaPlayerElementPage() {
     return StackPanel {transportControls(), autoplay()};
 }
+
+REGISTER_GALLERY_PAGE(L"MediaPlayerElement", mediaPlayerElementPage);

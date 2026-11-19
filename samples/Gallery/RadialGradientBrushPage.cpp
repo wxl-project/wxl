@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t sampleHeader[] = {
-#include "Snippets/RadialGradientBrush/RadialGradientBrushSample.html.embed"
-};
-constexpr char8_t sampleCode[] = {
-#include "Snippets/RadialGradientBrush/RadialGradientBrushSample.h.embed"
-};
+gallery::LazyLoadedText sampleHeader{"Snippets/RadialGradientBrush/RadialGradientBrushSample.html"};
+gallery::LazyLoadedText sampleCode{"Snippets/RadialGradientBrush/RadialGradientBrushSample.h"};
 
 FrameworkElement sample() {
 #include "Snippets/RadialGradientBrush/RadialGradientBrushSample.h"
@@ -28,6 +24,8 @@ FrameworkElement sample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::radialGradientBrushPage() {
+static wxl::FrameworkElement radialGradientBrushPage() {
     return StackPanel {sample()};
 }
+
+REGISTER_GALLERY_PAGE(L"RadialGradientBrush", radialGradientBrushPage);

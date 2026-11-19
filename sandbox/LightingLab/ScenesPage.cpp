@@ -59,8 +59,8 @@ winrt::Windows::Foundation::MemoryBuffer bufferOf(std::vector<T> const& data) {
 }
 
 struct Solid {
-    core::observable<double> metallic {0.1};
-    core::observable<double> roughness {0.45};
+    core::observable<float> metallic {0.1f};
+    core::observable<float> roughness {0.45f};
     core::observable<Color> keyColor {rgb(68, 72, 79)};
     core::observable<double> rise {18.0};
     core::observable<double> shoulder {26.0};
@@ -70,7 +70,7 @@ struct Solid {
     core::observable<double> tiltY {0.0};
 
     core::observable<int> lightKind {0};
-    core::observable<double> lightHeight {220.0};
+    core::observable<float> lightHeight {220.0f};
     core::observable<double> azimuth {120.0};
     core::observable<double> elevation {45.0};
     core::observable<bool> ambientOn {true};
@@ -251,8 +251,8 @@ struct Solid {
     void paint() {
         Color const color = keyColor.get();
         material.BaseColorFactor(float4 {color.R / 255.0f, color.G / 255.0f, color.B / 255.0f, 1.0f});
-        material.MetallicFactor(static_cast<float>(metallic.get()));
-        material.RoughnessFactor(static_cast<float>(roughness.get()));
+        material.MetallicFactor(metallic.get());
+        material.RoughnessFactor(roughness.get());
     }
 
     void shape() noexcept {
@@ -306,7 +306,7 @@ struct Solid {
 
             if (lightKind.get() == 1) {
                 point.stopAnimation(u"Offset");
-                float const z = static_cast<float>(lightHeight.get());
+                float const z = lightHeight.get();
                 if (pointer) {
                     // Начало сцены сдвинуто в середину панели, указатель считается от её угла.
                     auto const follow = compositor.createExpressionAnimation(

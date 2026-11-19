@@ -13,7 +13,7 @@ auto const view = NavigationView {
     menuItems[NavigationViewItem {content = u"Item1", tag = u"SamplePage1"}, NavigationViewItem {content = u"Item2", tag = u"SamplePage2"},
               NavigationViewItem {content = u"Item3", tag = u"SamplePage3"}, NavigationViewItem {content = u"Item4", tag = u"SamplePage4"}],
     content = model->frame,
-    onSelectionChanged = [model](NavigationView const&, NavigationViewSelectionChangedEventArgs& args) {
+    onSelectionChanged += [model](NavigationView const&, NavigationViewSelectionChangedEventArgs& args) {
         if (args.isSettingsSelected()) {
             gallery::showSettings(model->frame);
             return;
@@ -26,7 +26,7 @@ auto const view = NavigationView {
 view.selectedItem(view.menuItems()[0]);
 
 auto example = Grid {
-    rowDefinitions = u"auto,auto",
+    RowDefinitions<u"auto,auto">,
     TextBlock {Margin {0, 0, 0, 12}, textWrapping = TextWrapping::WrapWholeWords,
                u"For the tabs pattern, ensure that you unify selection and focus by setting the SelectionFollowsFocus property to Enabled. If using "
                u"a Frame to swap out content, then navigating between items shouldn't be recorded into the Frame's navigation stack. Please see "

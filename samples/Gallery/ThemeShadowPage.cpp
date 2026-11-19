@@ -8,12 +8,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t appliedBorderHeader[] = {
-#include "Snippets/ThemeShadow/AppliedBorder.html.embed"
-};
-constexpr char8_t appliedBorderCode[] = {
-#include "Snippets/ThemeShadow/AppliedBorder.h.embed"
-};
+gallery::LazyLoadedText appliedBorderHeader{"Snippets/ThemeShadow/AppliedBorder.html"};
+gallery::LazyLoadedText appliedBorderCode{"Snippets/ThemeShadow/AppliedBorder.h"};
 
 FrameworkElement appliedBorder() {
 #include "Snippets/ThemeShadow/AppliedBorder.h"
@@ -28,6 +24,8 @@ FrameworkElement appliedBorder() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::themeShadowPage() {
+static wxl::FrameworkElement themeShadowPage() {
     return StackPanel {appliedBorder()};
 }
+
+REGISTER_GALLERY_PAGE(L"ThemeShadow", themeShadowPage);

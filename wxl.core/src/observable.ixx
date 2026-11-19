@@ -33,13 +33,15 @@ class observable;
  * it, and no way to destroy a field through it.
  */
 template <class T>
-class observable<T const> {
+class observable<T const>
+{
 public:
-    // Spelled noexcept: a watcher is called from inside the event's call, which walks the
-    // whole list and has nobody to hand an exception to, so a throwing watcher
-    // would break the chain and abandon the watchers after it. The event enforces
-    // this on every callback regardless; spelling it here makes the contract read
-    // off the type, which is the reason event accepts the noexcept signature.
+    /// The type of the event that notifies the watchers of a change. The signature is
+    /// `noexcept`: a watcher is called from inside the call of the event, which walks the whole
+    /// list and has no caller to propagate an exception to, so a throwing watcher would abort
+    /// the walk and skip the watchers after it. The event requires `noexcept` of every callback
+    /// in either case; the spelling here makes the contract visible in the type, which is the
+    /// reason `event` accepts the `noexcept` signature.
     using changed_event = event<void(T const&) noexcept>;
 
     // A field, not a handle: copying one would make a second state that no
@@ -50,27 +52,31 @@ public:
     /// The value now.
     T const& get() const noexcept { return value_; }
 
-    /// Watches for changes; the returned cookie removes the watch. The callback
+    /// Watches for changes; the returned token removes the watch. The callback
     /// is `event`'s, so it has to be noexcept -- add() below says so.
     ///
-    /// The cookie is the caller's: an application watching the model to react
+    /// The token is the caller's: an application watching the model to react
     /// removes the watch when it likes, or lets it go with the model. A watch
     /// that a member keeps for its owner, and that comes off with it, is a
-    /// change_watch and needs no cookie. A binding's own watch is a different
+    /// change_watch and needs no token. A binding's own watch is a different
     /// thing -- see watch_for_binding.
     template <class F>
-    cookie_t on_change(F&& callback) {
+    event_token on_change(F&& callback) {
         return changed_.add(std::forward<F>(callback));
     }
 
-    bool remove_change(cookie_t cookie) { return changed_.remove(cookie); }
+    /// Takes the watch off and empties the token (event::remove).
+    bool remove_change(event_token& token) { return changed_.remove(token); }
+
+    /// The same for a watch built into its subscriber, by its node: a change_watch.
+    bool remove_change(changed_event::func_t& node) { return changed_.remove(node); }
 
     /// Watches for changes on behalf of a binding, the field keeping the watch
-    /// rather than handing a cookie back. This is not a convenience over
+    /// rather than handing a token back. This is not a convenience over
     /// on_change: a binding's model->control watch *owns the control* -- it
     /// must, to write to it, and a borrowed pointer would dangle, the control
     /// being a temporary in the description tree. Kept on a list of their own
-    /// so that unbind() can cut them without touching the application's.
+    /// so that unbind() can drop them without touching the application's.
     ///
     /// Made while a binding_scope is open, the watch is collected by it as
     /// well, and the scope can take it off again -- the way a list drops the
@@ -80,7 +86,7 @@ public:
         impl::add_binding_watch(bound_, std::forward<F>(callback));
     }
 
-    /// Cuts every binding watch (see watch_for_binding), letting go of whatever
+    /// Drops every binding watch (see watch_for_binding), letting go of whatever
     /// they held -- the bound controls. Watches added through on_change are the
     /// caller's and are left where they are.
     ///
@@ -94,16 +100,21 @@ public:
 
 protected:
     observable() = default;
-    explicit observable(T value) : value_(std::move(value)) {}
+    /// Constructs an observable that holds \p initial.
+    explicit observable(T initial) : value_(std::move(initial)) {}
     ~observable() = default;
 
+    /// The current value.
     T value_{};
-    // Two lists rather than one with a mark: the bindings' watches are the ones
-    // unbind() drops, the application's are the ones it must not touch. Declared
-    // after the value, so that they are destroyed first -- a binding's watch
-    // removes the handler it put on its control as it goes, and does so while
-    // the field it named is still there.
+    /// The watches of the bindings, which `unbind()` removes. The watches of the bindings and
+    /// those of the application are kept in two lists rather than in one list with a mark:
+    /// `unbind()` removes the former and must not touch the latter. Both lists are declared
+    /// after the value so that they are destroyed first: a binding's watch removes the handler
+    /// it put on its control as it is destroyed, and does so while the field it refers to
+    /// still exists.
     changed_event bound_;
+    /// The watches of the application, added through `on_change`; `unbind()` leaves them in
+    /// place.
     changed_event changed_;
 };
 
@@ -114,6 +125,24 @@ namespace impl {
 // whatever the arguments.
 template <class T>
 using readonly_observable = observable<T const>;
+
+// Whether fn, called with the value of each source, gives what a field of T takes.
+template <class T, class Fn, class... Sources>
+concept computes_from = requires(Fn const& fn, Sources&... sources) {
+    { std::invoke(fn, sources.get()...) } -> std::convertible_to<T>;
+};
+
+template <class T, class Tuple, std::size_t... I>
+constexpr bool computes_from_tuple(std::index_sequence<I...>) {
+    return computes_from<T, std::tuple_element_t<sizeof...(I), Tuple>, std::tuple_element_t<I, Tuple>...>;
+}
+
+// The arguments of follow: the sources, then the function of their values that gives
+// what a field of T takes.
+template <class T, class... Args>
+concept follows_into =
+    sizeof...(Args) >= 2 &&
+    computes_from_tuple<T, std::tuple<Args...>>(std::make_index_sequence<sizeof...(Args) - 1>{});
 
 }  // namespace impl
 
@@ -135,21 +164,42 @@ using readonly_observable = observable<T const>;
  * allocation, however many fields it announces.
  *
  * The watchers are an `event`, so each is `noexcept` and each is removed by the
- * cookie `on_change` returns. A binding's watches are kept apart (see
+ * token `on_change` returns. A binding's watches are kept apart (see
  * watch_for_binding), and all of them go with the field: destroying the model
  * destroys every watch, and what a watch owned -- the control it wrote to --
  * is let go with it.
  *
  * What it adds to its read-only base (`observable<T const>`, above) is setting:
- * set() and follow().
+ * set() and follow(), and the constructor that follows from the start.
  */
 template <class T>
-class observable : public impl::readonly_observable<T> {
+class observable : public impl::readonly_observable<T>
+{
     using readonly = impl::readonly_observable<T>;
 
 public:
     observable() = default;
-    explicit observable(T value) : readonly(std::move(value)) {}
+    /// Constructs a field that holds \p initial.
+    explicit observable(T initial) : readonly(std::move(initial)) {}
+
+    /// Constructs a field that follows other fields from the start: its value is `fn` --
+    /// the last argument -- of the values of the sources, computed here and again on every
+    /// change of any of them, as follow() does. The form for a field of a model computed
+    /// from the fields beside it:
+    ///
+    ///     struct Equation : sta_refcounted {
+    ///         observable<nullable<double>> a, b, c;
+    ///         observable<Answer> answer{a, b, c, solve};
+    ///     };
+    ///
+    /// The sources are declared above the field. Members are constructed in the order of
+    /// their declaration, and this constructor reads the value of each source and adds its
+    /// watch: a source declared below the field is not constructed yet.
+    template <class... Args>
+        requires impl::follows_into<T, Args...>
+    explicit observable(Args&&... args)
+        : observable(std::forward_as_tuple(std::forward<Args>(args)...),
+                     std::make_index_sequence<sizeof...(Args) - 1>{}) {}
 
     /// Sets the value and, if it actually changed, tells the watchers. Setting
     /// it to what it already holds says nothing: a binding writing back the
@@ -158,11 +208,11 @@ public:
     /// The bindings hear first, the application after: by the time a watcher
     /// added through on_change runs -- to save the model, say -- the controls
     /// already show what it is saving.
-    void set(T value) {
+    void set(T next) {
         if constexpr (std::equality_comparable<T>) {
-            if (this->value_ == value) return;
+            if (this->value_ == next) return;
         }
-        this->value_ = std::move(value);
+        this->value_ = std::move(next);
         this->bound_(this->value_);
         this->changed_(this->value_);
     }
@@ -181,40 +231,59 @@ public:
     /// Returns the field itself, so its own watch can follow in one expression:
     ///
     ///     answer.follow(va, vb, vc, solve).on_change(show);
+    ///
+    /// A field that follows from the moment it is made is declared with the sources and the
+    /// function instead (the constructor above).
     template <class... Args>
-        requires (sizeof...(Args) >= 2)
+        requires impl::follows_into<T, Args...>
     observable& follow(Args&&... args) {
         auto wire = [this]<std::size_t... I>(std::index_sequence<I...>, auto sources_and_fn) {
-            auto recompute = [this, fn = std::get<sizeof...(I)>(std::move(sources_and_fn)),
-                              ...sources = &std::get<I>(sources_and_fn)]() noexcept {
-                set(fn(sources->get()...));
-            };
-            recompute();
-            (std::get<I>(sources_and_fn).on_change([recompute](auto const&) noexcept { recompute(); }), ...);
+            auto& fn = std::get<sizeof...(I)>(sources_and_fn);
+            set(std::invoke(fn, std::get<I>(sources_and_fn).get()...));
+            follow_changes(std::move(fn), std::get<I>(sources_and_fn)...);
         };
         wire(std::make_index_sequence<sizeof...(Args) - 1>{},
              std::forward_as_tuple(std::forward<Args>(args)...));
         return *this;
     }
+
+private:
+    // The value is computed as the field is made, rather than a default value set afterwards.
+    template <class Tuple, std::size_t... I>
+    observable(Tuple sources_and_fn, std::index_sequence<I...>)
+        : readonly(std::invoke(std::get<sizeof...(I)>(sources_and_fn),
+                               std::get<I>(sources_and_fn).get()...)) {
+        follow_changes(std::get<sizeof...(I)>(std::move(sources_and_fn)),
+                       std::get<I>(sources_and_fn)...);
+    }
+
+    // The watches that keep the field fn of its sources: a change of any of them sets it anew.
+    template <class Fn, class... Sources>
+    void follow_changes(Fn fn, Sources&... sources) {
+        auto recompute = [this, fn = std::move(fn), ... watched = &sources]() noexcept {
+            set(std::invoke(fn, watched->get()...));
+        };
+        (sources.on_change([recompute](auto const&) noexcept { recompute(); }), ...);
+    }
 };
 
 namespace impl {
 
-// A field a binding can be cut from: an observable, an observable_list.
+// A field a binding can be unbound from: an observable, an observable_list.
 template <class Model>
 concept unbindable = requires(Model& model) { model.unbind(); };
 
 }  // namespace impl
 
 /**
- * Cuts the binding watches of every model named -- the teardown a window does
+ * Unbinds the binding watches of every model named -- the teardown a window does
  * from its Closed handler when the models it bound to will outlive it:
  *
  *     unsubscribe_all(settings.minimizeOnClose, settings.theme);
  *
  * Each model lets go of the controls its watches held, so the controls, and
  * the window that held them, are freed. Naming the models is the whole of it:
- * a binding leaves no cookie for the caller to keep, on purpose -- the model
+ * a binding leaves no token for the caller to keep, on purpose -- the model
  * remembers it, and this is where it is spent. A model is any field a binding
  * watches: an observable or an observable_list.
  */
@@ -225,20 +294,24 @@ void unsubscribe_all(Models&... models) {
 
 namespace impl {
 
-// The class a pointer to member names: the owner whose member a change_watch calls.
+// The class a pointer to member names: the owner whose member a change_watch calls, the Impl
+// level whose interface field Object::get() reads (wxl.ui). And the member's own type.
 template <class Member>
-struct member_owner {};
+struct member_owner {
+};
 
-template <class Fn, class Owner>
-struct member_owner<Fn Owner::*> {
+template <class T, class Owner>
+struct member_owner<T Owner::*> {
     using type = Owner;
+    using member_t = T;
 };
 
 // What a change event hands each of its watchers -- the value of an observable, the
 // list_change of an observable_list -- read off the event's callback node, as
 // linked_watch reads it, whichever way the event's signature was spelled.
 template <class Body>
-struct change_argument {};
+struct change_argument {
+};
 
 template <class A, template <class> class Base>
 struct change_argument<func_body<void(A) noexcept, Base>> {
@@ -269,8 +342,10 @@ concept change_listener = requires(Owner& owner, Argument change) {
  *     Panel::Panel(Settings& settings) : fontSizeWatch_{settings.fontSize, *this} {}
  *
  * The watch is itself the node in the field's event, so standing there allocates
- * nothing and leaves no cookie to keep: the destructor takes the node off by its own
- * address. One made empty stands nowhere until attach() puts it on a field, once.
+ * nothing and leaves no token to keep: the destructor takes the node off by its own
+ * address. There is no watch on nothing: one is made on its field, from the start of its
+ * owner's life, and a watch that has to wait for its field is a part of its owner that
+ * appears then, built whole.
  *
  * The rules are those of any node built into its subscriber, and each one broken
  * stops the process rather than leave the event holding freed memory: the field
@@ -282,50 +357,34 @@ concept change_listener = requires(Owner& owner, Argument change) {
 template <class Observed, auto Listener>
 class change_watch final : public Observed::changed_event::func_t
 {
-    using event_t = typename Observed::changed_event;
-    using func_t = typename event_t::func_t;
-    using argument_t = typename impl::change_argument<func_t>::type;
-    using owner_t = typename impl::member_owner<decltype(Listener)>::type;
+    using event_t = Observed::changed_event;
+    using func_t = event_t::func_t;
+    using argument_t = impl::change_argument<func_t>::type;
+    using owner_t = impl::member_owner<decltype(Listener)>::type;
 
 public:
-    /// A watch on no field yet: see attach().
-    change_watch() noexcept = default;
+    /// A watch on `field`, calling the listener on `owner` at each change. The node is put on
+    /// the field last, once the watch is whole.
+    change_watch(Observed& field, owner_t& owner) noexcept : field_(&field), owner_(&owner) {
+        // Checked here and not in the class: the watch is declared inside its owner, which is
+        // not complete there, and a member cannot be called on it yet.
+        static_assert(impl::change_listener<Listener, owner_t, argument_t>,
+                      "wxl: a change_watch calls a member of its owner with the change, from "
+                      "inside the field's event, which has nobody to hand an exception to -- name "
+                      "a noexcept member that takes the change and returns nothing");
+        static_cast<void>(field.on_change(as_not_null<func_t>(this)));
+    }
 
-    /// A watch on `field` from the start, calling `owner`.
-    change_watch(Observed& field, owner_t& owner) noexcept { attach(field, owner); }
-
-    /// Takes the watch off its field, if it is on one.
+    /// Takes the watch off its field. field_ is cleared first, so that the release() the field
+    /// gives in return tells this removal from any other.
     ~change_watch() override {
         Observed* const field = std::exchange(field_, nullptr);
-        if (!field) return;
-
-        if (!field->remove_change(cookie_t{static_cast<func_t*>(this)}))
+        if (!field->remove_change(static_cast<func_t&>(*this)))
             abort("wxl: a change_watch is no longer on its field");
         // The event lets go of a removed node at once, unless that node's call is under
         // way: then only once the call returns -- into a watch that is gone by then.
         if (owner_) abort("wxl: a change_watch is destroyed from inside its own call");
     }
-
-    /// Puts the watch on `field`: from now on each change calls the listener on
-    /// `owner`. Once -- a watch names one field for its life, and a second attach
-    /// stops the process rather than leave the first field calling the owner or
-    /// move the watch behind the back of whoever put it there.
-    void attach(Observed& field, owner_t& owner) noexcept {
-        // Checked here and not in the class: the watch is declared inside its owner,
-        // which is not complete there, and a member cannot be called on it yet.
-        static_assert(impl::change_listener<Listener, owner_t, argument_t>,
-                      "wxl: a change_watch calls a member of its owner with the change, from "
-                      "inside the field's event, which has nobody to hand an exception to -- name "
-                      "a noexcept member that takes the change and returns nothing");
-
-        if (field_) abort("wxl: a change_watch is attached twice");
-        field_ = &field;
-        owner_ = &owner;
-        static_cast<void>(field.on_change(as_not_null<func_t>(this)));
-    }
-
-    /// Whether the watch is on a field.
-    bool attached() const noexcept { return field_ != nullptr; }
 
 private:
     void operator()(argument_t change) noexcept override { (owner_->*Listener)(change); }
@@ -339,10 +398,11 @@ private:
         owner_ = nullptr;
     }
 
-    Observed* field_ = nullptr;
+    // Cleared by the destructor before it takes the node off.
+    Observed* field_;
     // Cleared when the field lets go of the node: still set after the destructor has
     // taken the node off, it says the release was put off for a call under way.
-    owner_t* owner_ = nullptr;
+    owner_t* owner_;
 };
 
 }  // export namespace wxl::core

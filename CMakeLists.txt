@@ -1,25 +1,15 @@
 # ---- CMakeList.txt : Top-level CMake project file ----
 #
-# One common project over the whole tree: the generator (wxl.gen), the core
-# runtime library (wxl.core) and the WinUI3 backend (wxl.ui) configure and
-# build together, so wxl.ui consumes wxl::core as an in-tree target instead
-# of an installed package.
+# One project over the whole tree, and the one entry into it: configured on its
+# own, it builds the tree; added by another project -- add_subdirectory(<wxl>)
+# or FetchContent -- it gives that project every target it links, with the
+# options below choosing what else comes along. The modules are subdirectories
+# of this project and are not configured or added on their own.
 #
-# Every CMake script the tree uses lives in cmake/ next to this file and is
-# shared by all three projects.
-cmake_minimum_required(VERSION 4.3)
-
-# Resolves VCPKG_ROOT (from the vcpkg-managed path file, or the environment)
-# and sets the toolchain file itself -- which is why no preset here has to
-# name CMAKE_TOOLCHAIN_FILE. It has to run before project().
-include(cmake/vcpkg_bootstrap.cmake)
-
-# Opens CMake's experimental `import std;` gate, which wxl.core's module build
-# needs. Only the top-level project can open it, and only before project().
-# CMAKE_CXX_MODULE_STD below is the request; this is the permission, and CMake
-# refuses the request without it ("requires toolchain support, but it was not
-# provided").
-include(cmake/wxl_import_std_gate.cmake)
+# Every CMake script the tree uses lives in cmake/ next to this file.
+# 4.5: the first CMake that gives `import std;` to every C++ target scanned for
+# modules, without an experimental gate.
+cmake_minimum_required(VERSION 4.5)
 
 project(
     wxl-project VERSION 0.1.0
@@ -28,14 +18,147 @@ project(
     LANGUAGES CXX
 )
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+if(MSVC AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "19.53.36911")
+    file(TO_NATIVE_PATH "${CMAKE_CURRENT_LIST_DIR}/tools/install-msvc.ps1" _wxl_msvc_installer)
+    set(_wxl_msvc_install_path_argument "")
+    if(CMAKE_CXX_COMPILER MATCHES "^(.*)/VC/Tools/MSVC/[^/]+/bin/[^/]+/[^/]+/cl\\.exe$")
+        set(_wxl_msvc_install_path_argument " -InstallPath \"${CMAKE_MATCH_1}\"")
+    endif()
+    message(FATAL_ERROR
+        "wxl requires MSVC 19.53.36911 or newer (MSVC toolset 14.53.36911); "
+        "the selected compiler is ${CMAKE_CXX_COMPILER_VERSION}.\n"
+        "Install the required toolset with:\n"
+        "  pwsh -NoProfile -File \"${_wxl_msvc_installer}\"${_wxl_msvc_install_path_argument}\n"
+        "Then configure again with MSVC 14.53 or newer."
+    )
+endif()
 
-# ---- Set global compiler options ----
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_MODULE_STD 1)
-set(CMAKE_CXX_SCAN_FOR_MODULES ON)
+# The version of the commit, WXL_PACKAGE_VERSION: project() names the last
+# release, and the number of commits since its tag is the fourth part
+# (cmake/wxl_package_version.cmake). WXL_VERSION below says which builds carry
+# it.
+include(cmake/wxl_package_version.cmake)
+
+set(WXL_LOCAL_SOURCE_DIR "" CACHE PATH
+    "Directory with local copies of the dependencies, one subdirectory per dependency")
+file(TO_CMAKE_PATH "${WXL_LOCAL_SOURCE_DIR}" _wxl_local_source_dir)
+
+# The local copies reach FetchContent as normal variables, and FetchContent
+# copies each into its cache entry FETCHCONTENT_SOURCE_DIR_<DEP>, which would
+# outlive the option. So when the option changes or is cleared, the entries that
+# still name the copies it set are removed; an entry set to another directory by
+# hand stays.
+foreach(_dep IN ITEMS winmd fmt googletest wxl_doxygen wxl_doxygen_awesome)
+    string(TOUPPER "${_dep}" _dep_upper)
+    if(_WXL_APPLIED_LOCAL_SOURCE_DIR AND
+       NOT _WXL_APPLIED_LOCAL_SOURCE_DIR STREQUAL _wxl_local_source_dir AND
+       "$CACHE{FETCHCONTENT_SOURCE_DIR_${_dep_upper}}" STREQUAL "${_WXL_APPLIED_LOCAL_SOURCE_DIR}/${_dep}")
+        unset(FETCHCONTENT_SOURCE_DIR_${_dep_upper} CACHE)
+    endif()
+    if(_wxl_local_source_dir)
+        set(FETCHCONTENT_SOURCE_DIR_${_dep_upper} "${_wxl_local_source_dir}/${_dep}")
+    endif()
+endforeach()
+set(_WXL_APPLIED_LOCAL_SOURCE_DIR "${_wxl_local_source_dir}" CACHE INTERNAL "")
+
+# Whether the wxl tree is the top-level project or a project adds it (through
+# add_subdirectory or FetchContent) is PROJECT_IS_TOP_LEVEL from here on, in
+# this file and in every directory of the tree: none of them calls project() of
+# its own, so the variable is about the project() above.
+
+# ---- The language ----
+# The compile options and the language level every translation unit that
+# imports a wxl module shares with wxl (cmake/wxl_language.cmake). Set here when
+# the tree is the project; a project that adds it sets them itself, above the
+# add_subdirectory, and the check stops its configure with the lines to add when
+# anything is missing.
+include(cmake/wxl_language.cmake)
+if(PROJECT_IS_TOP_LEVEL)
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+    wxl_apply_language_options()
+else()
+    wxl_check_language_options()
+endif()
+
+# ---- The format of the debugging information ----
+# CMake compiles the `std` module, and the modules of a target for an importer
+# with other options, in copies of the module's target it makes at generate
+# time: @cmake_cxx_std@synth_<n>, <target>@synth_<n>. A copy takes
+# MSVC_DEBUG_INFORMATION_FORMAT from its model (cmTarget::CopyCxxModulesProperties,
+# read at v4.5.0); a copy of the imported @cmake_cxx_std, which
+# CMAKE_MSVC_DEBUG_INFORMATION_FORMAT does not initialize, has none and takes
+# CMAKE_MSVC_DEBUG_INFORMATION_FORMAT_DEFAULT of its directory. A copy is an
+# interface library with no PDB of its own: with /Zi it compiles with /Fd"" and
+# writes vc<version>.pdb in the build directory, and copies compiled at once
+# stop on it (C1041).
+#
+# So the format asked for -- the variable, or the default without it -- becomes
+# a generator expression, which CMake evaluates for each target
+# (cmLocalGenerator::GetMSVCDebugFormatName): a target of the tree gets the
+# format as it is, and a copy, the only interface library that compiles, the
+# debugging information in its objects (/Z7) whenever any is asked for -- the
+# objects of the `std` module go into wxl.core. Both are set for this directory
+# and those below it, so a project that adds the tree keeps its own. An empty
+# default is CMP0141 OLD in such a project, where CMake reads no property.
+if(NOT "${CMAKE_MSVC_DEBUG_INFORMATION_FORMAT_DEFAULT}" STREQUAL "")
+    if(DEFINED CMAKE_MSVC_DEBUG_INFORMATION_FORMAT)
+        set(_wxl_format "${CMAKE_MSVC_DEBUG_INFORMATION_FORMAT}")
+    else()
+        set(_wxl_format "${CMAKE_MSVC_DEBUG_INFORMATION_FORMAT_DEFAULT}")
+    endif()
+    set(_wxl_format "$<IF:$<STREQUAL:$<TARGET_PROPERTY:TYPE>,INTERFACE_LIBRARY>,$<$<BOOL:${_wxl_format}>:Embedded>,${_wxl_format}>")
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT_DEFAULT "${_wxl_format}")
+    if(DEFINED CMAKE_MSVC_DEBUG_INFORMATION_FORMAT)
+        set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "${_wxl_format}")
+    endif()
+    unset(_wxl_format)
+endif()
+
+# ---- Reproducible builds ----
+# WXL_REPRODUCIBLE_BUILD: the objects, archives and executables the tree makes
+# are the same bytes whenever the same sources are built with the same toolset,
+# whatever the directories and the time -- all but the profile editor, whose
+# link MSVC 14.53 does not repeat (docs/building.md, "Пакет WinXL"). The builds
+# of the package WinXL turn it on (tools/package/build.ps1, which
+# .github/actions/package-libs and package-tools run), so that the package made again from a commit has the hash of
+# the first, which an application's NuGet lock file can then hold. Off in a
+# working tree, where a debugger finds the sources by the paths the objects
+# carry.
+#
+# /experimental:deterministic stamps no time into an object and makes the
+# compiler honour /pathmap, which it ignores without it (MSVC 14.53; /Brepro
+# alone does not). The maps rename, in the debugging information of /Z7, in
+# __FILE__ and in std::source_location, the build directory to \wxl.build, the
+# local copies of the dependencies (WXL_LOCAL_SOURCE_DIR) to \wxl.local and the
+# tree to \wxl: the build directory first, since it may lie inside the tree and
+# the first map that matches wins. In CMAKE_CXX_FLAGS and not in the compile
+# options of the directory: those reach the export of the modules
+# (IMPORTED_CXX_MODULES_COMPILE_OPTIONS), and an application would build the
+# modules with the maps of this build; the flags of the language reach every
+# C++ compile of the tree, the `std` module among them, and nothing else. /Brepro
+# makes lib.exe write -1 for the time of each member of an archive, where it
+# writes the time of the archive otherwise, and gives an executable a hash in
+# place of the time of the link; the linker of winxl gets it from
+# cmake/wxl_winxl.cmake.
+if(PROJECT_IS_TOP_LEVEL)
+    option(WXL_REPRODUCIBLE_BUILD
+        "Build objects, archives and executables that depend on the sources and the toolset only." OFF)
+    if(WXL_REPRODUCIBLE_BUILD)
+        set(_wxl_maps "${CMAKE_BINARY_DIR}=\\wxl.build")
+        if(_wxl_local_source_dir)
+            list(APPEND _wxl_maps "${_wxl_local_source_dir}=\\wxl.local")
+        endif()
+        list(APPEND _wxl_maps "${CMAKE_SOURCE_DIR}=\\wxl")
+        string(APPEND CMAKE_CXX_FLAGS " /experimental:deterministic")
+        foreach(_wxl_map IN LISTS _wxl_maps)
+            file(TO_NATIVE_PATH "${_wxl_map}" _wxl_map)
+            string(APPEND CMAKE_CXX_FLAGS " \"/pathmap:${_wxl_map}\"")
+        endforeach()
+        string(APPEND CMAKE_EXE_LINKER_FLAGS " /Brepro")
+        string(APPEND CMAKE_SHARED_LINKER_FLAGS " /Brepro")
+        string(APPEND CMAKE_STATIC_LINKER_FLAGS " /Brepro")
+    endif()
+endif()
 
 # ---- No link-time optimization ----
 # Measured on this tree, and the measurement went the other way from what one
@@ -49,143 +172,290 @@ set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 #
 # What it costs is plain: a /GL object carries an intermediate representation
 # instead of machine code, so the build tree grows by an order of magnitude --
-# the static libraries of this tree go from 42 MB to 1.7 GB, wxl.ui.lib
-# alone from 26 MB to 1.67 GB -- and every Release link recompiles the whole
-# program.
+# the static libraries of this tree go from 42 MB to 1.7 GB -- and every
+# Release link recompiles the whole program.
 
-# Off by default, and the presets say nothing about it: building the library
-# is what a tree is configured for, and GoogleTest is fetched and built only
-# for someone who is going to run the tests. It used to be OFF here and ON in
-# the preset -- which meant the declared default was never what anyone got,
-# and the requirement list said "optional" about a package without which even
-# the configure step failed. One place says it now, and it is this one.
-#
-#     cmake --preset x64 -DBUILD_TESTING=ON      (sticks in CMakeCache.txt)
-#     tools\build.ps1 -Define BUILD_TESTING=ON
-option(BUILD_TESTING "Build the testing tree." OFF)
-
-if(BUILD_TESTING)
-    enable_testing()
-
-    # GoogleTest from its own sources at a pinned tag; find_package(GTest)
-    # below and in the subprojects resolves to it.
-    include(cmake/wxl_gtest.cmake)
-    find_package(GTest REQUIRED CONFIG)
-    include(GoogleTest)
+# ---- What is built ----
+# The core modules -- wxl.core, wxl.highlight, wxl.bb, wxl.rsdn -- and the
+# helpers of the tests, wxl.test, are always added: they are what a project
+# that adds wxl comes for. The rest has a key of its own. The tree configured
+# on its own builds all of it; a project that adds the tree gets the WinUI
+# backend and the generator it is built with, and not the samples, the sandbox,
+# the site or wxl's own tests.
+if(PROJECT_IS_TOP_LEVEL)
+    set(_wxl_own ON)
+else()
+    set(_wxl_own OFF)
 endif()
 
-find_package(cppwinrt CONFIG REQUIRED)
+# The wrappers of wxl.ui are a step of its build, run by the generator, so the
+# backend needs the tools.
+option(WXL_UI "Build the WinUI backend: wxl.ui and the profile editor wxl.gen.ui." ON)
+option(WXL_TOOLS "Build the generator: wxl.gen.common and wxl.gen (winui-srcgen)." ON)
+option(WXL_SAMPLES "Build the samples (samples/)." ${_wxl_own})
+option(WXL_SANDBOX "Build the sandbox (sandbox/)." ${_wxl_own})
 
-# winmd::reader is a header-only WinMD metadata parsing library; not packaged
-# by vcpkg, so it's fetched directly from its upstream repo.
-include(FetchContent)
-FetchContent_Declare(
-    winmd
-    GIT_REPOSITORY https://github.com/microsoft/winmd.git
-    GIT_TAG a363c851a65c4e15743d6589acc1723e9e21b143 # master, 2026-08
-)
-FetchContent_MakeAvailable(winmd)
+# Off by default: the benchmarks are measurement tools, run deliberately
+# (tools\bench.ps1), and an ordinary build has no reason to spend time on them.
+# The one switch for every benchmark of the tree: those of wxl.core, of
+# wxl.gen.common and of wxl.ui, each declared by wxl_add_benchmark().
+option(WXL_BUILD_BENCHMARKS "Build the benchmark executables of the tree (tools/bench.ps1 runs them)." OFF)
+
+# Install and export rules, for find_package(wxl CONFIG) against an installed
+# prefix (cmake/wxl_install.cmake, included below, after the directories that
+# make the targets it installs). Off by default: a consumer's `cmake --install`
+# should not start dropping wxl's archives and module sources into its prefix
+# unless it asks for it.
+option(WXL_INSTALL "Generate install and export rules for wxl." OFF)
+
+# WXL_VERSION, the version a build carries: the definition wxl.core compiles in
+# (public, so an application reads it too), what winxl --version prints. The
+# version of the commit in a build that is installed or is given its version
+# with -DWXL_PACKAGE_VERSION, as the builds of a package are; the release the
+# tree names otherwise. The version of the commit changes with every commit,
+# and every unit that imports wxl.core is compiled with the definition, so in a
+# working build directory a configure after a pull would rebuild all of them for
+# a number nothing there reads.
+if(WXL_INSTALL OR NOT "$CACHE{WXL_PACKAGE_VERSION}" STREQUAL "")
+    set(WXL_VERSION "${WXL_PACKAGE_VERSION}")
+else()
+    set(WXL_VERSION "${PROJECT_VERSION}")
+endif()
+
+if(WXL_UI AND NOT WXL_TOOLS)
+    message(FATAL_ERROR
+        "WXL_UI is ON and WXL_TOOLS is OFF. The wrappers of wxl.ui are generated by a step of its "
+        "build, which runs the generator WXL_TOOLS builds (cmake/wxl_ui_profile.cmake): turn "
+        "WXL_TOOLS on, or WXL_UI off.")
+endif()
+
+foreach(_wxl_option WXL_SAMPLES WXL_SANDBOX)
+    if(${_wxl_option} AND NOT WXL_UI)
+        message(FATAL_ERROR
+            "${_wxl_option} is ON and WXL_UI is OFF. The applications it builds stand on wxl.ui "
+            "and its projection: turn WXL_UI on, or ${_wxl_option} off.")
+    endif()
+endforeach()
+
+# ---- Tests ----
+# BUILD_TESTING is the tree's own only when the tree is the project: off by
+# default, and the presets say nothing about it, since building the library is
+# what a tree is configured for, and GoogleTest is fetched and built only for
+# someone who is going to run the tests. It used to be OFF here and ON in the
+# preset -- which meant the declared default was never what anyone got, and the
+# requirement list said "optional" about a package without which even the
+# configure step failed. One place says it now, and it is this one.
+#
+#     cmake --preset x64-dynamic -DBUILD_TESTING=ON      (sticks in CMakeCache.txt)
+#     tools\build.ps1 -Define BUILD_TESTING=ON
+#
+# WXL_TESTS builds wxl's own tests -- of the modules, of the scripts in cmake/ --
+# and fetches GoogleTest for them. At the top level it follows BUILD_TESTING
+# (cmake_dependent_option: ON with it, unless turned off, and OFF without it, so
+# a tree configured once without tests gets them with -DBUILD_TESTING=ON).
+# BUILD_TESTING is the switch there: without it a -DWXL_TESTS=ON is dropped,
+# forced OFF with its cache entry made INTERNAL.
+#
+# In a project that adds wxl it is OFF unless the project turns it on, and
+# BUILD_TESTING and enable_testing() are the project's own. enable_testing()
+# comes above the add_subdirectory of wxl: called after it, or never, it leaves
+# the tests of wxl registered and never run, so the configure stops instead.
+if(PROJECT_IS_TOP_LEVEL)
+    option(BUILD_TESTING "Build the testing tree." OFF)
+    include(CMakeDependentOption)
+    cmake_dependent_option(WXL_TESTS "Build the tests of wxl." ON "BUILD_TESTING" OFF)
+    # Always: with tests off it writes an empty CTestTestfile.cmake over the old one.
+    enable_testing()
+else()
+    option(WXL_TESTS "Build the tests of wxl." OFF)
+    if(WXL_TESTS AND NOT CMAKE_TESTING_ENABLED)
+        message(FATAL_ERROR
+            "WXL_TESTS is ON in ${CMAKE_SOURCE_DIR}, which adds wxl, and testing is not enabled "
+            "where it adds it: wxl's tests would be registered and never run. Call "
+            "enable_testing() ABOVE the add_subdirectory (or FetchContent_MakeAvailable) of wxl, "
+            "or turn WXL_TESTS off. BUILD_TESTING is the project's own, and wxl does not read it "
+            "there.")
+    endif()
+endif()
+
+if(WXL_TESTS)
+    # GoogleTest from its own sources at a pinned tag; find_package(GTest)
+    # below resolves to it, and wxl.test defines its fixture over it.
+    # gtest_discover_tests comes with wxl_add_gtest (cmake/config.cmake).
+    include(cmake/wxl_gtest.cmake)
+    find_package(GTest REQUIRED CONFIG)
+
+    # The list of the restore that cmake/wxl_restored_packages.cmake writes,
+    # checked on a restore result, a response file and package folders the
+    # script makes up in a directory of its own.
+    add_test(NAME restored-packages
+        COMMAND "${CMAKE_COMMAND}"
+                "-DWXL_TEST_DIR=${CMAKE_CURRENT_BINARY_DIR}/restored-packages-test"
+                -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/wxl_restored_packages_test.cmake")
+
+    # The check of the language options a project that adds wxl makes
+    # (cmake/wxl_language.cmake), on directories set up the way such a project
+    # leaves them.
+    add_test(NAME language-options
+        COMMAND "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/wxl_language_test.cmake")
+
+    # The build of wxl's archives a configuration of an application links, read
+    # off its CMAKE_MSVC_RUNTIME_LIBRARY (cmake/wxl_runtime_library.cmake).
+    add_test(NAME runtime-library
+        COMMAND "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/wxl_runtime_library_test.cmake")
+
+    # NuGet versions as cmake/wxl_nuget_version.cmake reads and orders them, and
+    # the version a pin of tools/packages.json admits out of the index of a
+    # package, checked without the network.
+    add_test(NAME nuget-version
+        COMMAND "${CMAKE_COMMAND}"
+                "-DWXL_TEST_DIR=${CMAKE_CURRENT_BINARY_DIR}/nuget-version-test"
+                -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/wxl_nuget_version_test.cmake")
+
+    # The narrow interfaces of a path, kept out of the sources: a scan of what
+    # git tracks, which cmake/wxl_narrow_paths.cmake describes. A tree copied
+    # without its repository has no list of its own sources to scan, and says
+    # so; on the tree's own CI (the CI variable, which GitHub Actions sets) the
+    # check is the point of the run, and its absence stops the configure -- not
+    # in a project that adds wxl, whose CI is not about wxl's sources.
+    find_package(Git QUIET)
+    if(Git_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+        add_test(NAME narrow-paths
+            COMMAND "${CMAKE_COMMAND}"
+                    "-DWXL_TREE=${CMAKE_CURRENT_SOURCE_DIR}"
+                    "-DWXL_GIT=${GIT_EXECUTABLE}"
+                    -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/wxl_narrow_paths.cmake")
+    elseif(PROJECT_IS_TOP_LEVEL AND NOT "$ENV{CI}" STREQUAL "")
+        message(FATAL_ERROR "narrow-paths: ${CMAKE_CURRENT_SOURCE_DIR} is not a git checkout, "
+                            "or git is not found, and a CI build has to scan the sources")
+    else()
+        message(STATUS "narrow-paths: ${CMAKE_CURRENT_SOURCE_DIR} is not a git checkout, "
+                       "or git is not found; the scan of the sources is not registered")
+    endif()
+endif()
+
+# The NuGet packages and the C++/WinRT projection over them, made by the MSBuild
+# of the developer environment (cmake/wxl_packages.cmake): the target
+# Microsoft::CppWinRT, wxl_nuget_package_dir() and the list of the restore that
+# wxl_restored_packages_file() names. Here and not in wxl.ui: the generator,
+# configured before it, reads the packages through that list in its tests, and
+# in the step of the build that generates the wrappers. Made when something
+# built needs them: the generator, and wxl.ui with what stands on it, which need
+# the generator; and a benchmark of the async area of wxl.core, which measures a
+# WinRT coroutine.
+# Without them the configure needs no MSBuild and no WinUI workload.
+if(WXL_TOOLS OR WXL_BUILD_BENCHMARKS)
+    include(cmake/wxl_packages.cmake)
+endif()
+
+# winmd::reader is a header-only WinMD metadata parsing library, fetched from
+# its upstream repository at a pinned commit; the generator reads the metadata
+# with it.
+if(WXL_TOOLS)
+    include(FetchContent)
+    FetchContent_Declare(
+        winmd
+        GIT_REPOSITORY https://github.com/microsoft/winmd.git
+        GIT_TAG a363c851a65c4e15743d6589acc1723e9e21b143 # master, 2026-08
+    )
+    FetchContent_MakeAvailable(winmd)
+endif()
 
 # Shared infrastructure plus the wxl_* helper functions (wxl_add_module_library,
-# wxl_add_gtest, wxl_set_target_folders) every subproject uses.
+# wxl_add_gtest, wxl_set_target_folders, the site's wxl_add_doxygen_site) the
+# tree and a project that adds it use.
 include(cmake/config.cmake)
 
-if(NOT TARGET winmd_reader)
+if(WXL_TOOLS AND NOT TARGET winmd_reader)
     add_library(winmd_reader INTERFACE)
     target_include_directories(winmd_reader INTERFACE ${winmd_SOURCE_DIR}/src)
 endif()
 
-# wxl.core first: wxl.ui links wxl::core, and the generated sources it
-# compiles import that module.
+# wxl.core first: the one module of the core, its areas fmt, async, logging,
+# xml, json and html among its partitions (wxl.core/README.md). wxl.ui links
+# wxl::core, and the generated sources it compiles import that module.
 add_subdirectory(wxl.core)
 
-# Shared test infrastructure (the gtest fixture, the stress-test harness),
-# used by every subproject's test executable.
-if(BUILD_TESTING)
-    add_subdirectory(test-support)
-endif()
-
-# The text buffer and builder over fmt. Beside wxl.core and not inside it, so
-# that the core keeps depending on the std module alone; the names stay in
-# wxl::core, only the import differs.
-add_subdirectory(wxl.fmt)
-
-# The layer above wxl.core: the future family, the threading machinery, and what
-# is left of the component model built on them -- component and threaded_component.
-# The containers, the hosted half and the apartments had no caller and are kept
-# outside this tree.
-add_subdirectory(wxl.async)
-
-# The log: wxl.core's text_builder formats a line, wxl.async supplies the
-# thread the asynchronous half writes it from.
-add_subdirectory(wxl.logging)
-
-add_subdirectory(wxl.xml)
-
-# Читатель JSON -- брат wxl.xml с той же схемой хранения: дерево из видов в
-# присвоенный буфер, вырезанное из его же арены.
-add_subdirectory(wxl.json)
-
-# The HTML subset behind HtmlBlock: a tolerant parser for foreign markup,
-# its tree carved from wxl.xml's arena. Specification: wxl.html/design.md.
-add_subdirectory(wxl.html)
+# The helpers of the tests -- headers any target may link, the gtest fixture
+# (wxl.test/CMakeLists.txt): wxl's own, and a project's that adds wxl.
+add_subdirectory(wxl.test)
 
 # Подсветка синтаксиса: таблицы языков и сканер без регулярных выражений;
 # ею пользуется wxl.rsdn, а зависит она только от std.
 add_subdirectory(wxl.highlight)
 
-# Братья wxl.html: свои токенизаторы (BB и RSDN-разметка форумов) над общим
-# tree_builder семейства и тем же деревом.
+# Братья разбора HTML из wxl.core: свои токенизаторы (BB и RSDN-разметка
+# форумов) над общим tree_builder семейства и тем же деревом.
 add_subdirectory(wxl.bb)
 add_subdirectory(wxl.rsdn)
 
 # Профили и обход метаданных -- общее у генератора и редактора профилей.
-add_subdirectory(wxl.gen.common)
-add_subdirectory(wxl.gen)
+if(WXL_TOOLS)
+    add_subdirectory(wxl.gen.common)
+    add_subdirectory(wxl.gen)
+endif()
 
-# Обёртки, которые генератор пишет в wxl.ui/src/wxl, в репозиторий не входят
-# (.gitignore), а сам генератор собирается этим же деревом. Поэтому без них
-# настройка доходит до конца без wxl.ui и всего, что её линкует или берёт
-# выведенные ею пути, -- редактора профилей, примеров, песочницы, -- и
-# предупреждает, как их получить: собрать генератор, запустить, настроить заново.
-# Проверка здесь, а не внутри wxl.ui: там отсутствие обёрток -- ошибка
-# настройки, и потребитель вне этого дерева получает её у причины.
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/wxl.ui/src/wxl/CMakeLists.txt")
+# The wrappers are generated by the build: wxl.ui calls wxl_add_ui_library
+# (cmake/wxl_ui_profile.cmake), whose step runs the winui-srcgen built above and
+# compiles what it writes -- into <build>/wxl.ui/full/wxl, not into the sources.
+# So wxl.ui and what stands on it, the profile editor, the samples and the
+# sandbox, are part of every configure that builds them, and a fresh clone
+# needs one build.
+if(WXL_UI)
     add_subdirectory(wxl.ui)
 
     # Визуальный редактор профилей wxl.gen -- приложение на wxl.ui.
     add_subdirectory(wxl.gen.ui)
+endif()
 
+# Install and export rules (WXL_INSTALL, above): wxl.core with the fmt module it
+# imports, and wxl.ui.common when WXL_UI builds it. After the directories that
+# make those targets.
+if(WXL_INSTALL)
+    include(cmake/wxl_install.cmake)
+endif()
+
+if(WXL_SAMPLES)
     add_subdirectory(samples)
+endif()
 
-    # Песочница: пробы механизмов WinUI, каждая -- отдельное приложение.
-    # Собирается вместе со всем: рецепт, который никто не компилирует, тихо
-    # отстаёт от дерева -- эта папка так и простояла закомментированной, пока её
-    # цели не рассыпались.
+# Песочница: пробы механизмов WinUI, каждая -- отдельное приложение.
+# Собирается вместе со всем деревом: рецепт, который никто не компилирует, тихо
+# отстаёт от дерева -- эта папка так и простояла закомментированной, пока её
+# цели не рассыпались.
+if(WXL_SANDBOX)
     add_subdirectory(sandbox)
-else()
-    message(WARNING
-        "No generated wrappers in ${CMAKE_CURRENT_SOURCE_DIR}/wxl.ui/src/wxl: wxl.ui, wxl.gen.ui, "
-        "the samples and the sandbox are left out of this configure. Generate the wrappers, "
-        "then configure again:\n"
-        "  tools\\build.ps1 -Target winui-srcgen\n"
-        "  ${CMAKE_BINARY_DIR}/wxl.gen/Debug/winui-srcgen.exe "
-        "--profile ${CMAKE_CURRENT_SOURCE_DIR}/wxl.gen/profiles/full.json "
-        "--out ${CMAKE_CURRENT_SOURCE_DIR}/wxl.ui/src/wxl\n"
-        "  tools\\build.ps1 -Configure")
 endif()
 
 # The documentation site. An option because configuring it reaches the network
 # once per build tree -- for the theme, and for Doxygen itself when the host has
 # nothing recent enough -- and a tree configured to build a library should not
-# have to wait for that.
-option(WXL_BUILD_DOCS "Build the Doxygen documentation site." ON)
+# have to wait for that. The site documents the wrappers of its own generation,
+# in the language WXL_DOC_LANGUAGE names (docs/CMakeLists.txt); neither option
+# touches what the library compiles. Wxl's own, like the samples: on when the
+# tree is the project, off in a project that adds it, which builds a site of its
+# own with the same functions if it wants one.
+option(WXL_BUILD_DOCS "Build the Doxygen documentation site." ${_wxl_own})
+set(WXL_DOC_LANGUAGE en CACHE STRING
+    "Language of the site and of the wrappers it documents (winui-srcgen --doc-language)")
 if(WXL_BUILD_DOCS)
-    include(cmake/wxl_doxygen.cmake)
     add_subdirectory(docs)
 endif()
 
-# The shared CMake scripts, shown in the IDE tree without being built.
-file(GLOB_RECURSE _wxl_cmake_scripts CONFIGURE_DEPENDS "cmake/*.*")
-add_custom_target(cmake_files SOURCES ${_wxl_cmake_scripts})
-source_group("cmake" FILES ${_wxl_cmake_scripts})
+# winxl, the command-line utility of the tree (tools/winxl), published by the
+# .NET SDK 10 (cmake/wxl_winxl.cmake). Off by default everywhere: nothing else
+# in the tree needs .NET, and a configure should not ask for an SDK it does not
+# use. A release turns it on, and so does the CI job that installs the Windows
+# App Runtime with it.
+option(WXL_WINXL "Build winxl, the command-line utility of the tree (needs the .NET SDK 10)." OFF)
+if(WXL_WINXL)
+    include(cmake/wxl_winxl.cmake)
+endif()
+
+# The shared CMake scripts, shown in the IDE tree without being built: in the
+# tree's own IDE, not under a name in the project that adds it.
+if(PROJECT_IS_TOP_LEVEL)
+    file(GLOB_RECURSE _wxl_cmake_scripts CONFIGURE_DEPENDS "cmake/*.*")
+    add_custom_target(cmake_files SOURCES ${_wxl_cmake_scripts})
+    source_group("cmake" FILES ${_wxl_cmake_scripts})
+endif()

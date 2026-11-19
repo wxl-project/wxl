@@ -1,8 +1,14 @@
-# Визуальный редактор профилей генератора проекции (wxl.gen/profiles). Как
-# любое приложение на wxl, стоит на wxl::ui; WIN32 делает точкой входа
-# wWinMain самой wxl.
+# Визуальный редактор профилей генератора проекции (wxl.gen/profiles). Стоит
+# на библиотеке своего профиля, wxl::ui.editor (wxl.gen/profiles/
+# editor.winxl-profile): rich — и ничего сверх того, что зовёт его окно.
+# WIN32 делает точкой входа wWinMain самой wxl.
+
+# Редактор открывает wxl::dsl на уровне файла, как приложение, и локальное имя,
+# совпадающее с тегом, здесь ожидаемо: C4459 о нём ничего не говорит.
+add_compile_options(/wd4459)
 
 wxl_add_executable(wxl.gen.ui
+    UI wxl::ui.editor
     main.cpp
     Editor.h
     Editor.cpp
@@ -19,6 +25,11 @@ wxl_target_assets(wxl.gen.ui Assets)
 # Профили и обход метаданных -- те же, что у генератора.
 target_link_libraries(wxl.gen.ui PRIVATE wxl.gen.common)
 
-# Откуда открывается профиль по умолчанию: из дерева исходников.
-target_compile_definitions(wxl.gen.ui PRIVATE
-    "WXL_GEN_PROFILES=\"${PROJECT_SOURCE_DIR}/wxl.gen/profiles\"")
+# Откуда открывается профиль по умолчанию, если редактор не установлен
+# (main.cpp): из дерева исходников. Повторяемая сборка (WXL_REPRODUCIBLE_BUILD),
+# из которой редактор берёт пакет WinXL, путей дерева не несёт.
+if(NOT WXL_REPRODUCIBLE_BUILD)
+    target_compile_definitions(wxl.gen.ui PRIVATE
+        "WXL_GEN_PROFILES=\"${PROJECT_SOURCE_DIR}/wxl.gen/profiles\""
+        "WXL_GEN_COMPONENTS=\"${PROJECT_SOURCE_DIR}/wxl.ui/components\"")
+endif()

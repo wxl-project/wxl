@@ -1,0 +1,12 @@
+{
+  "name": "number_box",
+  "dependencies": [
+    "dsl"
+  ],
+  "sources": [
+    "impl/intermediate_value_pair.cpp",
+    "impl/intermediate_value_pair.h"
+  ],
+  "libraries": [],
+  "description": "The binding pair of NumberBox.IntermediateValue."
+}

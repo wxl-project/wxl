@@ -6,9 +6,8 @@
 #include <chrono>
 #include <memory>
 #include <vector>
-#include "ResourceBrush.h"
+#include "Resource.h"
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
-#include <wxl/Microsoft.UI.Xaml.Documents.h>
 #include <wxl/Microsoft.UI.Xaml.Media.h>
 #include <wxl/Microsoft.UI.Xaml.Media.Animation.h>
 #include <wxl/Microsoft.UI.Xaml.Shapes.h>
@@ -18,12 +17,10 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t standardHeader[] = {
-#include "Snippets/EasingFunction/StandardEasingFunction.html.embed"
-};
-constexpr char8_t standardCode[] = {
-#include "Snippets/EasingFunction/StandardEasingFunction.h.embed"
-};
+gallery::LazyLoadedText introText{"Snippets/EasingFunction/Intro.html"};
+
+gallery::LazyLoadedText standardHeader{"Snippets/EasingFunction/StandardEasingFunction.html"};
+gallery::LazyLoadedText standardCode{"Snippets/EasingFunction/StandardEasingFunction.h"};
 
 FrameworkElement standard() {
 #include "Snippets/EasingFunction/StandardEasingFunction.h"
@@ -35,12 +32,8 @@ FrameworkElement standard() {
     });
 }
 
-constexpr char8_t accelerateHeader[] = {
-#include "Snippets/EasingFunction/AccelerateEasingFunction.html.embed"
-};
-constexpr char8_t accelerateCode[] = {
-#include "Snippets/EasingFunction/AccelerateEasingFunction.h.embed"
-};
+gallery::LazyLoadedText accelerateHeader{"Snippets/EasingFunction/AccelerateEasingFunction.html"};
+gallery::LazyLoadedText accelerateCode{"Snippets/EasingFunction/AccelerateEasingFunction.h"};
 
 FrameworkElement accelerate() {
 #include "Snippets/EasingFunction/AccelerateEasingFunction.h"
@@ -53,12 +46,8 @@ FrameworkElement accelerate() {
     });
 }
 
-constexpr char8_t decelerateHeader[] = {
-#include "Snippets/EasingFunction/DecelerateEasingFunction.html.embed"
-};
-constexpr char8_t decelerateCode[] = {
-#include "Snippets/EasingFunction/DecelerateEasingFunction.h.embed"
-};
+gallery::LazyLoadedText decelerateHeader{"Snippets/EasingFunction/DecelerateEasingFunction.html"};
+gallery::LazyLoadedText decelerateCode{"Snippets/EasingFunction/DecelerateEasingFunction.h"};
 
 FrameworkElement decelerate() {
 #include "Snippets/EasingFunction/DecelerateEasingFunction.h"
@@ -71,12 +60,8 @@ FrameworkElement decelerate() {
     });
 }
 
-constexpr char8_t otherHeader[] = {
-#include "Snippets/EasingFunction/OtherXamlEasingFunctions.html.embed"
-};
-constexpr char8_t otherCode[] = {
-#include "Snippets/EasingFunction/OtherXamlEasingFunctions.h.embed"
-};
+gallery::LazyLoadedText otherHeader{"Snippets/EasingFunction/OtherXamlEasingFunctions.html"};
+gallery::LazyLoadedText otherCode{"Snippets/EasingFunction/OtherXamlEasingFunctions.h"};
 
 FrameworkElement other() {
 #include "Snippets/EasingFunction/OtherXamlEasingFunctions.h"
@@ -91,6 +76,8 @@ FrameworkElement other() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::easingFunctionPage() {
-    return StackPanel {RichTextBlock {Paragraph {Run {u"- Use the Standard easing function for animating general property changes."}}, Paragraph {Run {u"- Use the Accelerate easing function to animate objects that are exiting the scene."}}, Paragraph {Run {u"- Use the Decelerate easing function to animate objects that are entering the scene."}}}, standard(), accelerate(), decelerate(), other()};
+static wxl::FrameworkElement easingFunctionPage() {
+    return StackPanel {gallery::prose(gallery::snippet(introText), Thickness {}), standard(), accelerate(), decelerate(), other()};
 }
+
+REGISTER_GALLERY_PAGE(L"EasingFunction", easingFunctionPage);

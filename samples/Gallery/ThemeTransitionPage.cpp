@@ -7,8 +7,6 @@
 #include <vector>
 #include "Box.h"
 #include "RepeaterData.h"
-#include "StringList.h"
-#include "ResourceBrush.h"
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 #include <wxl/Microsoft.UI.Xaml.Media.Animation.h>
 #include <wxl/Microsoft.UI.Xaml.Shapes.h>
@@ -19,12 +17,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t entranceExampleHeader[] = {
-#include "Snippets/ThemeTransition/EntrancethemetransitionAddingItemsYour.html.embed"
-};
-constexpr char8_t entranceExampleCode[] = {
-#include "Snippets/ThemeTransition/EntrancethemetransitionAddingItemsYour.h.embed"
-};
+gallery::LazyLoadedText entranceExampleHeader{"Snippets/ThemeTransition/EntrancethemetransitionAddingItemsYour.html"};
+gallery::LazyLoadedText entranceExampleCode{"Snippets/ThemeTransition/EntrancethemetransitionAddingItemsYour.h"};
 
 FrameworkElement entranceExample() {
 #include "Snippets/ThemeTransition/EntrancethemetransitionAddingItemsYour.h"
@@ -37,12 +31,8 @@ FrameworkElement entranceExample() {
     });
 }
 
-constexpr char8_t repositionExampleHeader[] = {
-#include "Snippets/ThemeTransition/RepositionthemetransitionReactLayoutChanges.html.embed"
-};
-constexpr char8_t repositionExampleCode[] = {
-#include "Snippets/ThemeTransition/RepositionthemetransitionReactLayoutChanges.h.embed"
-};
+gallery::LazyLoadedText repositionExampleHeader{"Snippets/ThemeTransition/RepositionthemetransitionReactLayoutChanges.html"};
+gallery::LazyLoadedText repositionExampleCode{"Snippets/ThemeTransition/RepositionthemetransitionReactLayoutChanges.h"};
 
 FrameworkElement repositionExample() {
 #include "Snippets/ThemeTransition/RepositionthemetransitionReactLayoutChanges.h"
@@ -55,12 +45,8 @@ FrameworkElement repositionExample() {
     });
 }
 
-constexpr char8_t contentExampleHeader[] = {
-#include "Snippets/ThemeTransition/ContentthemetransitionAnimateContentRefreshes.html.embed"
-};
-constexpr char8_t contentExampleCode[] = {
-#include "Snippets/ThemeTransition/ContentthemetransitionAnimateContentRefreshes.h.embed"
-};
+gallery::LazyLoadedText contentExampleHeader{"Snippets/ThemeTransition/ContentthemetransitionAnimateContentRefreshes.html"};
+gallery::LazyLoadedText contentExampleCode{"Snippets/ThemeTransition/ContentthemetransitionAnimateContentRefreshes.h"};
 
 FrameworkElement contentExample() {
 #include "Snippets/ThemeTransition/ContentthemetransitionAnimateContentRefreshes.h"
@@ -73,12 +59,8 @@ FrameworkElement contentExample() {
     });
 }
 
-constexpr char8_t addDeleteExampleHeader[] = {
-#include "Snippets/ThemeTransition/AdddeletethemetransitionAnimateAddingRemoving.html.embed"
-};
-constexpr char8_t addDeleteExampleCode[] = {
-#include "Snippets/ThemeTransition/AdddeletethemetransitionAnimateAddingRemoving.h.embed"
-};
+gallery::LazyLoadedText addDeleteExampleHeader{"Snippets/ThemeTransition/AdddeletethemetransitionAnimateAddingRemoving.html"};
+gallery::LazyLoadedText addDeleteExampleCode{"Snippets/ThemeTransition/AdddeletethemetransitionAnimateAddingRemoving.h"};
 
 FrameworkElement addDeleteExample() {
 #include "Snippets/ThemeTransition/AdddeletethemetransitionAnimateAddingRemoving.h"
@@ -91,12 +73,8 @@ FrameworkElement addDeleteExample() {
     });
 }
 
-constexpr char8_t popupExampleHeader[] = {
-#include "Snippets/ThemeTransition/PopupthemetransitionAnimateOpeningClosing.html.embed"
-};
-constexpr char8_t popupExampleCode[] = {
-#include "Snippets/ThemeTransition/PopupthemetransitionAnimateOpeningClosing.h.embed"
-};
+gallery::LazyLoadedText popupExampleHeader{"Snippets/ThemeTransition/PopupthemetransitionAnimateOpeningClosing.html"};
+gallery::LazyLoadedText popupExampleCode{"Snippets/ThemeTransition/PopupthemetransitionAnimateOpeningClosing.h"};
 
 FrameworkElement popupExample() {
 #include "Snippets/ThemeTransition/PopupthemetransitionAnimateOpeningClosing.h"
@@ -110,6 +88,8 @@ FrameworkElement popupExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::themeTransitionPage() {
+static wxl::FrameworkElement themeTransitionPage() {
     return StackPanel {entranceExample(), repositionExample(), contentExample(), addDeleteExample(), popupExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"ThemeTransition", themeTransitionPage);

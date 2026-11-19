@@ -12,13 +12,12 @@ hstring number(double value) {
     return hstring {core::to_u16(value, std::chars_format::fixed, 2)};
 }
 
-}  // namespace
-
-FrameworkElement lab::sliderRow(char16_t const* title, core::observable<double>& field, double low, double high,
-                                double step) {
+template <class Value>
+FrameworkElement slider(char16_t const* title, core::observable<Value>& field, double low, double high,
+                        double step) {
     return Grid {
-        columnDefinitions = u"*,auto",
-        rowDefinitions = u"auto,auto",
+        ColumnDefinitions<u"*,auto">,
+        RowDefinitions<u"auto,auto">,
         TextBlock {title},
         TextBlock {column = 1, opacity = 0.65, text = BindOutput {field, [](double value) { return number(value); }}},
         Slider {
@@ -32,6 +31,18 @@ FrameworkElement lab::sliderRow(char16_t const* title, core::observable<double>&
             value = Bind {field},
         },
     };
+}
+
+}  // namespace
+
+FrameworkElement lab::sliderRow(char16_t const* title, core::observable<double>& field, double low, double high,
+                                double step) {
+    return slider(title, field, low, high, step);
+}
+
+FrameworkElement lab::sliderRow(char16_t const* title, core::observable<float>& field, double low, double high,
+                                double step) {
+    return slider(title, field, low, high, step);
 }
 
 FrameworkElement lab::choiceRow(char16_t const* title, core::observable<int>& field,
@@ -55,14 +66,14 @@ FrameworkElement lab::checkRow(char16_t const* title, core::observable<bool>& fi
     return CheckBox {
         content = title,
         isChecked = field.get(),
-        onChecked = [&field] { field.set(true); },
-        onUnchecked = [&field] { field.set(false); },
+        onChecked += [&field] { field.set(true); },
+        onUnchecked += [&field] { field.set(false); },
     };
 }
 
 FrameworkElement lab::colorRow(char16_t const* title, core::observable<Color>& field) {
     return Grid {
-        columnDefinitions = u"*,auto",
+        ColumnDefinitions<u"*,auto">,
         TextBlock {title, vAlign.center},
         SplitButton {
             column = 1,

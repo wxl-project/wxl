@@ -14,7 +14,7 @@ set "OLDCP=%OLDCP: =%"
 chcp 65001 >nul
 
 set "ROOT=%~dp0"
-set "SAMPLES=%ROOT%build\x64\samples"
+set "SAMPLES=%ROOT%build\x64-dynamic\samples"
 set "blank=0"
 set "exitcode=0"
 
@@ -26,14 +26,14 @@ set "about.Quadratic=квадратное уравнение на observable-п�
 set "about.Trayed=консоль чужой программы в своём окне, из трея"
 set "about.HtmlView=показ разметки HTML, BB и RSDN без тяжеловесного WebView2"
 set "about.CustomTitleBar=свой заголовок окна и масштаб всего острова"
-set "about.Gallery=WinUI 3 Gallery без XAML: страница на каждый перенесённый контрол"
+set "about.Gallery=WinUI Gallery без XAML: страница на каждый перенесённый контрол"
 
 echo Сборка примеров, Debug...
 call :build
 if errorlevel 1 (
     rem Ninja спотыкается на dyndep, когда в каталоге сборки остался выхлоп
     rem от другого набора целей; это лечит очистка конфигурации. Сам скрипт
-    rem её не делает: в build\x64 лежит рабочая Debug-сборка всего дерева, а
+    rem её не делает: в build\x64-dynamic лежит рабочая Debug-сборка всего дерева, а
     rem ошибку в коде или клон без обёрток пересборка с нуля не исправит.
     echo.
     echo Собрать примеры не удалось.

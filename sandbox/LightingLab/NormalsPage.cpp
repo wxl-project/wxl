@@ -24,7 +24,7 @@ namespace {
 
 constexpr double pi = 3.14159265358979;
 
-constexpr float tile = 72.0f;
+constexpr float tileSide = 72.0f;
 constexpr int columns = 7;
 constexpr float cellWidth = 100.0f, cellHeight = 115.0f;
 constexpr float gridLeft = 10.0f, gridTop = 8.0f;
@@ -95,8 +95,8 @@ struct Normals {
     core::observable<double> elevation {45.0};
     // Повороты первой пары плиток: её кисть и её спрайт вертят ползунки, при
     // нулях это плитка как есть.
-    core::observable<double> brushTurn {0.0};
-    core::observable<double> spriteTurn {0.0};
+    core::observable<float> brushTurn {0.0f};
+    core::observable<float> spriteTurn {0.0f};
     core::observable<hstring> status;
 
     Compositor compositor;
@@ -123,8 +123,8 @@ struct Normals {
 
         map.on_change([this](int const&) noexcept { redraw(); });
         lab::onAny([this] { relight(); }, azimuth, elevation);
-        brushTurn.on_change([this](double const&) noexcept { paint(); });
-        spriteTurn.on_change([this](double const&) noexcept { turn(); });
+        brushTurn.on_change([this](float const&) noexcept { paint(); });
+        spriteTurn.on_change([this](float const&) noexcept { turn(); });
 
         redraw();
         paint();
@@ -139,14 +139,14 @@ struct Normals {
         for (int index = 0; index < configCount; ++index) {
             for (bool const hard : {true, false}) {
                 int const row = (index / columns) * 2 + (hard ? 0 : 1);
-                float const left = gridLeft + static_cast<float>(index % columns) * cellWidth + (cellWidth - tile) / 2;
+                float const left = gridLeft + static_cast<float>(index % columns) * cellWidth + (cellWidth - tileSide) / 2;
                 float const top = gridTop + static_cast<float>(row) * cellHeight;
 
                 auto const sprite = compositor.createSpriteVisual();
-                sprite.size({tile, tile});
+                sprite.size({tileSide, tileSide});
                 sprite.borderMode(hard ? CompositionBorderMode::Hard : CompositionBorderMode::Soft);
 
-                Vector3 const middle {tile / 2, tile / 2, 0.0f};
+                Vector3 const middle {tileSide / 2, tileSide / 2, 0.0f};
                 switch (configs[index].what) {
                 case What::spriteTurn30:
                     sprite.centerPoint(middle);
@@ -158,9 +158,9 @@ struct Normals {
                     break;
                 case What::roundedClip:
                 case What::circleClip: {
-                    float const radius = configs[index].what == What::circleClip ? tile / 2 : 8.0f;
+                    float const radius = configs[index].what == What::circleClip ? tileSide / 2 : 8.0f;
                     auto const outline = compositor.createRoundedRectangleGeometry();
-                    outline.size({tile, tile});
+                    outline.size({tileSide, tileSide});
                     outline.cornerRadius({radius, radius});
                     sprite.clip(compositor.createGeometricClip(outline));
                     break;
@@ -172,7 +172,7 @@ struct Normals {
                 if (configs[index].what == What::parentTurn30) {
                     // Поворачивается контейнер, спрайт в нём стоит прямо.
                     auto const parent = compositor.createContainerVisual();
-                    parent.size({tile, tile});
+                    parent.size({tileSide, tileSide});
                     parent.offset({left, top, 0.0f});
                     parent.centerPoint(middle);
                     parent.rotationAngleInDegrees(30.0f);
@@ -191,8 +191,8 @@ struct Normals {
         lab::attempt(status, u"Поворот спрайта", [this] {
             for (Tile const& placed : tiles) {
                 if (configs[placed.config].what == What::plain) {
-                    placed.sprite.centerPoint({tile / 2, tile / 2, 0.0f});
-                    placed.sprite.rotationAngleInDegrees(static_cast<float>(spriteTurn.get()));
+                    placed.sprite.centerPoint({tileSide / 2, tileSide / 2, 0.0f});
+                    placed.sprite.rotationAngleInDegrees(spriteTurn.get());
                 }
             }
         });
@@ -221,11 +221,11 @@ struct Normals {
         auto const brush = surfaces[kind].brush();
         brush.stretch(CompositionStretch::Fill);
 
-        Vector2 const middle {tile / 2, tile / 2};
+        Vector2 const middle {tileSide / 2, tileSide / 2};
         switch (what) {
         case What::plain:
             brush.centerPoint(middle);
-            brush.rotationAngleInDegrees(static_cast<float>(brushTurn.get()));
+            brush.rotationAngleInDegrees(brushTurn.get());
             break;
         case What::brushTurn30:
             brush.centerPoint(middle);
@@ -314,7 +314,7 @@ lab::Experiment lab::normalsPage() {
             width = double {cellWidth - 4.0f},
             hAlign.left,
             vAlign.top,
-            Margin {placed.left - (cellWidth - tile) / 2 + 2.0f, placed.top + tile + 2.0f, 0, 0},
+            Margin {placed.left - (cellWidth - tileSide) / 2 + 2.0f, placed.top + tileSide + 2.0f, 0, 0},
             isHitTestVisible = false,
             fontSize = 10,
             textWrapping = TextWrapping::Wrap,

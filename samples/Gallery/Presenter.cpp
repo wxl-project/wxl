@@ -3,7 +3,7 @@
 // внизу раскрывающийся «Source code» с кнопкой копирования.
 //
 // Введение оригинал даёт статичным TextBlock, исходник — SampleCodePresenter;
-// здесь введение — HtmlBlock, исходник — RsdnBlock с подсветкой, как в Effects.
+// здесь введение — HtmlBlock, исходник — CodeBlock с подсветкой.
 // Вкладок языка нет: у оригинала XAML и C#, здесь всё без альтернатив C++.
 
 #include "Pages.h"
@@ -15,41 +15,6 @@ using namespace wxl::dsl;
 
 namespace {
 
-// Текст сниппета: из UTF-8 в UTF-16, без BOM, без CR (git на Windows мог
-// отдать файл с CRLF) и без пустых строк по краям.
-std::wstring snippetText(gallery::Snippet bytes) {
-    auto const checked = core::unicode::checked(bytes);
-    if (!checked) {
-        return {};
-    }
-    std::wstring wide = checked->to_utf16();
-    std::erase(wide, L'\r');
-    std::wstring_view body{wide};
-    if (body.starts_with(L'﻿')) {
-        body.remove_prefix(1);
-    }
-    while (!body.empty() && body.front() == L'\n') {
-        body.remove_prefix(1);
-    }
-    while (!body.empty() && body.back() == L'\n') {
-        body.remove_suffix(1);
-    }
-    return std::wstring{body};
-}
-
-// Код на плоском фоне, как в SampleCodePresenter: подложку карточки,
-// отступы и подъём, которые тема даёт `<pre>`, здесь убираем.
-HtmlTheme flatCode() {
-    HtmlTheme theme;
-    theme.preMargin = Thickness {0};
-    theme.prePadding = Thickness {0};
-    theme.preRadius = 0;
-    theme.preElevation = 0;
-    theme.preBackground = colors.transparent;
-    theme.preBorderColor = colors.transparent;
-    return theme;
-}
-
 // Кнопка копирования кода: после щелчка значок — галочка, пока указатель не
 // ушёл с кнопки.
 FrameworkElement copyButton(std::wstring text) {
@@ -59,10 +24,10 @@ FrameworkElement copyButton(std::wstring text) {
         vAlign.top,
         Padding {11, 5, 11, 6},
         styles.Button.Subtle,
-        gallery::appPop(),
+        gallery::appButtonHoverEffect(),
         toolTip = u"Copy code",
         content = FontIcon {glyph = u"", fontSize = 16},
-        onClick = [text = std::move(text)](Button const& self) {
+        onClick += [text = std::move(text)](Button const& self) {
             auto package = DataPackage {};
             package.requestedOperation(DataPackageOperation::Copy);
             package.setText(text);
@@ -70,7 +35,7 @@ FrameworkElement copyButton(std::wstring text) {
             self.content(FontIcon {glyph = u"", fontSize = 16});
             self.toolTip(u"Copied to clipboard");
         },
-        onPointerExited = [](Button const& self) {
+        onPointerExited += [](Button const& self) {
             self.content(FontIcon {glyph = u"", fontSize = 16});
             self.toolTip(u"Copy code");
         },
@@ -86,8 +51,8 @@ wxl::FrameworkElement gallery::controlExample(ExampleParts const& parts) {
     // Показ, «Output:» и параметры: три колонки одной полосы. Показ и
     // «Output:» на фоне окна, параметры — на карточке, отделённые чертой.
     auto strip = Grid {
-        columnDefinitions = u"*,auto,auto",
-        rowDefinitions = u"auto,auto",
+        ColumnDefinitions<u"*,auto,auto">,
+        RowDefinitions<u"auto,auto">,
         Border {
             column = 0,
             Padding {12},
@@ -133,9 +98,8 @@ wxl::FrameworkElement gallery::controlExample(ExampleParts const& parts) {
         });
     }
 
-    auto code = RsdnBlock {isTextSelectionEnabled = true, Padding {16, 12, 56, 12}};
-    code.theme(flatCode());
-    code.rsdn(L"[code=cpp]" + source + L"[/code]");
+    auto code = CodeBlock {isTextSelectionEnabled = true, Padding {17, 13, 57, 13}};
+    code.code(u"cpp", source);
 
     return StackPanel {
         Margin {0, 16, 0, 0},

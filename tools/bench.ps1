@@ -6,8 +6,8 @@
 #
 # The build goes through tools\build.ps1, into build\bench and in Release: the
 # benchmarks are switched on there (WXL_BUILD_BENCHMARKS) and the documentation
-# site off (WXL_BUILD_DOCS), and build\x64 is not touched. Which benchmarks there are, with what arguments and on what input
-# files, CMake says: wxl_add_benchmark() registers each one, and the configure
+# site off (WXL_BUILD_DOCS), and build\x64-dynamic is not touched. Which
+# benchmarks there are, with what arguments and on what input files, CMake says: wxl_add_benchmark() registers each one, and the configure
 # writes the list into build\bench\benchmarks-Release.json. Nothing here names a
 # benchmark.
 #

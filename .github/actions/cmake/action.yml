@@ -1,0 +1,39 @@
+# CMake 4.5.0, the release the tree requires (cmake_minimum_required in the
+# root CMakeLists.txt), put first on PATH for the steps after this one. The
+# images carry an older CMake -- windows-2025 has 4.4.5 and Visual Studio's
+# developer environment adds its own 4.3 behind it -- so the release is
+# installed by the job: the archive of Kitware's release for the runner, checked
+# against its SHA-256 from cmake-4.5.0-SHA-256.txt of the release, unpacked into
+# the runner's temporary directory.
+name: CMake
+description: Installs CMake 4.5.0 and puts it first on PATH.
+
+runs:
+  using: composite
+  steps:
+    - name: Install CMake 4.5.0
+      shell: pwsh
+      run: |
+        $version = '4.5.0'
+        if ($IsWindows) {
+          $name = "cmake-$version-windows-x86_64"
+          $file = "$name.zip"
+          $sha256 = '301b1728317ccd84e984b02e366a8293735bc5ac618757d3d8f58b578f062411'
+        } else {
+          $name = "cmake-$version-linux-x86_64"
+          $file = "$name.tar.gz"
+          $sha256 = '81f0d5b0960fb6adc8197030ffc827fba937640d51e73e39e0e9e40d88c66f6f'
+        }
+        $archive = Join-Path $env:RUNNER_TEMP $file
+        Invoke-WebRequest -Uri "https://github.com/Kitware/CMake/releases/download/v$version/$file" -OutFile $archive -UseBasicParsing
+        $hash = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ($hash -ne $sha256) { throw "$file has SHA-256 $hash, not $sha256" }
+        if ($IsWindows) {
+          Expand-Archive $archive -DestinationPath $env:RUNNER_TEMP
+        } else {
+          tar -xzf $archive -C $env:RUNNER_TEMP
+          if ($LASTEXITCODE -ne 0) { throw "tar exited with $LASTEXITCODE" }
+        }
+        $bin = Join-Path $env:RUNNER_TEMP "$name/bin"
+        $bin >> $env:GITHUB_PATH
+        & (Join-Path $bin 'cmake') --version

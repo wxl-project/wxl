@@ -30,7 +30,7 @@ auto example = StackPanel {
 
 auto options = Grid {
     minWidth = 200,
-    columnDefinitions = u"auto,*",
+    ColumnDefinitions<u"auto,*">,
     columnSpacing = 12.0,
     TextBlock {vAlign.center, u"Vertical velocity"},
     NumberBox {
@@ -43,7 +43,7 @@ auto options = Grid {
         smallChange = 10.0,
         spinButtonPlacementMode = NumberBoxSpinButtonPlacementMode::Inline,
         value = 30.0,
-        onValueChanged = [view](NumberBox const& self, NumberBoxValueChangedEventArgs& args) {
+        onValueChanged += [view](NumberBox const& self, NumberBoxValueChangedEventArgs& args) {
             if (std::isnan(args.oldValue())) {
                 return;
             }
@@ -57,9 +57,9 @@ auto options = Grid {
             auto const atBottom = view.verticalOffset() == view.scrollableHeight();
             if (args.newValue() <= 30.0 && args.newValue() >= -30) {
                 if (args.newValue() < args.oldValue()) {
-                    velocity = atTop ? 30 : -30;
+                    velocity = atTop ? 30.0f : -30.0f;
                 } else {
-                    velocity = atBottom ? -30 : 30;
+                    velocity = atBottom ? -30.0f : 30.0f;
                 }
             } else if (args.newValue() < 30.0 && atTop) {
                 velocity = 30;

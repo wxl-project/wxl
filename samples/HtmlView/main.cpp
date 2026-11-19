@@ -1,5 +1,5 @@
 // The eyeball viewer for the markup family: the sample markup from
-// wxl.html/sample, shown by an HtmlBlock -- and, by the BB/RSDN buttons,
+// wxl.core/src/html/sample, shown by an HtmlBlock -- and, by the BB/RSDN buttons,
 // its siblings BbBlock and RsdnBlock over the same MarkupBlock. A button
 // appends a chunk -- the chat-feed motion the spec is built around -- and
 // any .html dropped on the window is loaded in place of the samples.
@@ -34,21 +34,21 @@ std::wstring load(std::wstring const& path) {
 }
 
 // Что случилось, по-русски: подпись рода ошибки для строки состояния.
-zstring_view error_name(HtmlErrorKind kind) {
+zstring_view error_name(MarkupErrorKind kind) {
     switch (kind) {
-    case HtmlErrorKind::UnknownTag: return u"незнакомый тег";
-    case HtmlErrorKind::UnpairedClose: return u"непарный закрывающий";
-    case HtmlErrorKind::MisnestedTags: return u"перепутанная вложенность";
-    case HtmlErrorKind::BadEntity: return u"кривая сущность";
-    case HtmlErrorKind::MisplacedTag: return u"тег не на своём месте";
-    case HtmlErrorKind::UnknownStyle: return u"незнакомый стиль";
-    case HtmlErrorKind::BadColor: return u"кривой цвет";
-    case HtmlErrorKind::BadFontSize: return u"кривой кегль";
-    case HtmlErrorKind::BadDimension: return u"кривой размер";
-    case HtmlErrorKind::MissingImage: return u"картинка без источника";
-    case HtmlErrorKind::RemoteImage: return u"удалённая картинка отброшена";
-    case HtmlErrorKind::ImageFailed: return u"картинка не загрузилась";
-    case HtmlErrorKind::BlockedLink: return u"клик по ссылке погашен";
+    case MarkupErrorKind::UnknownTag: return u"незнакомый тег";
+    case MarkupErrorKind::UnpairedClose: return u"непарный закрывающий";
+    case MarkupErrorKind::MisnestedTags: return u"перепутанная вложенность";
+    case MarkupErrorKind::BadEntity: return u"кривая сущность";
+    case MarkupErrorKind::MisplacedTag: return u"тег не на своём месте";
+    case MarkupErrorKind::UnknownStyle: return u"незнакомый стиль";
+    case MarkupErrorKind::BadColor: return u"кривой цвет";
+    case MarkupErrorKind::BadFontSize: return u"кривой кегль";
+    case MarkupErrorKind::BadDimension: return u"кривой размер";
+    case MarkupErrorKind::MissingImage: return u"картинка без источника";
+    case MarkupErrorKind::RemoteImage: return u"удалённая картинка отброшена";
+    case MarkupErrorKind::ImageFailed: return u"картинка не загрузилась";
+    case MarkupErrorKind::BlockedLink: return u"клик по ссылке погашен";
     }
     return u"?";
 }
@@ -60,7 +60,7 @@ wxl::Teardown wxl_launched() {
         isTextSelectionEnabled = true,
         Margin {16, 8},
     };
-    auto forum = BbBlock {
+    auto message = BbBlock {
         isTextSelectionEnabled = true,
         Margin {16, 8},
     };
@@ -72,7 +72,7 @@ wxl::Teardown wxl_launched() {
     // The named styles the appended chunk below exercises; foreign markup
     // whose style="..." holds real CSS finds nothing here and stays plain.
     view.registerStyles({
-        {u"warn", {.text = {.color = rgb(192, 57, 43), .bold = true}}},
+        {u"warn", {.text = {.color = rgb(192, 57, 43), .weight = fontWeightBold}}},
         {u"note", {.text = {.color = rgb(128, 128, 128), .italic = true}}},
     });
 
@@ -92,7 +92,7 @@ wxl::Teardown wxl_launched() {
             line += target.view();
             status.text(line);
         });
-        block.onError([status](HtmlError const& error) {
+        block.onError([status](MarkupError const& error) {
             std::u16string line{u"Ошибка разметки: "};
             line += error_name(error.kind).view();
             if (!error.detail.empty()) {
@@ -106,7 +106,7 @@ wxl::Teardown wxl_launched() {
         block.baseDirectory(assets);
     };
     wire(view);
-    wire(forum);
+    wire(message);
     wire(post);
 
     view.html(load(L"Assets/first-tier.html"));
@@ -118,18 +118,18 @@ wxl::Teardown wxl_launched() {
 
     // Перенос текста — свойство самого RichTextBlock; без него линейка,
     // таблица и раскрывашка держат естественную ширину, как и строки.
-    const auto set_wrapping = [view, forum, post](TextWrapping mode) {
+    const auto set_wrapping = [view, message, post](TextWrapping mode) {
         view.textWrapping(mode);
-        forum.textWrapping(mode);
+        message.textWrapping(mode);
         post.textWrapping(mode);
     };
     auto wrap = CheckBox {
         content = L"Перенос текста",
         toolTip = L"Без переноса линейка, таблица и раскрывашка держат естественную ширину",
-        onChecked = [set_wrapping](Object const&, RoutedEventArgs&) {
+        onChecked += [set_wrapping](Object const&, RoutedEventArgs&) {
             set_wrapping(TextWrapping::Wrap);
         },
-        onUnchecked = [set_wrapping](Object const&, RoutedEventArgs&) {
+        onUnchecked += [set_wrapping](Object const&, RoutedEventArgs&) {
             set_wrapping(TextWrapping::NoWrap);
         },
     };
@@ -142,7 +142,7 @@ wxl::Teardown wxl_launched() {
         spacing = 8.0,
         Button {
             content = L"Первая очередь",
-            onClick = [view, scroll, assets](Object const&, RoutedEventArgs&) {
+            onClick += [view, scroll, assets](Object const&, RoutedEventArgs&) {
                 view.baseDirectory(assets);
                 view.html(load(L"Assets/first-tier.html"));
                 scroll.content(view);
@@ -151,7 +151,7 @@ wxl::Teardown wxl_launched() {
         Button {
             content = L"Вторая очередь",
             toolTip = L"Линейка, таблица и раскрывающийся блок",
-            onClick = [view, scroll, assets](Object const&, RoutedEventArgs&) {
+            onClick += [view, scroll, assets](Object const&, RoutedEventArgs&) {
                 view.baseDirectory(assets);
                 view.html(load(L"Assets/second-tier.html"));
                 scroll.content(view);
@@ -159,7 +159,7 @@ wxl::Teardown wxl_launched() {
         },
         Button {
             content = L"Мусор",
-            onClick = [view, scroll, assets](Object const&, RoutedEventArgs&) {
+            onClick += [view, scroll, assets](Object const&, RoutedEventArgs&) {
                 view.baseDirectory(assets);
                 view.html(load(L"Assets/garbage.html"));
                 scroll.content(view);
@@ -168,15 +168,15 @@ wxl::Teardown wxl_launched() {
         Button {
             content = L"BB",
             toolTip = L"Тот же образец BB-кодом: BbBlock над общим MarkupBlock",
-            onClick = [forum, scroll](Object const&, RoutedEventArgs&) {
-                forum.bb(load(L"Assets/forum.bb.txt"));
-                scroll.content(forum);
+            onClick += [message, scroll](Object const&, RoutedEventArgs&) {
+                message.bb(load(L"Assets/forum.bb.txt"));
+                scroll.content(message);
             },
         },
         Button {
             content = L"RSDN",
             toolTip = L"Разметка RSDN: построчные цитаты, смайлы, подсветка кода, таблицы",
-            onClick = [post, scroll](Object const&, RoutedEventArgs&) {
+            onClick += [post, scroll](Object const&, RoutedEventArgs&) {
                 post.rsdn(load(L"Assets/forum.rsdn.txt"));
                 scroll.content(post);
             },
@@ -184,7 +184,7 @@ wxl::Teardown wxl_launched() {
         Button {
             content = L"Дописать",
             toolTip = L"Дописывание куском, как в ленте чата",
-            onClick = [view, scroll](Object const&, RoutedEventArgs&) {
+            onClick += [view, scroll](Object const&, RoutedEventArgs&) {
                 view.append(L"<p style=\"warn\">Дописанный кусок.</p>"
                             L"<p style=\"note\">И ещё один, <b>стилем по имени"
                             L"</b> из реестра. Незакрытый <i>курсив");
@@ -198,7 +198,7 @@ wxl::Teardown wxl_launched() {
         title = L"wxl.html — смотрелка",
         minSize = {480, 360},
         Grid {
-            rowDefinitions = L"auto,auto,*",
+            RowDefinitions<u"auto,auto,*">,
             background = brushes.SolidBackgroundFillColor.Base,
             bar,
             status,
@@ -206,7 +206,7 @@ wxl::Teardown wxl_launched() {
         },
     };
 
-    accept_file_drops(window, [view, scroll, status](std::vector<std::wstring> const& paths) {
+    WindowNative::acceptFileDrops(window, [view, scroll, status](std::vector<std::wstring> const& paths) {
         if (paths.empty()) return;
         // Картинки брошенного файла — из его же папки.
         view.baseDirectory(std::filesystem::path(paths.front()).parent_path().wstring());

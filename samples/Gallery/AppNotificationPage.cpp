@@ -2,7 +2,7 @@
 
 #include "Pages.h"
 #include "Shell.h"
-#include "ApplicationFolder.h"
+#include "Application.h"
 #include <wxl/Microsoft.Windows.AppNotifications.h>
 #include <wxl/Microsoft.Windows.AppNotifications.Builder.h>
 
@@ -11,12 +11,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t basicHeader[] = {
-#include "Snippets/AppNotification/AppNotificationBasicNotification.html.embed"
-};
-constexpr char8_t basicCode[] = {
-#include "Snippets/AppNotification/AppNotificationBasicNotification.h.embed"
-};
+gallery::LazyLoadedText basicHeader{"Snippets/AppNotification/AppNotificationBasicNotification.html"};
+gallery::LazyLoadedText basicCode{"Snippets/AppNotification/AppNotificationBasicNotification.h"};
 
 FrameworkElement basic() {
 #include "Snippets/AppNotification/AppNotificationBasicNotification.h"
@@ -28,12 +24,8 @@ FrameworkElement basic() {
     });
 }
 
-constexpr char8_t logoHeader[] = {
-#include "Snippets/AppNotification/AppNotificationInformationalNotificationLogoCustom.html.embed"
-};
-constexpr char8_t logoCode[] = {
-#include "Snippets/AppNotification/AppNotificationInformationalNotificationLogoCustom.h.embed"
-};
+gallery::LazyLoadedText logoHeader{"Snippets/AppNotification/AppNotificationInformationalNotificationLogoCustom.html"};
+gallery::LazyLoadedText logoCode{"Snippets/AppNotification/AppNotificationInformationalNotificationLogoCustom.h"};
 
 FrameworkElement customLogo() {
 #include "Snippets/AppNotification/AppNotificationInformationalNotificationLogoCustom.h"
@@ -46,12 +38,8 @@ FrameworkElement customLogo() {
     });
 }
 
-constexpr char8_t heroHeader[] = {
-#include "Snippets/AppNotification/AppNotificationVisualNotificationHeroImage.html.embed"
-};
-constexpr char8_t heroCode[] = {
-#include "Snippets/AppNotification/AppNotificationVisualNotificationHeroImage.h.embed"
-};
+gallery::LazyLoadedText heroHeader{"Snippets/AppNotification/AppNotificationVisualNotificationHeroImage.html"};
+gallery::LazyLoadedText heroCode{"Snippets/AppNotification/AppNotificationVisualNotificationHeroImage.h"};
 
 FrameworkElement hero() {
 #include "Snippets/AppNotification/AppNotificationVisualNotificationHeroImage.h"
@@ -63,12 +51,8 @@ FrameworkElement hero() {
     });
 }
 
-constexpr char8_t controlsHeader[] = {
-#include "Snippets/AppNotification/NotificationAppnotificationControls.html.embed"
-};
-constexpr char8_t controlsCode[] = {
-#include "Snippets/AppNotification/NotificationAppnotificationControls.h.embed"
-};
+gallery::LazyLoadedText controlsHeader{"Snippets/AppNotification/NotificationAppnotificationControls.html"};
+gallery::LazyLoadedText controlsCode{"Snippets/AppNotification/NotificationAppnotificationControls.h"};
 
 FrameworkElement controls() {
 #include "Snippets/AppNotification/NotificationAppnotificationControls.h"
@@ -80,12 +64,8 @@ FrameworkElement controls() {
     });
 }
 
-constexpr char8_t progressHeader[] = {
-#include "Snippets/AppNotification/AppNotificationNotificationProgressbar.html.embed"
-};
-constexpr char8_t progressCode[] = {
-#include "Snippets/AppNotification/AppNotificationNotificationProgressbar.h.embed"
-};
+gallery::LazyLoadedText progressHeader{"Snippets/AppNotification/AppNotificationNotificationProgressbar.html"};
+gallery::LazyLoadedText progressCode{"Snippets/AppNotification/AppNotificationNotificationProgressbar.h"};
 
 FrameworkElement progress() {
 #include "Snippets/AppNotification/AppNotificationNotificationProgressbar.h"
@@ -99,6 +79,38 @@ FrameworkElement progress() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::appNotificationPage() {
-    return StackPanel {basic(), customLogo(), hero(), controls(), progress()};
+static wxl::FrameworkElement appNotificationPage() {
+    return StackPanel {
+        // Заставка страницы оригинала: подсказка про «Do Not Disturb» и предупреждение о шуме. Отступ prose {0,12,12,12} —
+        // дословно отступ RichTextBlock оригинала: prose кладёт HtmlBlock ровно в Content InfoBar, где стоял RichTextBlock.
+        StackPanel {
+            spacing = 8,
+            Margin {0, 16, 0, 0},
+            InfoBar {
+                isOpen = true,
+                severity = InfoBarSeverity::Informational,
+                isIconVisible = true,
+                isClosable = false,
+                content = gallery::prose(
+                    u8"If <span style=\"semibold\">Do Not Disturb</span> mode is enabled in system settings, these "
+                    u8"notifications will not appear as toast popups, but they will still be added to the notification "
+                    u8"center and can be viewed there.",
+                    Thickness {0, 12, 12, 12},
+                    false),
+            },
+            InfoBar {
+                isOpen = true,
+                severity = InfoBarSeverity::Warning,
+                title = u"App notifications should not be noisy",
+                message = u"App notifications are designed to convey timely and relevant information without disrupting the user "
+                          u"experience. Excessive use of sound, prolonged durations, or overly attention-seeking visuals can lead to "
+                          u"user fatigue and diminish the overall effectiveness of notifications.",
+                isIconVisible = true,
+                isClosable = false,
+            },
+        },
+        basic(), customLogo(), hero(), controls(), progress(),
+    };
 }
+
+REGISTER_GALLERY_PAGE(L"AppNotification", appNotificationPage);

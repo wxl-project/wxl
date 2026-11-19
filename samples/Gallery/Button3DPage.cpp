@@ -13,12 +13,8 @@ using namespace wxl::dsl;
 
 namespace {
 
-constexpr char8_t KeypadHeader[] = {
-#include "Snippets/Button3D/Keypad.html.embed"
-};
-constexpr char8_t KeypadCode[] = {
-#include "Snippets/Button3D/Keypad.h.embed"
-};
+gallery::LazyLoadedText KeypadHeader{"Snippets/Button3D/Keypad.html"};
+gallery::LazyLoadedText KeypadCode{"Snippets/Button3D/Keypad.h"};
 
 FrameworkElement keypadExample() {
 #include "Snippets/Button3D/Keypad.h"
@@ -33,6 +29,8 @@ FrameworkElement keypadExample() {
 
 }  // namespace
 
-wxl::FrameworkElement gallery::button3DPage() {
+static wxl::FrameworkElement button3DPage() {
     return StackPanel {keypadExample()};
 }
+
+REGISTER_GALLERY_PAGE(L"Button3D", button3DPage);

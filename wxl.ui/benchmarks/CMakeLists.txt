@@ -9,26 +9,38 @@
 # to be asked for its numbers some other way.
 #
 # Both need the Windows App Runtime bootstrapper beside them, for the same
-# reason a sample does: unpackaged, no WinUI3 class activates until the
-# framework package is resolved. The bootstrapper and Win2D come from wxl
-# itself: a benchmark is not made by wxl_add_executable(), so each asks for the
-# runtime by hand -- and by the same call, wxl_target_runtime().
+# reason a sample does: unpackaged, no WinUI class activates until the
+# framework package is resolved.
+
+# Both halves carry the manifest of wxl's executables, like every benchmark
+# (wxl_add_benchmark): among what it declares is that the process handles
+# per-monitor DPI itself, and a window bitmap-stretched on a scaled display
+# would be a different scene to measure.
+# The wxl half opens wxl::dsl at file scope, as an application does, so a local
+# named like a tag is expected there and C4459 says nothing about it.
+add_compile_options(/wd4459)
+
+function(_wxl_scene_benchmark target)
+    # The bootstrapper and Win2D, from wxl itself: the benchmark is not made by
+    # wxl_add_executable(), so it asks for the runtime by hand -- and by the
+    # same call.
+    wxl_target_runtime(${target})
+endfunction()
 
 # ---- The declarative half ----
 #
-# An application as one written against wxl looks: it links wxl::ui and
-# nothing else, and it never sees the cppwinrt projection.
+# An application as one written against wxl looks: it links the library of the
+# full profile and nothing else, and it never sees the cppwinrt projection.
 wxl_add_benchmark(wxl.ui.scene-wxl-benchmark
     SOURCES
         scene_shape.h
         scene_report.h
         scene_wxl_benchmark.cpp
-        app.manifest
 )
 
-target_link_libraries(wxl.ui.scene-wxl-benchmark PRIVATE wxl::ui)
+target_link_libraries(wxl.ui.scene-wxl-benchmark PRIVATE wxl::ui.full)
 
-wxl_target_runtime(wxl.ui.scene-wxl-benchmark)
+_wxl_scene_benchmark(wxl.ui.scene-wxl-benchmark)
 
 # ---- The hand-written half ----
 #
@@ -41,14 +53,12 @@ wxl_add_benchmark(wxl.ui.scene-winrt-benchmark
         scene_shape.h
         scene_report.h
         scene_winrt_benchmark.cpp
-        app.manifest
 )
 
 target_compile_features(wxl.ui.scene-winrt-benchmark PRIVATE cxx_std_23)
 
 target_include_directories(wxl.ui.scene-winrt-benchmark PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${WXL_CPPWINRT_PROJECTION_DIR}
     ${WXL_WINDOWSAPPSDK_FOUNDATION_DIR}/include
     # platform.h alone, the tree's one way to <windows.h>: a header, not a line
     # of wxl linked in.
@@ -60,8 +70,9 @@ target_link_libraries(wxl.ui.scene-winrt-benchmark PRIVATE
     runtimeobject.lib
 )
 
-# The same imported target wxl.ui links: this benchmark stands beside wxl
-# rather than on it, but the bootstrapper it needs is the very same one.
+# The same imported target wxl.ui.common links: this benchmark stands beside wxl
+# rather than on it, but the bootstrapper it needs is the very same one, and so
+# is the WindowsAppSDK-VersionInfo.h the target's include directory gives it.
 if(TARGET wxl.winappsdk.bootstrap)
     target_link_libraries(wxl.ui.scene-winrt-benchmark PRIVATE wxl.winappsdk.bootstrap)
 endif()
@@ -69,7 +80,6 @@ endif()
 # It imports nothing, so there is nothing to scan for -- and scanning would
 # hand it the std module it never asks for.
 set_target_properties(wxl.ui.scene-winrt-benchmark PROPERTIES
-    CXX_MODULE_STD OFF
     CXX_SCAN_FOR_MODULES OFF)
 
-wxl_target_runtime(wxl.ui.scene-winrt-benchmark)
+_wxl_scene_benchmark(wxl.ui.scene-winrt-benchmark)

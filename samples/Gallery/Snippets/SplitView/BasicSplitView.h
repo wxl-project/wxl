@@ -23,7 +23,7 @@ auto const linkItem = [](NavLink const& link, bool iconAfter) -> FrameworkElemen
         name = link.label,
         automationName = link.label,
         iconAfter ? Margin {0, 0, 2, 0} : Margin {2, 0, 0, 0},
-        columnDefinitions = iconAfter ? u"*,auto" : u"auto,*",
+        iconAfter ? ColumnDefinitions<u"*,auto"> : ColumnDefinitions<u"auto,*">,
         SymbolIcon {symbol = link.symbol, column = iconAfter ? 1 : 0},
         TextBlock {
             link.label,
@@ -42,7 +42,7 @@ auto navLinks = ListView {
     vAlign.stretch,
     isItemClickEnabled = true,
     selectionMode = ListViewSelectionMode::Single,
-    onItemClick = [pageText](Object const&, ItemClickEventArgs& args) {
+    onItemClick += [pageText](Object const&, ItemClickEventArgs& args) {
         if (auto const link = args.clickedItem().try_as<FrameworkElement>()) {
             std::u16string page{static_cast<std::u16string_view>(link.name())};
             page += u" Page";
@@ -69,15 +69,15 @@ auto splitView = SplitView {
     maxWidth = 400,
     openPaneLength = BindOutput {model->openLength},
     paneBackground = brushes.SystemControl.Background.Chrome.MediumLow,
-    onPaneClosing = [model](SplitView const&, SplitViewPaneClosingEventArgs&) { model->paneOpen.set(false); },
-    onPaneOpened = [model](SplitView const&, Object const&) { model->paneOpen.set(true); },
+    onPaneClosing += [model](SplitView const&, SplitViewPaneClosingEventArgs&) { model->paneOpen.set(false); },
+    onPaneOpened += [model](SplitView const&, Object const&) { model->paneOpen.set(true); },
     pane = Grid {
-        rowDefinitions = u"auto,*,auto",
+        RowDefinitions<u"auto,*,auto">,
         TextBlock {u"PANE CONTENT", Margin {60, 12, 0, 0}, styles.TextBlock.BodyStrong},
         navLinks,
     },
     Grid {
-        rowDefinitions = u"auto,*",
+        RowDefinitions<u"auto,*">,
         TextBlock {u"SPLITVIEW CONTENT", Margin {12, 12, 0, 0}, styles.TextBlock.BodyStrong},
         Border {row = 1, pageText},
     },
@@ -93,7 +93,7 @@ auto placement = ToggleSwitch {
     header = u"Placement",
     offContent = u"Left",
     onContent = u"Right",
-    onToggled = [splitView, fillLinks](ToggleSwitch const& self) {
+    onToggled += [splitView, fillLinks](ToggleSwitch const& self) {
         bool const right = self.isOn();
         splitView.panePlacement(right ? SplitViewPanePlacement::Right : SplitViewPanePlacement::Left);
         fillLinks(right);
@@ -122,7 +122,7 @@ auto paneBackground = ComboBox {
     ComboBoxItem {content = u"Blue"},
     ComboBoxItem {content = u"Green"},
     selectedIndex = 0,
-    onSelectionChanged = [splitView](ComboBox const& self) {
+    onSelectionChanged += [splitView](ComboBox const& self) {
         static constexpr Color colors[] = {rgb(255, 0, 0), rgb(0, 0, 255), rgb(0, 128, 0)};
         int const index = self.selectedIndex();
         if (index == 0) {
