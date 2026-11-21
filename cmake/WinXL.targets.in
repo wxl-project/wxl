@@ -37,8 +37,8 @@
                     directories of the selected components and the headers of wxl.ui.common; a
                     static library gives them to the projects that reference it as its public
                     include directories (PublicIncludeDirectories), which MSBuild adds to their
-                    sources, and names its profile among what it tells them (an item of FileType
-                    WinXLProfile in GetProjectInfoForReference).
+                    sources, and names itself and its profile among what it tells them (an item of
+                    FileType WinXLProfile in GetProjectInfoForReference).
 
   A program on the WinUI layer, one with WinXLProfile or one that references a profile project,
   links, besides the library of the profile, which MSBuild links from a reference
@@ -46,9 +46,10 @@
   layer and the import library of the bootstrapper of the Windows App Runtime; it takes the link
   options of wxl.ui.common and the Windows subsystem when it names none, and the DLLs a program on
   CMake gets beside it, the bootstrapper, Win2D and the loader of WebView2, are copied into
-  $(OutDir) from its restore. A program stands on one profile and references its project itself: a
-  static library tells the projects that reference it the profiles of its own references too, and a
-  second profile, or a profile reached through a library alone, stops the build before the compile.
+  $(OutDir) from its restore. A program stands on one profile project, and every project on the
+  WinUI layer references it itself: a static library tells the projects that reference it the
+  profile projects of its own references too, and a second profile project, or one reached through
+  a library alone, stops the build before the wrappers are generated or anything is compiled.
 
   Every project compiles the module units of wxl for itself, and none of them gives its BMIs of
   them to the projects that reference it: each project imports the BMIs built with its own options.
@@ -368,7 +369,7 @@
        $(IntDir)WinXL\ui\<profile>\obj: a static library archives them as its own objects, a program
        archives them into the library it links. -->
   <Target Name="WinXLProfileSources" Condition="'$(WinXLProfile)' != ''"
-          DependsOnTargets="CppWinRTMakeProjections;_WinXLWrappers;_WinXLPackageFiles">
+          DependsOnTargets="_WinXLCheckProfiles;CppWinRTMakeProjections;_WinXLWrappers;_WinXLPackageFiles">
     <ItemGroup>
       <_WinXLCompiled Include="@(_WinXLComponentSource)" Condition="'%(_WinXLComponentSource.WinXLCompile)' == 'true'" />
 
@@ -414,12 +415,15 @@
       <PublicIncludeDirectories>$(PublicIncludeDirectories);$(_WinXLUiRoot);$(_WinXLCommon);@(_WinXLComponentDir)</PublicIncludeDirectories>
     </PropertyGroup>
   </Target>
+  <!-- The item is the profile project itself, its profile a metadata: two profile projects are two
+       profiles even when they name one .winxl-profile, and a project is one item however many ways
+       lead to it. -->
   <Target Name="_WinXLProfileForReference" BeforeTargets="GetProjectInfoForReference"
           Condition="'$(WinXLProfile)' != '' and '$(ConfigurationType)' == 'StaticLibrary'">
     <ItemGroup>
-      <ProjectInfoForReference Include="$(_WinXLProfile)">
+      <ProjectInfoForReference Include="$(MSBuildProjectFullPath)">
         <FileType>WinXLProfile</FileType>
-        <ProjectPath>$(MSBuildProjectFullPath)</ProjectPath>
+        <WinXLProfileFile>$(_WinXLProfile)</WinXLProfileFile>
       </ProjectInfoForReference>
     </ItemGroup>
   </Target>
@@ -434,14 +438,19 @@
     </ItemGroup>
   </Target>
 
-  <!-- A static library tells the projects that reference it the profiles it stands on, its own
-       references' among them, as MSBuild tells them the archives of those references: the program
-       learns of a profile whose archive it links through a library (WinXLThrough names the library). -->
-  <Target Name="_WinXLForwardProfiles" BeforeTargets="GetProjectInfoForReference" DependsOnTargets="GetReferencedVCProjectsInfo"
-          Condition="'$(ConfigurationType)' == 'StaticLibrary'">
+
+  <!-- A static library tells the projects that reference it the profile projects it stands on, those
+       of its own references among them, as MSBuild tells them the archives of those references: a
+       project learns of a profile project whose archive it links through a library. WinXLThrough
+       names the library the project references, and each profile project is one item however many
+       ways lead to it. Not at design time, where the references of the project are not yet known
+       when the projects that reference it ask, and nothing checks the profiles. -->
+  <Target Name="_WinXLForwardProfiles" BeforeTargets="GetProjectInfoForReference"
+          DependsOnTargets="PrepareProjectReferences;GetReferencedVCProjectsInfo"
+          Condition="'$(ConfigurationType)' == 'StaticLibrary' and '$(DesignTimeBuild)' != 'true'">
     <ItemGroup>
-      <_WinXLForwardedProfile Include="@(ReferencedVCProjectsInfo->WithMetadataValue('FileType', 'WinXLProfile'))" />
-      <_WinXLForwardedProfile Condition="'%(_WinXLForwardedProfile.WinXLThrough)' == ''">
+      <_WinXLForwardedProfile Include="@(ReferencedVCProjectsInfo->WithMetadataValue('FileType', 'WinXLProfile')->Distinct())" />
+      <_WinXLForwardedProfile>
         <WinXLThrough>$(MSBuildProjectFullPath)</WinXLThrough>
       </_WinXLForwardedProfile>
       <ProjectInfoForReference Include="@(_WinXLForwardedProfile)" />
@@ -450,39 +459,43 @@
   </Target>
 
   <!-- Whether the project is a program on the WinUI layer: one with WinXLProfile, or one that
-       references a profile project. A program stands on one profile, and references its project
-       itself: the include directories of the profile project reach only the projects that reference
+       references a profile project. A program stands on one profile project, and every project on
+       the layer references it itself: its include directories reach only the projects that reference
        it, and a program that links its archive through a library alone would link without
        wxl.ui.common. -->
-  <Target Name="_WinXLUiProgram" DependsOnTargets="GetReferencedVCProjectsInfo">
+  <Target Name="_WinXLUiProgram" DependsOnTargets="PrepareProjectReferences;GetReferencedVCProjectsInfo">
     <ItemGroup>
       <_WinXLReferencedProfile Include="@(ReferencedVCProjectsInfo->WithMetadataValue('FileType', 'WinXLProfile'))" />
       <_WinXLDirectProfile Include="@(_WinXLReferencedProfile)" Condition="'%(_WinXLReferencedProfile.WinXLThrough)' == ''" />
       <_WinXLIndirectProfile Include="@(_WinXLReferencedProfile)" Exclude="@(_WinXLDirectProfile)" />
-      <_WinXLStandsOn Include="$(_WinXLProfile)" Condition="'$(WinXLProfile)' != ''" />
+      <_WinXLStandsOn Include="$(MSBuildProjectFullPath)" Condition="'$(WinXLProfile)' != ''">
+        <WinXLProfileFile>$(_WinXLProfile)</WinXLProfileFile>
+      </_WinXLStandsOn>
       <_WinXLStandsOn Include="@(_WinXLReferencedProfile->Distinct())" />
     </ItemGroup>
     <Error Condition="'@(_WinXLStandsOn->Distinct()->Count())' &gt; '1'"
-           Text="WinXL $(WinXLVersion): the project stands on the profiles @(_WinXLStandsOn->Distinct(), ', ') (@(_WinXLReferencedProfile->'%(Identity) of %(ProjectPath)'->Distinct(), '; ')): a program stands on one profile, and every library in it on that one." />
-    <Error Condition="'$(WinXLProfile)' != '' and '@(_WinXLReferencedProfile)' != ''"
-           Text="WinXL $(WinXLVersion): the project builds the library of the profile $(WinXLProfile) and links the library of the profile project @(_WinXLReferencedProfile->'%(ProjectPath)'->Distinct(), ', ') as well: reference the profile project instead of naming the profile." />
+           Text="WinXL $(WinXLVersion): the project stands on the profile projects @(_WinXLStandsOn->Distinct()->'%(Identity) (%(WinXLProfileFile))', ', '): a program stands on one profile project, and every library in it on that one; a project that names its own profile in WinXLProfile references no profile project." />
     <Error Condition="'$(ConfigurationType)' == 'DynamicLibrary' and '@(_WinXLReferencedProfile)' != ''"
-           Text="WinXL $(WinXLVersion): the DLL links the library of the profile project @(_WinXLReferencedProfile->'%(ProjectPath)'->Distinct(), ', '), and the library of a profile is linked into the program that stands on it." />
-    <Error Condition="'$(ConfigurationType)' == 'Application' and '$(WinXLProfile)' == '' and '@(_WinXLDirectProfile)' == '' and '@(_WinXLIndirectProfile)' != ''"
-           Text="WinXL $(WinXLVersion): the program links the library of the profile project @(_WinXLIndirectProfile->'%(ProjectPath)'->Distinct(), ', ') through @(_WinXLIndirectProfile->'%(WinXLThrough)'->Distinct(), ', ') and does not reference it: a program on the WinUI layer references the profile project itself." />
+           Text="WinXL $(WinXLVersion): the DLL links the library of the profile project @(_WinXLReferencedProfile->Distinct(), ', '), and the library of a profile is linked into the program that stands on it." />
+    <Error Condition="'$(WinXLProfile)' == '' and '@(_WinXLDirectProfile)' == '' and '@(_WinXLIndirectProfile)' != ''"
+           Text="WinXL $(WinXLVersion): the project links the library of the profile project @(_WinXLIndirectProfile->Distinct(), ', ') through @(_WinXLIndirectProfile->'%(WinXLThrough)'->Distinct(), ', ') and does not reference it: a project on the WinUI layer references the profile project itself, which gives it the include directories of the profile." />
     <PropertyGroup>
       <_WinXLUiProgram Condition="'$(ConfigurationType)' == 'Application' and ('$(WinXLProfile)' != '' or '@(_WinXLDirectProfile)' != '')">true</_WinXLUiProgram>
     </PropertyGroup>
     <ItemGroup>
+      <_WinXLReferencedProfile Remove="@(_WinXLReferencedProfile)" />
       <_WinXLDirectProfile Remove="@(_WinXLDirectProfile)" />
       <_WinXLIndirectProfile Remove="@(_WinXLIndirectProfile)" />
       <_WinXLStandsOn Remove="@(_WinXLStandsOn)" />
     </ItemGroup>
   </Target>
 
-  <!-- The checks above, before anything is compiled: a source that includes a header of the profile
-       would otherwise stop first, on a header it cannot find. -->
-  <Target Name="_WinXLCheckProfiles" BeforeTargets="ClCompile" DependsOnTargets="_WinXLUiProgram" />
+  <!-- The checks above, before the wrappers are generated (WinXLProfileSources depends on it) and
+       before anything is compiled: a source that includes a header of the profile would otherwise
+       stop first, on a header it cannot find. Not at design time (_WinXLForwardProfiles). -->
+  <Target Name="_WinXLCheckProfiles" BeforeTargets="ClCompile" DependsOnTargets="_WinXLUiProgram"
+          Condition="'$(DesignTimeBuild)' != 'true'" />
+
 
   <!-- The library of the profile a program builds, archived anew from the objects of its sources
        when one of them changed or the set of them did. -->
