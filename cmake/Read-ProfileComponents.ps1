@@ -1,6 +1,6 @@
 # Reads a profile chain and its component manifests, printing one line per item
-# CMake needs: chain component names, and for each selected component after the closure
-# over dependencies, its directory, sources, surface fragment and libraries.
+# CMake and WinXL.targets need: chain component names, and for each selected component after
+# the closure over dependencies, its directory, sources, surface fragment and libraries.
 #
 # Usage: Read-ProfileComponents.ps1 -Profile <path> [-ProfilesDir <dir>] [-ComponentDir <dir>] ...
 #        powershell.exe -NoProfile -File Read-ProfileComponents.ps1 -Profile ...
@@ -9,13 +9,14 @@
 # bare name in "extends" is looked for when the referring profile has no such file beside it.
 #
 # Compatible with Windows PowerShell 5.1: no `?.`, `??`, ternary, `&&`.
-# Output format: <type>:<value>, one per line. CMake parses it with regex.
+# Output format: <type>:<value>, one per line. CMake parses it with regex; MSBuild takes each
+# line as an item of its own, so a path does not depend on the line before it.
 #   profile:<path>     - a profile of the chain, the given one last
 #   chain:<name>       - a component from the profile's own list (before dependencies)
 #   component:<name>   - a selected component (after the closure over dependencies)
 #   dir:<path>         - the component directory for the preceding component
-#   source:<path>      - a source file (relative to component dir)
-#   surface:<path>     - the component's surface test fragment (relative to component dir)
+#   source:<path>      - a source file, <dir>/<the path the manifest names>
+#   surface:<path>     - the component's surface test fragment, <dir>/<path> as a source
 #   library:<target>   - a CMake library target
 
 param(
@@ -191,11 +192,11 @@ foreach ($name in $selected) {
     Write-Output "dir:$dir"
     if ($comp.sources) {
         foreach ($src in $comp.sources) {
-            Write-Output "source:$src"
+            Write-Output "source:$dir/$src"
         }
     }
     if ($comp.surface) {
-        Write-Output "surface:$($comp.surface)"
+        Write-Output "surface:$dir/$($comp.surface)"
     }
     if ($comp.libraries) {
         foreach ($lib in $comp.libraries) {

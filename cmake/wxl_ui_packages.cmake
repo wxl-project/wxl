@@ -33,71 +33,49 @@
 # without them, the header of the release with a stop. A second call -- a second
 # find_package(wxl), which reads the configuration again -- sets the same
 # properties again and keeps the target the first one made.
+#
+# The files themselves -- each a package and a path in it -- and the system
+# libraries are named once, by _wxl_ui_package_files() below: WinXL.targets of
+# the package (cmake/wxl_msbuild.cmake) finds the same files in the restore of a
+# .vcxproj and links the same libraries.
 
 include_guard(GLOBAL)
 
-function(wxl_ui_packages target)
-    wxl_nuget_package_dir(foundation Microsoft.WindowsAppSDK.Foundation)
-    wxl_nuget_package_dir(winui Microsoft.WindowsAppSDK.WinUI)
-    wxl_nuget_package_dir(win2d Microsoft.Graphics.Win2D)
-    wxl_nuget_package_dir(webview2 Microsoft.Web.WebView2)
-
-    # The release an application starts on is the one the restore resolved:
-    # impl/bootstrap.cpp includes include/WindowsAppSDK-VersionInfo.h of the
-    # restored Microsoft.WindowsAppSDK.Runtime package and hands the
-    # bootstrapper the version tag and the major version that name the
-    # release's framework package (WINDOWSAPPSDK_RELEASE_VERSION_TAG_W,
-    # WINDOWSAPPSDK_RELEASE_MAJORMINOR), so no value of the release is kept
-    # here. The installers of that framework package are in the same Runtime
-    # package, and winxl runtime install (tools/winxl) installs them: the
-    # release of the tree is an experimental one (tools/packages.json), and a
-    # stable runtime answers a call to WrapPanel, TitleBar.RecomputeDragRegions
-    # or the Window size properties with "no such interface".
-    wxl_nuget_package_dir(runtime Microsoft.WindowsAppSDK.Runtime)
-    if(NOT EXISTS "${runtime}/include/WindowsAppSDK-VersionInfo.h")
-        message(FATAL_ERROR
-            "No include/WindowsAppSDK-VersionInfo.h in ${runtime}, the restored "
-            "Microsoft.WindowsAppSDK.Runtime package: the bootstrapper of wxl takes the release it "
-            "starts from that header.")
-    endif()
-
-    if(TARGET wxl.winappsdk.bootstrap)
-        # Made by the first call.
-    elseif(EXISTS "${foundation}/lib/native/x64/Microsoft.WindowsAppRuntime.Bootstrap.lib")
-        add_library(wxl.winappsdk.bootstrap SHARED IMPORTED GLOBAL)
-        set_target_properties(wxl.winappsdk.bootstrap PROPERTIES
-            IMPORTED_LOCATION
-                "${foundation}/runtimes/win-x64/native/Microsoft.WindowsAppRuntime.Bootstrap.dll"
-            IMPORTED_IMPLIB
-                "${foundation}/lib/native/x64/Microsoft.WindowsAppRuntime.Bootstrap.lib"
-            # Whoever compiles impl/bootstrap.cpp -- wxl.ui.common, or a sandbox that
-            # takes the file directly -- asks for the same release, the one of this header.
-            INTERFACE_INCLUDE_DIRECTORIES
-                "${runtime}/include")
-    else()
-        message(WARNING
-            "No Microsoft.WindowsAppRuntime.Bootstrap.lib at ${foundation}; "
-            "applications built on wxl will fail to start.")
-    endif()
-
-    set(runtime_files "")
-    if(EXISTS "${win2d}/runtimes/win-x64/native/Microsoft.Graphics.Canvas.dll")
-        list(APPEND runtime_files "${win2d}/runtimes/win-x64/native/Microsoft.Graphics.Canvas.dll")
-    else()
-        message(WARNING
-            "No Microsoft.Graphics.Canvas.dll at ${win2d}; a CompositionWindow "
-            "will fault while building its shared CanvasDevice.")
-    endif()
-    if(EXISTS "${webview2}/runtimes/win-x64/native/WebView2Loader.dll")
-        list(APPEND runtime_files "${webview2}/runtimes/win-x64/native/WebView2Loader.dll")
-    else()
-        message(WARNING
-            "No WebView2Loader.dll at ${webview2}; a MapControl or a WebView2 will end the process "
-            "when it is shown.")
-    endif()
-
-    set(libraries
-        Microsoft::CppWinRT
+# _wxl_ui_package_files(<prefix>)
+#
+# What the WinUI layer takes from the restored packages, the one place that names
+# it, each file as a package id and a path in that package:
+#
+#   <prefix>_BOOTSTRAP   the bootstrapper of the Windows App Runtime: the
+#                        package, its DLL and its import library;
+#   <prefix>_RUNTIME     the DLLs nothing links, put beside an application: a
+#                        package, a path and what fails without the file, three
+#                        entries each;
+#   <prefix>_INCLUDES    the package headers the profile layer includes: a
+#                        package and a directory, two entries each;
+#   <prefix>_LIBRARIES   the system libraries the profile layer links.
+function(_wxl_ui_package_files prefix)
+    set(${prefix}_BOOTSTRAP
+        Microsoft.WindowsAppSDK.Foundation
+        runtimes/win-x64/native/Microsoft.WindowsAppRuntime.Bootstrap.dll
+        lib/native/x64/Microsoft.WindowsAppRuntime.Bootstrap.lib
+        PARENT_SCOPE)
+    set(${prefix}_RUNTIME
+        # Win2D activates by name at run time and carries no import library.
+        Microsoft.Graphics.Win2D
+        runtimes/win-x64/native/Microsoft.Graphics.Canvas.dll
+        "a CompositionWindow will fault while building its shared CanvasDevice"
+        # The WebView2 control looks for its loader beside the executable.
+        Microsoft.Web.WebView2
+        runtimes/win-x64/native/WebView2Loader.dll
+        "a MapControl or a WebView2 will end the process when it is shown"
+        PARENT_SCOPE)
+    # WinUI's native interop headers and the bootstrapper's.
+    set(${prefix}_INCLUDES
+        Microsoft.WindowsAppSDK.Foundation include
+        Microsoft.WindowsAppSDK.WinUI include
+        PARENT_SCOPE)
+    set(${prefix}_LIBRARIES
         runtimeobject.lib
         # The graphics stack under a composition drawing surface: a D3D11
         # device, the DXGI device inside it and the D2D device on top --
@@ -123,11 +101,83 @@ function(wxl_ui_packages target)
         # DwmSetWindowAttribute: the dark frame and the caption colour of a
         # CompositionWindow follow the application's theme.
         dwmapi.lib
-    )
+        PARENT_SCOPE)
+endfunction()
+
+function(wxl_ui_packages target)
+    _wxl_ui_package_files(_wxl)
+
+    # The release an application starts on is the one the restore resolved:
+    # impl/bootstrap.cpp includes include/WindowsAppSDK-VersionInfo.h of the
+    # restored Microsoft.WindowsAppSDK.Runtime package and hands the
+    # bootstrapper the version tag and the major version that name the
+    # release's framework package (WINDOWSAPPSDK_RELEASE_VERSION_TAG_W,
+    # WINDOWSAPPSDK_RELEASE_MAJORMINOR), so no value of the release is kept
+    # here. The installers of that framework package are in the same Runtime
+    # package, and winxl runtime install (tools/winxl) installs them: the
+    # release of the tree is an experimental one (tools/packages.json), and a
+    # stable runtime answers a call to WrapPanel, TitleBar.RecomputeDragRegions
+    # or the Window size properties with "no such interface".
+    wxl_nuget_package_dir(runtime Microsoft.WindowsAppSDK.Runtime)
+    if(NOT EXISTS "${runtime}/include/WindowsAppSDK-VersionInfo.h")
+        message(FATAL_ERROR
+            "No include/WindowsAppSDK-VersionInfo.h in ${runtime}, the restored "
+            "Microsoft.WindowsAppSDK.Runtime package: the bootstrapper of wxl takes the release it "
+            "starts from that header.")
+    endif()
+
+    list(GET _wxl_BOOTSTRAP 0 package)
+    list(GET _wxl_BOOTSTRAP 1 dll)
+    list(GET _wxl_BOOTSTRAP 2 implib)
+    wxl_nuget_package_dir(bootstrap ${package})
+    if(TARGET wxl.winappsdk.bootstrap)
+        # Made by the first call.
+    elseif(EXISTS "${bootstrap}/${implib}")
+        add_library(wxl.winappsdk.bootstrap SHARED IMPORTED GLOBAL)
+        set_target_properties(wxl.winappsdk.bootstrap PROPERTIES
+            IMPORTED_LOCATION "${bootstrap}/${dll}"
+            IMPORTED_IMPLIB "${bootstrap}/${implib}"
+            # Whoever compiles impl/bootstrap.cpp -- wxl.ui.common, or a sandbox that
+            # takes the file directly -- asks for the same release, the one of this header.
+            INTERFACE_INCLUDE_DIRECTORIES
+                "${runtime}/include")
+    else()
+        cmake_path(GET implib FILENAME name)
+        message(WARNING
+            "No ${name} at ${bootstrap}; applications built on wxl will fail to start.")
+    endif()
+
+    set(runtime_files "")
+    list(LENGTH _wxl_RUNTIME count)
+    math(EXPR last "${count} - 1")
+    foreach(i RANGE 0 ${last} 3)
+        math(EXPR j "${i} + 1")
+        math(EXPR k "${i} + 2")
+        list(GET _wxl_RUNTIME ${i} package)
+        list(GET _wxl_RUNTIME ${j} path)
+        list(GET _wxl_RUNTIME ${k} without)
+        wxl_nuget_package_dir(dir ${package})
+        cmake_path(GET path FILENAME name)
+        if(EXISTS "${dir}/${path}")
+            list(APPEND runtime_files "${dir}/${path}")
+        else()
+            message(WARNING "No ${name} at ${dir}; ${without}.")
+        endif()
+    endforeach()
+
+    set(includes "")
+    list(LENGTH _wxl_INCLUDES count)
+    math(EXPR last "${count} - 1")
+    foreach(i RANGE 0 ${last} 2)
+        math(EXPR j "${i} + 1")
+        list(GET _wxl_INCLUDES ${i} package)
+        list(GET _wxl_INCLUDES ${j} path)
+        wxl_nuget_package_dir(dir ${package})
+        list(APPEND includes "${dir}/${path}")
+    endforeach()
+
     set_target_properties(${target} PROPERTIES
         WXL_RUNTIME_FILES "${runtime_files}"
-        WXL_UI_PROFILE_LIBRARIES "${libraries}"
-        # The package headers the profile layer includes, PRIVATE to it as to
-        # wxl.ui.common: WinUI's native interop headers and the bootstrapper's.
-        WXL_UI_PROFILE_INCLUDE_DIRECTORIES "${foundation}/include;${winui}/include")
+        WXL_UI_PROFILE_LIBRARIES "Microsoft::CppWinRT;${_wxl_LIBRARIES}"
+        WXL_UI_PROFILE_INCLUDE_DIRECTORIES "${includes}")
 endfunction()

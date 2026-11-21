@@ -154,6 +154,36 @@ if(NOT POWERSHELL_EXE)
         "Install PowerShell (powershell.exe, Windows PowerShell 5.1, on PATH).")
 endif()
 
+# _wxl_ui_profile_compile(<prefix>)
+#
+# How the sources of a library of a profile are compiled beyond its interface,
+# the one place that says it: wxl_add_ui_library gives it the library, and
+# cmake/wxl_msbuild.cmake writes it into WinXL.targets, which compiles the same
+# sources in a .vcxproj.
+#
+#   <prefix>_PARTS          the number of parts of the wrappers when PARTS is not
+#                           given (see above)
+#   <prefix>_DEFINITIONS    the definitions of every source of the library
+#   <prefix>_PART_OPTIONS   the options of every part, for MSVC
+#   <prefix>_SURFACE_DEFINITIONS
+#                           the definitions of the sources of the surface test
+function(_wxl_ui_profile_compile prefix)
+    set(${prefix}_PARTS 8 PARENT_SCOPE)
+    # As in wxl.ui.common: nothing of the layer draws through GDI, and the few
+    # files that paint a GDI surface lift it for themselves.
+    set(${prefix}_DEFINITIONS NOGDI PARENT_SCOPE)
+    # The bodies of the controls compiled as one source exceed the 65 279
+    # sections of the default object format: MSVC stops with C1128 unless the
+    # object is written as /bigobj. On every part, since which classes a part
+    # holds, and how many, follows the profile and PARTS.
+    set(${prefix}_PART_OPTIONS /bigobj PARENT_SCOPE)
+    # The Windows SDK puts its own copy of C++/WinRT on the default include path, so a
+    # header of Windows.* leaking into a public header would be found by the surface
+    # test as well. With the guard of its base header already defined, every
+    # projection header fails on its first winrt:: name instead.
+    set(${prefix}_SURFACE_DEFINITIONS WINRT_BASE_H PARENT_SCOPE)
+endfunction()
+
 # _wxl_ui_generator(<caller> <out_file> <out_profiles_dir>)
 #
 # The generator every step runs, the one place that names it: the file of
@@ -352,9 +382,9 @@ function(wxl_read_profile_components prefix profile component_dir)
             set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
                 "${_wxl_dir}/component.json")
         elseif(CMAKE_MATCH_1 STREQUAL "source")
-            list(APPEND _wxl_sources "${_wxl_dir}/${_wxl_value}")
+            list(APPEND _wxl_sources "${_wxl_value}")
         elseif(CMAKE_MATCH_1 STREQUAL "surface")
-            list(APPEND _wxl_surfaces "${_wxl_dir}/${_wxl_value}")
+            list(APPEND _wxl_surfaces "${_wxl_value}")
         elseif(CMAKE_MATCH_1 STREQUAL "library")
             list(APPEND _wxl_libraries "${_wxl_value}")
         endif()
@@ -426,7 +456,8 @@ function(_wxl_ui_profile_wrappers prefix caller profile)
             "wrappers into ${PROJECT_BINARY_DIR}/wxl.ui.")
     endif()
     if(NOT DEFINED A_PARTS)
-        set(A_PARTS 8)
+        _wxl_ui_profile_compile(_wxl_default)
+        set(A_PARTS ${_wxl_default_PARTS})
     endif()
 
     set(_wxl_root "${PROJECT_BINARY_DIR}/wxl.ui/${profile}")
@@ -489,11 +520,8 @@ function(_wxl_ui_profile_surface_test profile)
     set(_wxl_target "wxl.ui.${profile}.surface-test")
     add_library(${_wxl_target} OBJECT "${A_SURFACE}" ${A_SURFACES})
     _wxl_ui_profile_interface(${_wxl_target} PRIVATE ${profile} ROOT "${A_ROOT}" DIRS ${A_DIRS})
-    # The Windows SDK puts its own copy of C++/WinRT on the default include path, so a
-    # header of Windows.* leaking into a public header would be found here as well.
-    # With the guard of its base header already defined, every projection header
-    # fails on its first winrt:: name instead.
-    target_compile_definitions(${_wxl_target} PRIVATE WINRT_BASE_H)
+    _wxl_ui_profile_compile(_wxl_compile)
+    target_compile_definitions(${_wxl_target} PRIVATE ${_wxl_compile_SURFACE_DEFINITIONS})
     wxl_set_target_folders(${_wxl_target} PREFIX "tests")
 endfunction()
 
@@ -504,22 +532,18 @@ function(wxl_add_ui_library profile)
     get_target_property(_wxl_libraries wxl::ui.common WXL_UI_PROFILE_LIBRARIES)
     get_target_property(_wxl_includes wxl::ui.common WXL_UI_PROFILE_INCLUDE_DIRECTORIES)
 
+    _wxl_ui_profile_compile(_wxl_compile)
+
     add_library(${_wxl_target} STATIC ${_wxl_SOURCES} ${_wxl_PARTS})
     add_library(wxl::ui.${profile} ALIAS ${_wxl_target})
     _wxl_ui_profile_interface(${_wxl_target} PUBLIC ${profile} ROOT "${_wxl_ROOT}" DIRS ${_wxl_DIRS})
     target_include_directories(${_wxl_target} PRIVATE ${_wxl_includes})
-    # As in wxl.ui.common: nothing of the layer draws through GDI, and the few
-    # files that paint a GDI surface lift it for themselves.
-    target_compile_definitions(${_wxl_target} PRIVATE NOGDI)
+    target_compile_definitions(${_wxl_target} PRIVATE ${_wxl_compile_DEFINITIONS})
     target_link_libraries(${_wxl_target} PRIVATE ${_wxl_libraries} ${_wxl_LIBRARIES})
     set_property(TARGET ${_wxl_target} PROPERTY WXL_WRAPPERS_DIR "${_wxl_OUT}")
 
-    # The bodies of the controls compiled as one source exceed the 65 279
-    # sections of the default object format: MSVC stops with C1128 unless the
-    # object is written as /bigobj. On every part, since which classes a part
-    # holds, and how many, follows the profile and PARTS.
     set_property(SOURCE ${_wxl_PARTS} APPEND PROPERTY
-        COMPILE_OPTIONS $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
+        COMPILE_OPTIONS "$<$<CXX_COMPILER_ID:MSVC>:${_wxl_compile_PART_OPTIONS}>")
 
     # Last: this reads the target's SOURCES to lay it out in the IDE.
     wxl_set_target_folders(${_wxl_target})
