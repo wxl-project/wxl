@@ -26,6 +26,12 @@ import wxl.core;
 // hand-written function the type map names, inline: it is one call to a
 // function declared without winrt. So the header names no winrt type, and
 // neither does Bind.h, which includes it.
+//
+// Beside the pairs, the list controls of the run (the type map's boundLists):
+// impl::attach_items for each, declared here and defined beside the class's
+// bodies, where the wrapper's own projection object is handed to the
+// hand-written function -- which is what lets that function live in
+// wxl.ui.common and a bound list need no component of the profile.
 
 namespace gen {
 
@@ -40,6 +46,9 @@ void write_binding_pairs(output const& out, model const& m, emitted& em) {
         includes.insert(pair.includes.begin(), pair.includes.end());
         owners.insert(pair.owner);
     }
+    for (auto&& list : m.bound_lists) {
+        owners.insert(list.owner);
+    }
     write_includes(file, includes);
 
     std::print(file, "\nnamespace wxl {{\n\n");
@@ -47,6 +56,20 @@ void write_binding_pairs(output const& out, model const& m, emitted& em) {
         std::print(file, "class {};\n", owner);
     }
     std::print(file, "\nnamespace impl {{\n");
+
+    if (!m.bound_lists.empty()) {
+        std::print(file, R"(
+class bound_list_watch;
+
+// The list controls `itemsSource = BindOutput{{list, build}}` binds to (bind_items in
+// impl/bound_list.h): the source of the list and the maker of its elements, given to the
+// control. Each serves every class derived from its own.
+)");
+        for (auto&& list : m.bound_lists) {
+            std::print(file, "void attach_items({} const& control, bound_list_watch const& source);\n",
+                       list.owner);
+        }
+    }
 
     for (auto&& pair : m.binding_pairs) {
         std::print(file, R"(
@@ -82,8 +105,9 @@ struct property_binder<PropertyKey::{0}, Control> : binding_pair<PropertyKey::{0
 
     std::print(file, "\n}}  // namespace impl\n}}  // namespace wxl\n");
     em.add(path);
-    std::print("generated {} ({} binding pairs)\n", wxl::core::unicode::to_utf8(path).chars(),
-               m.binding_pairs.size());
+    std::print("generated {} ({} binding pairs, {} list controls)\n",
+               wxl::core::unicode::to_utf8(path).chars(), m.binding_pairs.size(),
+               m.bound_lists.size());
 }
 
 }  // namespace gen

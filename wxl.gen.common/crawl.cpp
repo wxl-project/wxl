@@ -967,10 +967,11 @@ std::string undeclared_root(std::string_view name, profile_set const& profiles) 
                        name, listing.chars());
 }
 
-// The binding pairs and the bound members of the type map, held to the
-// metadata: a class it declares, and for a pair a property and events the
-// class or a class it derives from declares. A bound member's property is
-// wxl's own and is not looked for. A pair serves the classes derived from its
+// The binding pairs, the bound members and the bound lists of the type map,
+// held to the metadata: a class it declares, and for a pair a property and
+// events the class or a class it derives from declares. A bound member's
+// property is wxl's own and is not looked for; a bound list's class is named
+// once. A pair serves the classes derived from its
 // own (BindingPairs.h), so two entries of one property along one line of
 // inheritance would both claim the derived class; that, and one property
 // named twice on one class, stops the run with both entries named, before a
@@ -1013,6 +1014,16 @@ void check_binding_pairs(type_map const& types, cache const& db) {
         std::string where = std::format("bound member {}.{}", member.class_name, member.name);
         TypeDef const type = class_named(where, member.class_name);
         entries.push_back({std::move(where), member.name, type});
+    }
+    for (std::size_t at = 0; at != types.bound_lists.size(); ++at) {
+        auto const& list = types.bound_lists[at];
+        std::string const where = std::format("bound list {}", list.class_name);
+        class_named(where, list.class_name);
+        for (std::size_t other = at + 1; other != types.bound_lists.size(); ++other) {
+            if (types.bound_lists[other].class_name == list.class_name) {
+                fail(std::format("{}: the class is named twice", where));
+            }
+        }
     }
 
     for (std::size_t at = 0; at != entries.size(); ++at) {

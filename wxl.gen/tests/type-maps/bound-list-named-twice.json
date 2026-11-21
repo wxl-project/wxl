@@ -1,0 +1,8 @@
+// One class named twice as a bound list: two attaches of one class would be two
+// definitions, so it is refused before the walk.
+{
+    "boundLists": [
+        { "class": "Microsoft.UI.Xaml.Controls.ListViewBase", "function": "impl::attach_list_view_items", "include": "../impl/item_makers.h" },
+        { "class": "Microsoft.UI.Xaml.Controls.ListViewBase", "function": "impl::attach_list_view_items", "include": "../impl/item_makers.h" }
+    ]
+}

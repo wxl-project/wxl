@@ -12,6 +12,7 @@
 #include <wxl/Microsoft.UI.Xaml.Controls.impl.h>
 #include <wxl/Microsoft.UI.Xaml.impl.h>
 #include "impl/conversions.h"
+#include "impl/item_makers.h"
 
 namespace wxl {
 
@@ -80,18 +81,8 @@ core::nullable<UIElement> itemElement(ListViewBase const& list, Object const& it
     winrt::Windows::Foundation::IInspectable native_item{nullptr};
     winrt::copy_from_abi(native_item, item.get_abi());
 
-    // The container's content is a placeholder control (see impl/item_template.cpp) that holds the element; a miss at any step
-    // leaves the element null.
-    auto const container = Object::Impl::as<xaml::Controls::ListViewBase>(list)
-                               .ContainerFromItem(native_item)
-                               .try_as<xaml::Controls::ContentControl>();
-    xaml::UIElement element{nullptr};
-    if (container) {
-        if (auto const place =
-                container.ContentTemplateRoot().try_as<xaml::Controls::ContentControl>()) {
-            element = place.Content().try_as<xaml::UIElement>();
-        }
-    }
+    xaml::UIElement element =
+        impl::element_of_item(*Object::Impl::get_typed<ListViewBase>(list), native_item);
     if (!element) {
         return {};
     }

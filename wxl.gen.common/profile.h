@@ -312,6 +312,18 @@ struct type_map {
         std::vector<std::string> events;  // {"Toggled"}, as metadata spells them
     };
 
+    // A list control `itemsSource = BindOutput{list, build}` binds to. Where the
+    // class is generated, the generator declares impl::attach_items for its
+    // wrapper (BindingPairs.h) and defines it beside the class's bodies, handing
+    // the projection object the wrapper keeps to a hand-written function that
+    // reaches the control through the projection alone; the attach serves every
+    // class derived from it.
+    struct bound_list {
+        std::string class_name;  // "Microsoft.UI.Xaml.Controls.ListViewBase"
+        std::string function;    // "impl::attach_list_view_items", under namespace wxl
+        std::string include;     // header declaring the function, as the output writes it
+    };
+
     std::filesystem::path source;  // the file, for the messages that name it
     std::set<std::string> predefined;
     std::set<std::string> implicit_roots;
@@ -319,13 +331,14 @@ struct type_map {
     std::vector<tag> tags;
     std::vector<bound_member> bound_members;
     std::vector<binding_pair> binding_pairs;
+    std::vector<bound_list> bound_lists;
 };
 
 // Reads profiles/types.json. Throws std::runtime_error naming the file on
 // malformed JSON, an entry missing a required key, and an entry of
-// "bindingPairs" or "boundMembers" with a key it does not have. Whether a
-// binding pair's class, property and events exist is the metadata's to say,
-// and the walk checks it (crawl.h).
+// "bindingPairs", "boundMembers" or "boundLists" with a key it does not have.
+// Whether a binding pair's class, property and events exist, and a bound
+// list's class, is the metadata's to say, and the walk checks it (crawl.h).
 type_map load_type_map(std::filesystem::path const& path);
 
 // The Windows SDK a build projects: its version, which also names the folder of

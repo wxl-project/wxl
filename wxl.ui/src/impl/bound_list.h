@@ -7,7 +7,7 @@
 // whose items are slots, one per item of the list, each knowing its place. The list's
 // watch mirrors every change of the list into the source, which tells the control. The
 // control asks for the element of an item when the item comes into view, and the machinery
-// behind the control's item template (impl/items_helpers.h) asks the
+// behind the control's item template (impl/item_makers.h) asks the
 // slot's source, which calls `build` with the item -- inside a binding_scope the machinery
 // keeps until the control gives the element back.
 //
@@ -21,9 +21,7 @@
 namespace wxl {
 class UIElement;
 class ItemContainer;
-class ListViewBase;
 class ItemsView;
-class ItemsRepeater;
 }  // namespace wxl
 
 namespace wxl::impl {
@@ -59,16 +57,15 @@ private:
     bound_items_source* source_;
 };
 
-/// The source and the machinery of its elements, given to a control: its ItemsSource, and
-/// the item template that asks the source for the element of each item.
-void attach_items(ListViewBase const& control, bound_list_watch const& source);
-void attach_items(ItemsView const& control, bound_list_watch const& source);
-void attach_items(ItemsRepeater const& control, bound_list_watch const& source);
-
 /// Where the item a control handed out (clickedItem, selectedItem) stands in the list at
 /// `list`, or -1: the box is no slot, a slot of another list, or of an item that is gone.
 int64_t bound_position(void const* list, Object const& box) noexcept;
 
+/// A control a list binds to: one with an `attach_items(control, source)`, which gives it the
+/// source and the machinery of its elements -- its ItemsSource, and the item template that asks
+/// the source for the element of each item. The generator declares one for each list control of
+/// the profile (BindingPairs.h) and defines it over the wrapper's own object and
+/// impl/item_makers.h, so a bound list needs no component of the profile.
 template <class Control>
 concept bound_items_control = requires(Control const& control, bound_list_watch const& source) {
     attach_items(control, source);

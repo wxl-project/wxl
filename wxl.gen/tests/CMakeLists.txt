@@ -106,8 +106,9 @@ endforeach()
 
 # A binding pair of a type map that is not what the key says stops the run with
 # the file and the pair named: a key the entry does not have as the map is read,
-# an event its class does not declare once the metadata is open. Both stop before
-# anything is written.
+# an event its class does not declare once the metadata is open. So does a bound
+# list whose class the metadata does not declare, or one class named twice as a
+# bound list. All stop before anything is written.
 set(_wxl_gen_type_map
     winui-srcgen --profile "${CMAKE_CURRENT_SOURCE_DIR}/../profiles/base.winxl-profile"
     --packages "${_wxl_gen_restored_packages}" --out "${CMAKE_CURRENT_BINARY_DIR}/pair-refused"
@@ -117,7 +118,12 @@ set(_wxl_gen_pair_with_an_unknown_key
     "binding pair Microsoft.UI.Xaml.Controls.ToggleSwitch.IsOn: 'event' is not a key of this entry")
 set(_wxl_gen_pair_under_an_event_of_another_class
     "binding pair Microsoft.UI.Xaml.Controls.ToggleSwitch.IsOn: Microsoft.UI.Xaml.Controls.ToggleSwitch declares no event Checked")
-foreach(_wxl_gen_case IN ITEMS pair-with-an-unknown-key pair-under-an-event-of-another-class)
+set(_wxl_gen_bound_list_of_an_undeclared_class
+    "bound list Microsoft.UI.Xaml.Controls.NoSuchList: the metadata read declares no class Microsoft.UI.Xaml.Controls.NoSuchList")
+set(_wxl_gen_bound_list_named_twice
+    "bound list Microsoft.UI.Xaml.Controls.ListViewBase: the class is named twice")
+foreach(_wxl_gen_case IN ITEMS pair-with-an-unknown-key pair-under-an-event-of-another-class
+        bound-list-of-an-undeclared-class bound-list-named-twice)
     string(REPLACE "-" "_" _wxl_gen_message "_wxl_gen_${_wxl_gen_case}")
     set(_wxl_gen_command
         ${_wxl_gen_type_map} "${CMAKE_CURRENT_SOURCE_DIR}/type-maps/${_wxl_gen_case}.json")

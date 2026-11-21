@@ -153,6 +153,9 @@ add_library(wxl.ui.common STATIC
     src/impl/bound_items_source.h
     src/impl/bound_items_source.cpp
     src/impl/bound_list.h
+    src/impl/item_makers.h
+    src/impl/item_template.cpp
+    src/impl/item_factory.cpp
     src/impl/list_mirror.h
     src/impl/composition_interop.h
     src/impl/conversions.h
@@ -416,6 +419,14 @@ if(WXL_TESTS)
         ${_wxl_ui_wrappers_root}
     )
     add_dependencies(wxl.ui.tests wxl.ui.full.wrappers)
+
+    # A list bound to a ListView on extended, a profile that selects no component of list
+    # controls: the binding is the attach the generator writes for ListViewBase over the
+    # machinery of wxl.ui.common (impl/item_makers.h), and the link of this application is the
+    # check. A WinUI application with a window, so ctest does not run it. Run by hand, it ends by
+    # itself with 0 once the list asks for an element; a list that never asks leaves it open.
+    wxl_add_executable(wxl.ui.bound-list-test UI wxl::ui.extended test/bound_list_test.cpp)
+    wxl_set_target_folders(wxl.ui.bound-list-test PREFIX "tests")
 
     # Teardown is header-only over core::function, so its test needs only the
     # header and wxl.core -- not wxl.ui.common, whose INTERFACE
