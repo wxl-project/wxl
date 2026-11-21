@@ -3,7 +3,8 @@
 
   Built by the target winxl of the CMake tree under WXL_WINXL (cmake/wxl_winxl.cmake),
   which runs `dotnet publish -c Release -r win-x64` with WxlVersion set to the version of
-  the tree, project() of the root CMakeLists.txt. The publish is one self-contained
+  the tree, project() of the root CMakeLists.txt, and WxlHeaderMacros to the list of the
+  macros of the headers it collects first. The publish is one self-contained
   executable compiled ahead of time (Native AOT), a single file by construction: it needs
   no .NET runtime on the machine it runs on, and the .NET SDK only where it is built.
 -->
@@ -27,6 +28,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Names.IsMacro reads the embedded list of macros where it is mapped, through a pointer. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <PublishAot>true</PublishAot>
     <SelfContained>true</SelfContained>
@@ -44,6 +47,13 @@
        Templates (Templates.cs). -->
   <ItemGroup>
     <EmbeddedResource Include="Templates\*" LogicalName="Templates/%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- The names of the macros of the headers of the Windows SDK and of the MSVC toolset of the
+       build, which Names.cs refuses as names of libraries: written by cmake/Write-HeaderMacros.ps1
+       in the build directory, whose path the build of the tree passes in. -->
+  <ItemGroup Condition="'$(WxlHeaderMacros)' != ''">
+    <EmbeddedResource Include="$(WxlHeaderMacros)" LogicalName="HeaderMacros.txt" />
   </ItemGroup>
 
   <!-- A ContinuousIntegrationBuild, as the build of the package WinXL makes it
@@ -69,6 +79,12 @@
   <Target Name="WxlRequireVersion" BeforeTargets="BeforeBuild">
     <Error Condition="'$(WxlVersion)' == ''"
            Text="WxlVersion is not set. winxl prints the version of the wxl tree, which its build passes in: build the CMake target winxl (configure with -DWXL_WINXL=ON), or pass -p:WxlVersion=&lt;the version of project() in the root CMakeLists.txt&gt;." />
+  </Target>
+
+  <!-- Without the list winxl would take a macro of Windows for a name a library can have. -->
+  <Target Name="WxlRequireHeaderMacros" BeforeTargets="BeforeBuild">
+    <Error Condition="'$(WxlHeaderMacros)' == '' or !Exists('$(WxlHeaderMacros)')"
+           Text="WxlHeaderMacros is '$(WxlHeaderMacros)', not a file. winxl refuses the macros of the headers of Windows as names of libraries, by the list cmake/Write-HeaderMacros.ps1 writes from the headers of the build: build the CMake target winxl (configure with -DWXL_WINXL=ON), or pass -p:WxlHeaderMacros=&lt;the list that script wrote&gt;." />
   </Target>
 
 </Project>

@@ -95,6 +95,70 @@ file(GLOB _wxl_winxl_sources CONFIGURE_DEPENDS
     "${_wxl_winxl_source}/*.cs" "${_wxl_winxl_source}/*.csproj"
     "${_wxl_winxl_source}/global.json" "${_wxl_winxl_source}/Templates/*")
 
+# The macros winxl refuses as names of libraries (tools/winxl/Names.cs): the
+# names of the #defines of the headers a source of an application includes,
+# those of the Windows SDK -- ucrt, um, shared, winrt -- and of the MSVC toolset
+# of the developer environment the tree is built in, which also compiles the
+# tree: WindowsSdkDir and WindowsSDKVersion name the SDK, as for the restore of
+# cmake/wxl_packages.cmake, and VCToolsInstallDir the toolset. A header is a
+# .h, .hpp, .hxx or .inl file, or a file without an extension (the standard
+# library). The list of the headers is rewritten only when it changes, and the
+# names are collected again only when it or a header changes: the headers are
+# the dependencies of the step, a few thousand files that ninja only stats.
+foreach(_wxl_winxl_variable WindowsSdkDir WindowsSDKVersion VCToolsInstallDir)
+    if("$ENV{${_wxl_winxl_variable}}" STREQUAL "")
+        message(FATAL_ERROR
+            "WXL_WINXL is ON and the environment has no ${_wxl_winxl_variable}: winxl embeds the "
+            "macros of the headers of the Windows SDK and of the MSVC toolset of the developer "
+            "environment. Configure from a Developer Command Prompt or through tools\\build.ps1.")
+    endif()
+endforeach()
+file(TO_CMAKE_PATH "$ENV{WindowsSdkDir}" _wxl_winxl_kits)
+string(REGEX REPLACE "[\\/]+$" "" _wxl_winxl_sdk "$ENV{WindowsSDKVersion}")
+file(TO_CMAKE_PATH "$ENV{VCToolsInstallDir}" _wxl_winxl_toolset)
+set(_wxl_winxl_header_dirs
+    "${_wxl_winxl_kits}/Include/${_wxl_winxl_sdk}/ucrt"
+    "${_wxl_winxl_kits}/Include/${_wxl_winxl_sdk}/um"
+    "${_wxl_winxl_kits}/Include/${_wxl_winxl_sdk}/shared"
+    "${_wxl_winxl_kits}/Include/${_wxl_winxl_sdk}/winrt"
+    "${_wxl_winxl_toolset}/include")
+set(_wxl_winxl_headers "")
+foreach(_wxl_winxl_header_dir IN LISTS _wxl_winxl_header_dirs)
+    cmake_path(NORMAL_PATH _wxl_winxl_header_dir)
+    if(NOT IS_DIRECTORY "${_wxl_winxl_header_dir}")
+        message(FATAL_ERROR
+            "No ${_wxl_winxl_header_dir}: winxl embeds the macros of the headers there, of the "
+            "Windows SDK and the MSVC toolset the developer environment names (WindowsSdkDir, "
+            "WindowsSDKVersion, VCToolsInstallDir).")
+    endif()
+    file(GLOB_RECURSE _wxl_winxl_files LIST_DIRECTORIES false "${_wxl_winxl_header_dir}/*")
+    list(FILTER _wxl_winxl_files INCLUDE REGEX "(/[^./]+|\\.([hH]|[hH][pP][pP]|[hH][xX][xX]|[iI][nN][lL]))$")
+    list(APPEND _wxl_winxl_headers ${_wxl_winxl_files})
+endforeach()
+list(SORT _wxl_winxl_headers)
+set(_wxl_winxl_header_list "${_wxl_winxl_dir}/header-macros.headers")
+# The paths go in as the value of one variable, which @ONLY substitutes once.
+list(JOIN _wxl_winxl_headers "\n" _wxl_winxl_text)
+file(CONFIGURE OUTPUT "${_wxl_winxl_header_list}" CONTENT "@_wxl_winxl_text@\n" @ONLY)
+
+# Windows PowerShell 5.1, which every Windows has and the script is written for.
+find_program(POWERSHELL_EXE NAMES powershell)
+if(NOT POWERSHELL_EXE)
+    message(FATAL_ERROR
+        "WXL_WINXL is ON and no PowerShell is found: the build of winxl collects the macros of "
+        "the headers with it. Install PowerShell (powershell.exe, Windows PowerShell 5.1, on PATH).")
+endif()
+set(_wxl_winxl_macros "${_wxl_winxl_dir}/header-macros.txt")
+add_custom_command(
+    OUTPUT "${_wxl_winxl_macros}"
+    COMMAND "${POWERSHELL_EXE}" -NoProfile -ExecutionPolicy Bypass -File
+            "${CMAKE_CURRENT_LIST_DIR}/Write-HeaderMacros.ps1"
+            -Headers "${_wxl_winxl_header_list}" -Out "${_wxl_winxl_macros}"
+    DEPENDS "${CMAKE_CURRENT_LIST_DIR}/Write-HeaderMacros.ps1" "${_wxl_winxl_header_list}"
+            ${_wxl_winxl_headers}
+    COMMENT "winxl: the macros of the headers of Windows SDK ${_wxl_winxl_sdk} and ${_wxl_winxl_toolset}"
+    VERBATIM)
+
 add_custom_command(
     OUTPUT "${_wxl_winxl_exe}"
     COMMAND "${WXL_DOTNET}" publish "${_wxl_winxl_source}/winxl.csproj"
@@ -102,9 +166,10 @@ add_custom_command(
             --artifacts-path "${_wxl_winxl_dir}/artifacts"
             -o "${_wxl_winxl_dir}"
             "-p:WxlVersion=${WXL_VERSION}"
+            "-p:WxlHeaderMacros=${_wxl_winxl_macros}"
             -p:IlcUseEnvironmentalTools=true
             ${_wxl_winxl_reproducible}
-    DEPENDS ${_wxl_winxl_sources}
+    DEPENDS ${_wxl_winxl_sources} "${_wxl_winxl_macros}"
     WORKING_DIRECTORY "${_wxl_winxl_source}"
     COMMENT "dotnet publish: winxl ${WXL_VERSION} -> ${_wxl_winxl_exe}"
     VERBATIM)

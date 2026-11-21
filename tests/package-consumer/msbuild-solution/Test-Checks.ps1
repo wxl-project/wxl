@@ -98,6 +98,8 @@ try {
     Assert-Winxl 'add: a header of the package' 1 'ui.h' @('add', 'library', '--name', 'ui')
     Assert-Winxl 'add: a header of the Windows SDK' 1 'winbase.h' @('add', 'library', '--name', 'winbase')
     Assert-Winxl 'add: a header of the CRT' 1 'math.h' @('add', 'library', '--name', 'math')
+    Assert-Winxl 'add: a function macro of Windows' 1 'is a macro' @('add', 'library', '--name', 'GetWindowText')
+    Assert-Winxl 'add: a macro of the CRT' 1 'is a macro' @('add', 'library', '--name', 'errno')
 
     $saved = [IO.File]::ReadAllText($program)
     [IO.File]::WriteAllText($program, [regex]::Replace($saved, '(<PackageReference Include="WinXL" Version=")[^"]+', '${1}9.9.9'))

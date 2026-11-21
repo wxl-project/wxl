@@ -44,28 +44,47 @@ internal static partial class Names
     private static partial Regex DeviceName();
 
     /// <summary>
-    /// Macros the headers of Windows and of the CRT define with names a project could take: the
-    /// preprocessor would replace the namespace of a library of that name before the compiler sees
-    /// it (<c>namespace small</c> is <c>namespace char</c> after rpcndr.h). Compared with case, as the
-    /// preprocessor compares. A list kept by hand: the headers define thousands of macros, most of
-    /// them names no one gives a library, and the functions of Windows that have a variant for each
-    /// character set (CreateWindow is CreateWindowW) are among them.
+    /// Whether the headers of the Windows SDK or of the MSVC toolset define a macro <paramref name="name"/>:
+    /// the preprocessor would replace the namespace of a library of that name before the compiler sees
+    /// it (<c>namespace small</c> is <c>namespace char</c> after rpcndr.h, <c>GetWindowText</c> is
+    /// <c>GetWindowTextW</c> after winuser.h). Compared with case, as the preprocessor compares. The
+    /// names are those of every <c>#define</c> of the ucrt, um, shared and winrt headers of the SDK and
+    /// of the include directory of the toolset winxl is built with, collected by
+    /// cmake/Write-HeaderMacros.ps1 and embedded as HeaderMacros.txt: one name per line, each ended by
+    /// LF, in ordinal order. The resource is mapped with the executable, and a binary search over its
+    /// lines reads a few pages of it, without a copy or a set built at each run.
     /// </summary>
-    private static readonly HashSet<string> Macros = new(StringComparer.Ordinal)
+    private static unsafe bool IsMacro(string name)
     {
-        // windef.h, minwindef.h, winnt.h, rpcndr.h, objbase.h, combaseapi.h, wingdi.h, winuser.h.
-        "interface", "small", "hyper", "far", "near", "FAR", "NEAR", "pascal", "PASCAL", "cdecl", "CDECL",
-        "WINAPI", "APIENTRY", "CALLBACK", "IN", "OUT", "OPTIONAL", "CONST", "VOID", "TRUE", "FALSE", "DELETE",
-        "ERROR", "min", "max", "TRANSPARENT", "OPAQUE", "ABSOLUTE", "RELATIVE", "PURE", "THIS", "STDMETHOD",
-        "MAX_PATH", "INFINITE", "SYNCHRONIZE", "NO_ERROR", "S_OK", "S_FALSE", "E_FAIL",
-        "GetCurrentTime", "GetMessage", "SendMessage", "PostMessage", "CreateWindow", "LoadString", "GetObject",
-        "DrawText", "MessageBox", "CreateFile", "DeleteFile", "CopyFile", "MoveFile", "GetClassName",
-        "RegisterClass", "FindWindow", "Yield",
-        // The CRT.
-        "errno", "stdin", "stdout", "stderr", "assert", "offsetof", "NULL", "EOF", "BUFSIZ", "FILENAME_MAX",
-        "RAND_MAX", "EXIT_SUCCESS", "EXIT_FAILURE", "CHAR_BIT", "INT_MAX", "UINT_MAX", "SIZE_MAX", "setjmp",
-        "va_start", "va_arg", "va_end", "va_copy", "alloca",
-    };
+        using var stream = typeof(Names).Assembly.GetManifestResourceStream("HeaderMacros.txt") as UnmanagedMemoryStream
+            ?? throw new InvalidOperationException("winxl was built without the macros of the headers, HeaderMacros.txt");
+        var names = new ReadOnlySpan<byte>(stream.PositionPointer, checked((int)stream.Length));
+        // An identifier, so ASCII, whose bytes compare as the characters of the name do.
+        Span<byte> key = stackalloc byte[name.Length];
+        Encoding.ASCII.GetBytes(name, key);
+        // [low, high) holds whole lines: low begins a line, and high ends one or is the end.
+        int low = 0, high = names.Length;
+        while (low < high)
+        {
+            var middle = low + (high - low) / 2;
+            var start = low + names[low..middle].LastIndexOf((byte)'\n') + 1;
+            var end = start + names[start..high].IndexOf((byte)'\n');
+            var order = names[start..end].SequenceCompareTo(key);
+            if (order == 0)
+            {
+                return true;
+            }
+            if (order < 0)
+            {
+                low = end + 1;
+            }
+            else
+            {
+                high = start;
+            }
+        }
+        return false;
+    }
 
     public static void Check(string name, string what)
     {
@@ -90,7 +109,7 @@ internal static partial class Names
         {
             why = "it is the name of a device of Windows, which no directory can have";
         }
-        else if (Macros.Contains(name))
+        else if (IsMacro(name))
         {
             why = "it is a macro of the headers of Windows or of the CRT, which would replace the name in the sources";
         }
