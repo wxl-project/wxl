@@ -93,7 +93,7 @@ endif()
 
 file(GLOB _wxl_winxl_sources CONFIGURE_DEPENDS
     "${_wxl_winxl_source}/*.cs" "${_wxl_winxl_source}/*.csproj"
-    "${_wxl_winxl_source}/global.json")
+    "${_wxl_winxl_source}/global.json" "${_wxl_winxl_source}/Templates/*")
 
 add_custom_command(
     OUTPUT "${_wxl_winxl_exe}"

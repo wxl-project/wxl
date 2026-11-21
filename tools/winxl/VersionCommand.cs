@@ -23,7 +23,7 @@ internal static class VersionCommand
     /// The informational version of the assembly, which winxl.csproj sets to WxlVersion,
     /// the version the build passes in, with no commit hash appended.
     /// </summary>
-    private static string TreeVersion() =>
+    public static string TreeVersion() =>
         typeof(VersionCommand).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
         ?? throw new InvalidOperationException("winxl was built without an informational version");
 }
