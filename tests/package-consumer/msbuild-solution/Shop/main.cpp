@@ -8,9 +8,9 @@
 #include "views.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 Teardown wxl_launched() {
+    using namespace wxl::dsl;
     // The bindings and the handlers of the window refer to the model; the Teardown keeps it as
     // long as the window lives.
     auto const shop = core::make_refcounted<model::Model>();

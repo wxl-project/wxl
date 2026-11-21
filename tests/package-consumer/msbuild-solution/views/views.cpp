@@ -3,11 +3,11 @@
 namespace views {
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 // The handlers refer to the model without owning it: the program keeps it as long as the window.
 
 StackPanel header(model::Model& model) {
+    using namespace wxl::dsl;
     return StackPanel {
         spacing = 4,
         TextBlock {styles.TextBlock.Subtitle, text = BindOutput {model.title}},
@@ -16,6 +16,7 @@ StackPanel header(model::Model& model) {
 }
 
 ListView itemList(model::Model& model) {
+    using namespace wxl::dsl;
     return ListView {
         height = 240,
         selectionMode = ListViewSelectionMode::None,
@@ -24,6 +25,7 @@ ListView itemList(model::Model& model) {
 }
 
 StackPanel editor(model::Model& model) {
+    using namespace wxl::dsl;
     return StackPanel {
         orientation.horizontal,
         spacing = 8,
