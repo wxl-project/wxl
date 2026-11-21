@@ -35,8 +35,9 @@ try {
 }
 
 # Each source replaces the file winxl wrote at the same place: a source without one means the
-# layout winxl writes is not the one the scenario stands on.
-$sources = Get-ChildItem $PSScriptRoot -Recurse -File | Where-Object { $_.FullName -ne $PSCommandPath }
+# layout winxl writes is not the one the scenario stands on. The scripts beside this one are not
+# sources: the sources are in the directories of the projects.
+$sources = Get-ChildItem $PSScriptRoot -Directory | Get-ChildItem -Recurse -File
 foreach ($source in $sources) {
     $relative = $source.FullName.Substring($PSScriptRoot.Length + 1)
     $target = Join-Path $Directory $relative

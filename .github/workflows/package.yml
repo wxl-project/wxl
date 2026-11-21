@@ -52,7 +52,9 @@
 #            profile project, the program and two libraries, one on wxl.core
 #            and one on the profile -- with the sources of
 #            tests/package-consumer/msbuild-solution put in, restored and built
-#            Debug and Release, the window of the program opening as above.
+#            Debug and Release, the window of the program opening as above;
+#            and Test-Checks.ps1 beside them, the refusals of winxl and the
+#            profile checks of WinXL.targets, without a compile.
 #
 # The steps of libs, tools and pack between the checkout and the artifacts are
 # the actions .github/actions/package-libs, package-tools and package-pack,
@@ -501,6 +503,16 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "publish.cmake exited with $LASTEXITCODE" }
           "SOLUTION=$solution" >> $env:GITHUB_ENV
           "WINXL=$winxl" >> $env:GITHUB_ENV
+          "WINXL_FEED=$tools" >> $env:GITHUB_ENV
+
+      # The refusals of winxl and the profile checks of WinXL.targets, each
+      # expected to stop with its own message, on a solution of their own;
+      # nothing is compiled.
+      - name: Check the refusals
+        shell: cmd
+        run: |
+          call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
+          pwsh -NoProfile -File tests\package-consumer\msbuild-solution\Test-Checks.ps1 -Winxl "%WINXL%" -Directory "%RUNNER_TEMP%\msbuild-checks" -Feed "%WINXL_FEED%" || exit /b 1
 
       # MSBuild takes the toolset of a project from the property VCToolsVersion
       # and not from the developer environment, which sets only the variable.
