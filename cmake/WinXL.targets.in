@@ -233,18 +233,24 @@
            Text="WinXL $(WinXLVersion): WinXLProfile names the profile of a program, and the project is a $(ConfigurationType); the library of a profile is built in the program that stands on it." />
     <Error Condition="!Exists('$(_WinXLProfile)')"
            Text="WinXL $(WinXLVersion): WinXLProfile is '$(WinXLProfile)', and there is no profile $(_WinXLProfile)." />
+    <Error Condition="'$(ProjectAssetsFile)' == '' or !Exists('$(ProjectAssetsFile)')"
+           Text="WinXL $(WinXLVersion): the project has no restore result of NuGet (ProjectAssetsFile is '$(ProjectAssetsFile)'), from which the generator of the wrappers takes the packages. A project on the WinUI layer references WinXL with a PackageReference, not with packages.config, and is restored first (msbuild -restore)." />
     <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(WinXLProfileParts)', '^[0-9]+$')) or $(WinXLProfileParts) &lt; 1 or $(WinXLProfileParts) &gt; 100"
            Text="WinXL $(WinXLVersion): WinXLProfileParts is '$(WinXLProfileParts)': the number of parts of the wrappers is from 1 to 100." />
   </Target>
 
   <!-- The components of the chain of the profile, closed over their dependencies: lines of the
-       script, each of them an item. -->
+       script, each of them an item. The script's output goes through a file, so that what it
+       writes to the error stream is logged and not taken for a line. -->
   <Target Name="_WinXLProfileComponents">
-    <Exec Command="$(_WinXLPowerShell) &quot;$(_WinXLHelpers)\Read-ProfileComponents.ps1&quot; -Profile &quot;$(_WinXLProfile)&quot; -ProfilesDir &quot;$(_WinXLProfiles)&quot; -ComponentDir &quot;$(_WinXLComponents)&quot;"
-          ConsoleToMSBuild="true" StandardOutputImportance="low" EchoOff="true">
-      <Output TaskParameter="ConsoleOutput" ItemName="_WinXLComponentLine" />
-    </Exec>
+    <MakeDir Directories="$(_WinXLIntDir)" />
+    <Exec Command="$(_WinXLPowerShell) &quot;$(_WinXLHelpers)\Read-ProfileComponents.ps1&quot; -Profile &quot;$(_WinXLProfile)&quot; -ProfilesDir &quot;$(_WinXLProfiles)&quot; -ComponentDir &quot;$(_WinXLComponents)&quot; &gt; &quot;$(_WinXLIntDir)components.txt&quot;"
+          EchoOff="true" UseUtf8Encoding="always" />
+    <ReadLinesFromFile File="$(_WinXLIntDir)components.txt">
+      <Output TaskParameter="Lines" ItemName="_WinXLComponentLine" />
+    </ReadLinesFromFile>
     <ItemGroup>
+      <FileWrites Include="$(_WinXLIntDir)components.txt" />
       <_WinXLComponentLine>
         <Kind>$([System.String]::Copy('%(Identity)').Split(':')[0])</Kind>
         <Value>$([System.String]::Copy('%(Identity)').Substring($([System.String]::Copy('%(Identity)').IndexOf(':'))).Substring(1).Replace('/', '\'))</Value>
@@ -278,11 +284,14 @@
     <WriteLinesToFile File="$(_WinXLIntDir)platform-metadata.txt"
                       Lines="@(CppWinRTPlatformWinMDInputs->'%(WinMDPath)')"
                       Overwrite="true" WriteOnlyWhenDifferent="true" />
-    <Exec Command="$(_WinXLPowerShell) &quot;$(_WinXLHelpers)\Write-RestoredPackages.ps1&quot; -Assets &quot;$(ProjectAssetsFile)&quot; -WindowsSdk &quot;$(TargetPlatformVersion)&quot; -Metadata &quot;$(_WinXLIntDir)platform-metadata.txt&quot; -Out &quot;$(_WinXLPackages)&quot;"
-          ConsoleToMSBuild="true" StandardOutputImportance="low" EchoOff="true">
-      <Output TaskParameter="ConsoleOutput" ItemName="_WinXLPackageLine" />
-    </Exec>
+    <!-- Through a file, as the components above. -->
+    <Exec Command="$(_WinXLPowerShell) &quot;$(_WinXLHelpers)\Write-RestoredPackages.ps1&quot; -Assets &quot;$(ProjectAssetsFile)&quot; -WindowsSdk &quot;$(TargetPlatformVersion)&quot; -Metadata &quot;$(_WinXLIntDir)platform-metadata.txt&quot; -Out &quot;$(_WinXLPackages)&quot; &gt; &quot;$(_WinXLIntDir)package-directories.txt&quot;"
+          EchoOff="true" UseUtf8Encoding="always" />
+    <ReadLinesFromFile File="$(_WinXLIntDir)package-directories.txt">
+      <Output TaskParameter="Lines" ItemName="_WinXLPackageLine" />
+    </ReadLinesFromFile>
     <ItemGroup>
+      <FileWrites Include="$(_WinXLIntDir)package-directories.txt" />
       <_WinXLPackageLine>
         <Id>$([System.String]::Copy('%(Identity)').Split('|')[0])</Id>
         <PackageDirectory>$([System.String]::Copy('%(Identity)').Split('|')[1].Replace('/', '\'))</PackageDirectory>
@@ -305,12 +314,31 @@
       <!-- A name without a wildcard is an item whether or not the file is there, and a missing
            input would run the generator on every build. -->
       <_WinXLWrapperInput Remove="@(_WinXLWrapperInput)" Condition="!Exists('%(Identity)')" />
+      <!-- The sources the run writes: the parts WinXLProfileParts asks for and the schema test. -->
+      <_WinXLPartNumber Include="@WXL_MSBUILD_UI_PART_NUMBERS@" />
+      <_WinXLPart Include="@(_WinXLPartNumber->'$(_WinXLWrappers)\parts\wrapper-%(Identity).cpp')" Condition="%(Identity) &lt; $(WinXLProfileParts)" />
+      <_WinXLGenerated Include="@(_WinXLPart);$(_WinXLWrappers)\parts\schema_surface.cpp" />
     </ItemGroup>
+    <PropertyGroup>
+      <_WinXLGeneratorCommand>&quot;$(_WinXLGenerator)&quot; --profile &quot;$(_WinXLProfile)&quot; --packages &quot;$(_WinXLPackages)&quot; --profiles-dir &quot;$(_WinXLProfiles)&quot; --types &quot;$(_WinXLProfiles)\types.json&quot; --symbols &quot;$(_WinXLProfiles)\fluent-symbols.json&quot; --out &quot;$(_WinXLWrappers)&quot; --parts $(WinXLProfileParts) --component-dir &quot;$(_WinXLComponents)&quot; @(_WinXLChain->'--component %(Identity)', ' ') --common-dir &quot;$(_WinXLCommon)&quot;</_WinXLGeneratorCommand>
+    </PropertyGroup>
+    <!-- The command itself is an input as well: another profile of the same name, another number
+         of parts or another chain writes other wrappers from the same files. Written only when it
+         changes, beside the wrappers and not among them. -->
+    <WriteLinesToFile File="$(_WinXLUiRoot)\generator.command" Lines="$(_WinXLGeneratorCommand)"
+                      Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <_WinXLWrapperInput Include="$(_WinXLUiRoot)\generator.command" />
+      <FileWrites Include="$(_WinXLUiRoot)\generator.command" />
+    </ItemGroup>
+    <!-- The generator rewrites only the files that change, so the sources it writes cannot be the
+         outputs of the run; the stamp is. A source of the run that is gone runs it again. -->
+    <Delete Files="$(_WinXLWrappers)\generated.stamp" Condition="!Exists('%(_WinXLGenerated.Identity)')" />
   </Target>
 
   <Target Name="_WinXLWrappers" DependsOnTargets="_WinXLWrapperInputs"
           Inputs="@(_WinXLWrapperInput)" Outputs="$(_WinXLWrappers)\generated.stamp">
-    <Exec Command="&quot;$(_WinXLGenerator)&quot; --profile &quot;$(_WinXLProfile)&quot; --packages &quot;$(_WinXLPackages)&quot; --profiles-dir &quot;$(_WinXLProfiles)&quot; --types &quot;$(_WinXLProfiles)\types.json&quot; --symbols &quot;$(_WinXLProfiles)\fluent-symbols.json&quot; --out &quot;$(_WinXLWrappers)&quot; --parts $(WinXLProfileParts) --component-dir &quot;$(_WinXLComponents)&quot; @(_WinXLChain->'--component %(Identity)', ' ') --common-dir &quot;$(_WinXLCommon)&quot;" />
+    <Exec Command="$(_WinXLGeneratorCommand)" />
     <Touch Files="$(_WinXLWrappers)\generated.stamp" AlwaysCreate="true" />
   </Target>
 
@@ -339,8 +367,6 @@
   <Target Name="WinXLProfileSources" Condition="'$(WinXLProfile)' != ''"
           DependsOnTargets="CppWinRTMakeProjections;_WinXLWrappers;_WinXLPackageFiles">
     <ItemGroup>
-      <_WinXLPartNumber Include="@WXL_MSBUILD_UI_PART_NUMBERS@" />
-      <_WinXLPart Include="@(_WinXLPartNumber->'$(_WinXLWrappers)\parts\wrapper-%(Identity).cpp')" Condition="%(Identity) &lt; $(WinXLProfileParts)" />
       <_WinXLCompiled Include="@(_WinXLComponentSource)" Condition="'%(_WinXLComponentSource.WinXLCompile)' == 'true'" />
 
       <ClCompile Include="@(_WinXLCompiled)">
@@ -385,17 +411,23 @@
     </ItemGroup>
   </Target>
 
-  <!-- The library of the profile, archived from the objects of its sources when one of them
-       changed, and linked with the files of the packages the layer links. -->
+  <!-- The library of the profile, archived anew from the objects of its sources when one of them
+       changed or the set of them did, and linked with the files of the packages the layer links. -->
   <Target Name="_WinXLProfileLibrary" DependsOnTargets="_WinXLProfileObjects"
-          Inputs="@(_WinXLProfileObject)" Outputs="$(_WinXLProfileLibrary)">
+          Inputs="@(_WinXLProfileObject);$(_WinXLProfileLibrary).members" Outputs="$(_WinXLProfileLibrary)">
+    <Delete Files="$(_WinXLProfileLibrary)" />
     <LIB Sources="@(_WinXLProfileObject)" OutputFile="$(_WinXLProfileLibrary)"
          SuppressStartupBanner="true" TrackFileAccess="false" ToolArchitecture="$(VCToolArchitecture)" />
   </Target>
   <Target Name="_WinXLProfileObjects">
     <ItemGroup>
       <_WinXLProfileObject Include="@(ClCompile->WithMetadataValue('WinXLProfileSource', 'true')->'%(ObjectFileName)')" />
+      <FileWrites Include="$(_WinXLProfileLibrary).members" />
     </ItemGroup>
+    <!-- The members, rewritten only when the set changes: an object no longer among them leaves
+         the archive. -->
+    <WriteLinesToFile File="$(_WinXLProfileLibrary).members" Lines="@(_WinXLProfileObject)"
+                      Overwrite="true" WriteOnlyWhenDifferent="true" />
   </Target>
   <Target Name="WinXLProfileLink" BeforeTargets="ComputeLinkInputsFromProject" Condition="'$(WinXLProfile)' != ''"
           DependsOnTargets="_WinXLProfileLibrary;_WinXLPackageFiles">
