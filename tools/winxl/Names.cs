@@ -44,15 +44,16 @@ internal static partial class Names
     private static partial Regex DeviceName();
 
     /// <summary>
-    /// Whether the headers of the Windows SDK or of the MSVC toolset define a macro <paramref name="name"/>:
-    /// the preprocessor would replace the namespace of a library of that name before the compiler sees
-    /// it (<c>namespace small</c> is <c>namespace char</c> after rpcndr.h, <c>GetWindowText</c> is
+    /// Whether a source of a solution on wxl has a macro <paramref name="name"/> defined: the
+    /// preprocessor would replace the namespace of a library of that name before the compiler sees it
+    /// (<c>namespace small</c> is <c>namespace char</c> after rpcndr.h, <c>GetWindowText</c> is
     /// <c>GetWindowTextW</c> after winuser.h). Compared with case, as the preprocessor compares. The
-    /// names are those of every <c>#define</c> of the ucrt, um, shared and winrt headers of the SDK and
-    /// of the include directory of the toolset winxl is built with, collected by
-    /// cmake/Write-HeaderMacros.ps1 and embedded as HeaderMacros.txt: one name per line, each ended by
-    /// LF, in ordinal order. The resource is mapped with the executable, and a binary search over its
-    /// lines reads a few pages of it, without a copy or a set built at each run.
+    /// names are those of the macros defined at the end of a source that includes windows.h, the C and
+    /// C++ standard libraries and the public headers of wxl with the options and the definitions the
+    /// package gives it, as the compiler and the Windows SDK winxl is built with preprocess it for x64:
+    /// collected by cmake/Write-HeaderMacros.ps1 and embedded as HeaderMacros.txt, one name per line,
+    /// each ended by LF, in ordinal order. The resource is mapped with the executable, and a binary
+    /// search over its lines reads a few pages of it, without a copy or a set built at each run.
     /// </summary>
     private static unsafe bool IsMacro(string name)
     {
@@ -111,7 +112,7 @@ internal static partial class Names
         }
         else if (IsMacro(name))
         {
-            why = "it is a macro of the headers of Windows or of the CRT, which would replace the name in the sources";
+            why = "it is a macro of the headers of Windows, of the C or C++ library or of wxl, which would replace the name in the sources";
         }
         if (why is not null)
         {

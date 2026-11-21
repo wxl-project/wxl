@@ -49,9 +49,9 @@
     <EmbeddedResource Include="Templates\*" LogicalName="Templates/%(Filename)%(Extension)" />
   </ItemGroup>
 
-  <!-- The names of the macros of the headers of the Windows SDK and of the MSVC toolset of the
-       build, which Names.cs refuses as names of libraries: written by cmake/Write-HeaderMacros.ps1
-       in the build directory, whose path the build of the tree passes in. -->
+  <!-- The names of the macros a source on wxl has defined, as the compiler of the build preprocesses
+       it, which Names.cs refuses as names of libraries: written by cmake/Write-HeaderMacros.ps1 in
+       the build directory, whose path the build of the tree passes in. -->
   <ItemGroup Condition="'$(WxlHeaderMacros)' != ''">
     <EmbeddedResource Include="$(WxlHeaderMacros)" LogicalName="HeaderMacros.txt" />
   </ItemGroup>

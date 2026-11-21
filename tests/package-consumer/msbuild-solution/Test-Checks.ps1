@@ -101,6 +101,7 @@ try {
     Assert-Winxl 'add: a header of the CRT' 1 'math.h' @('add', 'library', '--name', 'math')
     Assert-Winxl 'add: a function macro of Windows' 1 'is a macro' @('add', 'library', '--name', 'GetWindowText')
     Assert-Winxl 'add: a macro of the CRT' 1 'is a macro' @('add', 'library', '--name', 'errno')
+    Assert-Winxl 'add: a macro of wxl' 1 'is a macro' @('add', 'library', '--name', 'coro_check')
 
     $saved = [IO.File]::ReadAllText($program)
     [IO.File]::WriteAllText($program, [regex]::Replace($saved, '(<PackageReference Include="WinXL" Version=")[^"]+', '${1}9.9.9'))
@@ -121,6 +122,9 @@ try {
     if (-not ([IO.File]::ReadAllText((Join-Path $solution 'early\early.vcxproj'))).Contains("<PackageReference Include=`"WinXL`" Version=`"$own`" />")) {
         $failures.Add("the library added on the restore of WinXL 0.1.0 does not reference WinXL $own")
     }
+    # unknwn.h defines it only for C with COBJMACROS: no source on wxl has it defined.
+    Assert-Winxl 'add: a macro no source on wxl defines' 0 '' @('add', 'library', '--name', 'IUnknown_AddRef')
+    if (Test-Path (Join-Path $solution 'IUnknown_AddRef')) { Remove-Item -LiteralPath (Join-Path $solution 'IUnknown_AddRef') -Recurse -Force }
     Remove-Item -LiteralPath (Join-Path $solution 'early') -Recurse -Force
     [IO.File]::WriteAllBytes($slnx, $savedSolution)
     [IO.File]::WriteAllText($program, [regex]::Replace($saved, '(<PackageReference Include="WinXL" Version=")[^"]+', '${1}0.1.0'))
