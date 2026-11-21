@@ -10,7 +10,10 @@
 //   - the exit code says how the command ended: 0 done, 1 wrong invocation, 2 bad
 //     input (a file the command was given, or a package it reads), 3 environment
 //     (what the machine lacks or refuses: a package directory, the Windows package
-//     manager);
+//     manager, a file or directory the command writes -- what it wrote before is
+//     undone, and what it could not undo is in the message --, the headers of the
+//     package winxl is part of, of the Windows SDK and of the MSVC toolsets it checks
+//     names against);
 //   - an error is a message on stderr and, under --json, the object
 //     { "error": { "code": "<invocation|input|environment>", "message": "..." } }
 //     on stdout, its code naming the exit code.
@@ -30,6 +33,18 @@ internal static class Program
           winxl runtime install --packages <build>/wxl.packages/restored-packages.json [--json]
               installs, for the current user, the Windows App Runtime of the
               Microsoft.WindowsAppSDK.Runtime package the restore of that build resolved
+          winxl new wxl --name <name> [--dir <directory>] [--extends <profile>] [--json]
+              writes into <directory> (./<name> by default) the MSBuild solution
+              <name>.slnx of an application on wxl: the profile project wxl, whose
+              profile <name>.winxl-profile extends <profile> of the package WinXL
+              (base by default), and the program <name> on it
+          winxl add library --name <name> [--ui] [--references <library>,...]
+                            [--solution <solution>] [--json]
+              adds the static library <name> to that solution, referenced by its
+              program; with --ui the library stands on the profile of the solution,
+              without it on wxl.core alone; --references names the libraries of the
+              solution it uses. The solution is <solution>, or the one .slnx in the
+              current directory
           winxl --help
         """;
 
@@ -82,6 +97,18 @@ internal static class Program
                         + "the list of the restored packages the configure of a build writes");
                 return RuntimeInstallCommand.Run(packages, json);
 
+            case "new" when args.Length > 1 && !args[1].StartsWith("--", StringComparison.Ordinal):
+                var created = Options.Parse(args.AsSpan(2), flags: ["--json"], valued: ["--name", "--dir", "--extends"]);
+                return NewCommand.Run(args[1],
+                    created.Value("--name") ?? throw new ToolException(Failure.Invocation, "new needs --name <name>, the name of the solution and of its program"),
+                    created.Value("--dir"), created.Value("--extends"), json);
+
+            case "add" when args.Length > 1 && args[1] == "library":
+                var added = Options.Parse(args.AsSpan(2), flags: ["--json", "--ui"], valued: ["--name", "--references", "--solution"]);
+                return AddLibraryCommand.Run(
+                    added.Value("--name") ?? throw new ToolException(Failure.Invocation, "add library needs --name <name>, the name of the library"),
+                    added.Has("--ui"), added.Value("--references"), added.Value("--solution"), json);
+
             default:
                 throw new ToolException(Failure.Invocation,
                     Misplaced(args) ?? $"'{string.Join(' ', args)}' is not a command of winxl");
@@ -110,10 +137,13 @@ internal static class Program
         {
             return $"{first} goes after the command: winxl --version {first}";
         }
-        var runtime = Array.IndexOf(args, "runtime");
-        if (runtime > 0 && runtime + 1 < args.Length && args[runtime + 1] == "install")
+        foreach (var (word, next) in new[] { ("runtime", "install"), ("new", Solution.Kind), ("add", "library") })
         {
-            return $"{first} goes after the command: winxl runtime install ... {first}";
+            var at = Array.IndexOf(args, word);
+            if (at > 0 && at + 1 < args.Length && args[at + 1] == next)
+            {
+                return $"{first} goes after the command: winxl {word} {next} ... {first}";
+            }
         }
         return null;
     }
@@ -158,4 +188,6 @@ internal sealed class Options
     }
 
     public string? Value(string name) => values.TryGetValue(name, out var value) ? value : null;
+
+    public bool Has(string name) => values.ContainsKey(name);
 }
