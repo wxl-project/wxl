@@ -1,0 +1,9 @@
+{
+    "name": "Shop",
+    "description": "The profile of the scenario: base of wxl, which the generator finds among the profiles of the package WinXL, and the component items, which defines how a list control shows the items of an observable_list it is bound to (itemsSource = BindOutput {list, build}).",
+    "extends": ["base"],
+
+    "components": [
+        "items"
+    ]
+}
