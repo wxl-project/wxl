@@ -210,7 +210,7 @@ internal sealed class Solution
             guid, type, Property("WinXLProfile"), references, winxl);
     }
 
-    private static XDocument LoadXml(string path, bool preserveWhitespace = false)
+    public static XDocument LoadXml(string path, bool preserveWhitespace = false)
     {
         try
         {

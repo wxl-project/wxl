@@ -2,7 +2,8 @@
 # expected to stop with its own message: a solution winxl of the package writes into <Directory>,
 # changed the way each case needs. Nothing is compiled -- the checks of WinXL.targets run before the
 # wrappers and the compile, and each MSBuild case builds only the target _WinXLCheckProfiles of one
-# project, without building its references.
+# project, without building its references. The checks of the version of WinXL restore the program
+# once, for the project.assets.json winxl reads.
 #
 #     Test-Checks.ps1 -Winxl <winxl.exe of the package> -Directory <new directory> -Feed <local feed>
 #
@@ -104,6 +105,36 @@ try {
     $saved = [IO.File]::ReadAllText($program)
     [IO.File]::WriteAllText($program, [regex]::Replace($saved, '(<PackageReference Include="WinXL" Version=")[^"]+', '${1}9.9.9'))
     Assert-Winxl 'add: another version of WinXL' 2 'run the winxl of the package WinXL 9.9.9' @('add', 'library', '--name', 'late')
+
+    # The version NuGet restored decides once there is a restore of the reference as it is: the
+    # minimum 0.1.0 resolves to the version of the feed, the one of this winxl.
+    $own = (& $Winxl --version).Trim()
+    $slnx = Join-Path $solution 'P.slnx'
+    $savedSolution = [IO.File]::ReadAllBytes($slnx)
+    $assets = Join-Path $solution 'P\obj\project.assets.json'
+    [IO.File]::WriteAllText($program, [regex]::Replace($saved, '(<PackageReference Include="WinXL" Version=")[^"]+', '${1}0.1.0'))
+    $ErrorActionPreference = 'Continue'
+    $restore = @(msbuild $program -t:Restore -nologo -verbosity:minimal -p:Configuration=Debug -p:Platform=x64 2>&1 | ForEach-Object { "$_" })
+    $ErrorActionPreference = 'Stop'
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path $assets)) { throw "the restore of $program failed: $($restore -join ' | ')" }
+    Assert-Winxl 'add: WinXL 0.1.0 restored as this winxl' 0 '' @('add', 'library', '--name', 'early')
+    if (-not ([IO.File]::ReadAllText((Join-Path $solution 'early\early.vcxproj'))).Contains("<PackageReference Include=`"WinXL`" Version=`"$own`" />")) {
+        $failures.Add("the library added on the restore of WinXL 0.1.0 does not reference WinXL $own")
+    }
+    Remove-Item -LiteralPath (Join-Path $solution 'early') -Recurse -Force
+    [IO.File]::WriteAllBytes($slnx, $savedSolution)
+    [IO.File]::WriteAllText($program, [regex]::Replace($saved, '(<PackageReference Include="WinXL" Version=")[^"]+', '${1}0.1.0'))
+    $restored = [IO.File]::ReadAllText($assets)
+    [IO.File]::WriteAllText($assets, $restored.Replace("WinXL/$own", 'WinXL/9.9.9').Replace("winxl/$own", 'winxl/9.9.9'))
+    Assert-Winxl 'add: another version of WinXL restored' 2 'run the winxl of the package WinXL 9.9.9, which the restore put at' @('add', 'library', '--name', 'late')
+    [IO.File]::WriteAllText($assets, '{ "version": 3, ')
+    Assert-Winxl 'add: a restore that is not JSON' 2 'is not JSON' @('add', 'library', '--name', 'late')
+    [IO.File]::WriteAllText($assets, $restored)
+    [IO.File]::WriteAllText($program, [regex]::Replace($saved, '(<PackageReference Include="WinXL" Version=")[^"]+', '${1}9.9.9'))
+    Assert-Winxl 'add: a reference changed since the restore' 2 'WinXL 9.9.9, which NuGet has not restored' @('add', 'library', '--name', 'late')
+    [IO.File]::WriteAllText($program, [regex]::Replace($saved, '(<PackageReference Include="WinXL" Version=")[^"]+', '${1}0.1.0'))
+    Remove-Item -LiteralPath (Join-Path $solution 'P\obj') -Recurse -Force
+    Assert-Winxl 'add: WinXL 0.1.0 not restored' 2 'WinXL 0.1.0, which NuGet has not restored' @('add', 'library', '--name', 'late')
     [IO.File]::WriteAllText($program, $saved)
 
     # A write refused: the solution and the program as they were, no directory of the library.

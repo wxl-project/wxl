@@ -31,20 +31,33 @@ internal static class AddLibraryCommand
         }
         var profile = solution.ProfileProject;
         var program = solution.Program;
-        // The new library references WinXL at the version of the solution, and that is the package
-        // whose headers its name is checked against and whose templates winxl writes: the winxl of
-        // another version writes for another package.
-        var version = program.WinXLVersion
+        // The solution builds with the WinXL that NuGet restores for the program, and that has to be the
+        // package whose headers the name is checked against and whose templates winxl writes: the
+        // winxl of another version writes for another package. The reference is a minimum, so the
+        // version is the one the restore resolved; before a restore of the reference as it is, the
+        // version the reference names.
+        var requested = program.WinXLVersion
             ?? throw new ToolException(Failure.Input, $"the program {program.Path} has no PackageReference to WinXL");
         var own = VersionCommand.TreeVersion();
-        if (!string.Equals(version, own, StringComparison.OrdinalIgnoreCase))
+        var restored = ProjectAssets.Resolved(program.Path, "WinXL", requested);
+        if (restored is not null && !NuGetVersion.Same(restored.Version, own))
+        {
+            throw new ToolException(Failure.Input,
+                $"the restore of the program {program.Path} resolved WinXL {restored.Version} ({restored.AssetsPath}), and this winxl "
+                + $"is of WinXL {own}: run the winxl of the package WinXL {restored.Version}, which the restore put at "
+                + Path.Combine(restored.Directory, "build", "native", "bin", "winxl.exe"));
+        }
+        if (restored is null && !string.Equals(requested, own, StringComparison.OrdinalIgnoreCase))
         {
             var packages = Environment.GetEnvironmentVariable("NUGET_PACKAGES") is { Length: > 0 } folder
                 ? folder
                 : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
             throw new ToolException(Failure.Input,
-                $"the solution references WinXL {version}, and this winxl is of WinXL {own}: run the winxl of the package "
-                + $"WinXL {version}, which the restore of the solution puts at {Path.Combine(packages, "winxl", version.ToLowerInvariant(), "build", "native", "bin", "winxl.exe")}");
+                $"the program {program.Path} references WinXL {requested}, which NuGet has not restored for it "
+                + $"({ProjectAssets.FilePath(program.Path)} names no WinXL of this reference), and this winxl is of WinXL {own}: run the winxl "
+                + $"of the package WinXL {requested}, which the restore of the solution puts at "
+                + $"{Path.Combine(packages, "winxl", (NuGetVersion.Normalize(requested) ?? requested).ToLowerInvariant(), "build", "native", "bin", "winxl.exe")}, "
+                + "or restore the solution, and winxl compares with the version the restore resolves");
         }
         Names.CheckHeader(name, "--name");
 
@@ -103,11 +116,12 @@ internal static class AddLibraryCommand
                 + "    <PublicIncludeDirectories>$(MSBuildProjectDirectory)</PublicIncludeDirectories>\n",
             ["ITEMS"] = $"    <ClInclude Include=\"{name}.h\" />\n    <ClCompile Include=\"{name}.cpp\" />\n",
             ["REFERENCES"] = Solution.ReferenceGroup(directory, onProfile ? [profile, .. libraries] : libraries),
-            ["VERSION"] = version,
+            // The library needs the package it was written for, the one of this winxl.
+            ["VERSION"] = own,
         });
 
         var relative = $"{name}/{name}.vcxproj";
-        var library = new SolutionProject(name, project, relative, guid, "StaticLibrary", null, [], version);
+        var library = new SolutionProject(name, project, relative, guid, "StaticLibrary", null, [], own);
         var solutionFile = solution.WithProject(relative);
         var programFile = Solution.WithReference(program, library);
 
