@@ -226,9 +226,11 @@ C (CRT), а дереву нужны две. Поэтому в `CMakePresets.json
   пакета, окно `demo` открывается на Windows App Runtime, который ставит
   `winxl` из пакета. Задание `consumer (msbuild)` так же копирует
   `tests/package-consumer` и публикует пакет в её `feed`, восстанавливает пакет
-  по `PackageReference` проекта `msbuild/demo.vcxproj`, собирает им
-  `core-only` в Debug и Release через `WinXL.props` и `WinXL.targets` и
-  запускает программу. На самом pull request ни пакет, ни `x64-static` не
+  по `PackageReference` проектов `msbuild/demo.vcxproj` и
+  `msbuild/window.vcxproj` и собирает в Debug и Release через `WinXL.props`
+  и `WinXL.targets` `core-only` и окно `demo` на библиотеке его профиля;
+  `core-only` печатает версию пакета, окно открывается на Windows App
+  Runtime, который ставит `winxl` из пакета. На самом pull request ни пакет, ни `x64-static` не
   проверяются; как запросить проверку, описано в разделе «Проверка пакета в
   CI».
 
@@ -1081,9 +1083,9 @@ cmake -DWXL_PUBLISH_PACKAGE=<каталог>\WinXL.<версия>.nupkg -DWXL_PU
 который уже лежит в каталоге или в глобальной папке пакетов NuGet.
 
 Образец приложения на пакете — проект `tests/package-consumer`: его
-настраивает и собирает задание `consumer` сценария `package.yml`, а проект
-MSBuild `msbuild/demo.vcxproj` того же каталога — задание
-`consumer (msbuild)`. Каждое задание публикует пакет в каталог `feed` своей
+настраивает и собирает задание `consumer` сценария `package.yml`, а проекты
+MSBuild `msbuild/demo.vcxproj` и `msbuild/window.vcxproj` того же каталога —
+задание `consumer (msbuild)`. Каждое задание публикует пакет в каталог `feed` своей
 копии образца. Файл `nuget.config` образца берёт `WinXL` из этого каталога, а
 зависимости — с nuget.org; назначение источников не даёт взять `WinXL` с
 nuget.org:
@@ -1362,10 +1364,11 @@ https://api.nuget.org/v3/index.json` и ключ API nuget.org. nuget.org
 а NuGet импортирует в него `WinXL.props` из `build/native` пакета до
 собственных настроек проекта и `WinXL.targets` — после них. Путь MSBuild
 даёт модули `wxl.core`, `fmt`, `wxl.highlight`, `wxl.bb` и `wxl.rsdn` и их
-библиотеки. Библиотеки `wxl.ui.common`,
-генерации обёрток по профилю и размещения DLL времени выполнения рядом с
-программой в нём нет. Образец — `tests/package-consumer/msbuild/demo.vcxproj`,
-консольная программа `core-only` образца CMake:
+библиотеки, а программе с окном — библиотеку её профиля над `wxl.ui.common`
+(см. «Программа с окном на профиле» ниже). Образцов два, в каталоге
+`tests/package-consumer/msbuild`: `demo.vcxproj` — консольная программа
+`core-only` образца CMake, `window.vcxproj` — его окно `demo`. Ссылка на
+пакет у обоих одна и та же:
 
 ```xml
 <PropertyGroup Label="Configuration">
@@ -1442,11 +1445,100 @@ https://api.nuget.org/v3/index.json` и ключ API nuget.org. nuget.org
   <WindowsAppSdkUndockedRegFreeWinRTInitialize>false</WindowsAppSdkUndockedRegFreeWinRTInitialize>
   ```
 
+#### Программа с окном на профиле
+
+Программа с окном называет свой профиль свойством `WinXLProfile` — путём к
+файлу `.winxl-profile`, абсолютным или от каталога проекта. Так сделано в
+`window.vcxproj` образца:
+
+```xml
+<PropertyGroup>
+  <TargetName>demo</TargetName>
+  <WinXLProfile>..\profile\demo.winxl-profile</WinXLProfile>
+  <WindowsPackageType>None</WindowsPackageType>
+  <WindowsAppSdkBootstrapInitialize>false</WindowsAppSdkBootstrapInitialize>
+  <WindowsAppSdkDeploymentManagerInitialize>false</WindowsAppSdkDeploymentManagerInitialize>
+  <WindowsAppSdkUndockedRegFreeWinRTInitialize>false</WindowsAppSdkUndockedRegFreeWinRTInitialize>
+</PropertyGroup>
+...
+<ItemGroup>
+  <ClCompile Include="..\demo.cpp" />
+</ItemGroup>
+```
+
+С этим свойством `WinXL.targets` строит в проекте библиотеку профиля так же,
+как `wxl_add_ui_library` строит её в проекте CMake, — тем же генератором,
+профилями и компонентами из пакета:
+
+- **Компоненты.** Перед компиляцией сценарий `Read-ProfileComponents.ps1`
+  пакета (Windows PowerShell 5.1) читает цепочку профиля и манифесты
+  компонентов из `share/wxl/components`. Профиль из `extends`, которого нет
+  рядом с профилем программы, ищется среди профилей пакета
+  (`share/wxl/profiles`), как его ищет генератор. Компонент может линковать
+  только библиотеки, которые пакет даёт любой программе (`wxl.core`,
+  `wxl.highlight`, `wxl.bb`, `wxl.rsdn`); другая библиотека в манифесте
+  останавливает сборку.
+- **Обёртки.** Генератор `bin/winui-srcgen.exe` пакета пишет их в
+  `$(IntDir)WinXL\ui\<профиль>\wxl`. Пакеты он читает из списка
+  восстановления `$(IntDir)WinXL\restored-packages.json`. Список пишет
+  сценарий `Write-RestoredPackages.ps1` пакета по восстановлению проекта
+  (`obj/project.assets.json`) и по метаданным Windows SDK, из которых
+  `Microsoft.Windows.CppWinRT` строит в проекте проекцию платформы. Формат
+  списка тот же, что у списка проекта CMake (см. «Пакеты NuGet и проекция
+  cppwinrt»). Генератор запускается заново, только когда изменился он сам,
+  профиль, файл профилей рядом с ним или в пакете, манифест выбранного
+  компонента или список восстановления. Число частей обёрток задаёт свойство
+  `WinXLProfileParts`, по умолчанию 8, как `PARTS` у `wxl_add_ui_library`.
+- **Библиотека профиля.** Исходники выбранных компонентов и части обёрток
+  компилируются ключами проекта с тем, что `wxl_add_ui_library` даёт
+  библиотеке: определением `NOGDI`, заголовками пакетов Windows App SDK
+  Foundation и WinUI и `/bigobj` у частей. Объекты собираются в архив
+  `$(IntDir)WinXL\wxl.ui.<профиль>.lib`, и программа линкует его вместе с
+  библиотекой `wxl.ui.common` той же CRT, системными библиотеками слоя и
+  библиотекой загрузчика Windows App Runtime.
+- **Поверхность профиля.** Сгенерированный тест схемы и фрагменты
+  поверхности компонентов компилируются, но не линкуются, с определением
+  `WINRT_BASE_H`, как тест поверхности профиля в проекте CMake: открытый
+  заголовок, которому нужно имя `winrt::`, останавливает сборку.
+- **Исходники программы** получают пути включения библиотеки профиля: корень
+  обёрток, каталоги выбранных компонентов и заголовки `wxl.ui.common`.
+  Каталоги компонентов становятся известны только при сборке, после чтения
+  профиля.
+- **Точка входа.** `wWinMain` принадлежит **wxl**: программа получает ключ
+  компоновки `/ENTRY:wWinMainCRTStartup` от `wxl.ui.common` и подсистему
+  Windows, если не задала свою.
+- **DLL рядом с программой.** После компоновки в `$(OutDir)` копируются те же
+  DLL, что получает программа на CMake (`wxl_target_runtime`): загрузчик
+  Windows App Runtime, `Microsoft.Graphics.Canvas.dll` из Win2D и
+  `WebView2Loader.dll` из WebView2, из каталогов, в которые их положило
+  восстановление проекта.
+- **Windows App Runtime.** Среду запускает сама **wxl**, поэтому программа
+  без пакета (`WindowsPackageType` `None`) выключает инициализацию Windows
+  App SDK, как в образце. Экспериментальную среду, которую требуют обёртки,
+  устанавливает утилита `winxl` пакета по списку восстановления программы:
+
+  ```powershell
+  <пакет>\build\native\bin\winxl.exe runtime install --packages msbuild\build\obj\window\Debug\WinXL\restored-packages.json
+  ```
+
+Сборка образца с окном из окружения разработчика, в копии
+`tests/package-consumer` с пакетом в каталоге `feed`:
+
+```
+msbuild msbuild\window.vcxproj -restore -p:Configuration=Debug -p:Platform=x64 -p:VCToolsVersion=%VCToolsVersion%
+```
+
+Программа — `msbuild\build\Debug\demo.exe`.
+
 Файлы `WinXL.props` и `WinXL.targets` пишет установка дерева
 (`cmake/wxl_msbuild.cmake`) из `cmake/WinXL.props.in` и
 `cmake/WinXL.targets.in`. Язык, набор инструментов, модули, библиотеки,
 определения и ключи каждой конфигурации установка берёт из настроек, с
 которыми дерево собирает **wxl**, поэтому в шаблонах они не повторяются.
+Так же для слоя WinUI: файлы пакетов и системные библиотеки установка берёт
+из `cmake/wxl_ui_packages.cmake`, ключи библиотеки профиля и число частей —
+из `cmake/wxl_ui_profile.cmake`, то есть из тех же функций, которые читают
+помощники CMake.
 
 ## Release и дефект MSVC
 

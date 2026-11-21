@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The window of the package consumer on MSBuild: demo.cpp of the directory above, the window the CMake
+  consumer builds as demo, on the library of the profile ..\profile\demo.winxl-profile. The property
+  WinXLProfile names the profile, and WinXL.targets of the package builds the library in this project:
+  the generator of the package writes the wrappers, the components the profile selects are compiled
+  from the package, wxl.ui.common of the package is linked, and the DLLs a program on wxl needs are
+  copied beside it. The profile extends wxl's extended, which the generator finds among the profiles
+  of the package; extended selects the components bb, rsdn and code, whose blocks the window shows, so
+  the modules of wxl.bb, wxl.rsdn and wxl.highlight are built here and their archives linked.
+
+  From a developer prompt in a copy of tests/package-consumer, with the package published into its
+  feed/ by tools/package/publish.cmake:
+
+      msbuild msbuild\window.vcxproj -restore -p:Configuration=Debug -p:Platform=x64 -p:VCToolsVersion=%VCToolsVersion%
+
+  The program is msbuild\build\<configuration>\demo.exe, beside core-only.exe of demo.vcxproj. The
+  window needs the experimental Windows App Runtime the wrappers ask for, which winxl of the package
+  installs from the list of the restore this project writes, build\obj\window\<configuration>\WinXL\
+  restored-packages.json.
+-->
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{3C9E1A57-8B2D-4F6E-A1C4-7D5B2E9F0A31}</ProjectGuid>
+    <RootNamespace>demo</RootNamespace>
+    <!-- The restore of this project apart from that of demo.vcxproj beside it: NuGet writes
+         project.assets.json into the directory, whatever the name of the project. -->
+    <BaseIntermediateOutputPath>$(MSBuildProjectDirectory)\build\obj\window\</BaseIntermediateOutputPath>
+    <!-- What the machine may have set up for every project stays out: the vcpkg integration and the
+         Directory.Build files of the directories above a copy. -->
+    <VcpkgEnabled>false</VcpkgEnabled>
+    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+    <ImportDirectoryPackagesProps>false</ImportDirectoryPackagesProps>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v145</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)' == 'Debug'">
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)' == 'Release'">
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+
+  <PropertyGroup>
+    <TargetName>demo</TargetName>
+    <OutDir>$(MSBuildProjectDirectory)\build\$(Configuration)\</OutDir>
+    <IntDir>$(MSBuildProjectDirectory)\build\obj\window\$(Configuration)\</IntDir>
+    <!-- The profile of the program, as wxl_add_ui_library(demo PROFILE ...) names it on CMake. -->
+    <WinXLProfile>..\profile\demo.winxl-profile</WinXLProfile>
+    <!-- An unpackaged program, which wxl starts on the Windows App Runtime itself, as on CMake: the
+         initializers of the Windows App SDK are not compiled in. -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSdkBootstrapInitialize>false</WindowsAppSdkBootstrapInitialize>
+    <WindowsAppSdkDeploymentManagerInitialize>false</WindowsAppSdkDeploymentManagerInitialize>
+    <WindowsAppSdkUndockedRegFreeWinRTInitialize>false</WindowsAppSdkUndockedRegFreeWinRTInitialize>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <ItemGroup>
+    <ClCompile Include="..\demo.cpp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The least version the application accepts; nuget.config gives the one the check packed. -->
+    <PackageReference Include="WinXL" Version="0.1.0" />
+  </ItemGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

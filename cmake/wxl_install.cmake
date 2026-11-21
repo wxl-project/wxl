@@ -149,10 +149,12 @@ cmake_path(GET _wxl_test_gtest_source FILENAME WXL_INSTALL_TEST_GTEST_SOURCE)
 
 if(TARGET wxl.ui.common)
     set(WXL_INSTALL_UI TRUE)
+    # The headers of wxl.ui.common, which cmake/wxl_msbuild.cmake names too.
+    set(WXL_INSTALL_UI_INCLUDE_DIR "${CMAKE_INSTALL_INCLUDEDIR}/wxl/ui")
     install(TARGETS wxl.ui.common
         EXPORT wxl-targets
         ARCHIVE DESTINATION ${_wxl_lib_dir}
-        FILE_SET headers DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wxl/ui
+        FILE_SET headers DESTINATION ${WXL_INSTALL_UI_INCLUDE_DIR}
     )
     install(TARGETS winui-srcgen
         EXPORT wxl-targets
@@ -175,6 +177,7 @@ if(TARGET wxl.ui.common)
             "${CMAKE_CURRENT_LIST_DIR}/wxl_ui_packages.cmake"
             "${CMAKE_CURRENT_LIST_DIR}/wxl_ui_profile.cmake"
             "${CMAKE_CURRENT_LIST_DIR}/Read-ProfileComponents.ps1"
+            "${CMAKE_CURRENT_LIST_DIR}/Write-RestoredPackages.ps1"
         DESTINATION "${WXL_CMAKE_DIR}/${WXL_HELPERS_RELATIVE_DIR}"
     )
 endif()

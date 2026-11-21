@@ -14,20 +14,29 @@
 
 include("${_WXL_MSBUILD_DATA}/common.cmake")
 
+set(WXL_MSBUILD_UI_GENERATOR "")
 foreach(_wxl_build IN ITEMS Debug Release)
     string(TOUPPER "${_wxl_build}" _wxl_key)
     set(_wxl_archives "")
     set(_wxl_definitions "")
     set(_wxl_options "")
+    set(_wxl_ui_archives "")
+    set(_wxl_generator "")
     set(_wxl_file "${_WXL_MSBUILD_DATA}/${_wxl_build}.cmake")
     if(EXISTS "${_wxl_file}")
         include("${_wxl_file}")
     endif()
-    foreach(_wxl_name IN ITEMS archives definitions options)
+    # The generator the install puts into bin, of whichever configuration: the
+    # same name in each.
+    if(NOT _wxl_generator STREQUAL "")
+        string(REPLACE "/" "\\" WXL_MSBUILD_UI_GENERATOR "${_wxl_generator}")
+    endif()
+    foreach(_wxl_name IN ITEMS archives definitions options ui_archives)
         string(TOUPPER "${_wxl_name}" _wxl_upper)
         set(_wxl_value "${_wxl_${_wxl_name}}")
         # MSBuild reads % $ @ ' as syntax, XML < > &; ; separates the items of
-        # a list, the archives and the definitions.
+        # a list, the archives and the definitions. The values go into the text
+        # of elements, where a " is a character (WXL_VERSION="...").
         if(_wxl_value MATCHES "[%$@'<>&]")
             message(FATAL_ERROR
                 "The ${_wxl_name} of ${_wxl_build} are '${_wxl_value}', with a character MSBuild "

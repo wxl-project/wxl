@@ -39,11 +39,14 @@
 #            version, and the window of demo opens on the Windows App Runtime
 #            winxl of the package installs.
 #   consumer-msbuild  the package used as a Visual Studio project uses it:
-#            tests/package-consumer/msbuild/demo.vcxproj, copied out of the
-#            checkout with the package published into feed/ as above, restores
-#            WinXL by its PackageReference and builds core-only Debug and
-#            Release through WinXL.props and WinXL.targets of the package;
-#            core-only runs and prints the version.
+#            the projects of tests/package-consumer/msbuild, copied out of the
+#            checkout with the package published into feed/ as above, restore
+#            WinXL by their PackageReference and build Debug and Release
+#            through WinXL.props and WinXL.targets of the package: demo.vcxproj
+#            core-only, which runs and prints the version, and window.vcxproj
+#            the window of demo on the library of its profile, which the
+#            package builds in the project, opening on the Windows App Runtime
+#            winxl of the package installs.
 #
 # The steps of libs, tools and pack between the checkout and the artifacts are
 # the actions .github/actions/package-libs, package-tools and package-pack,
@@ -388,8 +391,10 @@ jobs:
         working-directory: ${{ env.APP }}
         run: |
           call "%DEVCMD%" -arch=x64 -host_arch=x64 %VCVARS%
-          for %%c in (Debug Release) do (
-            msbuild msbuild\demo.vcxproj -restore -nologo -verbosity:minimal -p:Configuration=%%c -p:Platform=x64 -p:VCToolsVersion=%VCToolsVersion% "-p:RestoreConfigFile=%APP%\nuget.config" || exit /b 1
+          for %%p in (demo window) do (
+            for %%c in (Debug Release) do (
+              msbuild msbuild\%%p.vcxproj -restore -nologo -verbosity:minimal -p:Configuration=%%c -p:Platform=x64 -p:VCToolsVersion=%VCToolsVersion% "-p:RestoreConfigFile=%APP%\nuget.config" || exit /b 1
+            )
           )
 
       - name: Run core-only
@@ -402,4 +407,36 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "core-only ($config) exited with $LASTEXITCODE" }
             "$config`: $line"
             if ($line -ne $expected) { throw "core-only ($config) printed '$line', not '$expected'" }
+          }
+
+      # The experimental runtime the wrappers ask for, installed by winxl of the
+      # package the restore of window.vcxproj resolved, from the list of that
+      # restore WinXL.targets wrote; then the window of demo, twenty seconds in
+      # each configuration, as in the job consumer.
+      - name: Install the experimental Windows App Runtime
+        shell: pwsh
+        working-directory: ${{ env.APP }}
+        run: |
+          $list = 'msbuild/build/obj/window/Debug/WinXL/restored-packages.json'
+          $winxl = (Get-Content $list -Raw | ConvertFrom-Json).packages | Where-Object id -eq 'WinXL'
+          if ($winxl.version -ne $env:WXL_PACKAGE_VERSION) {
+            throw "window.vcxproj restored WinXL $($winxl.version), not $env:WXL_PACKAGE_VERSION"
+          }
+          & "$($winxl.directory)/build/native/bin/winxl.exe" runtime install --packages $list
+          if ($LASTEXITCODE -ne 0) { throw "winxl runtime install exited with $LASTEXITCODE" }
+
+      - name: Start demo
+        shell: pwsh
+        working-directory: ${{ env.APP }}
+        run: |
+          foreach ($config in 'Debug', 'Release') {
+            $exe = Get-Item "msbuild/build/$config/demo.exe"
+            $p = Start-Process -FilePath $exe.FullName -WorkingDirectory $exe.DirectoryName -PassThru
+            Start-Sleep -Seconds 20
+            $p.Refresh()
+            if ($p.HasExited) { throw "demo ($config) exited within 20 s, code $($p.ExitCode)" }
+            $window = $p.MainWindowHandle
+            "$config`: running after 20 s; main window handle $window, title '$($p.MainWindowTitle)'"
+            Stop-Process -Id $p.Id
+            if ($window -eq 0) { throw "demo ($config) runs but shows no main window" }
           }

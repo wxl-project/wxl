@@ -346,6 +346,18 @@ endif()
 # Without them the configure needs no MSBuild and no WinUI workload.
 if(WXL_TOOLS OR WXL_BUILD_BENCHMARKS)
     include(cmake/wxl_packages.cmake)
+
+    # The same list written for a .vcxproj by cmake/Write-RestoredPackages.ps1
+    # (WinXL.targets), from this restore: the text the configure wrote.
+    if(WXL_TESTS)
+        wxl_restored_packages_file(_wxl_restored_list)
+        cmake_path(GET _wxl_restored_list PARENT_PATH _wxl_restored_dir)
+        add_test(NAME restored-packages-msbuild
+            COMMAND "${CMAKE_COMMAND}"
+                    "-DWXL_TEST_PACKAGES=${_wxl_restored_dir}"
+                    "-DWXL_TEST_DIR=${CMAKE_CURRENT_BINARY_DIR}/restored-packages-msbuild-test"
+                    -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/wxl_restored_packages_msbuild_test.cmake")
+    endif()
 endif()
 
 # winmd::reader is a header-only WinMD metadata parsing library, fetched from

@@ -27,4 +27,13 @@
       <AdditionalDependencies>@WXL_MSBUILD_LIBRARIES@;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
+
+  <!-- A program on the library of a profile (WinXLProfile, WinXL.targets) is a windowed one, as
+       wxl_add_executable makes it on CMake: wxl owns its entry point. Item definitions see the
+       properties the project sets later, and the project's own SubSystem replaces this one. -->
+  <ItemDefinitionGroup Condition="'$(WinXLProfile)' != ''">
+    <Link>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
 </Project>
