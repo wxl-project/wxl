@@ -423,8 +423,8 @@ if(WXL_TESTS)
     # A list bound to a ListView on extended, a profile that selects no component of list
     # controls: the binding is the attach the generator writes for ListViewBase over the
     # machinery of wxl.ui.common (impl/item_makers.h), and the link of this application is the
-    # check. A WinUI application with a window, so ctest does not run it; run by hand, it ends by
-    # itself, and its exit code says whether the list asked for an element.
+    # check. A WinUI application with a window, so ctest does not run it. Run by hand, it ends by
+    # itself with 0 once the list asks for an element; a list that never asks leaves it open.
     wxl_add_executable(wxl.ui.bound-list-test UI wxl::ui.extended test/bound_list_test.cpp)
     wxl_set_target_folders(wxl.ui.bound-list-test PREFIX "tests")
 

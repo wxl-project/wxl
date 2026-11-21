@@ -257,6 +257,36 @@ TEST(crawl, a_binding_pair_the_metadata_does_not_declare_stops_the_walk) {
     std::filesystem::remove_all(profile.parent_path());
 }
 
+// A bound list the metadata does not back up stops the walk, with the type map and the entry
+// named: a class it does not declare, and one class named twice -- whose two attaches would be two
+// definitions of one function.
+TEST(crawl, a_bound_list_the_metadata_does_not_declare_or_named_twice_stops_the_walk) {
+    auto const profile =
+        write_profile(L"undeclared_bound_list", R"({"Microsoft.UI.Xaml.Controls.Button": {}})");
+    auto const profiles = resolve_profiles({profile}, load_restored_packages(restored_packages_file));
+    auto const file = profiles_dir / "types.json";
+    type_map::bound_list const list_view{"Microsoft.UI.Xaml.Controls.ListViewBase",
+                                         "impl::attach_list_view_items", "../impl/item_makers.h"};
+
+    auto types = load_type_map(file);
+    types.bound_lists = {{"Microsoft.UI.Xaml.Controls.NoSuchList", "impl::f", "../f.h"}};
+    auto error = walk_error(profiles, types);
+    EXPECT_NE(error.find(utf8(file)), std::string::npos) << error;
+    EXPECT_NE(error.find("bound list Microsoft.UI.Xaml.Controls.NoSuchList: the metadata read "
+                         "declares no class Microsoft.UI.Xaml.Controls.NoSuchList"),
+              std::string::npos)
+        << error;
+
+    types.bound_lists = {list_view, list_view};
+    error = walk_error(profiles, types);
+    EXPECT_NE(error.find("bound list Microsoft.UI.Xaml.Controls.ListViewBase: the class is named "
+                         "twice"),
+              std::string::npos)
+        << error;
+
+    std::filesystem::remove_all(profile.parent_path());
+}
+
 // A pair serves the classes derived from its own, so a second pair of the same
 // property on a derived class -- CheckBox under ToggleButton -- would make a binding of
 // it on a CheckBox match two; that stops the walk with both named, and so does one

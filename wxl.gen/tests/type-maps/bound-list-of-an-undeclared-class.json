@@ -1,0 +1,7 @@
+// A bound list on a class the metadata does not declare: refused against the
+// metadata, before the walk.
+{
+    "boundLists": [
+        { "class": "Microsoft.UI.Xaml.Controls.NoSuchList", "function": "impl::attach_list_view_items", "include": "../impl/item_makers.h" }
+    ]
+}

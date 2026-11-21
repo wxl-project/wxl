@@ -342,10 +342,11 @@ void write_schema_test(std::filesystem::path const& path, schema const& sch, dsl
     if (!sch.bound_lists.empty()) {
         std::print(file, "// The list controls a list binds to\n");
         for (auto&& owner : sch.bound_lists) {
+            bool const vowel = std::string_view{"AEIOU"}.contains(owner.front());
             std::print(file,
                        "static_assert(::wxl::impl::bound_items_control<::wxl::{0}>, \"wxl: a list "
-                       "binds to a {0} (BindingPairs.h)\");\n",
-                       owner);
+                       "binds to {1} {0} (BindingPairs.h)\");\n",
+                       owner, vowel ? "an" : "a");
             ++lines;
         }
         std::print(file, "\n");
