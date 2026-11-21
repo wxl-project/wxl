@@ -89,8 +89,9 @@ void write_tags(output const& out, model const& m, emitted& em);
 void write_dsl(output const& out, dsl const& d, emitted& em);
 
 // BindingPairs.h -- the binding pairs of the classes the run generates, the
-// property_binder specialisations a named Bind{} finds (gen/model.h). The
-// bodies of the pairs over metadata go out with the owner's bodies.
+// property_binder specialisations a named Bind{} finds (gen/model.h), and the
+// impl::attach_items of each list control a list binds to. The bodies of the
+// pairs over metadata and of the attaches go out with the owner's bodies.
 void write_binding_pairs(output const& out, model const& m, emitted& em);
 
 // schema.h -- the per-class vocabulary (schema, gen/model.h) -- and

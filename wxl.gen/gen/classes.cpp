@@ -1165,11 +1165,25 @@ bool has_binding_pairs(class_info const& info, std::vector<binding_pair_info> co
     });
 }
 
+// The attach of a list control (BindingPairs.h): the wrapper's own projection
+// object, read through its Impl as a member of the class would read it, handed
+// to the hand-written function, which needs nothing of the profile.
+void write_bound_list_body(std::ostream& out, bound_list_info const& list) {
+    std::print(out, R"(
+void impl::attach_items({0} const& control, impl::bound_list_watch const& source) {{
+    {1}(*Object::Impl::get_typed<{0}>(control), source);
+}}
+)",
+               list.owner, list.function);
+}
+
 // The out-of-line bodies of a group (body_file): per class its runtime class
 // names, its constructors and members, and the one body of each try_as the
 // header promised -- the class's own translation unit has what that
 // instantiation needs and a consumer has not: the class's Impl, where try_as
-// reads the WinRT type the wrapper stands for.
+// reads the WinRT type the wrapper stands for. The bodies of the class's
+// binding pairs and of its attach as a list control go with them, for the same
+// reason.
 //
 // What a translation unit holding them includes: the group's private header
 // first, then the projection and private headers the bodies name. A group of
@@ -1178,12 +1192,18 @@ bool has_binding_pairs(class_info const& info, std::vector<binding_pair_info> co
 body_file group_bodies(std::string_view ns, std::vector<class_info> const& classes,
                        std::map<std::string, std::string> const& group_of,
                        std::set<std::string> const& instantiations,
-                       std::vector<binding_pair_info> const& pairs) {
+                       std::vector<binding_pair_info> const& pairs,
+                       std::vector<bound_list_info> const& lists) {
     body_file file{.name = std::string{ns}};
 
     auto includes = source_includes(classes, factory_use_of(classes));
     if (std::ranges::any_of(classes, [&pairs](auto&& info) { return has_binding_pairs(info, pairs); })) {
         includes.insert({"../impl/binding.h", "BindingPairs.h", "Members.h"});
+    }
+    for (auto&& list : lists) {
+        if (std::ranges::any_of(classes, [&list](auto&& info) { return info.name == list.owner; })) {
+            includes.insert({"BindingPairs.h", list.include});
+        }
     }
     if (has_impl(classes)) {
         file.includes.push_back(std::format("{}.impl.h", ns));
@@ -1208,6 +1228,11 @@ body_file group_bodies(std::string_view ns, std::vector<class_info> const& class
         for (auto&& pair : pairs) {
             if (pair.owner == info.name && !pair.events.empty()) {
                 write_binding_pair_bodies(out, pair);
+            }
+        }
+        for (auto&& list : lists) {
+            if (list.owner == info.name) {
+                write_bound_list_body(out, list);
             }
         }
         if (auto text = std::move(out).str(); !text.empty()) {
@@ -2357,6 +2382,23 @@ void add_binding_pairs(std::vector<class_source> const& sources,
     }
 }
 
+// The list controls of the classes this run generates (the type map's
+// boundLists): a class it does not generate has no attach, and a list bound to
+// it is refused where it is written, by the concept the attach satisfies.
+void add_bound_lists(std::vector<class_source> const& sources, type_map const& types, model& m) {
+    for (auto&& list : types.bound_lists) {
+        auto const owner = std::ranges::find(sources, list.class_name,
+                                             [](class_source const& source) {
+                                                 return source.info.metadata_name;
+                                             });
+        if (owner == sources.end()) {
+            continue;
+        }
+        m.bound_lists.push_back({owner->info.name, list.function, list.include});
+        m.schema.bound_lists.push_back(owner->info.name);
+    }
+}
+
 // The schema, last, because it is the same vocabulary said per class and
 // wants the enumerators the tags carry, which are only just settled.
 //
@@ -2464,6 +2506,7 @@ type_index analyze_classes(type_kinds const& kinds, closure const& cl, type_map 
     }
 
     add_binding_pairs(sources, base_of, types, m);
+    add_bound_lists(sources, types, m);
     group_classes(sources, m);
     add_described_classes(components, cl, index, m);
     add_bound_vocabulary(types, m.dsl);
@@ -2525,7 +2568,7 @@ void write_classes(output const& out, model const& m, emitted& em,
         }
 
         bodies.push_back(group_bodies(group.name, group.classes, m.group_of,
-                                      group.collections_defined, m.binding_pairs));
+                                      group.collections_defined, m.binding_pairs, m.bound_lists));
 
         classes += group.classes.size();
         for (auto&& info : group.classes) {

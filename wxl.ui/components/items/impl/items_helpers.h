@@ -13,24 +13,16 @@
 #include "ItemTemplate.h"
 #include "ItemContainerPreset.h"
 #include "Thickness.h"
+#include "impl/item_makers.h"
 #include <wxl/Microsoft.UI.Xaml.Controls.Enums.h>
 
 namespace wxl::impl {
 
-// What makes an element for an item, both as the platform hands them over: an ItemBuilder seen from
-// the WinRT side, for item_template.cpp and item_factory.cpp alike.
-using winrt_item_builder = core::function<winrt::Windows::Foundation::IInspectable(
-    winrt::Windows::Foundation::IInspectable const& item)>;
+// `itemTemplate = [](Object const& item) {...}` and what its containers wear on a ListView or a
+// GridView: the parts of the list's state that impl/item_makers.h keeps, given as the wrappers
+// write them. Defined in item_template.cpp.
 
-// `itemTemplate = [](Object const& item) {...}` on a ListView or GridView, and `itemsSource =
-// BindOutput{list, build}` (attach_items in bound_list.h). The controls make a container for an
-// item when it comes into view and let the application fill it (ContainerContentChanging): the
-// container shows the element the function made for the item, and is cleared when it goes to the
-// recycle queue -- an ItemTemplate with the function in place of the template. The function runs
-// inside a binding_scope the container keeps (impl/element_scope.h), so the bindings of an element
-// go when the container gives it back. The state of a list is held by the list, through its
-// handler. Defined in item_template.cpp.
-
+/// The function that makes the element of each item, called with the item as an Object.
 void set_item_template(winrt::Microsoft::UI::Xaml::Controls::ListViewBase const& list,
                        ItemBuilder const& build);
 
@@ -45,12 +37,9 @@ void set_item_margin(winrt::Microsoft::UI::Xaml::Controls::ListViewBase const& l
 void set_item_container_style(winrt::Microsoft::UI::Xaml::Controls::ListViewBase const& list,
                               ItemContainerPreset const& preset);
 
-// `itemTemplate = [](Object const& item) {...}` on an ItemsRepeater or an ItemsView, and
-// `itemsSource = BindOutput{list, build}` on them. These controls make an element for an item
-// through a factory (IElementFactory); this one is a COM object of wxl's own (impl/sta_com.h) with
-// the function handed in, the way CustomLayout is a layout class with its functions handed in. The
-// function runs inside a binding_scope the factory keeps for the element; an element given back
-// (RecycleElement) has its bindings unbound at once. Defined in item_factory.cpp.
+// `itemTemplate = [](Object const& item) {...}` on an ItemsRepeater or an ItemsView: the element
+// factory of impl/item_makers.h over the function, the way CustomLayout is a layout class with its
+// functions handed in. Defined in item_factory.cpp.
 
 void set_repeater_template(winrt::Microsoft::UI::Xaml::Controls::ItemsRepeater const& repeater,
                            ItemBuilder const& build);

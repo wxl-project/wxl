@@ -34,7 +34,7 @@ public:
 
     void operator()(SelectorItem const& container) const { dress_(container); }
 
-    // The function itself, for whoever keeps it where a preset may be absent (core::nullable<dress_t>).
+    // The function itself, for whoever keeps it apart from the preset: the state of the list its containers wear it from.
     dress_t const& dress() const noexcept { return dress_; }
 
 private:

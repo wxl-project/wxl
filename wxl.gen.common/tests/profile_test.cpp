@@ -388,6 +388,45 @@ TEST(type_map, reads_the_binding_pairs_and_the_function_of_a_bound_member) {
     EXPECT_EQ(focus->direction, "both");
 }
 
+// The list controls of the type map come as the file lists them, each with the function of
+// wxl.ui.common that binds a list to it and the header declaring that function.
+TEST(type_map, reads_the_list_controls_and_their_functions) {
+    auto const types = load_type_map(profiles_dir / "types.json");
+
+    auto const list_view = std::ranges::find(types.bound_lists,
+                                             "Microsoft.UI.Xaml.Controls.ListViewBase",
+                                             &type_map::bound_list::class_name);
+    ASSERT_NE(list_view, types.bound_lists.end());
+    EXPECT_EQ(list_view->function, "impl::attach_list_view_items");
+    EXPECT_EQ(list_view->include, "../impl/item_makers.h");
+}
+
+// An entry of "boundLists" that is not what the key says stops the read, with the file and the
+// entry named: not an object, without its function, or with a key it does not have.
+TEST(type_map, a_malformed_bound_list_names_the_file_and_the_entry) {
+    auto const directory = scratch(L"malformed_bound_list");
+    auto const file = directory / L"types.json";
+
+    struct refusal {
+        std::string text;
+        std::string says;
+    };
+    std::vector<refusal> const refusals{
+        {R"({"boundLists": {}})", "'boundLists' must be an array"},
+        {R"({"boundLists": ["A.List"]})", "every bound list must be an object"},
+        {R"({"boundLists": [{"class": "A.List", "include": "../a.h"}]})",
+         "every bound list needs a string 'function'"},
+        {R"({"boundLists": [{"class": "A.List", "function": "impl::f", "include": "../a.h", "element": "A.Item"}]})",
+         "bound list A.List: 'element' is not a key of this entry"},
+    };
+    for (auto&& [text, message] : refusals) {
+        write(file, text);
+        EXPECT_TRUE(says(stops_with([&] { load_type_map(file); }), {utf8(file), message})) << text;
+    }
+
+    std::filesystem::remove_all(directory);
+}
+
 // An entry of "bindingPairs" or "boundMembers" that is not what the key says stops the
 // read, with the file and the entry named: a key the entry does not have, events that
 // are missing, empty, not text or named twice, a bound member without its function or

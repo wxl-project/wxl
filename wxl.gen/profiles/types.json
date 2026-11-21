@@ -241,5 +241,33 @@
         { "class": "Microsoft.UI.Xaml.Controls.RadioMenuFlyoutItem", "property": "IsChecked", "events": ["Click"] },
         { "class": "Microsoft.UI.Xaml.Controls.PipsPager", "property": "SelectedPageIndex", "events": ["SelectedIndexChanged"] },
         { "class": "Microsoft.UI.Xaml.Controls.PagerControl", "property": "SelectedPageIndex", "events": ["SelectedIndexChanged"] }
+    ],
+
+    // The list controls `itemsSource = BindOutput{list, build}` binds to. For a
+    // class the profiles generate, the generator declares impl::attach_items
+    // for its wrapper (BindingPairs.h) and defines it beside the class's
+    // bodies, handing the projection object the wrapper keeps to the function
+    // named here: a function of wxl.ui.common, which reaches the control
+    // through the projection alone (impl/item_makers.h). So a profile that has
+    // the class binds a list to it whatever components it selects, and a
+    // profile without the class has no attach of it. The attach on a class
+    // serves every class derived from it: ListViewBase's, a ListView and a
+    // GridView.
+    "boundLists": [
+        {
+            "class": "Microsoft.UI.Xaml.Controls.ListViewBase",
+            "function": "impl::attach_list_view_items",
+            "include": "../impl/item_makers.h"
+        },
+        {
+            "class": "Microsoft.UI.Xaml.Controls.ItemsView",
+            "function": "impl::attach_items_view_items",
+            "include": "../impl/item_makers.h"
+        },
+        {
+            "class": "Microsoft.UI.Xaml.Controls.ItemsRepeater",
+            "function": "impl::attach_repeater_items",
+            "include": "../impl/item_makers.h"
+        }
     ]
 }

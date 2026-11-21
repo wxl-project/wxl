@@ -317,6 +317,16 @@ struct binding_pair_info {
     std::set<std::string> includes;  // what the declaration needs: the field types, the function
 };
 
+// One list control of the run that `itemsSource = BindOutput{list, build}`
+// binds to: impl::attach_items(owner const&, impl::bound_list_watch const&),
+// declared in BindingPairs.h and defined beside the owner's bodies, where it
+// hands the projection object the wrapper keeps to `function`.
+struct bound_list_info {
+    std::string owner;     // the wxl class: "ListViewBase"
+    std::string function;  // "impl::attach_list_view_items"
+    std::string include;   // the header declaring the function, which the bodies include
+};
+
 // ---- schema.h ----
 
 // The same vocabulary as Members.h, but reached through the class that
@@ -405,6 +415,11 @@ struct schema {
     };
     std::vector<check> checks;
 
+    // The list controls of the run a list binds to (BindingPairs.h), each
+    // held by the surface test to impl::bound_items_control, the concept the
+    // binding of a list is checked with where an application writes it.
+    std::vector<std::string> bound_lists;
+
     // The headers of the described classes and enumerations, as the emitter
     // spells them ("../SettingsCard.h"): the checks name a class the schema
     // may have no struct of. The types they name come with Members.h.
@@ -492,6 +507,9 @@ struct model {
     // BindingPairs.h, in the order the type map lists them: its bindingPairs,
     // then its bound members.
     std::vector<gen::binding_pair_info> binding_pairs;
+    // BindingPairs.h too: the list controls of the run, in the order the type
+    // map lists them.
+    std::vector<gen::bound_list_info> bound_lists;
 
     // EventArgs
     std::vector<gen::event_args_file> event_args_files;

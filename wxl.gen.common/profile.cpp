@@ -1488,6 +1488,23 @@ type_map load_type_map(std::filesystem::path const& path) {
             map.binding_pairs.push_back(std::move(pair));
         }
     }
+
+    if (value const* const array = document.find("boundLists")) {
+        if (!array->is_array()) {
+            fail(path, "'boundLists' must be an array");
+        }
+        for (value const& entry : array->elements()) {
+            if (!entry.is_object()) {
+                fail(path, "every bound list must be an object");
+            }
+            std::string class_name = required_string(entry, path, "class", "bound list");
+            refuse_other_keys(entry, path, std::format("bound list {}", class_name),
+                              {"class", "function", "include"});
+            map.bound_lists.push_back({std::move(class_name),
+                                       required_string(entry, path, "function", "bound list"),
+                                       required_string(entry, path, "include", "bound list")});
+        }
+    }
     return map;
 }
 

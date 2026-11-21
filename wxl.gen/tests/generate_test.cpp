@@ -118,6 +118,42 @@ TEST_F(stale_files, binding_pairs_are_those_of_the_classes_the_run_generates) {
     EXPECT_NE(surface.find("ToggleSwitch_isOn_paired_bool"), std::string::npos);
 }
 
+// The list controls a list binds to are those of the classes the run generates: the base
+// profile has ListViewBase and neither ItemsView nor ItemsRepeater, and selects no component of
+// list controls, so BindingPairs.h declares the attach of the first and nothing of the others. The
+// header names no winrt; the body is in a part, beside the class's own, and hands the wrapper's
+// projection object to the function of wxl.ui.common the type map names. The surface test holds
+// the class to the concept a binding of a list is checked with.
+TEST_F(stale_files, bound_lists_are_those_of_the_classes_the_run_generates) {
+    auto const profiles = resolve_profiles({profiles_dir / "base.winxl-profile"},
+                                           load_restored_packages(restored_packages_file),
+                                           {.directories = {components_dir}});
+    auto const types = load_type_map(profiles_dir / "types.json");
+    run(profiles, types, {}, out(), nullptr);
+
+    auto const header = read_file(dir_ / L"BindingPairs.h");
+    EXPECT_NE(header.find("void attach_items(ListViewBase const& control, bound_list_watch const& "
+                          "source);"),
+              std::string::npos);
+    EXPECT_EQ(header.find("ItemsView"), std::string::npos);
+    EXPECT_EQ(header.find("ItemsRepeater"), std::string::npos);
+    EXPECT_EQ(header.find("winrt"), std::string::npos);
+    EXPECT_EQ(header.find("item_makers.h"), std::string::npos);
+
+    std::string parts;
+    for (auto&& name : {L"wrapper-00.cpp", L"wrapper-01.cpp"}) {
+        parts += read_file(dir_ / L"parts" / name);
+    }
+    EXPECT_NE(parts.find("impl::attach_list_view_items(*Object::Impl::get_typed<ListViewBase>("
+                         "control), source);"),
+              std::string::npos);
+    EXPECT_NE(parts.find("#include <impl/item_makers.h>"), std::string::npos);
+
+    auto const surface = read_file(dir_ / L"parts" / L"schema_surface.cpp");
+    EXPECT_NE(surface.find("::wxl::impl::bound_items_control<::wxl::ListViewBase>"),
+              std::string::npos);
+}
+
 // A double property binds as a nullable double as well: Slider's Value, a pair of the base
 // profile, declares a bind() for that field beside double and float, reads the control as it is
 // -- a NaN converts to empty -- and writes an empty field to it as NaN. The surface test binds
