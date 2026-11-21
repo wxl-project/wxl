@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -11,15 +10,24 @@ namespace Wxl.Winxl;
 /// <param name="Guid">The ProjectGuid of the project, with its braces.</param>
 /// <param name="Type">The ConfigurationType: Application or StaticLibrary.</param>
 /// <param name="Profile">The WinXLProfile of the project: set in the profile project only.</param>
-internal sealed record SolutionProject(string Name, string Path, string RelativePath, string Guid, string Type, string? Profile);
+/// <param name="References">The projects it references, each the absolute path of its file.</param>
+/// <param name="ReferencesWinXL">Whether it references the package WinXL (a PackageReference).</param>
+internal sealed record SolutionProject(
+    string Name, string Path, string RelativePath, string Guid, string Type, string? Profile,
+    IReadOnlyList<string> References, bool ReferencesWinXL)
+{
+    public bool Uses(SolutionProject other) =>
+        References.Any(r => string.Equals(r, other.Path, StringComparison.OrdinalIgnoreCase));
+}
 
 /// <summary>
 /// A solution of kind wxl, which <c>winxl new wxl</c> writes and <c>winxl add</c> extends: an XML
 /// solution file (.slnx) of Visual Studio and MSBuild, beside it a directory per project with its
 /// .vcxproj. One project names the profile of the solution (WinXLProfile) and builds the library of
-/// that profile; one is the program, which references every other.
+/// that profile; one is the program, which references every other. winxl reads the C++ projects
+/// (.vcxproj) of the solution and leaves any other project as it is.
 /// </summary>
-internal sealed partial class Solution
+internal sealed class Solution
 {
     public const string Kind = "wxl";
     public const string ProfileProjectName = "wxl";
@@ -36,22 +44,6 @@ internal sealed partial class Solution
         Directory = System.IO.Path.GetDirectoryName(path)!;
         Projects = projects;
     }
-
-    /// <summary>
-    /// A name of a project or of a solution: a C++ identifier, since it names a namespace and the
-    /// files of the project, and nothing a path or MSBuild would read as syntax.
-    /// </summary>
-    public static void CheckName(string name, string what)
-    {
-        if (!NamePattern().IsMatch(name))
-        {
-            throw new ToolException(Failure.Invocation,
-                $"{what} '{name}' is not a name winxl gives a project: a letter, then letters, digits and _");
-        }
-    }
-
-    [GeneratedRegex("^[A-Za-z][A-Za-z0-9_]*$")]
-    private static partial Regex NamePattern();
 
     /// <summary>
     /// The solution at <paramref name="path"/>: a .slnx file, or a directory with exactly one.
@@ -82,7 +74,10 @@ internal sealed partial class Solution
         {
             var relative = element.Attribute("Path")?.Value
                 ?? throw new ToolException(Failure.Input, $"{file}: a Project without a Path");
-            projects.Add(ReadProject(directory, relative));
+            if (string.Equals(System.IO.Path.GetExtension(relative), ".vcxproj", StringComparison.OrdinalIgnoreCase))
+            {
+                projects.Add(ReadProject(directory, relative));
+            }
         }
         return new Solution(file, projects);
     }
@@ -99,12 +94,12 @@ internal sealed partial class Solution
         return found.Count == 1
             ? found[0]
             : throw new ToolException(Failure.Input,
-                $"{Path}: {(found.Count == 0 ? "no project" : $"{found.Count} projects ({string.Join(", ", found.Select(p => p.Name))})")} "
+                $"{Path}: {(found.Count == 0 ? "no C++ project" : $"{found.Count} C++ projects ({string.Join(", ", found.Select(p => p.Name))})")} "
                 + $"{what}, and a solution of kind {Kind} has one");
     }
 
-    /// <summary>Adds the project at <paramref name="relativePath"/> to the solution file.</summary>
-    public void Add(string relativePath)
+    /// <summary>The solution file with the project at <paramref name="relativePath"/> added, not yet written.</summary>
+    public XDocument WithProject(string relativePath)
     {
         var document = LoadXml(Path, preserveWhitespace: true);
         var root = document.Root!;
@@ -118,35 +113,34 @@ internal sealed partial class Solution
         {
             last.AddAfterSelf(new XText("\n  "), element);
         }
-        SaveXml(document, Path);
+        return document;
     }
 
     /// <summary>Writes the solution file of a new solution with <paramref name="projects"/>.</summary>
     public static void Write(string path, IEnumerable<string> projects)
     {
-        var lines = new List<string>
+        var document = new XDocument(new XElement("Solution",
+            new XText("\n  "),
+            new XElement("Configurations", new XText("\n    "), new XElement("Platform", new XAttribute("Name", "x64")), new XText("\n  "))));
+        foreach (var project in projects)
         {
-            "<Solution>",
-            "  <Configurations>",
-            "    <Platform Name=\"x64\" />",
-            "  </Configurations>",
-        };
-        lines.AddRange(projects.Select(p => $"  <Project Path=\"{p}\" />"));
-        lines.Add("</Solution>");
-        Templates.Write(path, string.Join("\n", lines) + "\n");
+            document.Root!.Add(new XText("\n  "), new XElement("Project", new XAttribute("Path", project)));
+        }
+        document.Root!.Add(new XText("\n"));
+        FileSystem.Save(document, path);
     }
 
-    /// <summary>Adds to the project <paramref name="project"/> a ProjectReference to <paramref name="target"/>.</summary>
-    public static void Reference(SolutionProject project, SolutionProject target)
+    /// <summary>
+    /// The project file of <paramref name="project"/> with a ProjectReference to <paramref name="target"/>
+    /// added, not yet written: in the group of its references, or in a group of its own before the
+    /// PackageReference to WinXL.
+    /// </summary>
+    public static XDocument WithReference(SolutionProject project, SolutionProject target)
     {
         var document = LoadXml(project.Path, preserveWhitespace: true);
         var root = document.Root!;
         var include = System.IO.Path.GetRelativePath(System.IO.Path.GetDirectoryName(project.Path)!, target.Path);
         var references = root.Elements(Ns + "ItemGroup").Elements(Ns + "ProjectReference").ToList();
-        if (references.Any(r => string.Equals(r.Attribute("Include")?.Value, include, StringComparison.OrdinalIgnoreCase)))
-        {
-            return;
-        }
         var reference = ProjectReference(include, target.Guid, "    ");
         if (references.Count > 0)
         {
@@ -154,16 +148,15 @@ internal sealed partial class Solution
         }
         else
         {
-            // A group of its own before the PackageReference, the last group of a project winxl writes.
             var group = new XElement(Ns + "ItemGroup", new XText("\n    "), reference, new XText("\n  "));
             var package = root.Elements(Ns + "ItemGroup").LastOrDefault(g => g.Elements(Ns + "PackageReference").Any())
                 ?? throw new ToolException(Failure.Input, $"{project.Path} has no PackageReference to WinXL");
             package.AddBeforeSelf(group, new XText("\n\n  "));
         }
-        SaveXml(document, project.Path);
+        return document;
     }
 
-    /// <summary>The ItemGroup of the references of a new project, or nothing.</summary>
+    /// <summary>The ItemGroup of the references of a new project, or nothing, as text of its template.</summary>
     public static string ReferenceGroup(string projectDirectory, IEnumerable<SolutionProject> targets)
     {
         var list = targets.ToList();
@@ -171,16 +164,19 @@ internal sealed partial class Solution
         {
             return "";
         }
-        // The names of the projects are identifiers (CheckName), so a path needs no escaping.
-        var lines = new List<string> { "", "  <ItemGroup>" };
+        // A path comes from the solution file, where it may hold any character: the XML API writes
+        // it escaped. The element is made without a namespace, which the root of the template declares.
+        XNamespace none = "";
+        var group = new XElement(none + "ItemGroup");
         foreach (var target in list)
         {
-            lines.Add($"    <ProjectReference Include=\"{System.IO.Path.GetRelativePath(projectDirectory, target.Path)}\">");
-            lines.Add($"      <Project>{target.Guid}</Project>");
-            lines.Add("    </ProjectReference>");
+            group.Add(new XText("\n    "),
+                new XElement(none + "ProjectReference",
+                    new XAttribute("Include", System.IO.Path.GetRelativePath(projectDirectory, target.Path)),
+                    new XText("\n      "), new XElement(none + "Project", target.Guid), new XText("\n    ")));
         }
-        lines.Add("  </ItemGroup>");
-        return string.Join("\n", lines) + "\n";
+        group.Add(new XText("\n  "));
+        return $"\n  {group.ToString(SaveOptions.DisableFormatting)}\n";
     }
 
     private static XElement ProjectReference(string include, string guid, string indent) =>
@@ -198,7 +194,16 @@ internal sealed partial class Solution
         string? Property(string name) => document.Root!.Descendants(Ns + name).Select(e => e.Value.Trim()).FirstOrDefault();
         var guid = Property("ProjectGuid") ?? throw new ToolException(Failure.Input, $"{path} has no ProjectGuid");
         var type = Property("ConfigurationType") ?? throw new ToolException(Failure.Input, $"{path} has no ConfigurationType");
-        return new SolutionProject(System.IO.Path.GetFileNameWithoutExtension(path), path, relative.Replace('\\', '/'), guid, type, Property("WinXLProfile"));
+        var projectDirectory = System.IO.Path.GetDirectoryName(path)!;
+        var references = document.Root!.Descendants(Ns + "ProjectReference")
+            .Select(r => r.Attribute("Include")?.Value)
+            .OfType<string>()
+            .Select(include => System.IO.Path.GetFullPath(System.IO.Path.Combine(projectDirectory, include)))
+            .ToList();
+        var winxl = document.Root!.Descendants(Ns + "PackageReference")
+            .Any(r => string.Equals(r.Attribute("Include")?.Value, "WinXL", StringComparison.OrdinalIgnoreCase));
+        return new SolutionProject(System.IO.Path.GetFileNameWithoutExtension(path), path, relative.Replace('\\', '/'),
+            guid, type, Property("WinXLProfile"), references, winxl);
     }
 
     private static XDocument LoadXml(string path, bool preserveWhitespace = false)
@@ -215,18 +220,5 @@ internal sealed partial class Solution
         {
             throw new ToolException(Failure.Environment, $"{path} cannot be read: {e.Message}", e);
         }
-    }
-
-    private static void SaveXml(XDocument document, string path)
-    {
-        var settings = new XmlWriterSettings
-        {
-            Encoding = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
-            NewLineChars = "\r\n",
-            NewLineHandling = NewLineHandling.Replace,
-            OmitXmlDeclaration = document.Declaration is null,
-        };
-        using var writer = XmlWriter.Create(path, settings);
-        document.Save(writer);
     }
 }

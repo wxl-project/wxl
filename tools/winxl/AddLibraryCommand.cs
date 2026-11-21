@@ -10,15 +10,21 @@ namespace Wxl.Winxl;
 /// wxl. With --ui it references the profile project as well and gets the interface of the library
 /// of the profile -- the wrappers, the components, wxl.ui.common -- to build elements of the user
 /// interface with. --references names libraries of the solution this one uses: it references
-/// them, and gets their headers, which every library gives as its public include directory. The
-/// solution is &lt;solution&gt;, a .slnx or the directory of one, or the one .slnx in the current
-/// directory.
+/// them, and gets their headers, which every library gives as its public include directory. A
+/// library it uses that stands on the profile brings the profile project along: the headers of that
+/// library include those of the profile, and MSBuild gives the include directories of a project only
+/// to the projects that reference it directly. The solution is &lt;solution&gt;, a .slnx or the
+/// directory of one, or the one .slnx in the current directory.
+///
+/// Everything is checked before anything is written, so that a refused command leaves the
+/// solution as it was.
 /// </remarks>
 internal static class AddLibraryCommand
 {
     public static int Run(string name, bool ui, string? references, string? solutionPath, bool json)
     {
-        Solution.CheckName(name, "--name");
+        Names.Check(name, "--name");
+        Names.CheckHeader(name, "--name");
         var solution = Solution.Open(solutionPath ?? Directory.GetCurrentDirectory());
         if (solution.Projects.Any(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)))
         {
@@ -26,43 +32,50 @@ internal static class AddLibraryCommand
         }
         var profile = solution.ProfileProject;
         var program = solution.Program;
+        if (!program.ReferencesWinXL)
+        {
+            throw new ToolException(Failure.Input, $"the program {program.Path} has no PackageReference to WinXL");
+        }
 
         // The libraries of the application this one stands on: their headers and archives.
         var libraries = new List<SolutionProject>();
         foreach (var reference in (references ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
             var used = solution.Projects.FirstOrDefault(p => string.Equals(p.Name, reference, StringComparison.OrdinalIgnoreCase))
-                ?? throw new ToolException(Failure.Input, $"--references names {reference}, and {solution.Path} has no project {reference}");
+                ?? throw new ToolException(Failure.Input, $"--references names {reference}, and {solution.Path} has no C++ project {reference}");
             if (used == profile || used == program || used.Type != "StaticLibrary")
             {
                 throw new ToolException(Failure.Invocation,
                     $"--references names {reference}, which is not a library of the application: the profile project is referenced with --ui");
             }
-            libraries.Add(used);
+            if (!libraries.Contains(used))
+            {
+                libraries.Add(used);
+            }
         }
         if (references is not null && libraries.Count == 0)
         {
             throw new ToolException(Failure.Invocation, "--references needs the names of libraries of the solution, separated by commas");
         }
+        var throughLibraries = libraries.Where(l => l.Uses(profile)).Select(l => l.Name).ToList();
+        var onProfile = ui || throughLibraries.Count > 0;
 
         var directory = Path.Combine(solution.Directory, name);
         if (File.Exists(directory) || Directory.Exists(directory))
         {
             throw new ToolException(Failure.Input, $"{directory} is there already, and winxl add writes the library into a new directory");
         }
-        Directory.CreateDirectory(directory);
 
         var version = VersionCommand.TreeVersion();
         var guid = NewCommand.NewGuid();
         var tokens = new Dictionary<string, string> { ["NAME"] = name };
         var variant = ui ? "ui" : "core";
-        Templates.Write(Path.Combine(directory, $"{name}.h"), Templates.Expand($"library-{variant}.h", tokens));
-        Templates.Write(Path.Combine(directory, $"{name}.cpp"), Templates.Expand($"library-{variant}.cpp", tokens));
-
+        var header = Templates.Expand($"library-{variant}.h", tokens);
+        var source = Templates.Expand($"library-{variant}.cpp", tokens);
         var project = Path.Combine(directory, $"{name}.vcxproj");
-        Templates.Write(project, Templates.Expand("project.vcxproj", new Dictionary<string, string>
+        var projectText = Templates.Expand("project.vcxproj", new Dictionary<string, string>
         {
-            ["COMMENT"] = ui
+            ["COMMENT"] = onProfile
                 ? $"""
                     {name}, a static library of the application on the profile of the solution: it references the
                     profile project, ..\{Solution.ProfileProjectName}, whose library gives it the wrappers, the components and
@@ -79,16 +92,42 @@ internal static class AddLibraryCommand
                 "    <!-- The headers of the library, which MSBuild gives the projects that reference it. -->\n"
                 + "    <PublicIncludeDirectories>$(MSBuildProjectDirectory)</PublicIncludeDirectories>\n",
             ["ITEMS"] = $"    <ClInclude Include=\"{name}.h\" />\n    <ClCompile Include=\"{name}.cpp\" />\n",
-            ["REFERENCES"] = Solution.ReferenceGroup(directory, ui ? [profile, .. libraries] : libraries),
+            ["REFERENCES"] = Solution.ReferenceGroup(directory, onProfile ? [profile, .. libraries] : libraries),
             ["VERSION"] = version,
-        }));
+        });
 
         var relative = $"{name}/{name}.vcxproj";
-        solution.Add(relative);
-        var library = new SolutionProject(name, project, relative, guid, "StaticLibrary", null);
-        Solution.Reference(program, library);
+        var library = new SolutionProject(name, project, relative, guid, "StaticLibrary", null, [], ReferencesWinXL: true);
+        var solutionFile = solution.WithProject(relative);
+        var programFile = Solution.WithReference(program, library);
 
-        Output.Log($"{project}: a static library on {(ui ? $"the profile {profile.Profile}" : "wxl.core")}, referenced by {program.Name}");
+        // A write the machine refuses undoes the writes before it: the solution file and the program
+        // get their bytes back, and the directory of the library goes.
+        var solutionBytes = FileSystem.Read(solution.Path);
+        var programBytes = FileSystem.Read(program.Path);
+        try
+        {
+            FileSystem.CreateDirectory(directory);
+            FileSystem.Write(Path.Combine(directory, $"{name}.h"), header);
+            FileSystem.Write(Path.Combine(directory, $"{name}.cpp"), source);
+            FileSystem.Write(project, projectText);
+            FileSystem.Save(solutionFile, solution.Path);
+            FileSystem.Save(programFile, program.Path);
+        }
+        catch (ToolException)
+        {
+            FileSystem.Restore(solution.Path, solutionBytes);
+            FileSystem.Restore(program.Path, programBytes);
+            FileSystem.Remove(directory);
+            throw;
+        }
+
+        if (throughLibraries.Count > 0 && !ui)
+        {
+            Output.Log($"{name} references the profile project too, since it uses {string.Join(", ", throughLibraries)} on the profile, "
+                + "whose headers include those of the profile");
+        }
+        Output.Log($"{project}: a static library on {(onProfile ? $"the profile {profile.Profile}" : "wxl.core")}, referenced by {program.Name}");
         if (json)
         {
             Output.Json(writer =>
@@ -98,7 +137,7 @@ internal static class AddLibraryCommand
                 writer.WriteString("name", name);
                 writer.WriteString("path", project);
                 writer.WriteString("kind", "library");
-                writer.WriteBoolean("ui", ui);
+                writer.WriteBoolean("ui", onProfile);
                 writer.WriteStartArray("references");
                 foreach (var used in libraries)
                 {

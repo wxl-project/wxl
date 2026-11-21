@@ -41,13 +41,6 @@ internal static class Templates
         return expanded;
     }
 
-    /// <summary>Writes <paramref name="text"/> as UTF-8 without a byte order mark, with the line ends of Windows.</summary>
-    public static void Write(string path, string text)
-    {
-        var lines = text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace("\n", "\r\n", StringComparison.Ordinal);
-        File.WriteAllText(path, lines, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-    }
-
     private static bool IsToken(ReadOnlySpan<char> text)
     {
         foreach (var c in text)
