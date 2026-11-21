@@ -10,7 +10,10 @@
 //   - the exit code says how the command ended: 0 done, 1 wrong invocation, 2 bad
 //     input (a file the command was given, or a package it reads), 3 environment
 //     (what the machine lacks or refuses: a package directory, the Windows package
-//     manager);
+//     manager, a file or directory the command writes -- what it wrote before is
+//     undone, and what it could not undo is in the message --, the headers of the
+//     package winxl is part of, of the Windows SDK and of the MSVC toolsets it checks
+//     names against);
 //   - an error is a message on stderr and, under --json, the object
 //     { "error": { "code": "<invocation|input|environment>", "message": "..." } }
 //     on stdout, its code naming the exit code.

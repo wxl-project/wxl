@@ -24,7 +24,6 @@ internal static class AddLibraryCommand
     public static int Run(string name, bool ui, string? references, string? solutionPath, bool json)
     {
         Names.Check(name, "--name");
-        Names.CheckHeader(name, "--name");
         var solution = Solution.Open(solutionPath ?? Directory.GetCurrentDirectory());
         if (solution.Projects.Any(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)))
         {
@@ -32,10 +31,22 @@ internal static class AddLibraryCommand
         }
         var profile = solution.ProfileProject;
         var program = solution.Program;
-        if (!program.ReferencesWinXL)
+        // The new library references WinXL at the version of the solution, and that is the package
+        // whose headers its name is checked against and whose templates winxl writes: the winxl of
+        // another version writes for another package.
+        var version = program.WinXLVersion
+            ?? throw new ToolException(Failure.Input, $"the program {program.Path} has no PackageReference to WinXL");
+        var own = VersionCommand.TreeVersion();
+        if (!string.Equals(version, own, StringComparison.OrdinalIgnoreCase))
         {
-            throw new ToolException(Failure.Input, $"the program {program.Path} has no PackageReference to WinXL");
+            var packages = Environment.GetEnvironmentVariable("NUGET_PACKAGES") is { Length: > 0 } folder
+                ? folder
+                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
+            throw new ToolException(Failure.Input,
+                $"the solution references WinXL {version}, and this winxl is of WinXL {own}: run the winxl of the package "
+                + $"WinXL {version}, which the restore of the solution puts at {Path.Combine(packages, "winxl", version.ToLowerInvariant(), "build", "native", "bin", "winxl.exe")}");
         }
+        Names.CheckHeader(name, "--name");
 
         // The libraries of the application this one stands on: their headers and archives.
         var libraries = new List<SolutionProject>();
@@ -66,7 +77,6 @@ internal static class AddLibraryCommand
             throw new ToolException(Failure.Input, $"{directory} is there already, and winxl add writes the library into a new directory");
         }
 
-        var version = VersionCommand.TreeVersion();
         var guid = NewCommand.NewGuid();
         var tokens = new Dictionary<string, string> { ["NAME"] = name };
         var variant = ui ? "ui" : "core";
@@ -97,7 +107,7 @@ internal static class AddLibraryCommand
         });
 
         var relative = $"{name}/{name}.vcxproj";
-        var library = new SolutionProject(name, project, relative, guid, "StaticLibrary", null, [], ReferencesWinXL: true);
+        var library = new SolutionProject(name, project, relative, guid, "StaticLibrary", null, [], version);
         var solutionFile = solution.WithProject(relative);
         var programFile = Solution.WithReference(program, library);
 
@@ -111,15 +121,13 @@ internal static class AddLibraryCommand
             FileSystem.Write(Path.Combine(directory, $"{name}.h"), header);
             FileSystem.Write(Path.Combine(directory, $"{name}.cpp"), source);
             FileSystem.Write(project, projectText);
-            FileSystem.Save(solutionFile, solution.Path);
-            FileSystem.Save(programFile, program.Path);
+            FileSystem.Save(solutionFile, solution.Path, FileFormat.Of(solutionBytes));
+            FileSystem.Save(programFile, program.Path, FileFormat.Of(programBytes));
         }
-        catch (ToolException)
+        catch (ToolException failure)
         {
-            FileSystem.Restore(solution.Path, solutionBytes);
-            FileSystem.Restore(program.Path, programBytes);
-            FileSystem.Remove(directory);
-            throw;
+            throw FileSystem.Undone(failure,
+                [FileSystem.Restore(solution.Path, solutionBytes), FileSystem.Restore(program.Path, programBytes), FileSystem.Remove(directory)]);
         }
 
         if (throughLibraries.Count > 0 && !ui)

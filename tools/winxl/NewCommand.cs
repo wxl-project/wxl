@@ -45,16 +45,16 @@ internal static class NewCommand
                 + $"{name}.winxl-profile, would extend itself. Name the solution otherwise, or extend another profile");
         }
 
-        if (directory is not null && directory.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
+        if (directory is not null)
         {
-            throw new ToolException(Failure.Invocation, $"--dir '{directory}' is not a path: it holds a character no path can have");
+            CheckDirectory(directory);
         }
         string root;
         try
         {
             root = Path.GetFullPath(directory ?? name);
         }
-        catch (Exception e) when (e is ArgumentException or NotSupportedException or PathTooLongException)
+        catch (ArgumentException e)
         {
             throw new ToolException(Failure.Invocation, $"--dir '{directory}' is not a path: {e.Message}", e);
         }
@@ -73,8 +73,13 @@ internal static class NewCommand
         var programDir = Path.Combine(root, name);
         var programProject = Path.Combine(programDir, $"{name}.vcxproj");
         var solution = Path.Combine(root, $"{name}.slnx");
-        // A write the machine refuses undoes the writes before it: the directory was new or empty.
-        var newRoot = !Directory.Exists(root);
+        // A write the machine refuses undoes the writes before it. The directory was empty, or it is
+        // made with the directories above it that are not there yet, and the highest of those goes.
+        string? created = null;
+        for (var missing = root; missing is not null && !Directory.Exists(missing); missing = Path.GetDirectoryName(missing))
+        {
+            created = missing;
+        }
         try
         {
             FileSystem.CreateDirectory(profileDir);
@@ -101,7 +106,7 @@ internal static class NewCommand
             }));
             var profile = new SolutionProject(Solution.ProfileProjectName, profileProject,
                 $"{Solution.ProfileProjectName}/{Solution.ProfileProjectName}.vcxproj", profileGuid, "StaticLibrary", profileFile,
-                [], ReferencesWinXL: true);
+                [], version);
 
             FileSystem.CreateDirectory(programDir);
             FileSystem.Write(Path.Combine(programDir, "main.cpp"),
@@ -126,19 +131,11 @@ internal static class NewCommand
 
             Solution.Write(solution, [profile.RelativePath, $"{name}/{name}.vcxproj"]);
         }
-        catch (ToolException)
+        catch (ToolException failure)
         {
-            if (newRoot)
-            {
-                FileSystem.Remove(root);
-            }
-            else
-            {
-                FileSystem.Remove(profileDir);
-                FileSystem.Remove(programDir);
-                FileSystem.Delete(solution);
-            }
-            throw;
+            throw FileSystem.Undone(failure, created is not null
+                ? [FileSystem.Remove(created)]
+                : [FileSystem.Remove(profileDir), FileSystem.Remove(programDir), FileSystem.Delete(solution)]);
         }
 
         Output.Log($"{solution}: {Solution.ProfileProjectName} (profile {profileFile}, extends {extends}), {name} (program), WinXL {version}");
@@ -159,6 +156,33 @@ internal static class NewCommand
             Console.Out.WriteLine(solution);
         }
         return 0;
+    }
+
+    /// <summary>
+    /// Stops on a --dir no directory can have, as a wrong invocation: characters Windows refuses in a
+    /// name, which GetFullPath lets through, anywhere but in the drive (C:) and the prefixes \\?\ and
+    /// \\.\; and a path relative to the current directory of a drive (A:b), which GetFullPath resolves
+    /// against a directory the shell does not show.
+    /// </summary>
+    private static void CheckDirectory(string directory)
+    {
+        var names = directory.StartsWith(@"\\?\", StringComparison.Ordinal) || directory.StartsWith(@"\\.\", StringComparison.Ordinal)
+            ? directory[4..]
+            : directory;
+        if (names.Length >= 2 && names[1] == ':')
+        {
+            if (names.Length > 2 && names[2] is not ('\\' or '/'))
+            {
+                throw new ToolException(Failure.Invocation,
+                    $"--dir '{directory}' is relative to the current directory of the drive {names[..2]}: name the directory from the root of the drive, or relative to the current directory");
+            }
+            names = names[2..];
+        }
+        if (names.IndexOfAny(['*', '?', ':', '<', '>', '|', '"']) >= 0 || names.Any(char.IsControl))
+        {
+            throw new ToolException(Failure.Invocation,
+                $"--dir '{directory}' is not a path: a name in it holds one of * ? : < > | \" or a control character");
+        }
     }
 
     public static string NewGuid() => Guid.NewGuid().ToString("B").ToUpperInvariant();

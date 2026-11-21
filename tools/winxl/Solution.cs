@@ -11,10 +11,10 @@ namespace Wxl.Winxl;
 /// <param name="Type">The ConfigurationType: Application or StaticLibrary.</param>
 /// <param name="Profile">The WinXLProfile of the project: set in the profile project only.</param>
 /// <param name="References">The projects it references, each the absolute path of its file.</param>
-/// <param name="ReferencesWinXL">Whether it references the package WinXL (a PackageReference).</param>
+/// <param name="WinXLVersion">The version of its PackageReference to WinXL, or null without one.</param>
 internal sealed record SolutionProject(
     string Name, string Path, string RelativePath, string Guid, string Type, string? Profile,
-    IReadOnlyList<string> References, bool ReferencesWinXL)
+    IReadOnlyList<string> References, string? WinXLVersion)
 {
     public bool Uses(SolutionProject other) =>
         References.Any(r => string.Equals(r, other.Path, StringComparison.OrdinalIgnoreCase));
@@ -127,7 +127,7 @@ internal sealed class Solution
             document.Root!.Add(new XText("\n  "), new XElement("Project", new XAttribute("Path", project)));
         }
         document.Root!.Add(new XText("\n"));
-        FileSystem.Save(document, path);
+        FileSystem.Save(document, path, FileFormat.New);
     }
 
     /// <summary>
@@ -200,8 +200,12 @@ internal sealed class Solution
             .OfType<string>()
             .Select(include => System.IO.Path.GetFullPath(System.IO.Path.Combine(projectDirectory, include)))
             .ToList();
+        // The version of WinXL as the reference writes it, in its attribute or in its element.
         var winxl = document.Root!.Descendants(Ns + "PackageReference")
-            .Any(r => string.Equals(r.Attribute("Include")?.Value, "WinXL", StringComparison.OrdinalIgnoreCase));
+            .Where(r => string.Equals(r.Attribute("Include")?.Value, "WinXL", StringComparison.OrdinalIgnoreCase))
+            .Select(r => r.Attribute("Version")?.Value ?? r.Element(Ns + "Version")?.Value ?? "")
+            .Select(v => v.Trim())
+            .FirstOrDefault();
         return new SolutionProject(System.IO.Path.GetFileNameWithoutExtension(path), path, relative.Replace('\\', '/'),
             guid, type, Property("WinXLProfile"), references, winxl);
     }
