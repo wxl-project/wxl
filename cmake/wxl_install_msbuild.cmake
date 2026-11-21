@@ -35,7 +35,8 @@ foreach(_wxl_build IN ITEMS Debug Release)
         string(TOUPPER "${_wxl_name}" _wxl_upper)
         set(_wxl_value "${_wxl_${_wxl_name}}")
         # MSBuild reads % $ @ ' as syntax, XML < > &; ; separates the items of
-        # a list, the archives and the definitions.
+        # a list, the archives and the definitions. The values go into the text
+        # of elements, where a " is a character (WXL_VERSION="...").
         if(_wxl_value MATCHES "[%$@'<>&]")
             message(FATAL_ERROR
                 "The ${_wxl_name} of ${_wxl_build} are '${_wxl_value}', with a character MSBuild "

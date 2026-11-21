@@ -46,13 +46,14 @@
 
 include_guard(GLOBAL)
 
-# Characters MSBuild reads as syntax -- % $ @ ; ' -- or XML does -- < > & --
-# cannot go into the files as they are; a value carrying one stops.
+# Characters MSBuild reads as syntax -- % $ @ ; ' -- or XML does -- < > & and
+# the " that closes an attribute -- cannot go into the files as they are; a
+# value carrying one stops.
 function(_wxl_msbuild_check_value what value)
-    if(value MATCHES "[%$@;'<>&]")
+    if(value MATCHES "[%$@;'<>&\"]")
         message(FATAL_ERROR
             "WXL_INSTALL: ${what} is '${value}', with a character MSBuild or XML reads as syntax "
-            "(% $ @ ; ' < > &), which WinXL.props and WinXL.targets (cmake/wxl_msbuild.cmake) "
+            "(% $ @ ; ' < > & \"), which WinXL.props and WinXL.targets (cmake/wxl_msbuild.cmake) "
             "would carry.")
     endif()
 endfunction()

@@ -542,8 +542,12 @@ function(wxl_add_ui_library profile)
     target_link_libraries(${_wxl_target} PRIVATE ${_wxl_libraries} ${_wxl_LIBRARIES})
     set_property(TARGET ${_wxl_target} PROPERTY WXL_WRAPPERS_DIR "${_wxl_OUT}")
 
-    set_property(SOURCE ${_wxl_PARTS} APPEND PROPERTY
-        COMPILE_OPTIONS "$<$<CXX_COMPILER_ID:MSVC>:${_wxl_compile_PART_OPTIONS}>")
+    # One expression per option: a list inside one expression would be one
+    # argument with the options separated by ;.
+    set(_wxl_part_options ${_wxl_compile_PART_OPTIONS})
+    list(TRANSFORM _wxl_part_options PREPEND "$<$<CXX_COMPILER_ID:MSVC>:")
+    list(TRANSFORM _wxl_part_options APPEND ">")
+    set_property(SOURCE ${_wxl_PARTS} APPEND PROPERTY COMPILE_OPTIONS ${_wxl_part_options})
 
     # Last: this reads the target's SOURCES to lay it out in the IDE.
     wxl_set_target_folders(${_wxl_target})
