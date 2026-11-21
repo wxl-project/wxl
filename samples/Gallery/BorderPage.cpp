@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText aroundHeader{"Snippets/Border/BorderAroundTextblock.html
 gallery::LazyLoadedText aroundCode{"Snippets/Border/BorderAroundTextblock.h"};
 
 FrameworkElement around() {
+    using namespace wxl::dsl;
 #include "Snippets/Border/BorderAroundTextblock.h"
 
     return gallery::controlExample({

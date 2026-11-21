@@ -9,7 +9,7 @@ auto example = StackPanel {
     spacing = 8.0,
     TextBox {width = 300, header = u"Enter Text:", text = Bind {model->input}},
     TextBlock {u"The input is not empty.",
-               visibility = BindOutput {model->input, [](core::u16_text const& text) {
-                                            return text.size() == 0 ? Visibility::Collapsed : Visibility::Visible;
+               visibility = BindOutput {model->input, [](core::u16_text const& typed) {
+                                            return typed.size() == 0 ? Visibility::Collapsed : Visibility::Visible;
                                         }}},
 };

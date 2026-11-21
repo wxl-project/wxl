@@ -7,7 +7,6 @@
 
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -15,6 +14,7 @@ gallery::LazyLoadedText looksHeader{"Snippets/PersonPicture/PersonPictureSelectD
 gallery::LazyLoadedText looksCode{"Snippets/PersonPicture/PersonPictureSelectDifferentLooksPerson.h"};
 
 FrameworkElement looks() {
+    using namespace wxl::dsl;
 #include "Snippets/PersonPicture/PersonPictureSelectDifferentLooksPerson.h"
 
     return gallery::controlExample({

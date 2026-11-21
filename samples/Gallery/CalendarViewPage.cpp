@@ -5,7 +5,6 @@
 #include "Languages.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -13,6 +12,7 @@ gallery::LazyLoadedText basicHeader{"Snippets/CalendarView/Basic.html"};
 gallery::LazyLoadedText basicCode{"Snippets/CalendarView/Basic.h"};
 
 FrameworkElement basic() {
+    using namespace wxl::dsl;
 #include "Snippets/CalendarView/Basic.h"
 
     return gallery::controlExample({

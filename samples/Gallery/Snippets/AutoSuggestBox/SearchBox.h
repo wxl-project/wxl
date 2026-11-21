@@ -56,9 +56,9 @@ auto box = AutoSuggestBox {
     },
     onSuggestionChosen += [](AutoSuggestBox const& self, AutoSuggestBoxSuggestionChosenEventArgs& args) {
         // No results is not something to complete the text with.
-        auto const title = unboxValue<hstring>(args.selectedItem());
-        if (title != u"No results found") {
-            self.text(title);
+        auto const chosen = unboxValue<hstring>(args.selectedItem());
+        if (chosen != u"No results found") {
+            self.text(chosen);
         }
     },
     onQuerySubmitted += [model](Object const&, AutoSuggestBoxQuerySubmittedEventArgs& args) {

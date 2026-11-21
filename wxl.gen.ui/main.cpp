@@ -30,7 +30,6 @@
 #include "ui.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 using namespace editor;
 
 namespace {
@@ -172,6 +171,7 @@ struct DocumentationReading {
 }  // namespace
 
 wxl::Teardown wxl_launched() {
+    using namespace wxl::dsl;
     core::intrusive_ptr<Editor> document;
     try {
         auto const arguments = launchArguments();
@@ -190,10 +190,10 @@ wxl::Teardown wxl_launched() {
 
     auto const types = VirtualTree::create();
     auto const members = VirtualTree::create();
-    VirtualTree* const left = types.get();
+    VirtualTree* const typesTree = types.get();
     VirtualTree* const right = members.get();
 
-    left->model(document->types());
+    typesTree->model(document->types());
     document->members.on_change([right](core::intrusive_ptr<TreeModel> const& model) noexcept {
         right->model(model);
     });
@@ -234,24 +234,24 @@ wxl::Teardown wxl_launched() {
     // кегля пусто, сведения строятся под кегль, который у блока уже есть.
     auto const showInfo = [details, preferences = settings.get()](Description const& info) {
         auto const chosen = preferences->detailsFontSize.get();
-        double const size = chosen ? *chosen : details.fontSize();
-        details.fontSize(size);
-        details.lineHeight(std::round(size * 22.0 / 16.0));
+        double const fontPx = chosen ? *chosen : details.fontSize();
+        details.fontSize(fontPx);
+        details.lineHeight(std::round(fontPx * 22.0 / 16.0));
         if (!info.icon) {
             details.html(info.html);
             return;
         }
         details.clear();
         details.appendParagraph();
-        auto const icon = iconText(*info.icon, size);
-        Apply {icon, Margin {0, 0, 6, 0}};
-        details.appendElement(icon);
+        auto const iconGlyph = iconText(*info.icon, fontPx);
+        Apply {iconGlyph, Margin {0, 0, 6, 0}};
+        details.appendElement(iconGlyph);
         details.append(info.html);
     };
     document->info.on_change([showInfo](Description const& info) noexcept { showInfo(info); });
 
     // Настройки действуют сразу и помнятся: каждое изменение пишется в реестр.
-    left->details(settings->showSignatures.get());
+    typesTree->details(settings->showSignatures.get());
     right->details(settings->showSignatures.get());
     document->hideDependencyProperties(settings->hideDependencyProperties.get());
     document->hideEventArgs(settings->hideEventArgs.get());
@@ -265,8 +265,8 @@ wxl::Teardown wxl_launched() {
         saveSettings(*raw);
     });
     document->englishDocumentation(settings->englishDocumentation.get());
-    settings->showSignatures.on_change([left, right, raw = settings.get()](bool show) noexcept {
-        left->details(show);
+    settings->showSignatures.on_change([typesTree, right, raw = settings.get()](bool show) noexcept {
+        typesTree->details(show);
         right->details(show);
         saveSettings(*raw);
     });
@@ -280,21 +280,21 @@ wxl::Teardown wxl_launched() {
     });
     // Опустевшее поле кегля не меняет ничего: ни сведений, ни реестра.
     settings->detailsFontSize.on_change([raw = settings.get(), editor = document.get(), showInfo](
-                                            core::nullable<double> const& size) noexcept {
-        if (!size) return;
+                                            core::nullable<double> const& fontPx) noexcept {
+        if (!fontPx) return;
         showInfo(editor->info.get());
         saveSettings(*raw);
     });
     // Ссылка в сведениях — тип: он открывается в дереве Types.
-    details.onLink([left, document, typesItem](zstring_view target) {
-        if (auto const row = document->reveal(target.wide())) {
+    details.onLink([typesTree, document, typesItem](zstring_view link) {
+        if (auto const found = document->reveal(link.wide())) {
             typesItem.isSelected(true);
-            left->reveal(*row);
+            typesTree->reveal(*found);
         }
     });
 
-    document->revision.on_change([left, right](uint32_t) noexcept {
-        left->refresh();
+    document->revision.on_change([typesTree, right](uint32_t) noexcept {
+        typesTree->refresh();
         right->refresh();
     });
 
@@ -345,8 +345,8 @@ wxl::Teardown wxl_launched() {
     // Масштаб окна — с клавиатуры (Ctrl и «+», «−», «0»), колесом с Ctrl и кнопками
     // в заголовке, по ступеням от 50 до 300 %.
     auto const zoom = ZoomEffect {};
-    auto const label = core::make_refcounted<ZoomLabel>();
-    label->text.follow(zoom.model().zoomFactor(), percent);
+    auto const zoomLabel = core::make_refcounted<ZoomLabel>();
+    zoomLabel->text.follow(zoom.model().zoomFactor(), percent);
 
     // Фокус с клавиатуры — подъёмом или свечением, по настройке; рамка системы —
     // для сравнения.
@@ -366,7 +366,7 @@ wxl::Teardown wxl_launched() {
         pane = Border {
             framed,
             background = brushes.SolidBackgroundFillColor.Quarternary,
-            left->view(),
+            typesTree->view(),
         },
         content = SplitPanel {
             orientation.vertical,
@@ -391,8 +391,8 @@ wxl::Teardown wxl_launched() {
 
     // Левая часть — по ширине дерева: самая широкая строка, рамка и поле.
     // Граница перетаскивается и дальше, до следующей подгонки.
-    left->wantedWidth.on_change([editorView](double width) noexcept {
-        editorView.openPaneLength(std::clamp(std::ceil(width) + 14.0, 240.0, 900.0));
+    typesTree->wantedWidth.on_change([editorView](double wanted) noexcept {
+        editorView.openPaneLength(std::clamp(std::ceil(wanted) + 14.0, 240.0, 900.0));
     });
 
     // Настройки — страницей, на месте редактора, как у NavigationView принято.
@@ -455,7 +455,7 @@ wxl::Teardown wxl_launched() {
         isPaneToggleButtonVisible = false,
         isPaneOpen = false,
         isSettingsVisible = false,
-        onSelectionChanged += [left, document, host, editorView, settingsPage, places = history.get()](
+        onSelectionChanged += [typesTree, document, host, editorView, settingsPage, places = history.get()](
                                  Object const& sender, NavigationViewSelectionChangedEventArgs&) {
             auto const item = sender.try_as<NavigationView>().selectedItem().try_as<FrameworkElement>();
             if (item && std::u16string_view {item.name()} == settingsName) {
@@ -464,7 +464,7 @@ wxl::Teardown wxl_launched() {
                 return;
             }
             bool const resources = item && std::u16string_view {item.name()} == resourcesTab;
-            left->model(resources ? document->resources() : document->types());
+            typesTree->model(resources ? document->resources() : document->types());
             host.child(editorView);
             places->visit({std::u16string {(resources ? resourcesTab : typesTab).view()}, document->typeName.get()});
         },
@@ -551,20 +551,20 @@ wxl::Teardown wxl_launched() {
     // поле справа.
     double longest = 0;
     for (zstring_view const tab : {typesTab, resourcesTab, settingsName}) {
-        TextBlock const text {tab};
-        text.measure({std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()});
-        longest = std::max(longest, static_cast<double>(text.desiredSize().width));
+        TextBlock const tabText {tab};
+        tabText.measure({std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()});
+        longest = std::max(longest, static_cast<double>(tabText.desiredSize().width));
     }
     navigation.openPaneLength(std::ceil(48 + longest + 28));
     typesItem.isSelected(true);
 
     // Выбранный тип — тоже место: переход по ссылке или по дереву записывается.
-    document->typeName.on_change([places = history.get()](std::u16string const& name) noexcept {
-        if (!name.empty() && places->current.page == typesTab.view()) {
-            places->visit({places->current.page, name});
+    document->typeName.on_change([places = history.get()](std::u16string const& typeName) noexcept {
+        if (!typeName.empty() && places->current.page == typesTab.view()) {
+            places->visit({places->current.page, typeName});
         }
     });
-    auto const goBack = [typesItem, resourcesItem, settingsItem, left, editor = document.get(), places = history.get()] {
+    auto const goBack = [typesItem, resourcesItem, settingsItem, typesTree, editor = document.get(), places = history.get()] {
         if (places->back.empty()) {
             return;
         }
@@ -576,8 +576,8 @@ wxl::Teardown wxl_launched() {
         } else {
             (place.page == resourcesTab.view() ? resourcesItem : typesItem).isSelected(true);
             if (place.page == typesTab.view() && !place.type.empty()) {
-                if (auto const row = editor->reveal(std::wstring {place.type.begin(), place.type.end()})) {
-                    left->reveal(*row);
+                if (auto const found = editor->reveal(std::wstring {place.type.begin(), place.type.end()})) {
+                    typesTree->reveal(*found);
                 }
             }
         }
@@ -624,7 +624,7 @@ wxl::Teardown wxl_launched() {
                     width = 64.0,
                     toolTip = u"Масштаб 100 %",
                     onClick += [zoom] { zoom.model().resetZoom(); },
-                    content = TextBlock {text = BindOutput {label->text}},
+                    content = TextBlock {text = BindOutput {zoomLabel->text}},
                 },
                 Button {
                     toolButton,
@@ -642,5 +642,5 @@ wxl::Teardown wxl_launched() {
     window.centreWithClientSize({1200, 800});
     window.activate();
 
-    return [document, types, members, label, settings, focus, history, documentation](TeardownReason) {};
+    return [document, types, members, zoomLabel, settings, focus, history, documentation](TeardownReason) {};
 }

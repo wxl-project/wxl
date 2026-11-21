@@ -5,11 +5,11 @@ struct Model {
 auto const model = gallery::hold<Model>();
 
 // The caption of a vertex, shown over the shape while "Show points" is on.
-auto caption = [model](char16_t const* text, double x, double y) {
+auto addCaption = [model](char16_t const* words, double px, double py) {
     return TextBlock {
-        text,
-        left = x,
-        top = y,
+        words,
+        left = px,
+        top = py,
         zIndex = 1,
         visibility = BindOutput {model->showPoints, [](bool on) { return on ? Visibility::Visible : Visibility::Collapsed; }},
     };
@@ -27,10 +27,10 @@ auto example = Canvas {
             strokeThickness = BindOutput {model->thickness},
         },
     },
-    caption(u"Point #1: (10,100)", 0, 150),
-    caption(u"Point #2: (60,40)", 50, 40),
-    caption(u"Point #3: (200,40)", 200, 40),
-    caption(u"Point #4: (250,100)", 240, 150),
+    addCaption(u"Point #1: (10,100)", 0, 150),
+    addCaption(u"Point #2: (60,40)", 50, 40),
+    addCaption(u"Point #3: (200,40)", 200, 40),
+    addCaption(u"Point #4: (250,100)", 240, 150),
 };
 
 auto options = StackPanel {

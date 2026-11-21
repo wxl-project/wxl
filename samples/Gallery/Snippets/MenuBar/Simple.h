@@ -1,10 +1,10 @@
 auto output = TextBlock {};
 
 // Every item says what it is into the line above the bar.
-auto item = [output](char16_t const* caption) {
+auto item = [output](char16_t const* labelText) {
     return MenuFlyoutItem {
-        text = caption,
-        onClick += [output, caption](MenuFlyoutItem const&) { output.text(std::u16string {u"You clicked: "} + caption); },
+        text = labelText,
+        onClick += [output, labelText](MenuFlyoutItem const&) { output.text(std::u16string {u"You clicked: "} + labelText); },
     };
 };
 

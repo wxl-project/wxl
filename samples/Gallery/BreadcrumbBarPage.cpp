@@ -12,7 +12,6 @@
 
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -20,6 +19,7 @@ gallery::LazyLoadedText basicHeader{"Snippets/BreadcrumbBar/BreadcrumbbarControl
 gallery::LazyLoadedText basicCode{"Snippets/BreadcrumbBar/BreadcrumbbarControl.h"};
 
 FrameworkElement basic() {
+    using namespace wxl::dsl;
 #include "Snippets/BreadcrumbBar/BreadcrumbbarControl.h"
 
     return gallery::controlExample({
@@ -33,6 +33,7 @@ gallery::LazyLoadedText customTemplateHeader{"Snippets/BreadcrumbBar/Breadcrumbb
 gallery::LazyLoadedText customTemplateCode{"Snippets/BreadcrumbBar/BreadcrumbbarControlCustomDatatemplate.h"};
 
 FrameworkElement customTemplate() {
+    using namespace wxl::dsl;
 #include "Snippets/BreadcrumbBar/BreadcrumbbarControlCustomDatatemplate.h"
 
     return gallery::controlExample({

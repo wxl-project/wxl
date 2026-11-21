@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText basicHeader{"Snippets/SettingsExpander/SettingsExpanderB
 gallery::LazyLoadedText basicCode{"Snippets/SettingsExpander/SettingsExpanderBasic.h"};
 
 FrameworkElement basicExample() {
+    using namespace wxl::dsl;
 #include "Snippets/SettingsExpander/SettingsExpanderBasic.h"
 
     return gallery::controlExample({.header = gallery::snippet(basicHeader), .example = example, .code = gallery::snippet(basicCode)});

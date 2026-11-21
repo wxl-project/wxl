@@ -1,6 +1,6 @@
 auto const menu = gallery::tabViewContextMenu();
-auto const fixedTab = [menu](char16_t const* title, Symbol symbol, int page) {
-    return TabViewItem {header = title, isClosable = false, contextFlyout = menu, iconSource = SymbolIconSource {symbol = symbol},
+auto const fixedTab = [menu](char16_t const* tabTitle, Symbol tabSymbol, int page) {
+    return TabViewItem {header = tabTitle, isClosable = false, contextFlyout = menu, iconSource = SymbolIconSource {tabSymbol = tabSymbol},
                         content = gallery::samplePage(page)};
 };
 

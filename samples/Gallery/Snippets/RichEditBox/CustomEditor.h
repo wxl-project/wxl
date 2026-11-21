@@ -22,14 +22,14 @@ struct Model {
 };
 auto const model = gallery::hold<Model>();
 
-auto const pick = [](Flyout flyout, Button swatch, RichEditBox editor,
+auto const pick = [](Flyout popup, Button swatch, RichEditBox editor,
                      std::shared_ptr<Color> current) -> async::task<> {
     auto clicks = onClick(swatch);
     if (co_await clicks.next()) {
         auto const picked = swatch.content().try_as<Rectangle>().fill().try_as<SolidColorBrush>().color();
         *current = picked;
         editor.document().selection().characterFormat().foregroundColor(picked);
-        flyout.hide();
+        popup.hide();
         editor.focus(FocusState::Keyboard);
     }
 };
@@ -70,11 +70,11 @@ auto toolbar = Grid {
         flyout = Flyout {
             placement = FlyoutPlacementMode::Bottom,
             onOpened += [model, pick, editor, current](Object const& sender) {
-                auto const flyout = sender.try_as<Flyout>();
-                auto const swatches = flyout.content().try_as<VariableSizedWrapGrid>().children();
+                auto const popup = sender.try_as<Flyout>();
+                auto const swatches = popup.content().try_as<VariableSizedWrapGrid>().children();
                 model->picking.clear();
                 for (uint32_t i = 0; i < swatches.size(); ++i) {
-                    model->picking.push_back(pick(flyout, swatches[i].try_as<Button>(), editor, current));
+                    model->picking.push_back(pick(popup, swatches[i].try_as<Button>(), editor, current));
                 }
             },
             content = VariableSizedWrapGrid {
@@ -98,24 +98,24 @@ auto toolbar = Grid {
 constexpr int32_t maxUnits = std::numeric_limits<int32_t>::max();
 
 auto const removeHighlights = [editor] {
-    auto const background = editor.background().try_as<SolidColorBrush>();
-    auto const foreground = editor.foreground().try_as<SolidColorBrush>();
-    if (!background || !foreground) {
+    auto const backBrush = editor.background().try_as<SolidColorBrush>();
+    auto const foreBrush = editor.foreground().try_as<SolidColorBrush>();
+    if (!backBrush || !foreBrush) {
         return;
     }
     auto const format = editor.document().getRange(0, maxUnits).characterFormat();
-    format.backgroundColor(background.color());
-    format.foregroundColor(foreground.color());
+    format.backgroundColor(backBrush.color());
+    format.foregroundColor(foreBrush.color());
 };
 
 auto const highlightMatches = [editor, removeHighlights](TextBox const& self) {
     removeHighlights();
-    auto const text = self.text();
-    if (text.empty()) {
+    auto const plain = self.text();
+    if (plain.empty()) {
         return;
     }
     auto range = editor.document().getRange(0, 0);
-    while (range.findText(text, maxUnits, FindOptions::None) > 0) {
+    while (range.findText(plain, maxUnits, FindOptions::None) > 0) {
         range.characterFormat().backgroundColor(rgb(0, 120, 215));
         range.characterFormat().foregroundColor(colors.white);
     }

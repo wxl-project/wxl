@@ -1,10 +1,10 @@
 // The bars are the application's own, in a vector that only grows. The repeater is given the position of
 // each bar in a list it follows as it changes, so a bar added or removed shows at once.
 auto const bars = std::make_shared<std::vector<gallery::Bar>>();
-auto const items = IndexList::observable();
-auto const addBar = [bars, items](double length) {
+auto const indices = IndexList::observable();
+auto const addBar = [bars, indices](double length) {
     bars->emplace_back(length, 425);
-    items.append(static_cast<int64_t>(bars->size()) - 1);
+    indices.append(static_cast<int64_t>(bars->size()) - 1);
 };
 addBar(300);
 addBar(25);
@@ -39,13 +39,13 @@ struct Model {
     UniformGridLayout grid {minRowSpacing = 8.0, minColumnSpacing = 8.0};
 };
 auto const model = gallery::hold<Model>();
-model->repeater = ItemsRepeater {layout = model->vertical, itemTemplate = horizontalBar, itemsSource = items};
+model->repeater = ItemsRepeater {layout = model->vertical, itemTemplate = horizontalBar, itemsSource = indices};
 
-model->remove.add_onClick([model, items](auto&&...) {
-    if (items.size() > 0) {
-        items.removeAt(0);
+model->remove.add_onClick([model, indices](auto&&...) {
+    if (indices.size() > 0) {
+        indices.removeAt(0);
     }
-    if (items.size() == 0) {
+    if (indices.size() == 0) {
         model->remove.isEnabled(false);
     }
 });
@@ -94,7 +94,7 @@ auto options = StackPanel {
             default:
                 return;
             }
-            repeater.itemsSource(items);
+            repeater.itemsSource(indices);
         },
     },
 };

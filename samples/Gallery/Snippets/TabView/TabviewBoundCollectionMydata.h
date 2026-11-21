@@ -10,9 +10,9 @@ struct Model {
 
     void add() {
         auto const index = static_cast<int>(datas.size());
-        MyData data {u"MyData Doc " + gallery::numberText(index), Frame {}};
-        gallery::showSample(data.content, index % 3 + 1);
-        datas.push_back(std::move(data));
+        MyData doc {u"MyData Doc " + gallery::numberText(index), Frame {}};
+        gallery::showSample(doc.content, index % 3 + 1);
+        datas.push_back(std::move(doc));
         order.append(index);
     }
 };
@@ -21,7 +21,7 @@ for (int i = 0; i < 3; ++i) {
     model->add();
 }
 
-auto const data = [model](Object const& item) -> MyData const& { return model->datas[static_cast<size_t>(unboxValue<int64_t>(item))]; };
+auto const dataOf = [model](Object const& item) -> MyData const& { return model->datas[static_cast<size_t>(unboxValue<int64_t>(item))]; };
 
 auto example = TabView {
     minHeight = 475,
@@ -29,8 +29,8 @@ auto example = TabView {
     selectedIndex = 0,
     tabItemsSource = model->order,
     tabItemTemplate = boundTemplate(u"TabViewItem",
-                                    {{u"Content", [data](Object const& item) { return data(item).content; }},
-                                     {u"Header", [data](Object const& item) { return boxValue(data(item).header); }},
+                                    {{u"Content", [dataOf](Object const& item) { return dataOf(item).content; }},
+                                     {u"Header", [dataOf](Object const& item) { return boxValue(dataOf(item).header); }},
                                      {u"IconSource", [](Object const&) { return SymbolIconSource {symbol = Symbol::Placeholder}; }}}),
     onAddTabButtonClick += [model](TabView const&) { model->add(); },
     onTabCloseRequested += [model](TabView const&, TabViewTabCloseRequestedEventArgs& args) {

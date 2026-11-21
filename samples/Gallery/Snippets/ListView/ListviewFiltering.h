@@ -20,25 +20,25 @@ struct Model {
     TextBox company {Margin {8}, horizontalAlignment = HorizontalAlignment::Stretch, header = u"Company"};
     std::vector<int64_t> shown;  // the positions of the contacts the filter lets through
 
-    static bool contains(std::u16string_view text, std::u16string_view part) {
+    static bool contains(std::u16string_view whole, std::u16string_view part) {
         // The comparison is by letters, whatever their case: the same rule the original names, InvariantCultureIgnoreCase.
-        auto const lower = [](std::u16string_view source) {
-            std::u16string result{source};
+        auto const lower = [](std::u16string_view chars) {
+            std::u16string result{chars};
             for (auto& letter : result) letter = static_cast<char16_t>(std::towlower(static_cast<wint_t>(letter)));
             return result;
         };
-        return lower(text).find(lower(part)) != std::u16string::npos;
+        return lower(whole).find(lower(part)) != std::u16string::npos;
     }
 
     // Items that no longer match go, those that match again come back, in the order of the data.
     void filter(std::vector<gallery::Contact> const& all) {
-        auto const items = list.items();
-        items.clear();
+        auto const listItems = list.items();
+        listItems.clear();
         shown.clear();
         for (size_t index = 0; index < all.size(); ++index) {
             if (contains(all[index].firstName, firstName.text()) && contains(all[index].lastName, lastName.text()) &&
                 contains(all[index].company, company.text())) {
-                items.append(boxValue(static_cast<int64_t>(index)));
+                listItems.append(boxValue(static_cast<int64_t>(index)));
             }
         }
     }
@@ -48,10 +48,10 @@ auto const model = gallery::hold<Model>();
 model->list.itemTemplate(contactOf);
 model->list.itemsSource(IndexList(static_cast<int64_t>(people->size())));
 
-auto const onChanged = [model, people](auto&&...) { model->filter(*people); };
-model->firstName.add_onTextChanged(onChanged);
-model->lastName.add_onTextChanged(onChanged);
-model->company.add_onTextChanged(onChanged);
+auto const refilter = [model, people](auto&&...) { model->filter(*people); };
+model->firstName.add_onTextChanged(refilter);
+model->lastName.add_onTextChanged(refilter);
+model->company.add_onTextChanged(refilter);
 
 auto example = model->list;
 

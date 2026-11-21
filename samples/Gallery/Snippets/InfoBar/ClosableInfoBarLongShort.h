@@ -16,7 +16,7 @@ auto bar = InfoBar {
     onClosed += [model](InfoBar const&, InfoBarClosedEventArgs&) { model->open.set(false); },
 };
 
-auto isOpen = CheckBox {content = u"Is Open", isChecked = Bind {model->open}};
+auto isOpenBox = CheckBox {content = u"Is Open", isChecked = Bind {model->open}};
 
 auto length = ComboBox {
     hAlign.stretch,
@@ -26,7 +26,7 @@ auto length = ComboBox {
     selectedIndex = Bind {model->length},
 };
 
-auto actionButton = ComboBox {
+auto actionBox = ComboBox {
     hAlign.stretch,
     header = u"Action Button",
     ComboBoxItem {content = u"None"},

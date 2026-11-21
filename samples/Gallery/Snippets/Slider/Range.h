@@ -3,7 +3,7 @@ struct Model {
 };
 auto const model = gallery::hold<Model>();
 
-auto output = TextBlock {text = BindOutput {model->value, [](double value) { return core::to_u16(value, std::chars_format::fixed, 0); }}};
+auto output = TextBlock {text = BindOutput {model->value, [](double amount) { return core::to_u16(amount, std::chars_format::fixed, 0); }}};
 
 auto slider = Slider {
     width = 200,

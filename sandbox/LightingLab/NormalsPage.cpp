@@ -18,7 +18,6 @@
 #include "Lab.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -294,6 +293,7 @@ struct Normals {
 }  // namespace
 
 lab::Experiment lab::normalsPage() {
+    using namespace wxl::dsl;
     auto const model = std::make_shared<Normals>();
 
     auto stage = Grid {

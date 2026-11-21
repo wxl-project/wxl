@@ -41,7 +41,6 @@
 #include "Lab.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -481,6 +480,7 @@ struct System {
 }  // namespace
 
 lab::Experiment lab::systemPage() {
+    using namespace wxl::dsl;
     auto const model = std::make_shared<System>();
 
     auto stage = ScrollViewer {

@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText createWindowHeader{"Snippets/Windowing/CreateMultipleWin
 gallery::LazyLoadedText createWindowCode{"Snippets/Windowing/CreateMultipleWindows.h"};
 
 FrameworkElement createWindow() {
+    using namespace wxl::dsl;
 #include "Snippets/Windowing/CreateMultipleWindows.h"
 
     return gallery::controlExample({
@@ -25,6 +25,7 @@ gallery::LazyLoadedText sizingHeader{"Snippets/Windowing/WindowSizing.html"};
 gallery::LazyLoadedText sizingCode{"Snippets/Windowing/WindowSizing.h"};
 
 FrameworkElement sizing() {
+    using namespace wxl::dsl;
 #include "Snippets/Windowing/WindowSizing.h"
 
     return gallery::controlExample({
@@ -38,6 +39,7 @@ FrameworkElement sizing() {
 }  // namespace
 
 static wxl::FrameworkElement windowingPage() {
+    using namespace wxl::dsl;
     return StackPanel {
         TextBlock {
             Margin {0, 0, 0, 8},

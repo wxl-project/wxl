@@ -6,23 +6,23 @@ struct Model {
     TextBlock clicked {Margin {0, 8, 0, 0}};
     TextBlock selected {Margin {0, 8, 0, 0}};
 
-    static ItemBuilder templateOf(Kind kind, std::vector<gallery::CustomDataObject> const* data) {
-        return [kind, data](Object const& item) -> UIElement {
-            auto const& object = (*data)[static_cast<size_t>(unboxValue<int64_t>(item))];
-            switch (kind) {
+    static ItemBuilder templateOf(Kind variant, std::vector<gallery::CustomDataObject> const* objects) {
+        return [variant, objects](Object const& item) -> UIElement {
+            auto const& object = (*objects)[static_cast<size_t>(unboxValue<int64_t>(item))];
+            switch (variant) {
             case Kind::Image:
                 return Image {width = 190, height = 130, stretch = Stretch::UniformToFill, source = object.imageLocation};
             case Kind::IconText: {
                 auto picture = Image {width = 18, Margin {0, 4, 0, 0}, alignLeftWithPanel = true, alignTopWithPanel = true,
                                       stretch = Stretch::Uniform, source = object.imageLocation};
-                auto caption = TextBlock {styles.TextBlock.Base, Margin {8, 0, 0, 0}, alignTopWithPanel = true,
+                auto captionBlock = TextBlock {styles.TextBlock.Base, Margin {8, 0, 0, 0}, alignTopWithPanel = true,
                                           rightOf = picture, object.title};
                 return RelativePanel {
                     width = 280,
                     minHeight = 160,
                     picture,
-                    caption,
-                    TextBlock {styles.TextBlock.Caption, Margin {0, 4, 8, 0}, below = caption, textTrimming = TextTrimming::WordEllipsis,
+                    captionBlock,
+                    TextBlock {styles.TextBlock.Caption, Margin {0, 4, 8, 0}, below = captionBlock, textTrimming = TextTrimming::WordEllipsis,
                                textWrapping = TextWrapping::Wrap, object.description},
                 };
             }
@@ -50,13 +50,13 @@ struct Model {
 };
 auto const model = gallery::hold<Model>();
 
-auto const* data = &gallery::dataObjects();
-model->grid.itemTemplate(Model::templateOf(Kind::Image, data));
-model->grid.itemsSource(IndexList(static_cast<int64_t>(data->size())));
+auto const* objects = &gallery::dataObjects();
+model->grid.itemTemplate(Model::templateOf(Kind::Image, objects));
+model->grid.itemsSource(IndexList(static_cast<int64_t>(objects->size())));
 
-model->grid.add_onItemClick([model, data](auto const&, ItemClickEventArgs& args) {
+model->grid.add_onItemClick([model, objects](auto const&, ItemClickEventArgs& args) {
     std::u16string words = u"You clicked ";
-    words += (*data)[static_cast<size_t>(unboxValue<int64_t>(args.clickedItem()))].title;
+    words += (*objects)[static_cast<size_t>(unboxValue<int64_t>(args.clickedItem()))].title;
     words += u".";
     model->clicked.text(words);
 });
@@ -90,9 +90,9 @@ auto options = StackPanel {
         RadioButton {content = u"Image/Text"},
         RadioButton {content = u"Text"},
         selectedIndex = 0,
-        onSelectionChanged += [model, data](RadioButtons const& self) {
+        onSelectionChanged += [model, objects](RadioButtons const& self) {
             static constexpr Kind kinds[] = {Kind::Image, Kind::IconText, Kind::ImageText, Kind::Text};
-            if (self.selectedIndex() >= 0) model->grid.itemTemplate(Model::templateOf(kinds[self.selectedIndex()], data));
+            if (self.selectedIndex() >= 0) model->grid.itemTemplate(Model::templateOf(kinds[self.selectedIndex()], objects));
         },
     },
     ComboBox {

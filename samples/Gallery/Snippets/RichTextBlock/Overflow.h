@@ -8,7 +8,7 @@ auto first = RichTextBlockOverflow {
     overflowContentTarget = second,
 };
 
-auto text = RichTextBlock {
+auto richText = RichTextBlock {
     column = 0,
     Margin {12, 0},
     textAlignment.justify,
@@ -24,7 +24,7 @@ auto text = RichTextBlock {
 auto columns = Grid {
     height = 300,
     ColumnDefinitions<u"*,*,*">,
-    text,
+    richText,
     first,
     second,
 };

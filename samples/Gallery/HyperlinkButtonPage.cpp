@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText navigateHeader{"Snippets/HyperlinkButton/Navigate.html"}
 gallery::LazyLoadedText navigateCode{"Snippets/HyperlinkButton/Navigate.h"};
 
 FrameworkElement navigateExample() {
+    using namespace wxl::dsl;
 #include "Snippets/HyperlinkButton/Navigate.h"
 
     return gallery::controlExample({
@@ -26,6 +26,7 @@ gallery::LazyLoadedText clickHeader{"Snippets/HyperlinkButton/Click.html"};
 gallery::LazyLoadedText clickCode{"Snippets/HyperlinkButton/Click.h"};
 
 FrameworkElement clickExample() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(clickHeader),
         .example =

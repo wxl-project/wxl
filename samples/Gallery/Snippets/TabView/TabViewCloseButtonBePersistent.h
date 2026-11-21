@@ -1,6 +1,6 @@
 auto const menu = gallery::tabViewContextMenu();
-auto const documentTab = [menu](char16_t const* title, Symbol symbol, int page) {
-    return TabViewItem {header = title, contextFlyout = menu, iconSource = SymbolIconSource {symbol = symbol}, content = gallery::samplePage(page)};
+auto const documentTab = [menu](char16_t const* tabTitle, Symbol tabSymbol, int page) {
+    return TabViewItem {header = tabTitle, contextFlyout = menu, iconSource = SymbolIconSource {tabSymbol = tabSymbol}, content = gallery::samplePage(page)};
 };
 
 auto const tabs = TabView {

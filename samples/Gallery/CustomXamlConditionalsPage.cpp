@@ -8,7 +8,6 @@
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -25,16 +24,19 @@ gallery::LazyLoadedText settersHeader{"Snippets/CustomXamlConditionals/CustomXam
 gallery::LazyLoadedText settersCode{"Snippets/CustomXamlConditionals/CustomXamlConditionalsConditionalSettersStyle.h"};
 
 FrameworkElement elements(std::shared_ptr<Flags> const& flags) {
+    using namespace wxl::dsl;
 #include "Snippets/CustomXamlConditionals/CustomXamlConditionalsConditionalElements.h"
     return gallery::controlExample({.header = gallery::snippet(elementsHeader), .example = example, .code = gallery::snippet(elementsCode)});
 }
 
 FrameworkElement attributes(std::shared_ptr<Flags> const& flags) {
+    using namespace wxl::dsl;
 #include "Snippets/CustomXamlConditionals/CustomXamlConditionalsConditionalAttributes.h"
     return gallery::controlExample({.header = gallery::snippet(attributesHeader), .example = example, .code = gallery::snippet(attributesCode)});
 }
 
 FrameworkElement setters(std::shared_ptr<Flags> const& flags) {
+    using namespace wxl::dsl;
 #include "Snippets/CustomXamlConditionals/CustomXamlConditionalsConditionalSettersStyle.h"
     return gallery::controlExample({.header = gallery::snippet(settersHeader), .example = example, .code = gallery::snippet(settersCode)});
 }
@@ -42,6 +44,7 @@ FrameworkElement setters(std::shared_ptr<Flags> const& flags) {
 }  // namespace
 
 static FrameworkElement customXamlConditionalsPage() {
+    using namespace wxl::dsl;
     auto const flags = gallery::hold<Flags>();
     return StackPanel {
         spacing = 12.0,

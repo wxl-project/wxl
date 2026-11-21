@@ -11,7 +11,6 @@
 #include <format>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -65,6 +64,7 @@ bool parseHex(std::u16string_view text, Color& out) {
 }
 
 SolidColorBrush solid(Color const& value) {
+    using namespace wxl::dsl;
     return SolidColorBrush {color = value};
 }
 
@@ -111,6 +111,7 @@ struct Model {
 };
 
 FrameworkElement inlineColorPicker(char16_t const* header, core::observable<Color>& chosen, core::observable<core::u16_text>& hex, int at) {
+    using namespace wxl::dsl;
     return Grid {
         column = at,
         rowSpan = 2,
@@ -141,6 +142,7 @@ constexpr Color failRed = rgb(139, 0, 0);
 
 // Одна проверка: кружок с галочкой или крестом, «Pass» или «Fail» и что проверяется.
 FrameworkElement check(core::observable<bool>& passed, int rowNumber, char16_t const* what, char16_t const* requires_, double left) {
+    using namespace wxl::dsl;
     return Grid {
         row = rowNumber,
         columnSpacing = 8.0,
@@ -161,11 +163,12 @@ FrameworkElement check(core::observable<bool>& passed, int rowNumber, char16_t c
 }  // namespace
 
 static FrameworkElement accessibilityColorContrastPage() {
+    using namespace wxl::dsl;
     auto const model = gallery::hold<Model>();
     model->follow(model->text, model->textHex);
     model->follow(model->backdrop, model->backdropHex);
 
-    auto const textBrush = [](Color const& value) { return solid(value); };
+    auto const textBrush = [](Color const& c) { return solid(c); };
     auto const checker = Grid {
         Padding {8},
         columnSpacing = 8.0,

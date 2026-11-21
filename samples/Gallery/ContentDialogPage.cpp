@@ -6,7 +6,6 @@
 import wxl.core;
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -14,6 +13,7 @@ gallery::LazyLoadedText basicHeader{"Snippets/ContentDialog/BasicContentDialogCo
 gallery::LazyLoadedText basicCode{"Snippets/ContentDialog/BasicContentDialogContent.h"};
 
 FrameworkElement basic() {
+    using namespace wxl::dsl;
 #include "Snippets/ContentDialog/BasicContentDialogContent.h"
 
     return gallery::controlExample({
@@ -27,6 +27,7 @@ gallery::LazyLoadedText withoutDefaultHeader{"Snippets/ContentDialog/ContentDial
 gallery::LazyLoadedText withoutDefaultCode{"Snippets/ContentDialog/ContentDialogWithoutDefault.h"};
 
 FrameworkElement withoutDefault() {
+    using namespace wxl::dsl;
 #include "Snippets/ContentDialog/ContentDialogWithoutDefault.h"
 
     return gallery::controlExample({

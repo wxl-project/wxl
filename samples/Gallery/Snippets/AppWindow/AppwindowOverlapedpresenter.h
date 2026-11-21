@@ -1,7 +1,7 @@
 struct Model {
     // A switch with the explanation that stands on it as a tip.
-    static ToggleSwitch option(char16_t const* label, char16_t const* tip, bool on) {
-        return ToggleSwitch {header = label, isOn = on, offContent = u"false", onContent = u"true", toolTip = tip};
+    static ToggleSwitch option(char16_t const* labelText, char16_t const* tip, bool on) {
+        return ToggleSwitch {header = labelText, isOn = on, offContent = u"false", onContent = u"true", toolTip = tip};
     }
 
     ToggleSwitch alwaysOnTop = option(u"IsAlwaysOnTop", u"Keeps the window above all other windows when enabled.", false);

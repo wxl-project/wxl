@@ -13,7 +13,6 @@
 import wxl.core;
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -109,6 +108,7 @@ async::task<> opens_a_box_in_its_continuation(Probe& probe) {
 }  // namespace
 
 wxl::Teardown wxl_launched() {
+    using namespace wxl::dsl;
     ::DeleteFileW(L"modal-loop-probe.txt");
 
     auto window = Window {

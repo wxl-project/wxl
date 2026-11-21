@@ -1,5 +1,5 @@
-auto picture = [](char16_t const* name, char16_t const* path) {
-    return Image {toolTip = name, automationName = name, source = path, stretch = Stretch::Uniform};
+auto picture = [](char16_t const* labelText, char16_t const* path) {
+    return Image {toolTip = labelText, automationName = labelText, source = path, stretch = Stretch::Uniform};
 };
 
 auto view = ScrollView {

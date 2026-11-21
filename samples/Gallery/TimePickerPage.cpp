@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -25,6 +24,7 @@ gallery::LazyLoadedText minuteIncrementsHeader{"Snippets/TimePicker/HeaderMinute
 gallery::LazyLoadedText minuteIncrementsCode{"Snippets/TimePicker/HeaderMinuteIncrements.h"};
 
 FrameworkElement minuteIncrements() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(minuteIncrementsHeader),
         .example =
@@ -38,6 +38,7 @@ gallery::LazyLoadedText clockIdentifiersHeader{"Snippets/TimePicker/ClockIdentif
 gallery::LazyLoadedText clockIdentifiersCode{"Snippets/TimePicker/ClockIdentifiers.h"};
 
 FrameworkElement clockIdentifiers() {
+    using namespace wxl::dsl;
 #include "Snippets/TimePicker/ClockIdentifiers.h"
 
     return gallery::controlExample({

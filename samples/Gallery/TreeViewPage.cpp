@@ -5,7 +5,6 @@
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -13,6 +12,7 @@ gallery::LazyLoadedText dragDropHeader{"Snippets/TreeView/SimpleTreeviewDragDrop
 gallery::LazyLoadedText dragDropCode{"Snippets/TreeView/SimpleTreeviewDragDrop.h"};
 
 FrameworkElement dragDrop() {
+    using namespace wxl::dsl;
 #include "Snippets/TreeView/SimpleTreeviewDragDrop.h"
 
     return gallery::controlExample({
@@ -26,6 +26,7 @@ gallery::LazyLoadedText multipleHeader{"Snippets/TreeView/TreeviewMultiSelection
 gallery::LazyLoadedText multipleCode{"Snippets/TreeView/TreeviewMultiSelectionEnabled.h"};
 
 FrameworkElement multiple() {
+    using namespace wxl::dsl;
 #include "Snippets/TreeView/TreeviewMultiSelectionEnabled.h"
 
     return gallery::controlExample({
@@ -39,6 +40,7 @@ gallery::LazyLoadedText boundHeader{"Snippets/TreeView/TreeviewDatabindingItemso
 gallery::LazyLoadedText boundCode{"Snippets/TreeView/TreeviewDatabindingItemsource.h"};
 
 FrameworkElement bound() {
+    using namespace wxl::dsl;
 #include "Snippets/TreeView/TreeviewDatabindingItemsource.h"
 
     return gallery::controlExample({
@@ -52,6 +54,7 @@ gallery::LazyLoadedText selectorHeader{"Snippets/TreeView/TreeviewItemtemplatese
 gallery::LazyLoadedText selectorCode{"Snippets/TreeView/TreeviewItemtemplateselector.h"};
 
 FrameworkElement selector() {
+    using namespace wxl::dsl;
 #include "Snippets/TreeView/TreeviewItemtemplateselector.h"
 
     return gallery::controlExample({

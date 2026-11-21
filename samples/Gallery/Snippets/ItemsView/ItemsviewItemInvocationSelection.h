@@ -54,12 +54,12 @@ model->view.add_onSelectionChanged([model, objects](auto const&, auto&&...) {
     model->selected.text(words);
 });
 
-auto description = HtmlBlock {
+auto explanation = HtmlBlock {
     Margin {0, 0, 0, 15},
     textWrapping = TextWrapping::Wrap,
 };
-description.theme(MarkupTheme{.paragraphMargin = Thickness {0}});
-description.html(
+explanation.theme(MarkupTheme{.paragraphMargin = Thickness {0}});
+explanation.html(
     u"<p>You can enable four different selection modes on the right.</p>"
     u"<p><b>None</b> disables selection all together.</p>"
     u"<p><b>Single</b> allows for only one item to be selected.</p>"
@@ -68,7 +68,7 @@ description.html(
 
 auto example = Grid {
     RowDefinitions<u"auto,*,auto">,
-    description,
+    explanation,
     Border {row = 1, model->view},
     StackPanel {row = 2, model->invoked, model->selected},
 };

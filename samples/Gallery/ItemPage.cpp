@@ -9,7 +9,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -18,6 +17,7 @@ constexpr std::wstring_view winUIBaseUrl =
 
 // Подпись-подсказка малого размера над ссылкой или значением во flyout.
 FrameworkElement caption(zstring_view text) {
+    using namespace wxl::dsl;
     return TextBlock {
         text,
         styles.TextBlock.Caption,
@@ -27,6 +27,7 @@ FrameworkElement caption(zstring_view text) {
 
 // Кнопка-значок «i» с подсказкой, как в заголовке оригинала.
 FrameworkElement infoGlyph(zstring_view tip) {
+    using namespace wxl::dsl;
     return FontIcon {
         glyph = u"",
         fontSize = 14,
@@ -36,6 +37,7 @@ FrameworkElement infoGlyph(zstring_view tip) {
 }
 
 FrameworkElement linkRow(zstring_view title, zstring_view uri) {
+    using namespace wxl::dsl;
     return HyperlinkButton {
         hAlign.stretch,
         horizontalContentAlignment = HorizontalAlignment::Left,
@@ -50,6 +52,7 @@ FrameworkElement linkRow(zstring_view title, zstring_view uri) {
 // повторяют цепочку наследования своих оригиналов. Панель флайута задана
 // шириной: презентер флайута по умолчанию уже, чем цепочка.
 FrameworkElement apiDetails(gallery::ControlInfo const& item) {
+    using namespace wxl::dsl;
     if (item.apiNamespace.empty() && item.baseClasses.empty()) {
         return Border {};
     }
@@ -71,8 +74,8 @@ FrameworkElement apiDetails(gallery::ControlInfo const& item) {
     if (!item.baseClasses.empty()) {
         // Цепочка наследования — BreadcrumbBar, как в панели оригинала.
         std::vector<std::u16string> chain;
-        for (auto const& name : item.baseClasses) {
-            chain.emplace_back(name.begin(), name.end());
+        for (auto const& baseClass : item.baseClasses) {
+            chain.emplace_back(baseClass.begin(), baseClass.end());
         }
         panel.children().append(StackPanel {
             caption(u"Inheritance"),
@@ -96,6 +99,7 @@ FrameworkElement apiDetails(gallery::ControlInfo const& item) {
 }
 
 FrameworkElement documentation(gallery::ControlInfo const& item) {
+    using namespace wxl::dsl;
     if (item.docs.empty()) {
         return Border {};
     }
@@ -124,6 +128,7 @@ FrameworkElement documentation(gallery::ControlInfo const& item) {
 // code» оригинала. Ссылок на страницу примера оригинал даёт две (XAML и
 // C#); у этого порта своего адреса в сети пока нет.
 FrameworkElement sourceLinks(gallery::ControlInfo const& item) {
+    using namespace wxl::dsl;
     if (item.sourcePath.empty()) {
         return Border {};
     }
@@ -151,6 +156,7 @@ FrameworkElement sourceLinks(gallery::ControlInfo const& item) {
 
 // Переключатель темы окна: тема ставится корню, как в HelloHere.
 FrameworkElement themeButton() {
+    using namespace wxl::dsl;
     return Button {
         gallery::appButtonHoverEffect(),
         height = 32,
@@ -169,6 +175,7 @@ FrameworkElement themeButton() {
 }
 
 FrameworkElement favoriteButton(std::wstring id) {
+    using namespace wxl::dsl;
     bool const on = gallery::isFavorite(id);
     return ToggleButton {
         gallery::appButtonHoverEffect(),
@@ -189,6 +196,7 @@ FrameworkElement favoriteButton(std::wstring id) {
 }
 
 FrameworkElement pageHeader(gallery::ControlInfo const& item) {
+    using namespace wxl::dsl;
     return Grid {
         RowDefinitions<u"auto,auto">,
         // NarrowLayout оригинала: ниже 641 поля страницы уже.
@@ -229,19 +237,20 @@ FrameworkElement pageHeader(gallery::ControlInfo const& item) {
 }  // namespace
 
 wxl::FrameworkElement gallery::itemPage(ControlInfo const& item) {
-    auto const description = gallery::htmlEscape(item.description);
+    using namespace wxl::dsl;
+    auto const escapedDescription = gallery::htmlEscape(item.description);
 
     auto body = Grid {
         RowDefinitions<u"auto,*">,
         padding = BindOutput {gallery::pageSize().wide, [](bool room) { return room ? Thickness {36, 0, 36, 36} : Thickness {16, 0, 16, 16}; }},
     };
-    if (!description.empty()) {
+    if (!escapedDescription.empty()) {
         body.children().append(HtmlBlock {
             maxWidth = 1064,
             hAlign.left,
             Margin {0, 4, 24, 0},
             isTextSelectionEnabled = true,
-            description,
+            escapedDescription,
         });
     }
     if (auto const page = gallery::pageFor(item.uniqueId)) {

@@ -8,7 +8,6 @@
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -22,6 +21,7 @@ gallery::LazyLoadedText geometryHeader{"Snippets/Geometry/Geometry.html"};
 gallery::LazyLoadedText geometryCode{"Snippets/Geometry/Geometry.h"};
 
 FrameworkElement typographyExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Typography/TypographyTypeRamp.h"
 
     auto const heading = Grid {
@@ -57,6 +57,7 @@ FrameworkElement typographyExample() {
 }
 
 FrameworkElement geometryExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Geometry/Geometry.h"
 
     auto const heading = Grid {
@@ -88,16 +89,18 @@ FrameworkElement geometryExample() {
 }
 
 Grid spacingRow(char16_t const* value, double size, char16_t const* usage, bool shaded, double top = 0) {
-    auto row = gallery::designRow(shaded, Thickness {0, top, 0, 0});
-    row.columnDefinitions(ColumnDefinitions<u"86,136,*">);
-    row.children().append(TextBlock {Margin {16, 0, 0, 0}, vAlign.center, value});
-    row.children().append(Border {column = 1, width = size, height = 20, hAlign.left, cornerRadius = CornerRadius {4},
+    using namespace wxl::dsl;
+    auto tableRow = gallery::designRow(shaded, Thickness {0, top, 0, 0});
+    tableRow.columnDefinitions(ColumnDefinitions<u"86,136,*">);
+    tableRow.children().append(TextBlock {Margin {16, 0, 0, 0}, vAlign.center, value});
+    tableRow.children().append(Border {column = 1, width = size, height = 20, hAlign.left, cornerRadius = CornerRadius {4},
                                   background = brushes.Accent.FillColor.Default});
-    row.children().append(TextBlock {column = 2, vAlign.center, textWrapping = TextWrapping::Wrap, styles.TextBlock.Caption, usage});
-    return row;
+    tableRow.children().append(TextBlock {column = 2, vAlign.center, textWrapping = TextWrapping::Wrap, styles.TextBlock.Caption, usage});
+    return tableRow;
 }
 
 FrameworkElement spacingExample(char16_t const* title, char16_t const* stem, double height) {
+    using namespace wxl::dsl;
     return Grid {
         vAlign.top,
         rowSpacing = 12.0,
@@ -124,6 +127,7 @@ static FrameworkElement geometryPage() {
 }
 
 static FrameworkElement spacingPage() {
+    using namespace wxl::dsl;
     return StackPanel {
         gallery::prose(gallery::snippet(spacingIntroText), Thickness {}),
         ScrollViewer {

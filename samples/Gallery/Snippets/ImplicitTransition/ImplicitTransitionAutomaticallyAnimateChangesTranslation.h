@@ -26,8 +26,8 @@ model->custom.add_onKeyDown([applyCustom](auto const&, KeyRoutedEventArgs& args)
     }
 });
 
-auto const preset = [apply](char16_t const* title, float distance) {
-    return Button {Margin {5}, hAlign.stretch, content = title, onClick += [apply, distance](auto&&...) { apply(distance); }};
+auto const preset = [apply](char16_t const* labelText, float distance) {
+    return Button {Margin {5}, hAlign.stretch, content = labelText, onClick += [apply, distance](auto&&...) { apply(distance); }};
 };
 
 auto example = rectangle;

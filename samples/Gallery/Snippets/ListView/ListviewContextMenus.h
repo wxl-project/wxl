@@ -21,24 +21,24 @@ auto const model = gallery::hold<Model>();
 // A menu on each contact, which takes the contact out of the list. The item the menu belongs to is the one
 // the template made it for: its position goes into the handler, and the list finds the item by it.
 model->list.itemTemplate([people, contactOf, weak = std::weak_ptr<Model>(model)](Object const& item) {
-    auto const row = contactOf(item);
-    row.contextFlyout(MenuFlyout {
+    auto const rowContact = contactOf(item);
+    rowContact.contextFlyout(MenuFlyout {
         MenuFlyoutItem {
             text = u"Delete",
             onClick += [weak, item](auto&&...) {
                 auto const model = weak.lock();
                 if (!model) return;
-                auto const items = model->list.items();
-                for (uint32_t at = 0; at < items.size(); ++at) {
-                    if (unboxValue<int64_t>(items.getAt(at)) == unboxValue<int64_t>(item)) {
-                        items.removeAt(at);
+                auto const listItems = model->list.items();
+                for (uint32_t at = 0; at < listItems.size(); ++at) {
+                    if (unboxValue<int64_t>(listItems.getAt(at)) == unboxValue<int64_t>(item)) {
+                        listItems.removeAt(at);
                         break;
                     }
                 }
             },
         },
     });
-    return row;
+    return rowContact;
 });
 model->list.itemsSource(IndexList(static_cast<int64_t>(people->size())));
 

@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText ellipseHeader{"Snippets/Shape/Ellipse.html"};
 gallery::LazyLoadedText ellipseCode{"Snippets/Shape/Ellipse.h"};
 
 FrameworkElement ellipse() {
+    using namespace wxl::dsl;
 #include "Snippets/Shape/Ellipse.h"
 
     return gallery::controlExample({
@@ -26,6 +26,7 @@ gallery::LazyLoadedText rectangleHeader{"Snippets/Shape/Rectangle.html"};
 gallery::LazyLoadedText rectangleCode{"Snippets/Shape/Rectangle.h"};
 
 FrameworkElement rectangle() {
+    using namespace wxl::dsl;
 #include "Snippets/Shape/Rectangle.h"
 
     return gallery::controlExample({
@@ -40,6 +41,7 @@ gallery::LazyLoadedText polygonHeader{"Snippets/Shape/Polygon.html"};
 gallery::LazyLoadedText polygonCode{"Snippets/Shape/Polygon.h"};
 
 FrameworkElement polygon() {
+    using namespace wxl::dsl;
 #include "Snippets/Shape/Polygon.h"
 
     return gallery::controlExample({

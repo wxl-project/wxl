@@ -14,7 +14,6 @@
 #include "pch.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -35,6 +34,7 @@ std::shared_ptr<TabWindow> makeWindow();
 
 // TabContentSampleControl оригинала: заголовок страницы, пояснение и переключатель, который включает кольцо.
 UIElement tabContent(std::u16string const& page) {
+    using namespace wxl::dsl;
     auto const ring = ProgressRing {hAlign.left};
     return StackPanel {
         Padding {12},
@@ -49,6 +49,7 @@ UIElement tabContent(std::u16string const& page) {
 }
 
 TabViewItem tab(std::u16string const& title, std::u16string const& page) {
+    using namespace wxl::dsl;
     return TabViewItem {header = title, iconSource = SymbolIconSource {symbol = Symbol::Placeholder}, content = tabContent(page)};
 }
 
@@ -78,6 +79,7 @@ void closeWindowIfEmpty(TabView const& tabs) {
 }
 
 std::shared_ptr<TabWindow> makeWindow() {
+    using namespace wxl::dsl;
     auto const model = std::make_shared<TabWindow>();
     std::weak_ptr<TabWindow> const weak = model;
     auto const dragRegion = Grid {background = colors.transparent, minWidth = 188};
@@ -105,8 +107,8 @@ std::shared_ptr<TabWindow> makeWindow() {
                 return;
             }
             for (auto const& torn : args.tabs()) {
-                if (auto const source = parentTabView(torn)) {
-                    (*source).tabItems().remove(torn);
+                if (auto const owner = parentTabView(torn)) {
+                    (*owner).tabItems().remove(torn);
                 }
                 self->tearOutWindow->tabs.tabItems().append(torn);
             }
@@ -116,16 +118,16 @@ std::shared_ptr<TabWindow> makeWindow() {
         },
         onExternalTornOutTabsDropping += [](TabView const&, TabViewExternalTornOutTabsDroppingEventArgs& args) { args.allowDrop(true); },
         onExternalTornOutTabsDropped += [](TabView const& sender, TabViewExternalTornOutTabsDroppedEventArgs& args) {
-            int position = 0;
+            int index = 0;
             for (auto const& torn : args.tabs()) {
-                auto const source = parentTabView(torn);
-                if (source) {
-                    (*source).tabItems().remove(torn);
+                auto const owner = parentTabView(torn);
+                if (owner) {
+                    (*owner).tabItems().remove(torn);
                 }
-                sender.tabItems().insertAt(static_cast<uint32_t>(args.dropIndex() + position), torn);
-                ++position;
-                if (source && (*source).tabItems().size() == 0) {
-                    closeWindowIfEmpty(*source);
+                sender.tabItems().insertAt(static_cast<uint32_t>(args.dropIndex() + index), torn);
+                ++index;
+                if (owner && (*owner).tabItems().size() == 0) {
+                    closeWindowIfEmpty(*owner);
                 }
             }
         },

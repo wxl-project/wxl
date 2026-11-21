@@ -1,7 +1,6 @@
 #include "Calc.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -35,6 +34,7 @@ namespace {
 
     // Шаблон фона панели: кисть строится при применении
     Template<RadialGradientBrush> backgroundTemplate(Glow const& tones) {
+        using namespace wxl::dsl;
         return {
             center = Point {0.33f, 0.33f},
             gradientOrigin = {0.33f, 0.33f},
@@ -48,14 +48,14 @@ namespace {
 
     // Общий стиль для шрифтового оформления LCD-экрана калькулятора
     auto const lcdDisplayPreset = Preset {
-        fontFamily = FontFamily{u"Assets/digitalism.ttf#Digitalism"},
-        foreground = Template<SolidColorBrush>{rgb(44, 58, 28)},
-        hAlign.stretch,
-        textAlignment.right,
+        dsl::fontFamily = FontFamily{u"Assets/digitalism.ttf#Digitalism"},
+        dsl::foreground = Template<SolidColorBrush>{rgb(44, 58, 28)},
+        dsl::hAlign.stretch,
+        dsl::textAlignment.right,
         FontWeight {600},
         HaloEffect {
-            color = rgb(92, 138, 32),
-            blurRadius = 14.0f
+            dsl::color = rgb(92, 138, 32),
+            dsl::blurRadius = 14.0f
         },
     };
 
@@ -74,30 +74,30 @@ namespace {
     // умолчанию эффекта. Нажатие: вспышка пятна, знак и лицо уходят вниз и
     // вправо, клавиша темнеет; лампа пятна не ныряет.
     Button3DEffect numericKey {
-        foreground = rgb(237, 239, 242),
-        background = rgb(68, 72, 79),
-        pressDivesLamp = false,
-        pressFlashes = true,
-        pressMovesLabel = true,
-        pressShades = true,
+        dsl::foreground = rgb(237, 239, 242),
+        dsl::background = rgb(68, 72, 79),
+        dsl::pressDivesLamp = false,
+        dsl::pressFlashes = true,
+        dsl::pressMovesLabel = true,
+        dsl::pressShades = true,
     };
 
     Button3DEffect actionKey {
-        foreground = rgb(204, 217, 245),
-        background = rgb(48, 68, 116),
-        pressDivesLamp = false,
-        pressFlashes = true,
-        pressMovesLabel = true,
-        pressShades = true,
+        dsl::foreground = rgb(204, 217, 245),
+        dsl::background = rgb(48, 68, 116),
+        dsl::pressDivesLamp = false,
+        dsl::pressFlashes = true,
+        dsl::pressMovesLabel = true,
+        dsl::pressShades = true,
     };
 
     Button3DEffect terminalKey {
-        foreground = rgb(255, 227, 180),
-        background = rgb(176, 98, 30),
-        pressDivesLamp = false,
-        pressFlashes = true,
-        pressMovesLabel = true,
-        pressShades = true,
+        dsl::foreground = rgb(255, 227, 180),
+        dsl::background = rgb(176, 98, 30),
+        dsl::pressDivesLamp = false,
+        dsl::pressFlashes = true,
+        dsl::pressMovesLabel = true,
+        dsl::pressShades = true,
     };
 
     // Раскладка клавиши — скругление, отступ
@@ -105,14 +105,15 @@ namespace {
     Preset keyLayoutPreset {
         CornerRadius {9},
         Padding {1},
-        horizontalContentAlignment = hAlign.stretch,
-        verticalContentAlignment = vAlign.stretch,
+        dsl::horizontalContentAlignment = dsl::hAlign.stretch,
+        dsl::verticalContentAlignment = dsl::vAlign.stretch,
     };
 }
 
 using calculator::Calc;
 
 wxl::Teardown wxl_launched() {
+    using namespace wxl::dsl;
     // В простейших сценариях объекты типа Calc или отдельные
     // observable<T> можно оформлять в виде глобальных переменых и
     // не обслуживать время жизни динамически созданных объектов-моделей.

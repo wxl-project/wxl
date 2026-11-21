@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText appliedBorderHeader{"Snippets/ThemeShadow/AppliedBorder.
 gallery::LazyLoadedText appliedBorderCode{"Snippets/ThemeShadow/AppliedBorder.h"};
 
 FrameworkElement appliedBorder() {
+    using namespace wxl::dsl;
 #include "Snippets/ThemeShadow/AppliedBorder.h"
 
     return gallery::controlExample({

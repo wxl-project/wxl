@@ -5,7 +5,6 @@
 #include "CustomLayout.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -13,6 +12,7 @@ gallery::LazyLoadedText customLayoutHeader{"Snippets/LayoutPanel/CustomLayout.ht
 gallery::LazyLoadedText customLayoutCode{"Snippets/LayoutPanel/CustomLayout.h"};
 
 FrameworkElement customLayout() {
+    using namespace wxl::dsl;
 #include "Snippets/LayoutPanel/CustomLayout.h"
 
     return gallery::controlExample({

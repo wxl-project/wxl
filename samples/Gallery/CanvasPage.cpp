@@ -3,7 +3,6 @@
 #include "Pages.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -11,6 +10,7 @@ gallery::LazyLoadedText controlHeader{"Snippets/Canvas/CanvasControl.html"};
 gallery::LazyLoadedText controlCode{"Snippets/Canvas/CanvasControl.h"};
 
 FrameworkElement control() {
+    using namespace wxl::dsl;
 #include "Snippets/Canvas/CanvasControl.h"
 
     return gallery::controlExample({

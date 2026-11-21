@@ -2,7 +2,7 @@
 // application, and what is clicked is that position, boxed: the same boxes serve as the items of the list again when the
 // list page is made anew, which is how the animation back finds the item.
 auto const objects = &gallery::dataObjects();
-auto const items = IndexList(static_cast<int64_t>(objects->size()));
+auto const indices = IndexList(static_cast<int64_t>(objects->size()));
 
 // The picture of an item: the first child of the grid the function made for it. ListView has a method for an element of its
 // template by name; for one made by a function the way is wxl::itemElement.
@@ -21,7 +21,7 @@ struct Model {
 };
 auto const model = gallery::hold<Model>();
 
-auto const listPage = [model, objects, items, connectedImage] {
+auto const listPage = [model, objects, indices, connectedImage] {
     model->list = ListView {
         isItemClickEnabled = true,
         selectionMode = ListViewSelectionMode::None,
@@ -42,7 +42,7 @@ auto const listPage = [model, objects, items, connectedImage] {
                                                             styles.TextBlock.Body, textTrimming = TextTrimming::CharacterEllipsis,
                                                             textWrapping = TextWrapping::Wrap, object.description}}}};
         },
-        itemsSource = items,
+        itemsSource = indices,
         onLoaded += [model, connectedImage](auto&&...) {
             if (!model->stored) {
                 return;

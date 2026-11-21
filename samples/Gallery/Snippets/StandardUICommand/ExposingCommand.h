@@ -21,17 +21,17 @@ struct Model {
 
     Model() {
         for (char16_t index = 0; index < 15; ++index) {
-            std::u16string name {u"List item "};
+            std::u16string itemName {u"List item "};
             if (index >= 10) {
-                name += u'1';
+                itemName += u'1';
             }
-            names.push_back(name + static_cast<char16_t>(u'0' + index % 10));
+            names.push_back(itemName + static_cast<char16_t>(u'0' + index % 10));
         }
     }
 
     // A row: the text, and a button that shows while the pointer is over it;
     // swiped left it deletes, and so does a right click on the menu.
-    FrameworkElement row(std::u16string const& name) const {
+    FrameworkElement row(std::u16string const& itemName) const {
         return Grid {
             onPointerEntered += [](Grid const& self, PointerRoutedEventArgs& args) {
                 auto const pointer = args.pointer().pointerDeviceType();
@@ -44,14 +44,14 @@ struct Model {
             },
             SwipeControl {
                 rightItemsMode = SwipeMode::Execute,
-                rightItems[SwipeItem {background = colors.red, command = deleteCommand, commandParameter = name}],
+                rightItems[SwipeItem {background = colors.red, command = deleteCommand, commandParameter = itemName}],
                 content = Grid {
                     vAlign.center,
-                    TextBlock {Margin {10}, hAlign.left, vAlign.center, fontSize = 18.0, text = name},
+                    TextBlock {Margin {10}, hAlign.left, vAlign.center, fontSize = 18.0, text = itemName},
                     AppBarButton {
                         hAlign.right,
                         command = deleteCommand,
-                        commandParameter = name,
+                        commandParameter = itemName,
                         isTabStop = false,
                         visibility = Visibility::Collapsed,
                     },
@@ -62,8 +62,8 @@ struct Model {
 
     void fill() {
         list.items().clear();
-        for (auto const& name : names) {
-            list.items().append(row(name));
+        for (auto const& itemName : names) {
+            list.items().append(row(itemName));
         }
     }
 };

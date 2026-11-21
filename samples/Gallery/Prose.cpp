@@ -12,7 +12,6 @@
 import wxl.core;
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace gallery {
 
@@ -59,10 +58,11 @@ char const* errorName(MarkupErrorKind kind) {
 }
 
 FrameworkElement prose(Snippet html, Thickness margin, bool textSelection) {
+    using namespace wxl::dsl;
     // Прозу страница пишет абзацами и переносами, как RichTextBlock оригинала: между <p> отступа нет, пустая
     // строка — это <br>.
-    MarkupTheme theme;
-    theme.paragraphMargin = Thickness {0};
+    MarkupTheme markupTheme;
+    markupTheme.paragraphMargin = Thickness {0};
 
     // Выбор текста — как у RichTextBlock по умолчанию; единственное место, которому нужен false, — контент
     // InfoBar (оригинал держал выбор выключенным), и оно передаёт его параметром.
@@ -70,7 +70,7 @@ FrameworkElement prose(Snippet html, Thickness margin, bool textSelection) {
         Margin {margin},
         isTextSelectionEnabled = textSelection,
     };
-    block.theme(theme);
+    block.theme(markupTheme);
     // Полужирный вес 600 — то, чего не умеет ни один тег разметки (<b>/<strong> — это 700), поэтому он приходит
     // именованным стилем (<span style="semibold">…</span>) и регистрируется здесь, до html(): реестр читается при
     // разборе, и зарегистрированный после стиль уже построенный текст не перекрасит.
@@ -78,14 +78,14 @@ FrameworkElement prose(Snippet html, Thickness margin, bool textSelection) {
     // Обработчики — до html(): парсер сообщает о восстановлениях по ходу html() в слив onError, и обработчик,
     // поставленный после, их уже не увидит. onLink — тот же порядок ради одного места, где решено, что тут
     // происходит с кликом.
-    block.onLink([](zstring_view target) {
-        auto const view = target.view();
+    block.onLink([](zstring_view address) {
+        auto const view = address.view();
         if (view.starts_with(u"item:")) {
             navigate({Place::Item, wide(view.substr(5))});
             return;
         }
         if (view.starts_with(u"http://") || view.starts_with(u"https://")) {
-            launchUri(target);
+            launchUri(address);
             return;
         }
         // Схемы, которой в prose не бывает, быть не должно: это ошибка в .html страницы, и её не глушат — останавливает

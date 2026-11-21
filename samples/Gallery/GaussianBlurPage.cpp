@@ -6,7 +6,6 @@
 #include "Pages.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -14,6 +13,7 @@ gallery::LazyLoadedText KeycapHeader{"Snippets/GaussianBlur/Keycap.html"};
 gallery::LazyLoadedText KeycapCode{"Snippets/GaussianBlur/Keycap.h"};
 
 FrameworkElement keycapExample() {
+    using namespace wxl::dsl;
 #include "Snippets/GaussianBlur/Keycap.h"
 
     return gallery::controlExample({
@@ -27,6 +27,7 @@ gallery::LazyLoadedText CompareHeader{"Snippets/GaussianBlur/Compare.html"};
 gallery::LazyLoadedText CompareCode{"Snippets/GaussianBlur/Compare.h"};
 
 FrameworkElement compareExample() {
+    using namespace wxl::dsl;
 #include "Snippets/GaussianBlur/Compare.h"
 
     return gallery::controlExample({
@@ -40,6 +41,7 @@ gallery::LazyLoadedText GammaHeader{"Snippets/GaussianBlur/Gamma.html"};
 gallery::LazyLoadedText GammaCode{"Snippets/GaussianBlur/Gamma.h"};
 
 FrameworkElement gammaExample() {
+    using namespace wxl::dsl;
 #include "Snippets/GaussianBlur/Gamma.h"
 
     return gallery::controlExample({
@@ -53,6 +55,7 @@ gallery::LazyLoadedText OnTopHeader{"Snippets/GaussianBlur/OnTop.html"};
 gallery::LazyLoadedText OnTopCode{"Snippets/GaussianBlur/OnTop.h"};
 
 FrameworkElement onTopExample() {
+    using namespace wxl::dsl;
 #include "Snippets/GaussianBlur/OnTop.h"
 
     return gallery::controlExample({
@@ -66,6 +69,7 @@ gallery::LazyLoadedText NeonSignHeader{"Snippets/GaussianBlur/NeonSign.html"};
 gallery::LazyLoadedText NeonSignCode{"Snippets/GaussianBlur/NeonSign.h"};
 
 FrameworkElement neonSignExample() {
+    using namespace wxl::dsl;
 #include "Snippets/GaussianBlur/NeonSign.h"
 
     return gallery::controlExample({

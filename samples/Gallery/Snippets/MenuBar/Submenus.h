@@ -1,19 +1,19 @@
 auto output = TextBlock {};
 
-auto item = [output](char16_t const* caption) {
+auto item = [output](char16_t const* labelText) {
     return MenuFlyoutItem {
-        text = caption,
-        onClick += [output, caption](MenuFlyoutItem const&) { output.text(std::u16string {u"You clicked: "} + caption); },
+        text = labelText,
+        onClick += [output, labelText](MenuFlyoutItem const&) { output.text(std::u16string {u"You clicked: "} + labelText); },
     };
 };
 
 // A radio item belongs to the group it names; one of a group is checked at a time.
-auto radio = [output](char16_t const* caption, char16_t const* group, bool checked) {
+auto radio = [output](char16_t const* labelText, char16_t const* group, bool checked) {
     return RadioMenuFlyoutItem {
-        text = caption,
+        text = labelText,
         groupName = group,
         isChecked = checked,
-        onClick += [output, caption](MenuFlyoutItem const&) { output.text(std::u16string {u"You clicked: "} + caption); },
+        onClick += [output, labelText](MenuFlyoutItem const&) { output.text(std::u16string {u"You clicked: "} + labelText); },
     };
 };
 

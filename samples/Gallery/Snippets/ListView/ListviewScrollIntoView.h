@@ -9,11 +9,11 @@ auto const list = ListView {
     borderBrush = brushes.Control.Strong.StrokeColorDefault,
     borderThickness = 1,
     itemTemplate = [people](Object const& item) {
-        auto const position = static_cast<size_t>(unboxValue<int64_t>(item));
-        std::u16string text = core::to_u16(static_cast<int>(position) + 1).plain();
-        text += u". ";
-        text += (*people)[position % people->size()].name();
-        return TextBlock {Margin {0, 5, 0, 5}, text};
+        auto const index = static_cast<size_t>(unboxValue<int64_t>(item));
+        std::u16string number = core::to_u16(static_cast<int>(index) + 1).plain();
+        number += u". ";
+        number += (*people)[index % people->size()].name();
+        return TextBlock {Margin {0, 5, 0, 5}, number};
     },
     itemsSource = IndexList(static_cast<int64_t>(total)),
 };

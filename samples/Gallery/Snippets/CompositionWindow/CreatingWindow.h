@@ -9,10 +9,10 @@ struct Model {
     ToggleSwitch darkFrameBox {header = u"Dark frame", isOn = false};
 
     void open() {
-        auto const minimum = SizeInt32 {static_cast<int32_t>(minWidthBox.value()), static_cast<int32_t>(minHeightBox.value())};
+        auto const smallest = SizeInt32 {static_cast<int32_t>(minWidthBox.value()), static_cast<int32_t>(minHeightBox.value())};
         CompositionWindow window {
             title = titleBox.text(),
-            minSize = minimum,
+            minSize = smallest,
             extendsContentIntoTitleBar = extendsBox.isOn(),
         };
         if (extendsBox.isOn()) {

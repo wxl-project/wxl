@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText basicHeader{"Snippets/SettingsCard/SettingsCardBasic.htm
 gallery::LazyLoadedText basicCode{"Snippets/SettingsCard/SettingsCardBasic.h"};
 
 FrameworkElement basicExample() {
+    using namespace wxl::dsl;
 #include "Snippets/SettingsCard/SettingsCardBasic.h"
 
     return gallery::controlExample({.header = gallery::snippet(basicHeader), .example = example, .code = gallery::snippet(basicCode)});
@@ -21,6 +21,7 @@ gallery::LazyLoadedText clickableHeader{"Snippets/SettingsCard/SettingsCardClick
 gallery::LazyLoadedText clickableCode{"Snippets/SettingsCard/SettingsCardClickable.h"};
 
 FrameworkElement clickableExample() {
+    using namespace wxl::dsl;
 #include "Snippets/SettingsCard/SettingsCardClickable.h"
 
     return gallery::controlExample({.header = gallery::snippet(clickableHeader), .example = example, .code = gallery::snippet(clickableCode)});
@@ -30,6 +31,7 @@ gallery::LazyLoadedText alignmentHeader{"Snippets/SettingsCard/SettingsCardAlign
 gallery::LazyLoadedText alignmentCode{"Snippets/SettingsCard/SettingsCardAlignment.h"};
 
 FrameworkElement alignmentExample() {
+    using namespace wxl::dsl;
 #include "Snippets/SettingsCard/SettingsCardAlignment.h"
 
     return gallery::controlExample({.header = gallery::snippet(alignmentHeader), .example = example, .code = gallery::snippet(alignmentCode)});

@@ -24,7 +24,6 @@
 #include <wxl/Microsoft.UI.Xaml.Input.EventArgs.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 using Microsoft::WRL::ComPtr;
 
 namespace {
@@ -196,9 +195,9 @@ struct Carving {
         D2D1_BITMAP_PROPERTIES1 const targetProperties = D2D1::BitmapProperties1(
             D2D1_BITMAP_OPTIONS_TARGET, D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED));
         ComPtr<ID2D1Bitmap1> heights;
-        ComPtr<ID2D1Bitmap1> colors;
+        ComPtr<ID2D1Bitmap1> colorBitmap;
         wxl::impl::check_hresult(side->CreateBitmap(pixels, nullptr, 0, &targetProperties, &heights));
-        wxl::impl::check_hresult(side->CreateBitmap(pixels, nullptr, 0, &targetProperties, &colors));
+        wxl::impl::check_hresult(side->CreateBitmap(pixels, nullptr, 0, &targetProperties, &colorBitmap));
 
         side->SetTarget(heights.Get());
         side->BeginDraw();
@@ -206,7 +205,7 @@ struct Carving {
         drawHeights(side.Get());
         wxl::impl::check_hresult(side->EndDraw());
 
-        side->SetTarget(colors.Get());
+        side->SetTarget(colorBitmap.Get());
         side->BeginDraw();
         side->SetTransform(D2D1::Matrix3x2F::Scale(scale, scale));
         drawColors(side.Get());
@@ -311,14 +310,14 @@ struct Carving {
         // Цвет × (общий свет + рассеянный): произведение двух входов и доля первого.
         float const ambient = ambientShare.get();
         auto const lit = make(CLSID_D2D1ArithmeticComposite);
-        lit->SetInput(0, colors.Get());
+        lit->SetInput(0, colorBitmap.Get());
         if (diffuseOn.get()) {
             auto const light = diffuse();
             light->SetInputEffect(0, blur.Get());
             lit->SetInputEffect(1, light.Get());
             lit->SetValue(D2D1_ARITHMETICCOMPOSITE_PROP_COEFFICIENTS, D2D1::Vector4F(1.0f, ambient, 0.0f, 0.0f));
         } else {
-            lit->SetInput(1, colors.Get());
+            lit->SetInput(1, colorBitmap.Get());
             lit->SetValue(D2D1_ARITHMETICCOMPOSITE_PROP_COEFFICIENTS, D2D1::Vector4F(0.0f, ambient, 0.0f, 0.0f));
         }
 
@@ -346,6 +345,7 @@ struct Carving {
 }  // namespace
 
 lab::Experiment lab::direct2dPage() {
+    using namespace wxl::dsl;
     auto const model = std::make_shared<Carving>();
 
     auto stage = Border {

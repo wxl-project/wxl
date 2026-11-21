@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText symbolIconHeader{"Snippets/AppBarButton/SymbolIcon.html"
 gallery::LazyLoadedText symbolIconCode{"Snippets/AppBarButton/SymbolIcon.h"};
 
 FrameworkElement symbolIcon() {
+    using namespace wxl::dsl;
 #include "Snippets/AppBarButton/SymbolIcon.h"
 
     return gallery::controlExample({
@@ -25,6 +25,7 @@ gallery::LazyLoadedText bitmapIconHeader{"Snippets/AppBarButton/BitmapIcon.html"
 gallery::LazyLoadedText bitmapIconCode{"Snippets/AppBarButton/BitmapIcon.h"};
 
 FrameworkElement bitmapIcon() {
+    using namespace wxl::dsl;
 #include "Snippets/AppBarButton/BitmapIcon.h"
 
     return gallery::controlExample({
@@ -38,6 +39,7 @@ gallery::LazyLoadedText fontIconHeader{"Snippets/AppBarButton/FontIcon.html"};
 gallery::LazyLoadedText fontIconCode{"Snippets/AppBarButton/FontIcon.h"};
 
 FrameworkElement fontIcon() {
+    using namespace wxl::dsl;
 #include "Snippets/AppBarButton/FontIcon.h"
 
     return gallery::controlExample({
@@ -51,6 +53,7 @@ gallery::LazyLoadedText pathIconHeader{"Snippets/AppBarButton/PathIcon.html"};
 gallery::LazyLoadedText pathIconCode{"Snippets/AppBarButton/PathIcon.h"};
 
 FrameworkElement pathIcon() {
+    using namespace wxl::dsl;
 #include "Snippets/AppBarButton/PathIcon.h"
 
     return gallery::controlExample({
@@ -64,6 +67,7 @@ gallery::LazyLoadedText acceleratorHeader{"Snippets/AppBarButton/KeyboardAcceler
 gallery::LazyLoadedText acceleratorCode{"Snippets/AppBarButton/KeyboardAccelerator.h"};
 
 FrameworkElement accelerator() {
+    using namespace wxl::dsl;
 #include "Snippets/AppBarButton/KeyboardAccelerator.h"
 
     return gallery::controlExample({
@@ -77,6 +81,7 @@ gallery::LazyLoadedText flyoutButtonHeader{"Snippets/AppBarButton/Flyout.html"};
 gallery::LazyLoadedText flyoutButtonCode{"Snippets/AppBarButton/Flyout.h"};
 
 FrameworkElement flyoutButton() {
+    using namespace wxl::dsl;
 #include "Snippets/AppBarButton/Flyout.h"
 
     return gallery::controlExample({

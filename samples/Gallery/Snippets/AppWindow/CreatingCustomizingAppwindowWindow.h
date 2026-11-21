@@ -5,9 +5,9 @@ struct Model {
     NumberBox xBox = number(u"X", 50, 0, 800, 0);
     NumberBox yBox = number(u"Y", 50, 0, 300, 1);
 
-    static NumberBox number(char16_t const* label, double initial, double least, double most, int boxColumn) {
+    static NumberBox number(char16_t const* labelText, double initial, double least, double most, int boxColumn) {
         return NumberBox {
-            header = label,
+            header = labelText,
             column = boxColumn,
             Margin {0, 0, boxColumn == 0 ? 8 : 0, 0},
             largeChange = 100.0,

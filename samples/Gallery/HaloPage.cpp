@@ -6,7 +6,6 @@
 #include "Pages.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -14,6 +13,7 @@ gallery::LazyLoadedText LcdHeader{"Snippets/Halo/Lcd.html"};
 gallery::LazyLoadedText LcdCode{"Snippets/Halo/Lcd.h"};
 
 FrameworkElement lcdExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Halo/Lcd.h"
 
     return gallery::controlExample({
@@ -27,6 +27,7 @@ gallery::LazyLoadedText LedHeader{"Snippets/Halo/Led.html"};
 gallery::LazyLoadedText LedCode{"Snippets/Halo/Led.h"};
 
 FrameworkElement ledExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Halo/Led.h"
 
     return gallery::controlExample({
@@ -40,6 +41,7 @@ gallery::LazyLoadedText GlowHeader{"Snippets/Halo/Glow.html"};
 gallery::LazyLoadedText GlowCode{"Snippets/Halo/Glow.h"};
 
 FrameworkElement glowExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Halo/Glow.h"
 
     return gallery::controlExample({

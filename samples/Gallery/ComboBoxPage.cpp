@@ -12,7 +12,6 @@
 #include <iterator>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -20,6 +19,7 @@ gallery::LazyLoadedText inlineHeader{"Snippets/ComboBox/Inline.html"};
 gallery::LazyLoadedText inlineCode{"Snippets/ComboBox/Inline.h"};
 
 FrameworkElement inlineExample() {
+    using namespace wxl::dsl;
 #include "Snippets/ComboBox/Inline.h"
 
     return gallery::controlExample({
@@ -33,6 +33,7 @@ gallery::LazyLoadedText sourceHeader{"Snippets/ComboBox/ItemsSource.html"};
 gallery::LazyLoadedText sourceCode{"Snippets/ComboBox/ItemsSource.h"};
 
 FrameworkElement sourceExample() {
+    using namespace wxl::dsl;
 #include "Snippets/ComboBox/ItemsSource.h"
 
     return gallery::controlExample({
@@ -46,6 +47,7 @@ gallery::LazyLoadedText editableHeader{"Snippets/ComboBox/Editable.html"};
 gallery::LazyLoadedText editableCode{"Snippets/ComboBox/Editable.h"};
 
 FrameworkElement editableExample() {
+    using namespace wxl::dsl;
 #include "Snippets/ComboBox/Editable.h"
 
     return gallery::controlExample({

@@ -7,7 +7,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -15,6 +14,7 @@ gallery::LazyLoadedText groupHeader{"Snippets/RadioButton/Group.html"};
 gallery::LazyLoadedText groupCode{"Snippets/RadioButton/Group.h"};
 
 FrameworkElement groupExample() {
+    using namespace wxl::dsl;
 #include "Snippets/RadioButton/Group.h"
 
     return gallery::controlExample({
@@ -29,11 +29,12 @@ gallery::LazyLoadedText stringsHeader{"Snippets/RadioButton/Strings.html"};
 gallery::LazyLoadedText stringsCode{"Snippets/RadioButton/Strings.h"};
 
 FrameworkElement stringsExample() {
+    using namespace wxl::dsl;
 #include "Snippets/RadioButton/Strings.h"
 
     return gallery::controlExample({
         .header = gallery::snippet(stringsHeader),
-        .example = StackPanel {background, border, sample},
+        .example = StackPanel {backgroundButtons, border, sample},
         .code = gallery::snippet(stringsCode),
     });
 }

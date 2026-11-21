@@ -3,7 +3,6 @@
 #include "Pages.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -11,6 +10,7 @@ gallery::LazyLoadedText twoHeader{"Snippets/CheckBox/TwoState.html"};
 gallery::LazyLoadedText twoCode{"Snippets/CheckBox/TwoState.h"};
 
 FrameworkElement twoState() {
+    using namespace wxl::dsl;
 #include "Snippets/CheckBox/TwoState.h"
 
     return gallery::controlExample({
@@ -25,6 +25,7 @@ gallery::LazyLoadedText threeHeader{"Snippets/CheckBox/ThreeState.html"};
 gallery::LazyLoadedText threeCode{"Snippets/CheckBox/ThreeState.h"};
 
 FrameworkElement threeState() {
+    using namespace wxl::dsl;
 #include "Snippets/CheckBox/ThreeState.h"
 
     return gallery::controlExample({
@@ -39,6 +40,7 @@ gallery::LazyLoadedText allHeader{"Snippets/CheckBox/SelectAll.html"};
 gallery::LazyLoadedText allCode{"Snippets/CheckBox/SelectAll.h"};
 
 FrameworkElement selectAll() {
+    using namespace wxl::dsl;
 #include "Snippets/CheckBox/SelectAll.h"
 
     return gallery::controlExample({

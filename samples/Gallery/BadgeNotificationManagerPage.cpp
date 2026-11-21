@@ -6,7 +6,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -14,6 +13,7 @@ gallery::LazyLoadedText countHeader{"Snippets/BadgeNotificationManager/BadgeNoti
 gallery::LazyLoadedText countCode{"Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsCount.h"};
 
 FrameworkElement count() {
+    using namespace wxl::dsl;
 #include "Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsCount.h"
 
     return gallery::controlExample({
@@ -28,6 +28,7 @@ gallery::LazyLoadedText glyphExampleHeader{"Snippets/BadgeNotificationManager/Ba
 gallery::LazyLoadedText glyphExampleCode{"Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsGlyph.h"};
 
 FrameworkElement glyphExample() {
+    using namespace wxl::dsl;
 #include "Snippets/BadgeNotificationManager/BadgeNotificationManagerSettingBadgeNotificationsGlyph.h"
 
     return gallery::controlExample({
@@ -41,6 +42,7 @@ FrameworkElement glyphExample() {
 }  // namespace
 
 static wxl::FrameworkElement badgeNotificationManagerPage() {
+    using namespace wxl::dsl;
     return StackPanel {
         InfoBar {
             Margin {0, 10, 0, 0},

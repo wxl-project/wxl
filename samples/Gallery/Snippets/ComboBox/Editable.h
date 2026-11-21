@@ -18,7 +18,7 @@ auto combo = ComboBox {
     width = 200,
     header = u"Font Size",
     isEditable = true,
-    [](iterate<sizes> size) { return ComboBoxItem {content = core::to_u16(size)}; },
+    [](iterate<sizes> pointSize) { return ComboBoxItem {content = core::to_u16(pointSize)}; },
     selectedIndex = 2,
     onSelectionChanged += [output](ComboBox const& self) {
         int const index = self.selectedIndex();
@@ -27,15 +27,15 @@ auto combo = ComboBox {
         }
     },
     onTextSubmitted += [output, model](ComboBox const& self, ComboBoxTextSubmittedEventArgs& args) {
-        auto const text = gallery::wide(args.text());
+        auto const typed = gallery::wide(args.text());
         wchar_t* end = nullptr;
-        double const size = std::wcstod(text.c_str(), &end);
-        bool const isNumber = !text.empty() && end == text.c_str() + text.size();
-        bool const inList = std::ranges::find(sizes, static_cast<int>(size)) != std::end(sizes);
+        double const parsed = std::wcstod(typed.c_str(), &end);
+        bool const isNumber = !typed.empty() && end == typed.c_str() + typed.size();
+        bool const inList = std::ranges::find(sizes, static_cast<int>(parsed)) != std::end(sizes);
 
         // Accept a number from the list, or a custom one between 8 and 100.
-        if (isNumber && (inList || (size > 8 && size < 100))) {
-            output.fontSize(size);
+        if (isNumber && (inList || (parsed > 8 && parsed < 100))) {
+            output.fontSize(parsed);
             args.handled(true);
             return;
         }

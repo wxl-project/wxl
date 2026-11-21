@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText simpleHeader{"Snippets/Slider/Simple.html"};
 gallery::LazyLoadedText simpleCode{"Snippets/Slider/Simple.h"};
 
 FrameworkElement simple() {
+    using namespace wxl::dsl;
 #include "Snippets/Slider/Simple.h"
 
     return gallery::controlExample({
@@ -26,6 +26,7 @@ gallery::LazyLoadedText rangeHeader{"Snippets/Slider/Range.html"};
 gallery::LazyLoadedText rangeCode{"Snippets/Slider/Range.h"};
 
 FrameworkElement range() {
+    using namespace wxl::dsl;
 #include "Snippets/Slider/Range.h"
 
     return gallery::controlExample({
@@ -41,6 +42,7 @@ gallery::LazyLoadedText ticksHeader{"Snippets/Slider/Ticks.html"};
 gallery::LazyLoadedText ticksCode{"Snippets/Slider/Ticks.h"};
 
 FrameworkElement ticks() {
+    using namespace wxl::dsl;
 #include "Snippets/Slider/Ticks.h"
 
     return gallery::controlExample({
@@ -56,6 +58,7 @@ gallery::LazyLoadedText verticalHeader{"Snippets/Slider/Vertical.html"};
 gallery::LazyLoadedText verticalCode{"Snippets/Slider/Vertical.h"};
 
 FrameworkElement vertical() {
+    using namespace wxl::dsl;
 #include "Snippets/Slider/Vertical.h"
 
     return gallery::controlExample({

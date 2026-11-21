@@ -25,11 +25,11 @@ struct Model {
     Slider originXSlider = slider(u"GradientOrigin.X", 3, 0);
     Slider originYSlider = slider(u"GradientOrigin.Y", 3, 1);
 
-    Slider slider(char16_t const* title, int gridRow, int gridColumn) {
-        return Slider {header = title, row = gridRow, column = gridColumn, onValueChanged += [this](Slider const&) { apply(); }};
+    Slider slider(char16_t const* labelText, int gridRow, int gridColumn) {
+        return Slider {header = labelText, row = gridRow, column = gridColumn, onValueChanged += [this](Slider const&) { apply(); }};
     }
 
-    static Point point(double x, double y) { return Point {static_cast<float>(x), static_cast<float>(y)}; }
+    static Point point(double px, double py) { return Point {static_cast<float>(px), static_cast<float>(py)}; }
 
     void apply() {
         brush.center(point(centerXSlider.value(), centerYSlider.value()));
@@ -40,11 +40,11 @@ struct Model {
 
     // In pixels (Absolute) or in fractions of the rectangle (RelativeToBoundingBox).
     void initSliders(bool absolute) {
-        double const top = absolute ? side : 1.0;
-        double const middle = top / 2;
+        double const upper = absolute ? side : 1.0;
+        double const middle = upper / 2;
         double const stepSize = absolute ? side / 50 : 0.02;
         for (auto const& each : {centerXSlider, centerYSlider, radiusXSlider, radiusYSlider, originXSlider, originYSlider}) {
-            each.maximum(top);
+            each.maximum(upper);
             each.stepFrequency(stepSize);
             each.smallChange(absolute ? 10 : 0.05);
             each.value(middle);

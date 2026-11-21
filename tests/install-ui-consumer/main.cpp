@@ -6,9 +6,9 @@
 #include "ui.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 Teardown wxl_launched() {
+    using namespace wxl::dsl;
     auto window = Window {
         title = u"install-ui",
         TextBlock {text = u"wxl from an installed prefix"},

@@ -28,12 +28,12 @@ auto const list = ListView {
     itemsSource = IndexList(static_cast<int64_t>(people->size())),
 };
 
-auto description = HtmlBlock {
+auto explanation = HtmlBlock {
     Margin {0, 0, 0, 15},
     textWrapping = TextWrapping::Wrap,
 };
-description.theme(MarkupTheme{.paragraphMargin = Thickness {0}});
-description.html(
+explanation.theme(MarkupTheme{.paragraphMargin = Thickness {0}});
+explanation.html(
     u"<p>You can enable four different selection modes on the right.</p>"
     u"<p><b>None</b> disables selection all together.</p>"
     u"<p><b>Single</b> allows for only one item to be selected in the list.</p>"
@@ -42,7 +42,7 @@ description.html(
     u"or Shift+Click to select a range of contiguous items.</p>");
 
 auto example = StackPanel {
-    description,
+    explanation,
     list,
 };
 

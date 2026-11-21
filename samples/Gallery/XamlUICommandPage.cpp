@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText reusableHeader{"Snippets/XamlUICommand/Reusable.html"};
 gallery::LazyLoadedText reusableCode{"Snippets/XamlUICommand/Reusable.h"};
 
 FrameworkElement reusable() {
+    using namespace wxl::dsl;
 #include "Snippets/XamlUICommand/Reusable.h"
 
     return gallery::controlExample({

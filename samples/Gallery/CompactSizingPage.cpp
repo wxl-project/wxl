@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText controlsHeader{"Snippets/CompactSizing/CompactSizingCont
 gallery::LazyLoadedText controlsCode{"Snippets/CompactSizing/CompactSizingControls.h"};
 
 FrameworkElement controls() {
+    using namespace wxl::dsl;
 #include "Snippets/CompactSizing/CompactSizingControls.h"
 
     return gallery::controlExample({

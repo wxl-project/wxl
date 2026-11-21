@@ -32,12 +32,12 @@ auto example = StackPanel {
         cornerRadius = CornerRadius {4},
         selectionMode = ListViewSelectionMode::None,
         isItemClickEnabled = true,
-        itemsSource = BindOutput {model->names, [](core::u16_text const& name) { return TextBlock {text = name}; }},
+        itemsSource = BindOutput {model->names, [](core::u16_text const& itemName) { return TextBlock {text = itemName}; }},
         onItemClick += [board](ListView const&, ItemClickEventArgs& args) {
-            if (core::u16_text const* name = boundItem(board->names, args.clickedItem())) {
-                board->clicked.set(*name);
+            if (core::u16_text const* itemName = boundItem(board->names, args.clickedItem())) {
+                board->clicked.set(*itemName);
             }
         },
     },
-    TextBlock {text = BindOutput {model->clicked, [](core::u16_text const& name) { return core::format(u"Clicked: {}", name); }}},
+    TextBlock {text = BindOutput {model->clicked, [](core::u16_text const& itemName) { return core::format(u"Clicked: {}", itemName); }}},
 };

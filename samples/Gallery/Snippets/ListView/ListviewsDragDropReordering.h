@@ -22,9 +22,9 @@ struct Model {
     std::vector<int64_t> dragged;  // the contacts being dragged: what the drag carries, kept here
 
     static std::optional<uint32_t> find(ListView const& list, int64_t contact) {
-        auto const items = list.items();
-        for (uint32_t at = 0; at < items.size(); ++at) {
-            if (unboxValue<int64_t>(items.getAt(at)) == contact) return at;
+        auto const listItems = list.items();
+        for (uint32_t at = 0; at < listItems.size(); ++at) {
+            if (unboxValue<int64_t>(listItems.getAt(at)) == contact) return at;
         }
         return std::nullopt;
     }
@@ -32,26 +32,26 @@ struct Model {
     // Where a drop falls: after the items whose middle the pointer has passed.
     static uint32_t index_at(ListView const& list, DragEventArgs& e) {
         auto const panel = list.itemsPanelRoot();
-        double const y = e.getPosition(panel).y;
-        double offset = 0;
+        double const pointerY = e.getPosition(panel).y;
+        double rowTop = 0;
         uint32_t index = 0;
         for (uint32_t at = 0; at < panel.children().size(); ++at) {
-            auto const row = panel.children().getAt(at).try_as<FrameworkElement>();
-            if (!row) continue;
-            if (y < offset + row.actualHeight() / 2) break;
-            offset += row.actualHeight();
+            auto const rowElement = panel.children().getAt(at).try_as<FrameworkElement>();
+            if (!rowElement) continue;
+            if (pointerY < rowTop + rowElement.actualHeight() / 2) break;
+            rowTop += rowElement.actualHeight();
             ++index;
         }
         return index;
     }
 
-    void drop(ListView const& target, ListView const& other, DragEventArgs& e) {
+    void drop(ListView const& destination, ListView const& other, DragEventArgs& e) {
         auto const deferral = e.getDeferral();
         for (auto const contact : dragged) {
             // Within the list the items are reordered by the list itself; from the other list they are moved here.
-            if (find(target, contact)) continue;
-            auto const index = std::min(index_at(target, e), target.items().size());
-            target.items().insertAt(index, boxValue(contact));
+            if (find(destination, contact)) continue;
+            auto const index = std::min(index_at(destination, e), destination.items().size());
+            destination.items().insertAt(index, boxValue(contact));
             if (auto const at = find(other, contact)) other.items().removeAt(*at);
         }
         e.acceptedOperation(DataPackageOperation::Move);

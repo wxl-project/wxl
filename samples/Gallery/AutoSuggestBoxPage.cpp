@@ -11,7 +11,6 @@
 #include <vector>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -21,6 +20,7 @@ gallery::LazyLoadedText basicHeader{"Snippets/AutoSuggestBox/Basic.html"};
 gallery::LazyLoadedText basicCode{"Snippets/AutoSuggestBox/Basic.h"};
 
 FrameworkElement basic() {
+    using namespace wxl::dsl;
 #include "Snippets/AutoSuggestBox/Basic.h"
 
     return gallery::controlExample({
@@ -34,6 +34,7 @@ gallery::LazyLoadedText searchHeader{"Snippets/AutoSuggestBox/SearchBox.html"};
 gallery::LazyLoadedText searchCode{"Snippets/AutoSuggestBox/SearchBox.h"};
 
 FrameworkElement searchBox() {
+    using namespace wxl::dsl;
 #include "Snippets/AutoSuggestBox/SearchBox.h"
 
     return gallery::controlExample({

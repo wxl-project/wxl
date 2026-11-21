@@ -5,7 +5,6 @@
 #include "Pages.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -13,6 +12,7 @@ constexpr Color darkGray = rgb(0xa9, 0xa9, 0xa9);
 constexpr Color lightGray = rgb(0xd3, 0xd3, 0xd3);
 
 Grid tile(Color color, int tileRow, int tileColumn) {
+    using namespace wxl::dsl;
     return Grid {minHeight = 150, Margin {6}, background = color, row = tileRow, column = tileColumn};
 }
 
@@ -26,10 +26,12 @@ constexpr char16_t const* loremText() {
 }
 
 TextBlock lorem(int textRow, int span) {
+    using namespace wxl::dsl;
     return TextBlock {row = textRow, columnSpan = span, Margin {6, 12}, textWrapping = TextWrapping::WrapWholeWords, loremText()};
 }
 
 Grid accentTile(int rows, int tileColumn = 0) {
+    using namespace wxl::dsl;
     return Grid {
         row = 1,
         rowSpan = rows,
@@ -43,6 +45,7 @@ Grid accentTile(int rows, int tileColumn = 0) {
 
 template <typename... Children>
 ScrollViewer tilesPage(Children&&... children) {
+    using namespace wxl::dsl;
     return ScrollViewer {
         content = Grid {
             ColumnDefinitions<u"*,*,4*">,
@@ -56,6 +59,7 @@ ScrollViewer tilesPage(Children&&... children) {
 }  // namespace
 
 FrameworkElement gallery::samplePage(int number) {
+    using namespace wxl::dsl;
     switch (number) {
         case 1:
             return ScrollViewer {
@@ -120,5 +124,6 @@ FrameworkElement gallery::samplePage(int number) {
 }
 
 FrameworkElement gallery::sampleSettingsPage() {
+    using namespace wxl::dsl;
     return Grid {TextBlock {hAlign.center, vAlign.center, styles.TextBlock.Title, u"Sample Settings Page"}};
 }

@@ -11,7 +11,6 @@
 #include <wxl/brushes.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace editor {
 
@@ -49,6 +48,7 @@ intrusive_ptr<VirtualTree> VirtualTree::create() {
 }
 
 VirtualTree::VirtualTree() {
+    using namespace wxl::dsl;
     // Пул выше окна просмотра, и ScrollViewer без вертикальной прокрутки поставил
     // бы его по центру: строки ложатся от верхнего края, лишнее срезается снизу.
     // Колесо ловят сами строки: ScrollViewer, у которого есть куда листать
@@ -107,9 +107,10 @@ VirtualTree::VirtualTree() {
 }
 
 VirtualTree::Row VirtualTree::makeRow(uint32_t slot) {
-    Row row;
+    using namespace wxl::dsl;
+    Row newRow;
 
-    Apply {row.glyph,
+    Apply {newRow.glyph,
         width = indentStep_,
         fontFamily = FontFamily {u"Segoe Fluent Icons"},
         fontSize = 10.0,
@@ -138,7 +139,7 @@ VirtualTree::Row VirtualTree::makeRow(uint32_t slot) {
 
     // Щелчок по отметке строку не выбирает: он до неё не доходит. Поле шире
     // знака, чтобы попадать в него не целясь.
-    Apply {row.check,
+    Apply {newRow.check,
         fontFamily = FontFamily {iconFont},
         fontSize = 20.0,
         width = 28.0,
@@ -165,7 +166,7 @@ VirtualTree::Row VirtualTree::makeRow(uint32_t slot) {
     // Знаки размера 16 и кегль 16: знак ложится на свою сетку без масштаба.
     // Ширина постоянная: пояснение заголовка без значка встаёт вровень с его
     // именем.
-    Apply {row.icon,
+    Apply {newRow.icon,
         fontFamily = FontFamily {iconFont},
         fontSize = 16.0,
         width = 16.0,
@@ -173,32 +174,32 @@ VirtualTree::Row VirtualTree::makeRow(uint32_t slot) {
         Margin {2, 0, 0, 0},
     };
 
-    Apply {row.text,
+    Apply {newRow.text,
         vAlign.center,
         Margin {4, 0, 0, 0},
     };
 
-    Apply {row.badgeText,
+    Apply {newRow.badgeText,
         fontSize = 11.0,
         foreground = brushes.Text.FillColor.Secondary,
     };
 
-    Apply {row.badge,
+    Apply {newRow.badge,
         vAlign.center,
         CornerRadius {3},
         Margin {8, 0, 0, 0},
         padding = Thickness {6, 0, 6, 1},
         background = brushes.SubtleFillColor.Secondary,
-        child = row.badgeText,
+        child = newRow.badgeText,
     };
 
-    Apply {row.detail,
+    Apply {newRow.detail,
         vAlign.center,
         foreground = brushes.Text.FillColor.Secondary,
         Margin {8, 0, 12, 0},
     };
 
-    Apply {row.marker,
+    Apply {newRow.marker,
         width = 3.0,
         height = 16.0,
         CornerRadius {1.5},
@@ -207,7 +208,7 @@ VirtualTree::Row VirtualTree::makeRow(uint32_t slot) {
         opacity = 0.0,
     };
 
-    Apply {row.panel,
+    Apply {newRow.panel,
         orientation.horizontal,
         background = brushes.SubtleFillColor.Transparent,
         // Второй щелчок двойного приходит как DoubleTapped, а не Tapped:
@@ -241,23 +242,23 @@ VirtualTree::Row VirtualTree::makeRow(uint32_t slot) {
                 paint(slot);
             }
         },
-        row.marker,
-        row.indent,
-        row.glyph,
-        row.check,
-        row.icon,
-        row.text,
-        row.badge,
-        row.detail,
+        newRow.marker,
+        newRow.indent,
+        newRow.glyph,
+        newRow.check,
+        newRow.icon,
+        newRow.text,
+        newRow.badge,
+        newRow.detail,
     };
 
-    Apply {row.frame,
+    Apply {newRow.frame,
         height = rowHeight_,
         borderBrush = brushes.Card.StrokeColorDefault,
-        child = row.panel,
+        child = newRow.panel,
     };
 
-    return row;
+    return newRow;
 }
 
 Brush const& VirtualTree::iconBrush(RowIcon const& icon) {
@@ -271,6 +272,7 @@ Brush const& VirtualTree::iconBrush(RowIcon const& icon) {
 }
 
 Template<RadialGradientBrush> iconFill(Color outer, Color inner) {
+    using namespace wxl::dsl;
     // Радиус 0.5 доходит до краёв знака: светлая середина, тёмный край.
     return {
         center = Point {0.5, 0.5},
@@ -283,13 +285,14 @@ Template<RadialGradientBrush> iconFill(Color outer, Color inner) {
 }
 
 TextBlock iconText(RowIcon const& icon, double size) {
-    std::u16string glyph;
-    core::unicode::append_utf16(glyph, icon.glyph);
+    using namespace wxl::dsl;
+    std::u16string glyphText;
+    core::unicode::append_utf16(glyphText, icon.glyph);
     return TextBlock {
         fontFamily = FontFamily {iconFont},
         fontSize = size,
         foreground = fillOf(icon),
-        text = glyph,
+        text = glyphText,
     };
 }
 
@@ -517,24 +520,25 @@ void VirtualTree::updateBar() {
 }
 
 void VirtualTree::render() {
+    using namespace wxl::dsl;
     uint32_t const count = size();
     uint32_t const base = first();
 
     for (uint32_t slot = 0; slot < pool_.size(); ++slot) {
-        Row& row = pool_[slot];
+        Row& pooled = pool_[slot];
         uint32_t const index = base + slot;
         if (index >= count) {
-            row.frame.visibility(Visibility::Collapsed);
+            pooled.frame.visibility(Visibility::Collapsed);
             continue;
         }
 
         TreeRow const data = model_->row(index);
-        row.frame.visibility(Visibility::Visible);
-        row.selected = data.selected;
-        row.expandable = data.expander != Expander::None;
+        pooled.frame.visibility(Visibility::Visible);
+        pooled.selected = data.selected;
+        pooled.expandable = data.expander != Expander::None;
         paint(slot);
-        row.indent.width(data.depth * indentStep_);
-        row.glyph.text(data.expander == Expander::Collapsed ? collapsedGlyph
+        pooled.indent.width(data.depth * indentStep_);
+        pooled.glyph.text(data.expander == Expander::Collapsed ? collapsedGlyph
                        : data.expander == Expander::Expanded ? expandedGlyph
                                                              : zstring_view{});
 
@@ -543,37 +547,37 @@ void VirtualTree::render() {
         // Пояснение держит место отметки и значка пустым, чтобы встать под имя.
         bool const heading = data.style == RowStyle::Heading;
         bool const subheading = data.style == RowStyle::Subheading;
-        row.frame.background(heading || subheading
+        pooled.frame.background(heading || subheading
                                  ? static_cast<Brush const&>(brushes.SolidBackgroundFillColor.Base)
                                  : static_cast<Brush const&>(brushes.SubtleFillColor.Transparent));
-        row.frame.borderThickness(heading ? Thickness {0, 1, 0, 0} : subheading ? Thickness {0, 0, 0, 1} : Thickness {});
+        pooled.frame.borderThickness(heading ? Thickness {0, 1, 0, 0} : subheading ? Thickness {0, 0, 0, 1} : Thickness {});
         // Заголовок не сворачивается: места под шеврон у него нет, и отметка
         // встаёт к самому краю — его строки под ним выглядят вложенными.
-        row.glyph.width(heading || subheading ? 0.0 : indentStep_);
-        row.panel.padding(heading ? Thickness {0, 5, 0, 0} : subheading ? Thickness {0, 0, 0, 6} : Thickness {});
+        pooled.glyph.width(heading || subheading ? 0.0 : indentStep_);
+        pooled.panel.padding(heading ? Thickness {0, 5, 0, 0} : subheading ? Thickness {0, 0, 0, 6} : Thickness {});
         // Черта выбранного заголовка — одна на обе его строки.
-        row.marker.verticalAlignment(heading      ? VerticalAlignment::Bottom
+        pooled.marker.verticalAlignment(heading      ? VerticalAlignment::Bottom
                                      : subheading ? VerticalAlignment::Top
                                                   : VerticalAlignment::Center);
-        row.text.fontWeight(FontWeight {static_cast<uint16_t>(heading ? 600 : 400)});
-        row.text.fontSize(subheading ? 12.0 : 14.0);
-        row.text.foreground(subheading ? static_cast<Brush const&>(brushes.Text.FillColor.Secondary)
+        pooled.text.fontWeight(FontWeight {static_cast<uint16_t>(heading ? 600 : 400)});
+        pooled.text.fontSize(subheading ? 12.0 : 14.0);
+        pooled.text.foreground(subheading ? static_cast<Brush const&>(brushes.Text.FillColor.Secondary)
                                        : static_cast<Brush const&>(brushes.Text.FillColor.Primary));
 
         badge_.clear();
         if (auto const utf8 = core::unicode::checked(data.badge)) {
             core::unicode::append_utf16(badge_, *utf8);
         }
-        row.badgeText.text(badge_);
-        row.badge.visibility(badge_.empty() ? Visibility::Collapsed : Visibility::Visible);
+        pooled.badgeText.text(badge_);
+        pooled.badge.visibility(badge_.empty() ? Visibility::Collapsed : Visibility::Visible);
 
-        row.check.visibility(data.check == Check::None && !subheading ? Visibility::Collapsed : Visibility::Visible);
-        row.check.text(data.check == Check::None                                  ? zstring_view {}
+        pooled.check.visibility(data.check == Check::None && !subheading ? Visibility::Collapsed : Visibility::Visible);
+        pooled.check.text(data.check == Check::None                                  ? zstring_view {}
                        : data.check == Check::Checked || data.check == Check::Locked ? checkedGlyph
                        : data.check == Check::Indeterminate                       ? indeterminateGlyph
                                                                                   : uncheckedGlyph);
         bool const fixed = data.check == Check::Disabled || data.check == Check::Locked;
-        row.check.foreground(fixed ? static_cast<Brush const&>(brushes.Text.FillColor.Disabled)
+        pooled.check.foreground(fixed ? static_cast<Brush const&>(brushes.Text.FillColor.Disabled)
                              : data.check == Check::Unchecked
                                  ? static_cast<Brush const&>(brushes.Text.FillColor.Secondary)
                                  : static_cast<Brush const&>(brushes.Accent.FillColor.Default));
@@ -581,21 +585,21 @@ void VirtualTree::render() {
         glyph_.clear();
         if (data.icon) {
             core::unicode::append_utf16(glyph_, data.icon->glyph);
-            row.icon.foreground(iconBrush(*data.icon));
+            pooled.icon.foreground(iconBrush(*data.icon));
         }
-        row.icon.text(glyph_);
+        pooled.icon.text(glyph_);
 
         text_.clear();
         if (auto const utf8 = core::unicode::checked(data.text)) {
             core::unicode::append_utf16(text_, *utf8);
         }
-        row.text.text(text_);
+        pooled.text.text(text_);
 
         detail_.clear();
         if (auto const utf8 = core::unicode::checked(details_ ? data.detail : std::string_view {})) {
             core::unicode::append_utf16(detail_, *utf8);
         }
-        row.detail.text(detail_);
+        pooled.detail.text(detail_);
     }
 
     // Строки запаса сверху уходят за край: панель сдвинута на их высоту.
@@ -603,13 +607,14 @@ void VirtualTree::render() {
 }
 
 void VirtualTree::paint(uint32_t slot) {
+    using namespace wxl::dsl;
     // Строка под указателем светлее выбранной: выбор виден и под указателем.
-    Row const& row = pool_[slot];
-    Brush const& fill = row.selected       ? static_cast<Brush const&>(brushes.SubtleFillColor.Secondary)
+    Row const& pooled = pool_[slot];
+    Brush const& shade = pooled.selected       ? static_cast<Brush const&>(brushes.SubtleFillColor.Secondary)
                         : hovered_ == slot ? static_cast<Brush const&>(brushes.SubtleFillColor.Tertiary)
                                            : static_cast<Brush const&>(brushes.SubtleFillColor.Transparent);
-    row.panel.background(fill);
-    row.marker.opacity(row.selected && focused_ ? 1.0 : 0.0);
+    pooled.panel.background(shade);
+    pooled.marker.opacity(pooled.selected && focused_ ? 1.0 : 0.0);
 }
 
 void VirtualTree::takeFocus() {

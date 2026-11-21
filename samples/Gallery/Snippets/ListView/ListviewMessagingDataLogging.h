@@ -4,9 +4,9 @@ struct Model {
     std::vector<std::pair<std::u16string, bool>> messages;  // text, and whether it is ours
 
     void add(bool ours) {
-        std::u16string text = u"Message ";
-        text += core::to_u16(static_cast<int>(messages.size()) + 1).plain();
-        messages.emplace_back(text, ours);
+        std::u16string line = u"Message ";
+        line += core::to_u16(static_cast<int>(messages.size()) + 1).plain();
+        messages.emplace_back(line, ours);
         log.items().append(boxValue(static_cast<int64_t>(messages.size()) - 1));
     }
 };
@@ -14,10 +14,10 @@ auto const model = gallery::hold<Model>();
 
 model->log.itemTemplate([weak = std::weak_ptr<Model>(model)](Object const& item) {
     auto const model = weak.lock();
-    auto const& message = model->messages[static_cast<size_t>(unboxValue<int64_t>(item))];
+    auto const& logged = model->messages[static_cast<size_t>(unboxValue<int64_t>(item))];
     return Grid {
         Margin {4},
-        horizontalAlignment = message.second ? HorizontalAlignment::Right : HorizontalAlignment::Left,
+        horizontalAlignment = logged.second ? HorizontalAlignment::Right : HorizontalAlignment::Left,
         Border {
             width = 350,
             minHeight = 75,
@@ -25,7 +25,7 @@ model->log.itemTemplate([weak = std::weak_ptr<Model>(model)](Object const& item)
             background = brushes.SystemColor.HighlightColor,
             cornerRadius = CornerRadius {4},
             StackPanel {
-                TextBlock {Padding {0, 10, 0, 0}, fontSize = 20, foreground = brushes.SystemColor.HighlightTextColor, message.first},
+                TextBlock {Padding {0, 10, 0, 0}, fontSize = 20, foreground = brushes.SystemColor.HighlightTextColor, logged.first},
                 TextBlock {Padding {0, 0, 0, 10}, fontSize = 15, foreground = brushes.SystemColor.HighlightTextColor, u"just now"},
             },
         },

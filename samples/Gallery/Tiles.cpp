@@ -6,7 +6,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 // «ms-appx:///Assets/…» оригинала — путь от папки рядом с exe.
 std::wstring gallery::assetPath(std::wstring_view imagePath) {
@@ -18,6 +17,7 @@ std::wstring gallery::assetPath(std::wstring_view imagePath) {
 }
 
 wxl::FrameworkElement gallery::controlTile(ControlInfo const& item) {
+    using namespace wxl::dsl;
     auto const image = gallery::assetPath(item.imagePath);
 
     auto tile = Grid {
@@ -87,6 +87,7 @@ wxl::FrameworkElement gallery::controlTile(ControlInfo const& item) {
 
 wxl::GridView gallery::tileGrid(std::span<ControlInfo const* const> items,
                                         wxl::Thickness padding, wxl::zstring_view id, wxl::zstring_view name) {
+    using namespace wxl::dsl;
     // GridViewItemStyle и GridViewItemStyleSmall оригинала: контейнер плитки с отступом, в узком виде растянут на всю ширину.
     auto& wide = gallery::pageSize().wide;
     auto grid = GridView {

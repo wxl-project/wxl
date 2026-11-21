@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText revealActionsHeader{"Snippets/SwipeControl/RevealActions
 gallery::LazyLoadedText revealActionsCode{"Snippets/SwipeControl/RevealActions.h"};
 
 FrameworkElement revealActions() {
+    using namespace wxl::dsl;
 #include "Snippets/SwipeControl/RevealActions.h"
 
     return gallery::controlExample({
@@ -25,6 +25,7 @@ gallery::LazyLoadedText invokeExecuteHeader{"Snippets/SwipeControl/InvokeExecute
 gallery::LazyLoadedText invokeExecuteCode{"Snippets/SwipeControl/InvokeExecute.h"};
 
 FrameworkElement invokeExecute() {
+    using namespace wxl::dsl;
 #include "Snippets/SwipeControl/InvokeExecute.h"
 
     return gallery::controlExample({
@@ -38,6 +39,7 @@ gallery::LazyLoadedText listViewHeader{"Snippets/SwipeControl/ListView.html"};
 gallery::LazyLoadedText listViewCode{"Snippets/SwipeControl/ListView.h"};
 
 FrameworkElement listView() {
+    using namespace wxl::dsl;
 #include "Snippets/SwipeControl/ListView.h"
 
     return gallery::controlExample({
@@ -51,6 +53,7 @@ gallery::LazyLoadedText gradientHeader{"Snippets/SwipeControl/GradientBackground
 gallery::LazyLoadedText gradientCode{"Snippets/SwipeControl/GradientBackground.h"};
 
 FrameworkElement gradient() {
+    using namespace wxl::dsl;
 #include "Snippets/SwipeControl/GradientBackground.h"
 
     return gallery::controlExample({
@@ -64,6 +67,7 @@ gallery::LazyLoadedText customIconsHeader{"Snippets/SwipeControl/CustomIcons.htm
 gallery::LazyLoadedText customIconsCode{"Snippets/SwipeControl/CustomIcons.h"};
 
 FrameworkElement customIcons() {
+    using namespace wxl::dsl;
 #include "Snippets/SwipeControl/CustomIcons.h"
 
     return gallery::controlExample({

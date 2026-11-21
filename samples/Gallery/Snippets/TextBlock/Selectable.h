@@ -4,7 +4,7 @@ struct Model {
 };
 auto const model = gallery::hold<Model>();
 
-auto text = TextBlock {
+auto selectable = TextBlock {
     u"I am a selectable TextBlock with custom SelectionHighlightColor.",
     isTextSelectionEnabled = BindOutput {model->selectable},
     selectionHighlightColor = SolidColorBrush {color = rgb(255, 140, 0)},

@@ -13,7 +13,7 @@ auto preview = Rectangle {
     Margin {0, 12, 0, 0},
     stroke = brushes.Card.StrokeColorDefault,
     strokeThickness = 1.0,
-    fill = BindOutput {model->color, [](Color color) { return SolidColorBrush {color = color}; }},
+    fill = BindOutput {model->color, [](Color c) { return SolidColorBrush {c = c}; }},
 };
 
 auto picker = ColorPicker {
@@ -29,8 +29,8 @@ auto picker = ColorPicker {
 };
 
 // A box that writes the field it is given.
-auto const option = [](char16_t const* name, core::observable<bool>& field) {
-    return CheckBox {content = name, isChecked = Bind {field}};
+auto const option = [](char16_t const* labelText, core::observable<bool>& field) {
+    return CheckBox {content = labelText, isChecked = Bind {field}};
 };
 
 auto options = StackPanel {

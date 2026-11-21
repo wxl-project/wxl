@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText withHeaderHeader{"Snippets/DatePicker/Header.html"};
 gallery::LazyLoadedText withHeaderCode{"Snippets/DatePicker/Header.h"};
 
 FrameworkElement withHeader() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(withHeaderHeader),
         .example =
@@ -25,6 +25,7 @@ gallery::LazyLoadedText dayFormattedYearHeader{"Snippets/DatePicker/DayFormatted
 gallery::LazyLoadedText dayFormattedYearCode{"Snippets/DatePicker/DayFormattedYear.h"};
 
 FrameworkElement dayFormattedYear() {
+    using namespace wxl::dsl;
 #include "Snippets/DatePicker/DayFormattedYear.h"
 
     return gallery::controlExample({

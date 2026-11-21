@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText controlHeader{"Snippets/StackPanel/StackPanelControl.htm
 gallery::LazyLoadedText controlCode{"Snippets/StackPanel/StackPanelControl.h"};
 
 FrameworkElement control() {
+    using namespace wxl::dsl;
 #include "Snippets/StackPanel/StackPanelControl.h"
 
     return gallery::controlExample({

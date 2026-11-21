@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText integratedHeader{"Snippets/PipsPager/IntegratedFlipView.
 gallery::LazyLoadedText integratedCode{"Snippets/PipsPager/IntegratedFlipView.h"};
 
 FrameworkElement integrated() {
+    using namespace wxl::dsl;
 #include "Snippets/PipsPager/IntegratedFlipView.h"
 
     return gallery::controlExample({
@@ -25,6 +25,7 @@ gallery::LazyLoadedText optionsHeader{"Snippets/PipsPager/Options.html"};
 gallery::LazyLoadedText optionsCode{"Snippets/PipsPager/Options.h"};
 
 FrameworkElement options() {
+    using namespace wxl::dsl;
 #include "Snippets/PipsPager/Options.h"
 
     return gallery::controlExample({

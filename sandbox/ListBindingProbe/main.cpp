@@ -13,11 +13,11 @@
 import std;
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
 void makeList(int* builds, probe::ListTaker take, void* context) {
+    using namespace wxl::dsl;
     auto const list = ListView {
         width = 140,
         height = 64,

@@ -6,58 +6,58 @@ auto const model = gallery::hold<Model>();
 
 // FeaturedTileLayout of the original: the first child takes the whole width,
 // the rest stand in two columns, a pair to a row as tall as the taller of the two.
-auto rowHeight = [](Collection<UIElement> const& children, uint32_t first) {
-    float height = children[first].desiredSize().height;
-    return first + 1 < children.size() ? std::max(height, children[first + 1].desiredSize().height) : height;
+auto rowHeight = [](Collection<UIElement> const& panelChildren, uint32_t first) {
+    float tallest = panelChildren[first].desiredSize().height;
+    return first + 1 < panelChildren.size() ? std::max(tallest, panelChildren[first + 1].desiredSize().height) : tallest;
 };
 
 auto featured = CustomLayout {
-    [model, rowHeight](Collection<UIElement> const& children, Size available) {
-        float const spacing = static_cast<float>(model->spacing.get());
-        float const width = std::isinf(available.width) ? 520.0f : available.width;
-        float const column = std::max(0.0f, (width - spacing) / 2);
+    [model, rowHeight](Collection<UIElement> const& panelChildren, Size available) {
+        float const gap = static_cast<float>(model->spacing.get());
+        float const fullWidth = std::isinf(available.width) ? 520.0f : available.width;
+        float const columnWidth = std::max(0.0f, (fullWidth - gap) / 2);
 
-        for (uint32_t index = 0; index < children.size(); ++index) {
-            children[index].measure({index == 0 ? width : column, std::numeric_limits<float>::infinity()});
+        for (uint32_t index = 0; index < panelChildren.size(); ++index) {
+            panelChildren[index].measure({index == 0 ? fullWidth : columnWidth, std::numeric_limits<float>::infinity()});
         }
 
-        float total = children.empty() ? 0.0f : children[0].desiredSize().height;
-        for (uint32_t index = 1; index < children.size(); index += 2) {
-            total += spacing + rowHeight(children, index);
+        float total = panelChildren.empty() ? 0.0f : panelChildren[0].desiredSize().height;
+        for (uint32_t index = 1; index < panelChildren.size(); index += 2) {
+            total += gap + rowHeight(panelChildren, index);
         }
-        return Size {width, total};
+        return Size {fullWidth, total};
     },
-    [model, rowHeight](Collection<UIElement> const& children, Size final) {
-        if (children.empty()) {
+    [model, rowHeight](Collection<UIElement> const& panelChildren, Size final) {
+        if (panelChildren.empty()) {
             return final;
         }
-        float const spacing = static_cast<float>(model->spacing.get());
-        float const column = std::max(0.0f, (final.width - spacing) / 2);
-        float y = children[0].desiredSize().height;
-        children[0].arrange({{0, 0}, {final.width, y}});
+        float const gap = static_cast<float>(model->spacing.get());
+        float const columnWidth = std::max(0.0f, (final.width - gap) / 2);
+        float cursorY = panelChildren[0].desiredSize().height;
+        panelChildren[0].arrange({{0, 0}, {final.width, cursorY}});
 
-        for (uint32_t index = 1; index < children.size(); index += 2) {
-            y += spacing;
-            float const height = rowHeight(children, index);
-            children[index].arrange({{0, y}, {column, height}});
-            if (index + 1 < children.size()) {
-                children[index + 1].arrange({{column + spacing, y}, {column, height}});
+        for (uint32_t index = 1; index < panelChildren.size(); index += 2) {
+            cursorY += gap;
+            float const tallest = rowHeight(panelChildren, index);
+            panelChildren[index].arrange({{0, cursorY}, {columnWidth, tallest}});
+            if (index + 1 < panelChildren.size()) {
+                panelChildren[index + 1].arrange({{columnWidth + gap, cursorY}, {columnWidth, tallest}});
             }
-            y += height;
+            cursorY += tallest;
         }
-        return Size {final.width, y};
+        return Size {final.width, cursorY};
     },
 };
 
 auto stack = StackLayout {orientation.vertical, spacing = BindOutput {model->spacing}};
 
-auto tile = [](double extent, char16_t const* text) {
+auto tile = [](double extent, char16_t const* words) {
     return Border {
         height = extent,
         Padding {12},
         background = brushes.Control.FillColor.Default,
         CornerRadius {4},
-        TextBlock {text, vAlign.center},
+        TextBlock {words, vAlign.center},
     };
 };
 

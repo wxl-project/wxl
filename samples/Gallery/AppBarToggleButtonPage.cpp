@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText symbolIconHeader{"Snippets/AppBarToggleButton/SymbolIcon
 gallery::LazyLoadedText symbolIconCode{"Snippets/AppBarToggleButton/SymbolIcon.h"};
 
 FrameworkElement symbolIcon() {
+    using namespace wxl::dsl;
 #include "Snippets/AppBarToggleButton/SymbolIcon.h"
 
     return gallery::controlExample({
@@ -25,6 +25,7 @@ gallery::LazyLoadedText bitmapIconHeader{"Snippets/AppBarToggleButton/BitmapIcon
 gallery::LazyLoadedText bitmapIconCode{"Snippets/AppBarToggleButton/BitmapIcon.h"};
 
 FrameworkElement bitmapIcon() {
+    using namespace wxl::dsl;
 #include "Snippets/AppBarToggleButton/BitmapIcon.h"
 
     return gallery::controlExample({
@@ -38,6 +39,7 @@ gallery::LazyLoadedText fontIconHeader{"Snippets/AppBarToggleButton/FontIcon.htm
 gallery::LazyLoadedText fontIconCode{"Snippets/AppBarToggleButton/FontIcon.h"};
 
 FrameworkElement fontIcon() {
+    using namespace wxl::dsl;
 #include "Snippets/AppBarToggleButton/FontIcon.h"
 
     return gallery::controlExample({
@@ -51,6 +53,7 @@ gallery::LazyLoadedText threeStateHeader{"Snippets/AppBarToggleButton/ThreeState
 gallery::LazyLoadedText threeStateCode{"Snippets/AppBarToggleButton/ThreeState.h"};
 
 FrameworkElement threeState() {
+    using namespace wxl::dsl;
 #include "Snippets/AppBarToggleButton/ThreeState.h"
 
     return gallery::controlExample({

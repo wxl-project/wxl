@@ -11,7 +11,6 @@
 import wxl.core;
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -81,6 +80,7 @@ async::task<> reads_itself() {
 }  // namespace
 
 wxl::Teardown wxl_launched() {
+    using namespace wxl::dsl;
     ::DeleteFileW(L"async-file-probe.txt");
 
     auto window = Window {

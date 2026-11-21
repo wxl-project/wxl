@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText basicHeader{"Snippets/PagerControl/Basic.html"};
 gallery::LazyLoadedText basicCode{"Snippets/PagerControl/Basic.h"};
 
 FrameworkElement basic() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(basicHeader),
         .example =
@@ -25,6 +25,7 @@ gallery::LazyLoadedText displayModesHeader{"Snippets/PagerControl/DisplayModes.h
 gallery::LazyLoadedText displayModesCode{"Snippets/PagerControl/DisplayModes.h"};
 
 FrameworkElement displayModes() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(displayModesHeader),
         .example =
@@ -38,6 +39,7 @@ gallery::LazyLoadedText unboundedHeader{"Snippets/PagerControl/Unbounded.html"};
 gallery::LazyLoadedText unboundedCode{"Snippets/PagerControl/Unbounded.h"};
 
 FrameworkElement unbounded() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(unboundedHeader),
         .example =

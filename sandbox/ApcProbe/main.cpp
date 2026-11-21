@@ -8,7 +8,6 @@
 #include "launch.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -40,6 +39,7 @@ void __stdcall on_read_done(DWORD, DWORD, OVERLAPPED*) {
 }  // namespace
 
 wxl::Teardown wxl_launched() {
+    using namespace wxl::dsl;
     started = probe_clock::now();
 
     auto window = Window {

@@ -9,7 +9,6 @@
 
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -17,6 +16,7 @@ gallery::LazyLoadedText togglingHeader{"Snippets/Sound/TogglingSound.html"};
 gallery::LazyLoadedText togglingCode{"Snippets/Sound/TogglingSound.h"};
 
 FrameworkElement toggling() {
+    using namespace wxl::dsl;
 #include "Snippets/Sound/TogglingSound.h"
 
     return gallery::controlExample({
@@ -30,6 +30,7 @@ gallery::LazyLoadedText spatialHeader{"Snippets/Sound/SoundTogglingSpatialAudio.
 gallery::LazyLoadedText spatialCode{"Snippets/Sound/SoundTogglingSpatialAudio.h"};
 
 FrameworkElement spatial() {
+    using namespace wxl::dsl;
 #include "Snippets/Sound/SoundTogglingSpatialAudio.h"
 
     return gallery::controlExample({
@@ -43,6 +44,7 @@ gallery::LazyLoadedText systemSoundHeader{"Snippets/Sound/PlaySpecificSystemSoun
 gallery::LazyLoadedText systemSoundCode{"Snippets/Sound/PlaySpecificSystemSound.h"};
 
 FrameworkElement systemSound() {
+    using namespace wxl::dsl;
 #include "Snippets/Sound/PlaySpecificSystemSound.h"
 
     return gallery::controlExample({

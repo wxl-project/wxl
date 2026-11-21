@@ -23,7 +23,6 @@ import wxl.core;
 
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -31,6 +30,7 @@ gallery::LazyLoadedText previewHeader{"Snippets/CaptureElementPreview/CaptureEle
 gallery::LazyLoadedText previewCode{"Snippets/CaptureElementPreview/CaptureElementPreviewMediacapturePreviewDisplayedVia.h"};
 
 FrameworkElement preview() {
+    using namespace wxl::dsl;
 #include "Snippets/CaptureElementPreview/CaptureElementPreviewMediacapturePreviewDisplayedVia.h"
 
     return gallery::controlExample({

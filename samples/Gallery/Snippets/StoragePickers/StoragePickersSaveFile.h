@@ -19,10 +19,10 @@ struct Model {
 auto const model = gallery::hold<Model>();
 
 // A choice: its title, its names, and the field the position of the chosen one goes to.
-auto choice = [](char16_t const* title, std::initializer_list<char16_t const*> names, core::observable<int>& field) {
-    auto box = ComboBox {header = title, width = 200, selectedIndex = Bind {field}};
-    for (auto const name : names) {
-        box.items().append(ComboBoxItem {content = name});
+auto choice = [](char16_t const* labelText, std::initializer_list<char16_t const*> names, core::observable<int>& field) {
+    auto box = ComboBox {header = labelText, width = 200, selectedIndex = Bind {field}};
+    for (auto const option : names) {
+        box.items().append(ComboBoxItem {content = option});
     }
     return box;
 };

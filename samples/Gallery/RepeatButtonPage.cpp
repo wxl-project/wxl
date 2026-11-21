@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText simpleHeader{"Snippets/RepeatButton/Simple.html"};
 gallery::LazyLoadedText simpleCode{"Snippets/RepeatButton/Simple.h"};
 
 FrameworkElement simple() {
+    using namespace wxl::dsl;
 #include "Snippets/RepeatButton/Simple.h"
 
     return gallery::controlExample({

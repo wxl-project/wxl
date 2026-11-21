@@ -12,7 +12,7 @@ auto number = NumberBox {
     value = 10.0,
 };
 
-auto placement = RadioButtons {
+auto placementButtons = RadioButtons {
     header = u"SpinButton placement",
     RadioButton {content = u"Inline"},
     RadioButton {content = u"Compact"},

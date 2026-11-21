@@ -7,27 +7,30 @@
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
 template <class Brush>
 TextBlock aa(Brush const& brush) {
+    using namespace wxl::dsl;
     return TextBlock {fontSize = 42, fontWeight = FontWeight {600}, foreground = brush, u"Aa"};
 }
 
 TextBlock aa() {
+    using namespace wxl::dsl;
     return TextBlock {fontSize = 42, fontWeight = FontWeight {600}, u"Aa"};
 }
 
 // Образец на поверхности: рамка карточки, скругление окна.
 Grid surface(double sampleWidth, double sampleHeight) {
+    using namespace wxl::dsl;
     return Grid {width = sampleWidth, height = sampleHeight, borderBrush = brushes.Card.StrokeColorDefault, BorderThickness {1},
                  cornerRadius = CornerRadius {8}};
 }
 
 // Фон образца — материал, как у окна: слева направо подложка, поверх неё слой.
 Grid layered(auto const& layer, SystemBackdrop const& material) {
+    using namespace wxl::dsl;
     auto grid = surface(120, 40);
     grid.children().append(SystemBackdropElement {cornerRadius = CornerRadius {8}, systemBackdrop = material});
     grid.children().append(Grid {width = 90, hAlign.right, background = layer, borderBrush = brushes.Card.StrokeColorDefault,
@@ -38,6 +41,7 @@ Grid layered(auto const& layer, SystemBackdrop const& material) {
 }  // namespace
 
 FrameworkElement gallery::colorSample(char16_t const* sampleTitle) {
+    using namespace wxl::dsl;
     std::u16string_view const which = sampleTitle;
     if (which == u"Text") {
         return aa();

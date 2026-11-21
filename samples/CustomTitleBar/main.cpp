@@ -15,7 +15,6 @@
 
 using namespace wxl;
 using namespace wxl::core;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -39,6 +38,7 @@ struct Zoom {
 }  // namespace
 
 wxl::Teardown wxl_launched() {
+    using namespace wxl::dsl;
     CompositionWindow const window{
         title = L"wxl: свой заголовок окна",
         minSize = {640, 400},
@@ -54,7 +54,7 @@ wxl::Teardown wxl_launched() {
     // The window is a handle, so the one watcher that zooms it captures it by
     // value; the buttons below hold the model and never see the window.
     auto const zoom = std::make_shared<Zoom>();
-    zoom->factor.on_change([window](double const& value) noexcept { window.zoomFactor(value); });
+    zoom->factor.on_change([window](double const& factor) noexcept { window.zoomFactor(factor); });
 
     window.content(StackPanel{
         Margin{24},

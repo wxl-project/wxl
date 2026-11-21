@@ -5,7 +5,7 @@ auto button = AppBarToggleButton {
     label = u"PathIcon",
     isThreeState = true,
     onClick += [output](AppBarToggleButton const& self) {
-        auto const state = self.isChecked();
-        output.text(!state ? u"IsChecked = null" : *state ? u"IsChecked = True" : u"IsChecked = False");
+        auto const checked = self.isChecked();
+        output.text(!checked ? u"IsChecked = null" : *checked ? u"IsChecked = True" : u"IsChecked = False");
     },
 };

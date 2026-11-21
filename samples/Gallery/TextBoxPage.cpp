@@ -3,7 +3,6 @@
 #include "Pages.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -11,6 +10,7 @@ gallery::LazyLoadedText simpleHeader{"Snippets/TextBox/Simple.html"};
 gallery::LazyLoadedText simpleCode{"Snippets/TextBox/Simple.h"};
 
 FrameworkElement simple() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(simpleHeader),
         .example =
@@ -24,6 +24,7 @@ gallery::LazyLoadedText headerHeader{"Snippets/TextBox/HeaderPlaceholderText.htm
 gallery::LazyLoadedText headerCode{"Snippets/TextBox/HeaderPlaceholderText.h"};
 
 FrameworkElement headerPlaceholder() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(headerHeader),
         .example =
@@ -37,6 +38,7 @@ gallery::LazyLoadedText readOnlyHeader{"Snippets/TextBox/ReadOnlyVarious.html"};
 gallery::LazyLoadedText readOnlyCode{"Snippets/TextBox/ReadOnlyVarious.h"};
 
 FrameworkElement readOnlyVarious() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(readOnlyHeader),
         .example =
@@ -50,6 +52,7 @@ gallery::LazyLoadedText multiHeader{"Snippets/TextBox/MultiLineSpell.html"};
 gallery::LazyLoadedText multiCode{"Snippets/TextBox/MultiLineSpell.h"};
 
 FrameworkElement multiLine() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(multiHeader),
         .example =

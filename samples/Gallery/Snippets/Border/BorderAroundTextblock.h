@@ -15,7 +15,7 @@ auto border = Border {
         static constexpr Color paints[] = {rgb(0, 100, 0), rgb(255, 215, 0), rgb(0, 0, 139), rgb(255, 255, 255)};
         return SolidColorBrush {color = paints[std::max(index, 0)]};
     }},
-    borderThickness = BindOutput {model->thickness, [](double width) { return Thickness {width}; }},
+    borderThickness = BindOutput {model->thickness, [](double edge) { return Thickness {edge}; }},
     TextBlock {u"Text inside a border", Margin {8, 5}, fontSize = 18, foreground = colors.black},
 };
 

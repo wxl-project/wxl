@@ -8,7 +8,6 @@
 #include <wxl/Microsoft.UI.Xaml.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace gallery {
 
@@ -21,16 +20,18 @@ constexpr char16_t lorem[] =
     u"proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
 
 Grid tile(int tileRow, int tileColumn, Color color) {
+    using namespace wxl::dsl;
     return Grid {row = tileRow, column = tileColumn, minHeight = 150, Margin {6}, background = color};
 }
 
 }  // namespace
 
 SamplePage1 samplePage1() {
+    using namespace wxl::dsl;
     constexpr Color dark = rgb(169, 169, 169);
     constexpr Color light = rgb(211, 211, 211);
 
-    auto source = Grid {row = 1, rowSpan = 2, column = 0, minWidth = 250, minHeight = 150, Margin {5},
+    auto origin = Grid {row = 1, rowSpan = 2, column = 0, minWidth = 250, minHeight = 150, Margin {5},
                         background = brushes.Accent.FillColor.Default};
     auto root = ScrollViewer {content = Grid {
         ColumnDefinitions<u"auto,*,*">,
@@ -39,13 +40,14 @@ SamplePage1 samplePage1() {
         tile(1, 2, light),
         tile(2, 1, light),
         tile(2, 2, dark),
-        source,
+        origin,
         Grid {row = 3, columnSpan = 3, Margin {6, 12}, TextBlock {styles.TextBlock.Body, textWrapping = TextWrapping::WrapWholeWords, lorem}},
     }};
-    return {root, source};
+    return {root, origin};
 }
 
 SamplePage2 samplePage2() {
+    using namespace wxl::dsl;
     auto destination = Grid {row = 1, column = 0, width = 150, height = 200, minHeight = 150, Margin {12}, vAlign.top,
                              background = brushes.Accent.FillColor.Default};
     auto contentPanel = StackPanel {
@@ -62,6 +64,7 @@ SamplePage2 samplePage2() {
 }
 
 DetailedInfoPage detailedInfoPage(CustomDataObject const& object) {
+    using namespace wxl::dsl;
     auto goBack = Button {content = u"Go Back", hAlign.left, vAlign.top};
     auto image = Image {maxHeight = 400, vAlign.top, source = object.imageLocation, stretch = Stretch::Uniform};
     auto coordinated = StackPanel {

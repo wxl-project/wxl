@@ -11,7 +11,6 @@
 #include <wxl/Microsoft.UI.Xaml.Documents.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -19,6 +18,7 @@ gallery::LazyLoadedText basicViewHeader{"Snippets/ItemsView/BasicItemsview.html"
 gallery::LazyLoadedText basicViewCode{"Snippets/ItemsView/BasicItemsview.h"};
 
 FrameworkElement basicView() {
+    using namespace wxl::dsl;
 #include "Snippets/ItemsView/BasicItemsview.h"
 
     return gallery::controlExample({
@@ -32,6 +32,7 @@ gallery::LazyLoadedText swappableHeader{"Snippets/ItemsView/ItemsviewSwappableLa
 gallery::LazyLoadedText swappableCode{"Snippets/ItemsView/ItemsviewSwappableLayouts.h"};
 
 FrameworkElement swappable() {
+    using namespace wxl::dsl;
 #include "Snippets/ItemsView/ItemsviewSwappableLayouts.h"
 
     return gallery::controlExample({
@@ -46,6 +47,7 @@ gallery::LazyLoadedText invocationHeader{"Snippets/ItemsView/ItemsviewItemInvoca
 gallery::LazyLoadedText invocationCode{"Snippets/ItemsView/ItemsviewItemInvocationSelection.h"};
 
 FrameworkElement invocation() {
+    using namespace wxl::dsl;
 #include "Snippets/ItemsView/ItemsviewItemInvocationSelection.h"
 
     return gallery::controlExample({

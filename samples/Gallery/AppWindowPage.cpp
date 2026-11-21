@@ -5,7 +5,6 @@
 #include "WindowNative.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -13,6 +12,7 @@ gallery::LazyLoadedText creatingHeader{"Snippets/AppWindow/CreatingCustomizingAp
 gallery::LazyLoadedText creatingCode{"Snippets/AppWindow/CreatingCustomizingAppwindowWindow.h"};
 
 FrameworkElement creating() {
+    using namespace wxl::dsl;
 #include "Snippets/AppWindow/CreatingCustomizingAppwindowWindow.h"
 
     return gallery::controlExample({
@@ -27,6 +27,7 @@ gallery::LazyLoadedText centeringHeader{"Snippets/AppWindow/CenteringAppwindowSc
 gallery::LazyLoadedText centeringCode{"Snippets/AppWindow/CenteringAppwindowScreenAvailable.h"};
 
 FrameworkElement centering() {
+    using namespace wxl::dsl;
 #include "Snippets/AppWindow/CenteringAppwindowScreenAvailable.h"
 
     return gallery::controlExample({
@@ -40,6 +41,7 @@ gallery::LazyLoadedText overlappedHeader{"Snippets/AppWindow/AppwindowOverlapedp
 gallery::LazyLoadedText overlappedCode{"Snippets/AppWindow/AppwindowOverlapedpresenter.h"};
 
 FrameworkElement overlapped() {
+    using namespace wxl::dsl;
 #include "Snippets/AppWindow/AppwindowOverlapedpresenter.h"
 
     return gallery::controlExample({
@@ -54,6 +56,7 @@ gallery::LazyLoadedText minMaxHeader{"Snippets/AppWindow/AppWindowSettingMinimum
 gallery::LazyLoadedText minMaxCode{"Snippets/AppWindow/AppWindowSettingMinimumMaximumWidth.h"};
 
 FrameworkElement minMax() {
+    using namespace wxl::dsl;
 #include "Snippets/AppWindow/AppWindowSettingMinimumMaximumWidth.h"
 
     return gallery::controlExample({
@@ -68,6 +71,7 @@ gallery::LazyLoadedText modalHeader{"Snippets/AppWindow/ModalWindowOverlappedpre
 gallery::LazyLoadedText modalCode{"Snippets/AppWindow/ModalWindowOverlappedpresenterAppwindow.h"};
 
 FrameworkElement modal() {
+    using namespace wxl::dsl;
 #include "Snippets/AppWindow/ModalWindowOverlappedpresenterAppwindow.h"
 
     return gallery::controlExample({
@@ -81,6 +85,7 @@ gallery::LazyLoadedText fullscreenHeader{"Snippets/AppWindow/AppwindowFullscreen
 gallery::LazyLoadedText fullscreenCode{"Snippets/AppWindow/AppwindowFullscreenpresenter.h"};
 
 FrameworkElement fullscreen() {
+    using namespace wxl::dsl;
 #include "Snippets/AppWindow/AppwindowFullscreenpresenter.h"
 
     return gallery::controlExample({
@@ -94,6 +99,7 @@ gallery::LazyLoadedText compactOverlayHeader{"Snippets/AppWindow/AppwindowCompac
 gallery::LazyLoadedText compactOverlayCode{"Snippets/AppWindow/AppwindowCompactoverlaypresenter.h"};
 
 FrameworkElement compactOverlay() {
+    using namespace wxl::dsl;
 #include "Snippets/AppWindow/AppwindowCompactoverlaypresenter.h"
 
     return gallery::controlExample({
@@ -107,6 +113,7 @@ FrameworkElement compactOverlay() {
 }  // namespace
 
 static wxl::FrameworkElement appWindowPage() {
+    using namespace wxl::dsl;
     return StackPanel {
         TextBlock {Margin {0, 16, 0, -16}, styles.TextBlock.Subtitle, u"General usage of AppWindow"},
         creating(),

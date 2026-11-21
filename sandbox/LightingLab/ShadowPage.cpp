@@ -12,7 +12,6 @@
 #include "Lab.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -241,6 +240,7 @@ struct Shadows {
 }  // namespace
 
 lab::Experiment lab::shadowPage() {
+    using namespace wxl::dsl;
     auto const model = std::make_shared<Shadows>();
 
     auto stage = Border {

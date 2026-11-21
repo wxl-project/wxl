@@ -5,7 +5,7 @@ struct ExplorerItem {
     Kind kind;
     std::vector<ExplorerItem> children;
 };
-std::vector<ExplorerItem> const data = {
+std::vector<ExplorerItem> const roots = {
     {u"Documents", ExplorerItem::Kind::Folder,
      {{u"ProjectProposal", ExplorerItem::Kind::File, {}}, {u"BudgetReport", ExplorerItem::Kind::File, {}}}},
     {u"Projects", ExplorerItem::Kind::Folder, {{u"Project Plan", ExplorerItem::Kind::File, {}}}},
@@ -22,8 +22,8 @@ auto const contentOf = [](ExplorerItem const& item) -> StackPanel {
 
 auto const nodeOf = [contentOf](auto const& self, ExplorerItem const& item) -> TreeViewNode {
     auto node = TreeViewNode {content = contentOf(item), isExpanded = true};
-    for (auto const& child : item.children) {
-        node.children().append(self(self, child));
+    for (auto const& childItem : item.children) {
+        node.children().append(self(self, childItem));
     }
     return node;
 };
@@ -37,7 +37,7 @@ auto tree = TreeView {
     horizontalAlignment = HorizontalAlignment::Center,
     verticalAlignment = VerticalAlignment::Top,
 };
-for (auto const& item : data) {
+for (auto const& item : roots) {
     tree.rootNodes().append(nodeOf(nodeOf, item));
 }
 

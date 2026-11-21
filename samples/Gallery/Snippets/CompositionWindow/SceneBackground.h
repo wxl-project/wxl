@@ -65,14 +65,14 @@ struct Model {
                 surface = std::make_shared<DrawingSurface>(window->compositor(), SizeInt32 {640, 400});
                 surface->draw([](ID2D1DeviceContext* context) {
                     context->Clear(D2D1::ColorF(0.07f, 0.1f, 0.2f));
-                    ID2D1SolidColorBrush* brush = nullptr;
-                    context->CreateSolidColorBrush(D2D1::ColorF(1.0f, 1.0f, 1.0f), &brush);
+                    ID2D1SolidColorBrush* solid = nullptr;
+                    context->CreateSolidColorBrush(D2D1::ColorF(1.0f, 1.0f, 1.0f), &solid);
                     for (int ring = 0; ring < 8; ++ring) {
-                        brush->SetColor(D2D1::ColorF(0.2f + 0.1f * ring, 0.5f, 1.0f - 0.1f * ring, 0.6f));
+                        solid->SetColor(D2D1::ColorF(0.2f + 0.1f * ring, 0.5f, 1.0f - 0.1f * ring, 0.6f));
                         context->FillEllipse(
-                            D2D1::Ellipse(D2D1::Point2F(320, 200), 300.0f - 36.0f * ring, 180.0f - 21.0f * ring), brush);
+                            D2D1::Ellipse(D2D1::Point2F(320, 200), 300.0f - 36.0f * ring, 180.0f - 21.0f * ring), solid);
                     }
-                    brush->Release();
+                    solid->Release();
                 });
                 window->background(*surface);
                 break;

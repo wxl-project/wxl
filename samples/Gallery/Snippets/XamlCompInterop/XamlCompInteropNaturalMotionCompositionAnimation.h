@@ -10,9 +10,9 @@ struct Model {
 auto const model = gallery::hold<Model>();
 
 // The spring is set up anew each time: where it ends up, the damping and the period of the options.
-auto const run = [compositor, spring, model](UIElement const& element, float finalValue) {
+auto const run = [compositor, spring, model](UIElement const& element, float endValue) {
     static constexpr float ratios[] = {0.2f, 0.4f, 0.6f, 0.8f};
-    spring.finalValue(Vector3 {finalValue, finalValue, finalValue});
+    spring.finalValue(Vector3 {endValue, endValue, endValue});
     spring.dampingRatio(model->damping.selectedIndex() >= 0 ? ratios[model->damping.selectedIndex()] : 0.6f);
     spring.period(std::chrono::milliseconds {static_cast<int>(model->period.value())});
     element.startAnimation(spring);

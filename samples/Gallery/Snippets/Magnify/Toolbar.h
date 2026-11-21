@@ -2,9 +2,9 @@
 // всех кнопок общие.
 auto const pop = MagnifyEffect {1.2f, maximum = 1.35f, minimum = 0.95f};
 
-auto const tool = [pop](FluentSymbol glyph, Color tint) {
+auto const tool = [pop](FluentSymbol figure, Color tint) {
     return Button {
-        content = SymbolIcon {symbol = glyph, foreground = tint},
+        content = SymbolIcon {symbol = figure, foreground = tint},
         width = 52,
         height = 52,
         pop,

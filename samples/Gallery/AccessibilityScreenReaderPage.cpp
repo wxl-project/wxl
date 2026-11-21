@@ -8,7 +8,6 @@
 #include <wxl/Microsoft.UI.Xaml.Automation.Peers.Enums.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -38,14 +37,17 @@ gallery::LazyLoadedText controlGroupsText{"Snippets/AccessibilityScreenReader/Co
 
 // Подзаголовки раздела; уровень сообщается экранному диктору.
 TextBlock heading2(char16_t const* text, bool spaced = true) {
+    using namespace wxl::dsl;
     return TextBlock {Margin {0, spaced ? 20 : 0, 0, 0}, automationHeadingLevel = AutomationHeadingLevel::Level2, styles.TextBlock.Subtitle, text};
 }
 
 TextBlock heading3(char16_t const* text) {
+    using namespace wxl::dsl;
     return TextBlock {Margin {0, 20, 0, 0}, automationHeadingLevel = AutomationHeadingLevel::Level3, styles.TextBlock.BodyStrong, text};
 }
 
 TextBlock bigHeading3(char16_t const* text) {
+    using namespace wxl::dsl;
     return TextBlock {Margin {0, 20, 0, 0}, automationHeadingLevel = AutomationHeadingLevel::Level3, styles.TextBlock.Subtitle, text};
 }
 
@@ -54,56 +56,67 @@ FrameworkElement place(FrameworkElement const& shown, gallery::Snippet code) {
 }
 
 FrameworkElement nameFromContent() {
+    using namespace wxl::dsl;
 #include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderNameFromContent.h"
     return place(example, gallery::snippet(nameFromContentCode));
 }
 
 FrameworkElement nameFromHeader() {
+    using namespace wxl::dsl;
 #include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderNameFromHeader.h"
     return place(example, gallery::snippet(nameFromHeaderCode));
 }
 
 FrameworkElement nameOnListView() {
+    using namespace wxl::dsl;
 #include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderNameOnListView.h"
     return place(example, gallery::snippet(nameOnListViewCode));
 }
 
 FrameworkElement nameOnImage() {
+    using namespace wxl::dsl;
 #include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderNameOnImage.h"
     return place(example, gallery::snippet(nameOnImageCode));
 }
 
 FrameworkElement labeledBy() {
+    using namespace wxl::dsl;
 #include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderLabeledBy.h"
     return place(example, gallery::snippet(labeledByCode));
 }
 
 FrameworkElement describedControls() {
+    using namespace wxl::dsl;
 #include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderDescriptionHelpTextAdd.h"
     return place(example, gallery::snippet(descriptionCode));
 }
 
 FrameworkElement positioned() {
+    using namespace wxl::dsl;
 #include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderPositionIndicatePositionElement.h"
     return place(example, gallery::snippet(positionCode));
 }
 
 FrameworkElement removedFromTree() {
+    using namespace wxl::dsl;
 #include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderRemoveControlContentVisual.h"
     return place(example, gallery::snippet(rawCode));
 }
 
 FrameworkElement landmarks() {
+    using namespace wxl::dsl;
 #include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderLandmarks.h"
     return place(example, gallery::snippet(landmarksCode));
 }
 
 FrameworkElement headings() {
+    using namespace wxl::dsl;
 #include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderHeadings.h"
     return place(example, gallery::snippet(headingsCode));
 }
 
 FrameworkElement controlGroups() {
+    using namespace wxl::dsl;
 #include "Snippets/AccessibilityScreenReader/AccessibilityScreenReaderControlGroups.h"
     return place(example, gallery::snippet(groupsCode));
 }
@@ -111,6 +124,7 @@ FrameworkElement controlGroups() {
 }  // namespace
 
 static FrameworkElement accessibilityScreenReaderPage() {
+    using namespace wxl::dsl;
     return StackPanel {
         spacing = 12.0,
         gallery::prose(gallery::snippet(introText), Thickness {}),

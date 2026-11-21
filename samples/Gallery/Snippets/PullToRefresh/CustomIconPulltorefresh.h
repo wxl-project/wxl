@@ -6,7 +6,7 @@ struct Model {
     int added = 0;
 
     void fill(std::initializer_list<char16_t const*> names) {
-        for (auto const name : names) list.items().append(boxValue(name));
+        for (auto const itemName : names) list.items().append(boxValue(itemName));
     }
 
     // "Some work to show new content": half a second, and an item at the top of the list.

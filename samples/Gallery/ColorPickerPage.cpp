@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText propertiesHeader{"Snippets/ColorPicker/Properties.html"}
 gallery::LazyLoadedText propertiesCode{"Snippets/ColorPicker/Properties.h"};
 
 FrameworkElement properties() {
+    using namespace wxl::dsl;
 #include "Snippets/ColorPicker/Properties.h"
 
     return gallery::controlExample({

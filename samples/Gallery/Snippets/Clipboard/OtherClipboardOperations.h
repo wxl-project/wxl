@@ -7,9 +7,9 @@ struct Model {
         if (!package) return empty;
         auto const names = package.availableFormats();
         if (names.empty()) return empty;
-        for (auto const& name : names) {
+        for (auto const& option : names) {
             heading += u"\n  • ";
-            heading += std::u16string_view {name};
+            heading += std::u16string_view {option};
         }
         return heading;
     }

@@ -4,8 +4,8 @@ struct Model {
 };
 auto const model = gallery::hold<Model>();
 
-auto picture = [](char16_t const* name, char16_t const* path) {
-    return Image {toolTip = name, automationName = name, source = path, stretch = Stretch::Uniform};
+auto picture = [](char16_t const* labelText, char16_t const* path) {
+    return Image {toolTip = labelText, automationName = labelText, source = path, stretch = Stretch::Uniform};
 };
 
 // Down to the fifth of the way, or up to four fifths of it: the other end of the two.
@@ -22,36 +22,36 @@ auto view = ScrollView {
     // The scroll is about to run its stock animation; the handler may run its own instead.
     onScrollAnimationStarting += [model, targetOffset](ScrollView const& self, ScrollingScrollAnimationStartingEventArgs& args) {
         auto const stock = args.animation().try_as<Vector3KeyFrameAnimation>();
-        auto const duration = core::duration {std::chrono::milliseconds {static_cast<int64_t>(model->duration.get())}};
+        auto const span = core::duration {std::chrono::milliseconds {static_cast<int64_t>(model->duration.get())}};
         if (model->animation.get() == 0) {
-            stock.duration(duration);
+            stock.duration(span);
             return;
         }
 
         auto const compositor = stock.compositor();
         auto const custom = compositor.createVector3KeyFrameAnimation();
-        auto const target = static_cast<float>(targetOffset(self));
+        auto const goal = static_cast<float>(targetOffset(self));
         auto const here = static_cast<float>(self.horizontalOffset());
-        auto const travel = static_cast<float>(target - self.verticalOffset());
+        auto const distance = static_cast<float>(goal - self.verticalOffset());
 
         if (model->animation.get() == 1) {
             // Accordion: overshoots, and comes back in smaller and smaller swings.
-            float swing = 0.1f * travel;
+            float swing = 0.1f * distance;
             for (int step = 0; step < 3; ++step) {
-                custom.insertKeyFrame(1.0f - 0.4f / static_cast<float>(1 << step), Vector3 {here, target + swing, 0.0f});
+                custom.insertKeyFrame(1.0f - 0.4f / static_cast<float>(1 << step), Vector3 {here, goal + swing, 0.0f});
                 swing /= -2.0f;
             }
-            custom.insertKeyFrame(1.0f, Vector3 {here, target, 0.0f});
+            custom.insertKeyFrame(1.0f, Vector3 {here, goal, 0.0f});
         } else {
             // Teleportation: rushes off, jumps the gap in the middle, and rushes in.
-            custom.insertKeyFrame(0.499999f, Vector3 {here, target - 0.9f * travel, 0.0f},
+            custom.insertKeyFrame(0.499999f, Vector3 {here, goal - 0.9f * distance, 0.0f},
                                   compositor.createCubicBezierEasingFunction(Vector2 {1.0f, 0.0f}, Vector2 {1.0f, 0.0f}));
-            custom.insertKeyFrame(0.5f, Vector3 {here, target - 0.1f * travel, 0.0f},
+            custom.insertKeyFrame(0.5f, Vector3 {here, goal - 0.1f * distance, 0.0f},
                                   StepEasingFunction::createStepEasingFunction(compositor, 1));
-            custom.insertKeyFrame(1.0f, Vector3 {here, target, 0.0f},
+            custom.insertKeyFrame(1.0f, Vector3 {here, goal, 0.0f},
                                   compositor.createCubicBezierEasingFunction(Vector2 {0.0f, 1.0f}, Vector2 {0.0f, 1.0f}));
         }
-        custom.duration(duration);
+        custom.duration(span);
         args.animation(custom);
     },
     content = StackPanel {

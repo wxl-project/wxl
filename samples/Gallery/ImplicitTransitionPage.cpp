@@ -13,7 +13,6 @@
 #include <wxl/Microsoft.UI.Xaml.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -21,6 +20,7 @@ gallery::LazyLoadedText opacityExampleHeader{"Snippets/ImplicitTransition/Implic
 gallery::LazyLoadedText opacityExampleCode{"Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesOpacity.h"};
 
 FrameworkElement opacityExample() {
+    using namespace wxl::dsl;
 #include "Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesOpacity.h"
 
     return gallery::controlExample({
@@ -35,6 +35,7 @@ gallery::LazyLoadedText rotationExampleHeader{"Snippets/ImplicitTransition/Impli
 gallery::LazyLoadedText rotationExampleCode{"Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesRotation.h"};
 
 FrameworkElement rotationExample() {
+    using namespace wxl::dsl;
 #include "Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesRotation.h"
 
     return gallery::controlExample({
@@ -49,6 +50,7 @@ gallery::LazyLoadedText scaleExampleHeader{"Snippets/ImplicitTransition/Implicit
 gallery::LazyLoadedText scaleExampleCode{"Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesScale.h"};
 
 FrameworkElement scaleExample() {
+    using namespace wxl::dsl;
 #include "Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesScale.h"
 
     return gallery::controlExample({
@@ -63,6 +65,7 @@ gallery::LazyLoadedText translationExampleHeader{"Snippets/ImplicitTransition/Im
 gallery::LazyLoadedText translationExampleCode{"Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesTranslation.h"};
 
 FrameworkElement translationExample() {
+    using namespace wxl::dsl;
 #include "Snippets/ImplicitTransition/ImplicitTransitionAutomaticallyAnimateChangesTranslation.h"
 
     return gallery::controlExample({
@@ -77,6 +80,7 @@ gallery::LazyLoadedText backgroundExampleHeader{"Snippets/ImplicitTransition/Imp
 gallery::LazyLoadedText backgroundExampleCode{"Snippets/ImplicitTransition/ImplicitTransitionImplicitlyAnimateBackgroundChanges.h"};
 
 FrameworkElement backgroundExample() {
+    using namespace wxl::dsl;
 #include "Snippets/ImplicitTransition/ImplicitTransitionImplicitlyAnimateBackgroundChanges.h"
 
     return gallery::controlExample({
@@ -91,6 +95,7 @@ gallery::LazyLoadedText themeExampleHeader{"Snippets/ImplicitTransition/Implicit
 gallery::LazyLoadedText themeExampleCode{"Snippets/ImplicitTransition/ImplicitTransitionImplicitlyAnimateGridTheme.h"};
 
 FrameworkElement themeExample() {
+    using namespace wxl::dsl;
 #include "Snippets/ImplicitTransition/ImplicitTransitionImplicitlyAnimateGridTheme.h"
 
     return gallery::controlExample({

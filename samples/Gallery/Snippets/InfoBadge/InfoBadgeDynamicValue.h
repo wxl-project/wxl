@@ -6,7 +6,7 @@ auto const model = gallery::hold<Model>();
 
 auto badge = InfoBadge {
     hAlign.center,
-    value = BindOutput {model->value, [](double value) { return std::isnan(value) ? -1 : static_cast<int>(value); }},
+    value = BindOutput {model->value, [](double amount) { return std::isnan(amount) ? -1 : static_cast<int>(amount); }},
 };
 
 auto valueBox = NumberBox {

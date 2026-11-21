@@ -24,7 +24,6 @@
 #include <wxl/Microsoft.UI.Xaml.Input.EventArgs.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 using Microsoft::WRL::ComPtr;
 
 namespace {
@@ -379,6 +378,7 @@ struct Shaded {
 }  // namespace
 
 lab::Experiment lab::shaderPage() {
+    using namespace wxl::dsl;
     auto const model = std::make_shared<Shaded>();
 
     auto stage = Border {

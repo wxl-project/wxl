@@ -1,6 +1,6 @@
 // The animation to play, by the kind picked in the list.
-auto makeSource = [](int kind) -> AnimatedVisualSource2 {
-    switch (kind) {
+auto makeSource = [](int variant) -> AnimatedVisualSource2 {
+    switch (variant) {
         case 0: return AnimatedBackVisualSource {};
         case 1: return AnimatedChevronDownSmallVisualSource {};
         case 2: return AnimatedChevronRightDownSmallVisualSource {};

@@ -6,7 +6,6 @@
 #include "Pages.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -14,6 +13,7 @@ gallery::LazyLoadedText ButtonHeader{"Snippets/Magnify/Button.html"};
 gallery::LazyLoadedText ButtonCode{"Snippets/Magnify/Button.h"};
 
 FrameworkElement buttonExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Magnify/Button.h"
 
     return gallery::controlExample({
@@ -27,6 +27,7 @@ gallery::LazyLoadedText ToolbarHeader{"Snippets/Magnify/Toolbar.html"};
 gallery::LazyLoadedText ToolbarCode{"Snippets/Magnify/Toolbar.h"};
 
 FrameworkElement toolbarExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Magnify/Toolbar.h"
 
     return gallery::controlExample({
@@ -40,6 +41,7 @@ gallery::LazyLoadedText CocktailHeader{"Snippets/Magnify/Cocktail.html"};
 gallery::LazyLoadedText CocktailCode{"Snippets/Magnify/Cocktail.h"};
 
 FrameworkElement cocktailExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Magnify/Cocktail.h"
 
     return gallery::controlExample({

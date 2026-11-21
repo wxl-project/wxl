@@ -37,7 +37,6 @@
 import std;
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -84,6 +83,7 @@ std::wstring xamlPage() {
 }
 
 FrameworkElement card(std::u16string head, std::u16string descr) {
+    using namespace wxl::dsl;
     if (has("plain")) {
         return Border {
             background = brushes.Card.BackgroundFillColor.Default,
@@ -126,6 +126,7 @@ FrameworkElement card(std::u16string head, std::u16string descr) {
 }
 
 FrameworkElement dslStack() {
+    using namespace wxl::dsl;
     auto s = StackPanel {name = u"S", spacing = 4.0};
     if (!has("nomax")) s.maxWidth(1064);
     if (has("center")) s.horizontalAlignment(HorizontalAlignment::Center);
@@ -174,6 +175,7 @@ FrameworkElement buildPage() {
 }
 
 FrameworkElement dslPage() {
+    using namespace wxl::dsl;
     FrameworkElement stack = dslStack();
     if (has("border")) {
         stack = Border {name = u"B", stack};
@@ -227,6 +229,7 @@ void dump(char const* when) {
 }  // namespace
 
 wxl::Teardown wxl_launched() {
+    using namespace wxl::dsl;
     std::string const words {core::unicode::repaired(core::environment::variable(L"SHIFT_OPTS")).to_utf8().chars()};
     for (auto const word : std::string_view {words} | std::views::split(',')) opts.insert(std::string(std::string_view(word)));
     std::filesystem::path const path {core::environment::variable(L"SHIFT_LOG")};

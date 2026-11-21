@@ -28,7 +28,7 @@ auto viewbox = Viewbox {
     },
 };
 
-auto size = Slider {
+auto sizeSlider = Slider {
     header = u"Width/Height",
     minimum = 20.0,
     maximum = 300.0,

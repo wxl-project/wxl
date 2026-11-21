@@ -10,7 +10,6 @@
 import wxl.core;
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -18,6 +17,7 @@ gallery::LazyLoadedText colorHeader{"Snippets/SplitButton/ColorPicker.html"};
 gallery::LazyLoadedText colorCode{"Snippets/SplitButton/ColorPicker.h"};
 
 FrameworkElement colorExample() {
+    using namespace wxl::dsl;
 #include "Snippets/SplitButton/ColorPicker.h"
 
     return gallery::controlExample({
@@ -32,6 +32,7 @@ gallery::LazyLoadedText textHeader{"Snippets/SplitButton/Text.html"};
 gallery::LazyLoadedText textCode{"Snippets/SplitButton/Text.h"};
 
 FrameworkElement textExample() {
+    using namespace wxl::dsl;
 #include "Snippets/SplitButton/Text.h"
 
     return gallery::controlExample({

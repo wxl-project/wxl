@@ -1,8 +1,8 @@
 auto output = TextBlock {Margin {8, 0, 0, 0}, vAlign.center};
 
-auto item = [output](char16_t const* caption, char16_t const* option) {
+auto item = [output](char16_t const* labelText, char16_t const* option) {
     return MenuFlyoutItem {
-        text = caption,
+        text = labelText,
         onClick += [output, option](MenuFlyoutItem const&) { output.text(std::u16string {u"Sort by: "} + option); },
     };
 };

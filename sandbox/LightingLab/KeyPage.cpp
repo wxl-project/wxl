@@ -37,7 +37,6 @@
 #include <wxl/Microsoft.UI.Xaml.Input.EventArgs.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -857,6 +856,7 @@ struct Keys {
 }  // namespace
 
 lab::Experiment lab::keyPage() {
+    using namespace wxl::dsl;
     auto const model = std::make_shared<Keys>();
 
     auto stage = Grid {
@@ -894,18 +894,18 @@ lab::Experiment lab::keyPage() {
     // нажатой клавиши уходит на единицу вниз и вправо и тускнеет.
     for (int index = 0; index < static_cast<int>(model->places.size()); ++index) {
         Place const& place = model->places[index];
-        Kind const& kind = kinds[place.kind];
-        Form const& form = forms[kind.form];
-        double const left = place.left, top = place.top;
+        Kind const& look = kinds[place.kind];
+        Form const& form = forms[look.form];
+        double const originX = place.left, originY = place.top;
         stage.children().append(Border {
             width = double {form.width},
             height = double {form.height},
             hAlign.left,
             vAlign.top,
             margin = BindOutput {model->labelDown,
-                                 [index, left, top](int down) {
+                                 [index, originX, originY](int down) {
                                      double const shift = down == index ? 1.0 : 0.0;
-                                     return Thickness {left + shift, top + shift, 0.0, 0.0};
+                                     return Thickness {originX + shift, originY + shift, 0.0, 0.0};
                                  }},
             opacity = BindOutput {model->labelDown, [index](int down) { return down == index ? 0.55 : 1.0; }},
             isHitTestVisible = false,
@@ -914,7 +914,7 @@ lab::Experiment lab::keyPage() {
                 hAlign.center,
                 vAlign.center,
                 fontSize = 22,
-                foreground = SolidColorBrush {color = kind.action ? rgb(255, 227, 180) : rgb(237, 239, 242)},
+                foreground = SolidColorBrush {color = look.action ? rgb(255, 227, 180) : rgb(237, 239, 242)},
             },
         });
     }

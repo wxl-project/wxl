@@ -1,7 +1,7 @@
 // Unlike ListView and GridView, an ItemsRepeater has no connected-animation methods of its own: the element to prepare is
 // found by hand -- here it is the first child of the item's grid.
 auto const objects = &gallery::dataObjects(true);
-auto const items = IndexList(static_cast<int64_t>(objects->size()));
+auto const indices = IndexList(static_cast<int64_t>(objects->size()));
 
 struct Model {
     gallery::PagedFrame frame {Frame {height = 400, minWidth = 500}};
@@ -13,7 +13,7 @@ struct Model {
 };
 auto const model = gallery::hold<Model>();
 
-auto const repeaterPage = [model, objects, items] {
+auto const repeaterPage = [model, objects, indices] {
     model->repeater = ItemsRepeater {
         layout = UniformGridLayout {minColumnSpacing = 8, minItemHeight = 120, minItemWidth = 150, minRowSpacing = 8},
         itemTemplate = [objects](Object const& item) {
@@ -23,7 +23,7 @@ auto const repeaterPage = [model, objects, items] {
                          Border {vAlign.bottom, Padding {8, 4}, background = brushes.Acrylic.BackgroundFillColor.Base,
                                  TextBlock {styles.TextBlock.Caption, foreground = brushes.Text.FillColor.Primary, object.title}}};
         },
-        itemsSource = items,
+        itemsSource = indices,
         onElementPrepared += [model](auto const&, ItemsRepeaterElementPreparedEventArgs& args) {
             // Tapping an item is what navigates; the handler is given to each element as it is made ready.
             args.element().add_onTapped([model](Object const& sender, TappedRoutedEventArgs&) {

@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText appBarButtonMenuHeader{"Snippets/MenuFlyout/AppBarButton
 gallery::LazyLoadedText appBarButtonMenuCode{"Snippets/MenuFlyout/AppBarButtonMenu.h"};
 
 FrameworkElement appBarButtonMenu() {
+    using namespace wxl::dsl;
 #include "Snippets/MenuFlyout/AppBarButtonMenu.h"
 
     return gallery::controlExample({
@@ -25,6 +25,7 @@ gallery::LazyLoadedText togglesHeader{"Snippets/MenuFlyout/Toggles.html"};
 gallery::LazyLoadedText togglesCode{"Snippets/MenuFlyout/Toggles.h"};
 
 FrameworkElement toggles() {
+    using namespace wxl::dsl;
 #include "Snippets/MenuFlyout/Toggles.h"
 
     return gallery::controlExample({
@@ -38,6 +39,7 @@ gallery::LazyLoadedText cascadingHeader{"Snippets/MenuFlyout/Cascading.html"};
 gallery::LazyLoadedText cascadingCode{"Snippets/MenuFlyout/Cascading.h"};
 
 FrameworkElement cascading() {
+    using namespace wxl::dsl;
 #include "Snippets/MenuFlyout/Cascading.h"
 
     return gallery::controlExample({
@@ -51,6 +53,7 @@ gallery::LazyLoadedText splitHeader{"Snippets/MenuFlyout/Split.html"};
 gallery::LazyLoadedText splitCode{"Snippets/MenuFlyout/Split.h"};
 
 FrameworkElement split() {
+    using namespace wxl::dsl;
 #include "Snippets/MenuFlyout/Split.h"
 
     return gallery::controlExample({
@@ -64,6 +67,7 @@ gallery::LazyLoadedText iconsHeader{"Snippets/MenuFlyout/Icons.html"};
 gallery::LazyLoadedText iconsCode{"Snippets/MenuFlyout/Icons.h"};
 
 FrameworkElement icons() {
+    using namespace wxl::dsl;
 #include "Snippets/MenuFlyout/Icons.h"
 
     return gallery::controlExample({
@@ -77,6 +81,7 @@ gallery::LazyLoadedText iconsAcceleratorsHeader{"Snippets/MenuFlyout/IconsAccele
 gallery::LazyLoadedText iconsAcceleratorsCode{"Snippets/MenuFlyout/IconsAccelerators.h"};
 
 FrameworkElement iconsAccelerators() {
+    using namespace wxl::dsl;
 #include "Snippets/MenuFlyout/IconsAccelerators.h"
 
     return gallery::controlExample({
@@ -90,6 +95,7 @@ gallery::LazyLoadedText radioHeader{"Snippets/MenuFlyout/Radio.html"};
 gallery::LazyLoadedText radioCode{"Snippets/MenuFlyout/Radio.h"};
 
 FrameworkElement radio() {
+    using namespace wxl::dsl;
 #include "Snippets/MenuFlyout/Radio.h"
 
     return gallery::controlExample({

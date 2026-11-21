@@ -11,7 +11,7 @@ auto expander = Expander {
     isExpanded = false,
 };
 
-auto direction = ComboBox {
+auto directionBox = ComboBox {
     header = u"ExpandDirection",
     ComboBoxItem {content = u"Down"},
     ComboBoxItem {content = u"Up"},

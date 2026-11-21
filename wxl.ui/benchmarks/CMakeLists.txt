@@ -36,10 +36,6 @@ wxl_add_benchmark(wxl.ui.scene-wxl-benchmark
 
 target_link_libraries(wxl.ui.scene-wxl-benchmark PRIVATE wxl::ui.full)
 
-# It opens wxl::dsl at file scope, as an application does, so a local named like a
-# tag is expected there and C4459 says nothing about it.
-target_compile_options(wxl.ui.scene-wxl-benchmark PRIVATE /wd4459)
-
 _wxl_scene_benchmark(wxl.ui.scene-wxl-benchmark)
 
 # ---- The hand-written half ----

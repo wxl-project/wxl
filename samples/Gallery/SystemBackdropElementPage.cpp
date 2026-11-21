@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText sampleHeader{"Snippets/SystemBackdropElement/Systembackd
 gallery::LazyLoadedText sampleCode{"Snippets/SystemBackdropElement/SystembackdropelementSample.h"};
 
 FrameworkElement sample() {
+    using namespace wxl::dsl;
 #include "Snippets/SystemBackdropElement/SystembackdropelementSample.h"
 
     return gallery::controlExample({
@@ -25,6 +25,7 @@ FrameworkElement sample() {
 }  // namespace
 
 static wxl::FrameworkElement systemBackdropElementPage() {
+    using namespace wxl::dsl;
     return StackPanel {
         sample(),
         TextBlock {

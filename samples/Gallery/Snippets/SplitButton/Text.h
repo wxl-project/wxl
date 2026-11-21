@@ -17,10 +17,10 @@ struct Model {
 };
 auto const model = gallery::hold<Model>();
 
-auto const hideOnClick = [](Flyout flyout, Button swatch) -> async::task<> {
+auto const hideOnClick = [](Flyout popup, Button swatch) -> async::task<> {
     auto clicks = onClick(swatch);
     if (co_await clicks.next()) {
-        flyout.hide();
+        popup.hide();
     }
 };
 
@@ -34,11 +34,11 @@ auto chooser = SplitButton {
     flyout = Flyout {
         placement = FlyoutPlacementMode::Bottom,
         onOpened += [model, hideOnClick](Object const& sender) {
-            auto const flyout = sender.try_as<Flyout>();
-            auto const swatches = flyout.content().try_as<VariableSizedWrapGrid>().children();
+            auto const popup = sender.try_as<Flyout>();
+            auto const swatches = popup.content().try_as<VariableSizedWrapGrid>().children();
             model->hiding.clear();
             for (uint32_t i = 0; i < swatches.size(); ++i) {
-                model->hiding.push_back(hideOnClick(flyout, swatches[i].try_as<Button>()));
+                model->hiding.push_back(hideOnClick(popup, swatches[i].try_as<Button>()));
             }
         },
         content = VariableSizedWrapGrid {

@@ -7,7 +7,6 @@
 
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -15,6 +14,7 @@ gallery::LazyLoadedText basicHeader{"Snippets/Image/BasicImageLocalFile.html"};
 gallery::LazyLoadedText basicCode{"Snippets/Image/BasicImageLocalFile.h"};
 
 FrameworkElement basic() {
+    using namespace wxl::dsl;
 #include "Snippets/Image/BasicImageLocalFile.h"
 
     return gallery::controlExample({
@@ -28,6 +28,7 @@ gallery::LazyLoadedText decodedHeader{"Snippets/Image/ImageDecodedRenderingSize.
 gallery::LazyLoadedText decodedCode{"Snippets/Image/ImageDecodedRenderingSize.h"};
 
 FrameworkElement decoded() {
+    using namespace wxl::dsl;
 #include "Snippets/Image/ImageDecodedRenderingSize.h"
 
     return gallery::controlExample({
@@ -41,6 +42,7 @@ gallery::LazyLoadedText stretchingHeader{"Snippets/Image/ImageStretching.html"};
 gallery::LazyLoadedText stretchingCode{"Snippets/Image/ImageStretching.h"};
 
 FrameworkElement stretching() {
+    using namespace wxl::dsl;
 #include "Snippets/Image/ImageStretching.h"
 
     return gallery::controlExample({
@@ -55,6 +57,7 @@ gallery::LazyLoadedText nineGridImagesHeader{"Snippets/Image/NineGridImages.html
 gallery::LazyLoadedText nineGridImagesCode{"Snippets/Image/NineGridImages.h"};
 
 FrameworkElement nineGridImages() {
+    using namespace wxl::dsl;
 #include "Snippets/Image/NineGridImages.h"
 
     return gallery::controlExample({
@@ -68,6 +71,7 @@ gallery::LazyLoadedText svgHeader{"Snippets/Image/SvgImage.html"};
 gallery::LazyLoadedText svgCode{"Snippets/Image/SvgImage.h"};
 
 FrameworkElement svg() {
+    using namespace wxl::dsl;
 #include "Snippets/Image/SvgImage.h"
 
     return gallery::controlExample({
@@ -81,6 +85,7 @@ gallery::LazyLoadedText animatedGifHeader{"Snippets/Image/AnimatedGif.html"};
 gallery::LazyLoadedText animatedGifCode{"Snippets/Image/AnimatedGif.h"};
 
 FrameworkElement animatedGif() {
+    using namespace wxl::dsl;
 #include "Snippets/Image/AnimatedGif.h"
 
     return gallery::controlExample({

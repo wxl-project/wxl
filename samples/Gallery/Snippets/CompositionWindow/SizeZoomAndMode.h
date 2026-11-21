@@ -11,14 +11,14 @@ struct Model {
     std::shared_ptr<CompositionWindow> window;
     std::weak_ptr<Model> self;
 
-    static void describe(TextBlock const& target, SizeInt32 client, float scale) {
-        std::u16string text = u"Client area ";
-        text += core::to_u16(client.width).plain();
-        text += u" x ";
-        text += core::to_u16(client.height).plain();
-        text += u" px, scale ";
-        text += core::to_u16(scale, std::chars_format::fixed, 2).plain();
-        target.text(text);
+    static void describe(TextBlock const& block, SizeInt32 client, float scale) {
+        std::u16string line = u"Client area ";
+        line += core::to_u16(client.width).plain();
+        line += u" x ";
+        line += core::to_u16(client.height).plain();
+        line += u" px, scale ";
+        line += core::to_u16(scale, std::chars_format::fixed, 2).plain();
+        block.text(line);
     }
 
     void open() {

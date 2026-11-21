@@ -23,7 +23,6 @@
 #include "settings_window.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace trayed {
 namespace {
@@ -40,6 +39,7 @@ constexpr double kFormWidth = 460.0;
 // the rows are there: the index it is given has to name one.
 StackPanel labeledCombo(zstring_view label, std::vector<std::wstring> const& options,
                         core::observable<int>& model) {
+    using namespace wxl::dsl;
     ComboBox combo;
     for (std::wstring const& option : options) combo.setPositional(ComboBoxItem{option});
     Apply{combo, selectedIndex = Bind{model}};
@@ -54,6 +54,7 @@ StackPanel labeledCombo(zstring_view label, std::vector<std::wstring> const& opt
 }  // namespace
 
 Window buildSettingsWindow(Settings& settings) {
+    using namespace wxl::dsl;
     Window window{
         title = L"Настройки Trayed",
         // A floor well under the fitted size, so it only stops the user shrinking

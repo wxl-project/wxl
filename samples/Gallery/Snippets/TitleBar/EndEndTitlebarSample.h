@@ -47,8 +47,8 @@ struct Model {
         },
     };
 
-    static NavigationViewItem item(char16_t const* label, char16_t const* page, Symbol glyph) {
-        return NavigationViewItem {content = label, name = page, icon = SymbolIcon {symbol = glyph}};
+    static NavigationViewItem item(char16_t const* labelText, char16_t const* page, Symbol itemSymbol) {
+        return NavigationViewItem {content = labelText, name = page, icon = SymbolIcon {symbol = itemSymbol}};
     }
 
     void show(int page, bool remember) {

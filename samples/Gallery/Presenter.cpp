@@ -11,13 +11,13 @@
 #include <wxl/Windows.ApplicationModel.DataTransfer.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
 // Кнопка копирования кода: после щелчка значок — галочка, пока указатель не
 // ушёл с кнопки.
 FrameworkElement copyButton(std::wstring text) {
+    using namespace wxl::dsl;
     return Button {
         Margin {0, 8, 8, 0},
         hAlign.right,
@@ -45,8 +45,9 @@ FrameworkElement copyButton(std::wstring text) {
 }  // namespace
 
 wxl::FrameworkElement gallery::controlExample(ExampleParts const& parts) {
+    using namespace wxl::dsl;
     auto const intro = snippetText(parts.header);
-    auto const source = snippetText(parts.code);
+    auto const sourceText = snippetText(parts.code);
 
     // Показ, «Output:» и параметры: три колонки одной полосы. Показ и
     // «Output:» на фоне окна, параметры — на карточке, отделённые чертой.
@@ -99,7 +100,7 @@ wxl::FrameworkElement gallery::controlExample(ExampleParts const& parts) {
     }
 
     auto code = CodeBlock {isTextSelectionEnabled = true, Padding {17, 13, 57, 13}};
-    code.code(u"cpp", source);
+    code.code(u"cpp", sourceText);
 
     return StackPanel {
         Margin {0, 16, 0, 0},
@@ -130,7 +131,7 @@ wxl::FrameworkElement gallery::controlExample(ExampleParts const& parts) {
                     wheelToParent = true,
                     content = code,
                 },
-                copyButton(source),
+                copyButton(sourceText),
             },
         },
     };

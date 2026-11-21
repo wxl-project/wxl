@@ -3,7 +3,6 @@
 #include "Pages.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -11,6 +10,7 @@ gallery::LazyLoadedText simpleHeader{"Snippets/RatingControl/Simple.html"};
 gallery::LazyLoadedText simpleCode{"Snippets/RatingControl/Simple.h"};
 
 FrameworkElement simple() {
+    using namespace wxl::dsl;
 #include "Snippets/RatingControl/Simple.h"
 
     return gallery::controlExample({
@@ -26,6 +26,7 @@ gallery::LazyLoadedText placeholderHeader{"Snippets/RatingControl/Placeholder.ht
 gallery::LazyLoadedText placeholderCode{"Snippets/RatingControl/Placeholder.h"};
 
 FrameworkElement placeholder() {
+    using namespace wxl::dsl;
 #include "Snippets/RatingControl/Placeholder.h"
 
     return gallery::controlExample({

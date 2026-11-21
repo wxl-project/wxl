@@ -5,9 +5,9 @@
 #include "Pages.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 FrameworkElement gallery::colorSelector(core::observable<Color>& model, std::u16string_view name) {
+    using namespace wxl::dsl;
     return SplitButton {
         Margin {0, 2, 0, 8},
         automationName = core::assume_terminated(name),
@@ -16,7 +16,7 @@ FrameworkElement gallery::colorSelector(core::observable<Color>& model, std::u16
             height = 32,
             Margin {-11, -6},
             CornerRadius {4, 0, 0, 4},
-            background = BindOutput {model, [](Color value) { return SolidColorBrush {color = value}; }},
+            background = BindOutput {model, [](Color c) { return SolidColorBrush {color = c}; }},
         },
         flyout = Flyout {
             placement = FlyoutPlacementMode::Bottom,

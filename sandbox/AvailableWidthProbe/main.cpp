@@ -37,7 +37,6 @@
 import std;
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -86,6 +85,7 @@ void report(char const* when) {
 }  // namespace
 
 wxl::Teardown wxl_launched() {
+    using namespace wxl::dsl;
     std::string const words {core::unicode::repaired(core::environment::variable(L"PROBE_OPTS")).to_utf8().chars()};
     for (auto const word : std::string_view {words} | std::views::split(',')) opts.insert(std::string(std::string_view(word)));
     std::filesystem::path const path {core::environment::variable(L"PROBE_LOG")};
@@ -111,7 +111,7 @@ wxl::Teardown wxl_launched() {
     page = Grid {ColumnDefinitions<u"*,*">, RowDefinitions<u"auto,auto,*">, *headerText, *options, *host};
 
     auto const widthLayout = CustomLayout {
-        [](Collection<UIElement> const& children, Size available) {
+        [](Collection<UIElement> const& panelChildren, Size available) {
             ++measures;
             ++totalMeasures;
             if (available.width != lastWidth) {
@@ -129,11 +129,11 @@ wxl::Teardown wxl_launched() {
             }
             // Источник: ширина, которую дал родитель. Привязки срабатывают здесь, до измерения ребёнка.
             model->width.set(available.width);
-            children[0].measure(available);
-            return children[0].desiredSize();
+            panelChildren[0].measure(available);
+            return panelChildren[0].desiredSize();
         },
-        [](Collection<UIElement> const& children, Size final) {
-            children[0].arrange({{0, 0}, {final.width, final.height}});
+        [](Collection<UIElement> const& panelChildren, Size final) {
+            panelChildren[0].arrange({{0, 0}, {final.width, final.height}});
             return final;
         },
     };

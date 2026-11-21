@@ -8,7 +8,6 @@
 #include <wxl/Microsoft.UI.Xaml.Automation.Peers.Enums.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -32,10 +31,12 @@ gallery::LazyLoadedText accessKeysText{"Snippets/AccessibilityKeyboard/AccessKey
 
 // Заголовок раздела: уровень сообщается экранному диктору.
 TextBlock section(char16_t const* text, bool second) {
+    using namespace wxl::dsl;
     return TextBlock {Margin {0, second ? 20 : 0, 0, 0}, automationHeadingLevel = AutomationHeadingLevel::Level2, styles.TextBlock.Subtitle, text};
 }
 
 TextBlock subsection(char16_t const* text) {
+    using namespace wxl::dsl;
     return TextBlock {Margin {0, 20, 0, 0}, automationHeadingLevel = AutomationHeadingLevel::Level3, styles.TextBlock.BodyStrong, text};
 }
 
@@ -44,31 +45,37 @@ FrameworkElement place(wxl::FrameworkElement const& shown, gallery::Snippet code
 }
 
 FrameworkElement automaticTabOrder() {
+    using namespace wxl::dsl;
 #include "Snippets/AccessibilityKeyboard/AccessibilityKeyboardAutomaticTabOrder.h"
     return place(example, gallery::snippet(automaticTabOrderCode));
 }
 
 FrameworkElement manualTabOrder() {
+    using namespace wxl::dsl;
 #include "Snippets/AccessibilityKeyboard/AccessibilityKeyboardManualTabOrder.h"
     return place(example, gallery::snippet(manualTabOrderCode));
 }
 
 FrameworkElement automaticArrowKeys() {
+    using namespace wxl::dsl;
 #include "Snippets/AccessibilityKeyboard/AccessibilityKeyboardAutomaticArrowKeys.h"
     return place(example, gallery::snippet(automaticArrowKeysCode));
 }
 
 FrameworkElement manualArrowKeys() {
+    using namespace wxl::dsl;
 #include "Snippets/AccessibilityKeyboard/AccessibilityKeyboardManualArrowKeys.h"
     return place(example, gallery::snippet(manualArrowKeysCode));
 }
 
 FrameworkElement accelerators() {
+    using namespace wxl::dsl;
 #include "Snippets/AccessibilityKeyboard/AccessibilityKeyboardAccelerators.h"
     return place(example, gallery::snippet(acceleratorsCode));
 }
 
 FrameworkElement accessKeys() {
+    using namespace wxl::dsl;
 #include "Snippets/AccessibilityKeyboard/AccessibilityKeyboardAccessKeys.h"
     return place(example, gallery::snippet(accessKeysCode));
 }
@@ -76,14 +83,15 @@ FrameworkElement accessKeys() {
 }  // namespace
 
 static FrameworkElement accessibilityKeyboardPage() {
+    using namespace wxl::dsl;
     auto references = ItemsControl {automationName = u"Arrow keys references"};
-    for (auto const& [title, anchor] : std::initializer_list<std::pair<char16_t const*, char16_t const*>> {
+    for (auto const& [heading, anchor] : std::initializer_list<std::pair<char16_t const*, char16_t const*>> {
              {u"Keyboard interactions: Navigation", u"#navigation"},
              {u"Keyboard interactions: Home and End keys", u"#home-and-end-keys"},
              {u"Keyboard interactions: Page up and Page down keys", u"#page-up-and-page-down-keys"},
              {u"Keyboard interactions: Control group", u"#control-group"}}) {
         references.items().append(HyperlinkButton {
-            content = title, navigateUri = std::u16string {u"https://learn.microsoft.com/windows/apps/design/input/keyboard-interactions"} + anchor});
+            content = heading, navigateUri = std::u16string {u"https://learn.microsoft.com/windows/apps/design/input/keyboard-interactions"} + anchor});
     }
 
     return StackPanel {

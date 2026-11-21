@@ -6,7 +6,6 @@
 #include "Pages.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -14,6 +13,7 @@ gallery::LazyLoadedText CalcPanelHeader{"Snippets/Bevel/CalcPanel.html"};
 gallery::LazyLoadedText CalcPanelCode{"Snippets/Bevel/CalcPanel.h"};
 
 FrameworkElement calcPanelExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Bevel/CalcPanel.h"
 
     return gallery::controlExample({
@@ -27,6 +27,7 @@ gallery::LazyLoadedText StretchHeader{"Snippets/Bevel/Stretch.html"};
 gallery::LazyLoadedText StretchCode{"Snippets/Bevel/Stretch.h"};
 
 FrameworkElement stretchExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Bevel/Stretch.h"
 
     return gallery::controlExample({
@@ -40,6 +41,7 @@ gallery::LazyLoadedText KeypadHeader{"Snippets/Bevel/Keypad.html"};
 gallery::LazyLoadedText KeypadCode{"Snippets/Bevel/Keypad.h"};
 
 FrameworkElement keypadExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Bevel/Keypad.h"
 
     return gallery::controlExample({

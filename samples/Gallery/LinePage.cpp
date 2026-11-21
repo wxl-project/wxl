@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText lineHeader{"Snippets/Line/Line.html"};
 gallery::LazyLoadedText lineCode{"Snippets/Line/Line.h"};
 
 FrameworkElement line() {
+    using namespace wxl::dsl;
 #include "Snippets/Line/Line.h"
 
     return gallery::controlExample({
@@ -26,6 +26,7 @@ gallery::LazyLoadedText polylineHeader{"Snippets/Line/Polyline.html"};
 gallery::LazyLoadedText polylineCode{"Snippets/Line/Polyline.h"};
 
 FrameworkElement polyline() {
+    using namespace wxl::dsl;
 #include "Snippets/Line/Polyline.h"
 
     return gallery::controlExample({
@@ -40,6 +41,7 @@ gallery::LazyLoadedText pathHeader{"Snippets/Line/LinePath.html"};
 gallery::LazyLoadedText pathCode{"Snippets/Line/LinePath.h"};
 
 FrameworkElement path() {
+    using namespace wxl::dsl;
 #include "Snippets/Line/LinePath.h"
 
     return gallery::controlExample({
@@ -54,6 +56,7 @@ gallery::LazyLoadedText geometryGroupHeader{"Snippets/Line/LineGeometrygroup.htm
 gallery::LazyLoadedText geometryGroupCode{"Snippets/Line/LineGeometrygroup.h"};
 
 FrameworkElement geometryGroup() {
+    using namespace wxl::dsl;
 #include "Snippets/Line/LineGeometrygroup.h"
 
     return gallery::controlExample({

@@ -33,31 +33,31 @@ struct Model {
         window->contentVisual().children().insertAtTop(square);
         window->hideContent();
 
-        window->onKeyDown([weak = self, square, compositor](VirtualKey key) {
+        window->onKeyDown([weak = self, square, compositor](VirtualKey pressed) {
             if (auto const model = weak.lock()) {
-                std::u16string text = u"Key: ";
-                text += core::to_u16(static_cast<int>(key)).plain();
-                model->keyText.text(text);
+                std::u16string line = u"Key: ";
+                line += core::to_u16(static_cast<int>(pressed)).plain();
+                model->keyText.text(line);
                 static constexpr Color colours[] = {rgb(0x3b, 0x82, 0xf6), rgb(0xf6, 0x82, 0x3b), rgb(0x3b, 0xf6, 0x82),
                                                     rgb(0xf6, 0x3b, 0xb0)};
-                square.brush(compositor.createColorBrush(colours[static_cast<int>(key) % 4]));
+                square.brush(compositor.createColorBrush(colours[static_cast<int>(pressed) % 4]));
             }
         });
         window->onPointerMoved([weak = self, square](PointerPoint const& point) {
             square.offset({static_cast<float>(point.position().x), static_cast<float>(point.position().y), 0.0f});
             if (auto const model = weak.lock()) {
-                std::u16string text = u"Pointer: ";
-                text += core::to_u16(point.position().x, std::chars_format::fixed, 0).plain();
-                text += u", ";
-                text += core::to_u16(point.position().y, std::chars_format::fixed, 0).plain();
-                model->pointerText.text(text);
+                std::u16string line = u"Pointer: ";
+                line += core::to_u16(point.position().x, std::chars_format::fixed, 0).plain();
+                line += u", ";
+                line += core::to_u16(point.position().y, std::chars_format::fixed, 0).plain();
+                model->pointerText.text(line);
             }
         });
         window->onPointerWheel([weak = self, square](PointerPoint const& point) {
-            auto const size = std::clamp(square.size().x + point.properties().mouseWheelDelta() / 12.0f, 20.0f, 400.0f);
-            square.size({size, size});
+            auto const side = std::clamp(square.size().x + point.properties().mouseWheelDelta() / 12.0f, 20.0f, 400.0f);
+            square.size({side, side});
             if (auto const model = weak.lock()) {
-                model->wheelText.text(u"Wheel: the square is now " + std::u16string(core::to_u16(size, std::chars_format::fixed, 0).plain()) + u" px");
+                model->wheelText.text(u"Wheel: the square is now " + std::u16string(core::to_u16(side, std::chars_format::fixed, 0).plain()) + u" px");
             }
         });
         // A file thrown into the window (DragAcceptFiles / WM_DROPFILES): its path.

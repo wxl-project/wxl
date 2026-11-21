@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -14,6 +13,7 @@ gallery::LazyLoadedText defaultBrushHeader{"Snippets/Acrylic/DefaultAppAcrylicBr
 gallery::LazyLoadedText defaultBrushCode{"Snippets/Acrylic/DefaultAppAcrylicBrush.h"};
 
 FrameworkElement defaultBrush() {
+    using namespace wxl::dsl;
 #include "Snippets/Acrylic/DefaultAppAcrylicBrush.h"
 
     return gallery::controlExample({
@@ -27,6 +27,7 @@ gallery::LazyLoadedText customBrushHeader{"Snippets/Acrylic/CustomAcrylicAppBrus
 gallery::LazyLoadedText customBrushCode{"Snippets/Acrylic/CustomAcrylicAppBrush.h"};
 
 FrameworkElement customBrush() {
+    using namespace wxl::dsl;
 #include "Snippets/Acrylic/CustomAcrylicAppBrush.h"
 
     return gallery::controlExample({
@@ -41,6 +42,7 @@ gallery::LazyLoadedText luminosityHeader{"Snippets/Acrylic/LuminosityAppAcrylic.
 gallery::LazyLoadedText luminosityCode{"Snippets/Acrylic/LuminosityAppAcrylic.h"};
 
 FrameworkElement luminosity() {
+    using namespace wxl::dsl;
 #include "Snippets/Acrylic/LuminosityAppAcrylic.h"
 
     return gallery::controlExample({

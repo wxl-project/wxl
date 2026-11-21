@@ -1,10 +1,10 @@
 auto output = TextBlock {};
 
-auto item = [output](char16_t const* caption, VirtualKey pressed) {
+auto item = [output](char16_t const* labelText, VirtualKey pressed) {
     return MenuFlyoutItem {
-        text = caption,
+        text = labelText,
         keyboardAccelerators[KeyboardAccelerator {key = pressed, modifiers = VirtualKeyModifiers::Control}],
-        onClick += [output, caption](MenuFlyoutItem const&) { output.text(std::u16string {u"You clicked: "} + caption); },
+        onClick += [output, labelText](MenuFlyoutItem const&) { output.text(std::u16string {u"You clicked: "} + labelText); },
     };
 };
 

@@ -14,7 +14,6 @@
 import wxl.core;
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -22,6 +21,7 @@ gallery::LazyLoadedText controlsHeader{"Snippets/Binding/BindingControls.html"};
 gallery::LazyLoadedText controlsCode{"Snippets/Binding/BindingControls.h"};
 
 FrameworkElement controlsExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Binding/BindingControls.h"
 
     return gallery::controlExample({.header = gallery::snippet(controlsHeader), .example = example, .code = gallery::snippet(controlsCode)});
@@ -31,6 +31,7 @@ gallery::LazyLoadedText propertyFieldHeader{"Snippets/Binding/BindingPropertyCod
 gallery::LazyLoadedText propertyFieldCode{"Snippets/Binding/BindingPropertyCodeBehind.h"};
 
 FrameworkElement propertyFieldExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Binding/BindingPropertyCodeBehind.h"
 
     return gallery::controlExample({.header = gallery::snippet(propertyFieldHeader), .example = example, .code = gallery::snippet(propertyFieldCode)});
@@ -40,6 +41,7 @@ gallery::LazyLoadedText functionOfFieldsHeader{"Snippets/Binding/BindingFunction
 gallery::LazyLoadedText functionOfFieldsCode{"Snippets/Binding/BindingFunctionBind.h"};
 
 FrameworkElement functionOfFieldsExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Binding/BindingFunctionBind.h"
 
     return gallery::controlExample({.header = gallery::snippet(functionOfFieldsHeader), .example = example, .code = gallery::snippet(functionOfFieldsCode)});
@@ -49,6 +51,7 @@ gallery::LazyLoadedText converterHeader{"Snippets/Binding/ConverterBinding.html"
 gallery::LazyLoadedText converterCode{"Snippets/Binding/ConverterBinding.h"};
 
 FrameworkElement converterExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Binding/ConverterBinding.h"
 
     return gallery::controlExample({.header = gallery::snippet(converterHeader), .example = example, .code = gallery::snippet(converterCode)});
@@ -58,6 +61,7 @@ gallery::LazyLoadedText viewModelHeader{"Snippets/Binding/BindingViewModel.html"
 gallery::LazyLoadedText viewModelCode{"Snippets/Binding/BindingViewModel.h"};
 
 FrameworkElement viewModelExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Binding/BindingViewModel.h"
 
     return gallery::controlExample({.header = gallery::snippet(viewModelHeader), .example = example, .code = gallery::snippet(viewModelCode)});
@@ -67,6 +71,7 @@ gallery::LazyLoadedText nullValueHeader{"Snippets/Binding/BindingTargetnullvalue
 gallery::LazyLoadedText nullValueCode{"Snippets/Binding/BindingTargetnullvalue.h"};
 
 FrameworkElement nullValueExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Binding/BindingTargetnullvalue.h"
 
     return gallery::controlExample({.header = gallery::snippet(nullValueHeader), .example = example, .code = gallery::snippet(nullValueCode)});
@@ -76,6 +81,7 @@ gallery::LazyLoadedText masterDetailHeader{"Snippets/Binding/BindingCollectionDa
 gallery::LazyLoadedText masterDetailCode{"Snippets/Binding/BindingCollectionDataTemplates.h"};
 
 FrameworkElement masterDetailExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Binding/BindingCollectionDataTemplates.h"
 
     return gallery::controlExample({.header = gallery::snippet(masterDetailHeader), .example = example, .code = gallery::snippet(masterDetailCode)});
@@ -84,6 +90,7 @@ FrameworkElement masterDetailExample() {
 }  // namespace
 
 static FrameworkElement bindingPage() {
+    using namespace wxl::dsl;
     return StackPanel {
         spacing = 12.0,
         gallery::prose(
