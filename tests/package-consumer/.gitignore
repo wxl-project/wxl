@@ -3,6 +3,7 @@
 cmake/
 feed/
 packages.lock.json
-# What MSBuild writes beside msbuild/demo.vcxproj: the restore and the build.
+# What MSBuild writes beside msbuild/demo.vcxproj and msbuild/window.vcxproj:
+# the restore and the build.
 msbuild/obj/
 msbuild/build/
