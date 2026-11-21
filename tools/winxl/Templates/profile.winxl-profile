@@ -1,0 +1,5 @@
+{
+    "name": "@NAME@",
+    "description": "The profile of @NAME@: @EXTENDS@ of wxl, which the generator finds among the profiles of the package WinXL. Add the WinUI types and members the application needs, and the components it uses, here.",
+    "extends": ["@EXTENDS@"]
+}

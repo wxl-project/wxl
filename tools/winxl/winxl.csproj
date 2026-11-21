@@ -40,6 +40,12 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
+  <!-- The templates of the files `winxl new` and `winxl add` write, read back by their path under
+       Templates (Templates.cs). -->
+  <ItemGroup>
+    <EmbeddedResource Include="Templates\*" LogicalName="Templates/%(Filename)%(Extension)" />
+  </ItemGroup>
+
   <!-- A ContinuousIntegrationBuild, as the build of the package WinXL makes it
        (WXL_REPRODUCIBLE_BUILD, cmake/wxl_winxl.cmake), is the same bytes from any
        directory at any time. The compiler maps the sources to /_N/ by the source
