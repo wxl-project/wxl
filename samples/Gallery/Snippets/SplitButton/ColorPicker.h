@@ -27,14 +27,14 @@ auto const model = gallery::hold<Model>();
 // It waits for a swatch to be clicked and ends when the content leaves the tree, that is, when
 // the flyout closes. The flyout is its own sender, so nothing captures the button that owns it;
 // what it colours it takes as parameters, so it lives in its own frame.
-auto const pick = [](Flyout flyout, RichEditBox richBox, Border swatch, std::shared_ptr<Color> current) -> async::task<> {
-    auto clicks = onItemClick(flyout.content().try_as<GridView>());
+auto const pick = [](Flyout popup, RichEditBox richBox, Border swatch, std::shared_ptr<Color> current) -> async::task<> {
+    auto clicks = onItemClick(popup.content().try_as<GridView>());
     while (auto const got = co_await clicks.next()) {
         auto const picked = got->get().clickedItem().try_as<Rectangle>().fill().try_as<SolidColorBrush>().color();
         *current = picked;
         richBox.document().selection().characterFormat().foregroundColor(picked);
         swatch.background(SolidColorBrush {color = picked});
-        flyout.hide();
+        popup.hide();
     }
 };
 

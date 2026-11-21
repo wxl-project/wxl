@@ -9,10 +9,10 @@ auto combo = ComboBox {
     ComboBoxItem {content = u"Red"},
     ComboBoxItem {content = u"Yellow"},
     onSelectionChanged += [output](ComboBox const& self) {
-        static constexpr Color colors[] = {rgb(0, 0, 255), rgb(0, 128, 0), rgb(255, 0, 0), rgb(255, 255, 0)};
+        static constexpr Color palette[] = {rgb(0, 0, 255), rgb(0, 128, 0), rgb(255, 0, 0), rgb(255, 255, 0)};
         int const index = self.selectedIndex();
         if (index >= 0) {
-            output.fill(SolidColorBrush {color = colors[index]});
+            output.fill(SolidColorBrush {color = palette[index]});
         }
     },
 };

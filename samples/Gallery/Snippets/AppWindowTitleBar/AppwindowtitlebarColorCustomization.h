@@ -21,18 +21,18 @@ struct Model {
         void (*apply)(AppWindowTitleBar const&, Color);
     };
     Channel channels[12] = {
-        {background, [](AppWindowTitleBar const& bar, Color value) { bar.backgroundColor(value); }},
-        {foreground, [](AppWindowTitleBar const& bar, Color value) { bar.foregroundColor(value); }},
-        {buttonBackground, [](AppWindowTitleBar const& bar, Color value) { bar.buttonBackgroundColor(value); }},
-        {buttonForeground, [](AppWindowTitleBar const& bar, Color value) { bar.buttonForegroundColor(value); }},
-        {buttonHoverBackground, [](AppWindowTitleBar const& bar, Color value) { bar.buttonHoverBackgroundColor(value); }},
-        {buttonHoverForeground, [](AppWindowTitleBar const& bar, Color value) { bar.buttonHoverForegroundColor(value); }},
-        {inactiveBackground, [](AppWindowTitleBar const& bar, Color value) { bar.inactiveBackgroundColor(value); }},
-        {inactiveForeground, [](AppWindowTitleBar const& bar, Color value) { bar.inactiveForegroundColor(value); }},
-        {buttonInactiveBackground, [](AppWindowTitleBar const& bar, Color value) { bar.buttonInactiveBackgroundColor(value); }},
-        {buttonInactiveForeground, [](AppWindowTitleBar const& bar, Color value) { bar.buttonInactiveForegroundColor(value); }},
-        {buttonPressedBackground, [](AppWindowTitleBar const& bar, Color value) { bar.buttonPressedBackgroundColor(value); }},
-        {buttonPressedForeground, [](AppWindowTitleBar const& bar, Color value) { bar.buttonPressedForegroundColor(value); }},
+        {background, [](AppWindowTitleBar const& bar, Color c) { bar.backgroundColor(c); }},
+        {foreground, [](AppWindowTitleBar const& bar, Color c) { bar.foregroundColor(c); }},
+        {buttonBackground, [](AppWindowTitleBar const& bar, Color c) { bar.buttonBackgroundColor(c); }},
+        {buttonForeground, [](AppWindowTitleBar const& bar, Color c) { bar.buttonForegroundColor(c); }},
+        {buttonHoverBackground, [](AppWindowTitleBar const& bar, Color c) { bar.buttonHoverBackgroundColor(c); }},
+        {buttonHoverForeground, [](AppWindowTitleBar const& bar, Color c) { bar.buttonHoverForegroundColor(c); }},
+        {inactiveBackground, [](AppWindowTitleBar const& bar, Color c) { bar.inactiveBackgroundColor(c); }},
+        {inactiveForeground, [](AppWindowTitleBar const& bar, Color c) { bar.inactiveForegroundColor(c); }},
+        {buttonInactiveBackground, [](AppWindowTitleBar const& bar, Color c) { bar.buttonInactiveBackgroundColor(c); }},
+        {buttonInactiveForeground, [](AppWindowTitleBar const& bar, Color c) { bar.buttonInactiveForegroundColor(c); }},
+        {buttonPressedBackground, [](AppWindowTitleBar const& bar, Color c) { bar.buttonPressedBackgroundColor(c); }},
+        {buttonPressedForeground, [](AppWindowTitleBar const& bar, Color c) { bar.buttonPressedForegroundColor(c); }},
     };
 
     Button showButton {content = u"Show window"};

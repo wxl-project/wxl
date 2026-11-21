@@ -22,7 +22,6 @@
 #include <wxl/Microsoft.UI.Composition.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -30,6 +29,7 @@ gallery::LazyLoadedText barsHeader{"Snippets/ItemsRepeater/ItemsRepeaterBasicNon
 gallery::LazyLoadedText barsCode{"Snippets/ItemsRepeater/ItemsRepeaterBasicNonInteractiveItems.h"};
 
 FrameworkElement bars() {
+    using namespace wxl::dsl;
 #include "Snippets/ItemsRepeater/ItemsRepeaterBasicNonInteractiveItems.h"
 
     return gallery::controlExample({
@@ -44,6 +44,7 @@ gallery::LazyLoadedText virtualizingHeader{"Snippets/ItemsRepeater/ItemsRepeater
 gallery::LazyLoadedText virtualizingCode{"Snippets/ItemsRepeater/ItemsRepeaterVirtualizingScrollableListItems.h"};
 
 FrameworkElement virtualizing() {
+    using namespace wxl::dsl;
 #include "Snippets/ItemsRepeater/ItemsRepeaterVirtualizingScrollableListItems.h"
 
     return gallery::controlExample({
@@ -58,6 +59,7 @@ gallery::LazyLoadedText flowHeader{"Snippets/ItemsRepeater/FlowLayoutVirtualizat
 gallery::LazyLoadedText flowCode{"Snippets/ItemsRepeater/FlowLayoutVirtualization.h"};
 
 FrameworkElement flow() {
+    using namespace wxl::dsl;
 #include "Snippets/ItemsRepeater/FlowLayoutVirtualization.h"
 
     return gallery::controlExample({
@@ -72,6 +74,7 @@ gallery::LazyLoadedText mixedHeader{"Snippets/ItemsRepeater/ItemsrepeaterMixedTy
 gallery::LazyLoadedText mixedCode{"Snippets/ItemsRepeater/ItemsrepeaterMixedTypeCollection.h"};
 
 FrameworkElement mixed() {
+    using namespace wxl::dsl;
 #include "Snippets/ItemsRepeater/ItemsrepeaterMixedTypeCollection.h"
 
     return gallery::controlExample({
@@ -85,6 +88,7 @@ gallery::LazyLoadedText nestedHeader{"Snippets/ItemsRepeater/LayingOutNestedItem
 gallery::LazyLoadedText nestedCode{"Snippets/ItemsRepeater/LayingOutNestedItemsrepeaters.h"};
 
 FrameworkElement nested() {
+    using namespace wxl::dsl;
 #include "Snippets/ItemsRepeater/LayingOutNestedItemsrepeaters.h"
 
     return gallery::controlExample({
@@ -98,6 +102,7 @@ gallery::LazyLoadedText animatedHeader{"Snippets/ItemsRepeater/ItemsRepeaterAnim
 gallery::LazyLoadedText animatedCode{"Snippets/ItemsRepeater/ItemsRepeaterAnimatedScrollingContentDisplay.h"};
 
 FrameworkElement animated() {
+    using namespace wxl::dsl;
 #include "Snippets/ItemsRepeater/ItemsRepeaterAnimatedScrollingContentDisplay.h"
 
     return gallery::controlExample({
@@ -111,6 +116,7 @@ gallery::LazyLoadedText contentHeavyHeader{"Snippets/ItemsRepeater/ItemsRepeater
 gallery::LazyLoadedText contentHeavyCode{"Snippets/ItemsRepeater/ItemsRepeaterVirtualizedContentHeavyLayout.h"};
 
 FrameworkElement contentHeavy() {
+    using namespace wxl::dsl;
 #include "Snippets/ItemsRepeater/ItemsRepeaterVirtualizedContentHeavyLayout.h"
 
     return gallery::controlExample({

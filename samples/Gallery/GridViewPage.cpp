@@ -10,7 +10,6 @@
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -18,6 +17,7 @@ gallery::LazyLoadedText basicHeader{"Snippets/GridView/BasicGridviewSimpleDatate
 gallery::LazyLoadedText basicCode{"Snippets/GridView/BasicGridviewSimpleDatatemplate.h"};
 
 FrameworkElement basic() {
+    using namespace wxl::dsl;
 #include "Snippets/GridView/BasicGridviewSimpleDatatemplate.h"
 
     return gallery::controlExample({
@@ -31,6 +31,7 @@ gallery::LazyLoadedText layoutHeader{"Snippets/GridView/GridviewLayoutCustomizat
 gallery::LazyLoadedText layoutCode{"Snippets/GridView/GridviewLayoutCustomization.h"};
 
 FrameworkElement customizedLayout() {
+    using namespace wxl::dsl;
 #include "Snippets/GridView/GridviewLayoutCustomization.h"
 
     return gallery::controlExample({
@@ -45,6 +46,7 @@ gallery::LazyLoadedText contentHeader{"Snippets/GridView/ContentInsideGridview.h
 gallery::LazyLoadedText contentCode{"Snippets/GridView/ContentInsideGridview.h"};
 
 FrameworkElement contentGrid() {
+    using namespace wxl::dsl;
 #include "Snippets/GridView/ContentInsideGridview.h"
 
     return gallery::controlExample({

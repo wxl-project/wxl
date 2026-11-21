@@ -13,9 +13,9 @@ struct Model {
     // What the ItemContainerStyle of the original sets (a Margin) is a tag of the control: the margin
     // of every item container, the ones on screen and the ones made later.
     void space() {
-        auto const column = static_cast<float>(columnSpace.value());
-        auto const row = static_cast<float>(rowSpace.value());
-        grid.itemMargin(Thickness {column, row, column, row});
+        auto const columnGap = static_cast<float>(columnSpace.value());
+        auto const rowGap = static_cast<float>(rowSpace.value());
+        grid.itemMargin(Thickness {columnGap, rowGap, columnGap, rowGap});
     }
 
     // The panel of a GridView is an ItemsWrapGrid, which the control hands out once it is loaded.
@@ -27,13 +27,13 @@ struct Model {
 };
 auto const model = gallery::hold<Model>();
 
-auto const* data = &gallery::dataObjects();
+auto const* objects = &gallery::dataObjects();
 
 // The template of the original: a picture with a strip over it that carries the title and the likes.
 model->grid = GridView {
     itemMargin = Thickness {5},
-    itemTemplate = [data](Object const& item) {
-        auto const& object = (*data)[static_cast<size_t>(unboxValue<int64_t>(item))];
+    itemTemplate = [objects](Object const& item) {
+        auto const& object = (*objects)[static_cast<size_t>(unboxValue<int64_t>(item))];
         return Grid {
             width = 100,
             Image {stretch = Stretch::UniformToFill, source = object.imageLocation},
@@ -53,7 +53,7 @@ model->grid = GridView {
             },
         };
     },
-    itemsSource = IndexList(static_cast<int64_t>(data->size())),
+    itemsSource = IndexList(static_cast<int64_t>(objects->size())),
     onLoaded += [model](auto&&...) { model->wrap(); },
 };
 

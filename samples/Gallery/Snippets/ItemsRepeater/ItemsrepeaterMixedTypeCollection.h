@@ -19,16 +19,16 @@ auto const entries = std::make_shared<std::vector<Entry>>(std::vector<Entry> {
 
 // What the DataTemplateSelector of the original does: the template follows the type of the item.
 auto const stringOrInt = [entries](Object const& item) -> UIElement {
-    auto const& entry = (*entries)[static_cast<size_t>(unboxValue<int64_t>(item))];
-    if (entry.isText) {
+    auto const& record = (*entries)[static_cast<size_t>(unboxValue<int64_t>(item))];
+    if (record.isText) {
         return Grid {Margin {10},
                      background = brushes.SystemControl.Background.Accent,
                      TextBlock {Padding {10}, foreground = brushes.SystemControl.Foreground.Chrome.White, hAlign.center, vAlign.center,
-                                textWrapping = TextWrapping::Wrap, entry.text}};
+                                textWrapping = TextWrapping::Wrap, record.text}};
     }
     return Grid {Margin {10},
                  background = brushes.SystemControl.Background.Chrome.Medium,
-                 TextBlock {Padding {10}, styles.TextBlock.Header, hAlign.center, vAlign.center, gallery::numberText(entry.number)}};
+                 TextBlock {Padding {10}, styles.TextBlock.Header, hAlign.center, vAlign.center, gallery::numberText(record.number)}};
 };
 
 auto example = StackPanel {

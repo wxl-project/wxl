@@ -15,7 +15,6 @@
 import wxl.core;
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -23,6 +22,7 @@ gallery::LazyLoadedText simpleHeader{"Snippets/RichEditBox/SimpleTextEditor.html
 gallery::LazyLoadedText simpleCode{"Snippets/RichEditBox/SimpleTextEditor.h"};
 
 FrameworkElement simple() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(simpleHeader),
         .example =
@@ -36,6 +36,7 @@ gallery::LazyLoadedText customHeader{"Snippets/RichEditBox/CustomEditor.html"};
 gallery::LazyLoadedText customCode{"Snippets/RichEditBox/CustomEditor.h"};
 
 FrameworkElement customEditor() {
+    using namespace wxl::dsl;
 #include "Snippets/RichEditBox/CustomEditor.h"
 
     return gallery::controlExample({
@@ -49,11 +50,12 @@ gallery::LazyLoadedText mathHeader{"Snippets/RichEditBox/Math.html"};
 gallery::LazyLoadedText mathCode{"Snippets/RichEditBox/Math.h"};
 
 FrameworkElement math() {
+    using namespace wxl::dsl;
 #include "Snippets/RichEditBox/Math.h"
 
     return gallery::controlExample({
         .header = gallery::snippet(mathHeader),
-        .example = StackPanel {spacing = 8.0, description, editor},
+        .example = StackPanel {spacing = 8.0, explanation, editor},
         .code = gallery::snippet(mathCode),
     });
 }
@@ -62,13 +64,14 @@ gallery::LazyLoadedText mathmlHeader{"Snippets/RichEditBox/WorkingMathml.html"};
 gallery::LazyLoadedText mathmlCode{"Snippets/RichEditBox/WorkingMathml.h"};
 
 FrameworkElement workingMathml() {
+    using namespace wxl::dsl;
 #include "Snippets/RichEditBox/WorkingMathml.h"
 
     return gallery::controlExample({
         .header = gallery::snippet(mathmlHeader),
         .example = StackPanel {
             spacing = 16.0,
-            description,
+            explanation,
             editor,
             TextBlock {u"MathML Code", FontWeight {600}, Margin {0, 0, 0, -8}},
             Border {

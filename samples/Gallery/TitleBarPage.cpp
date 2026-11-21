@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -14,6 +13,7 @@ gallery::LazyLoadedText configurationHeader{"Snippets/TitleBar/TitlebarConfigura
 gallery::LazyLoadedText configurationCode{"Snippets/TitleBar/TitlebarConfiguration.h"};
 
 FrameworkElement configurationExample() {
+    using namespace wxl::dsl;
 #include "Snippets/TitleBar/TitlebarConfiguration.h"
 
     return gallery::controlExample({
@@ -28,6 +28,7 @@ gallery::LazyLoadedText dragRegionsHeader{"Snippets/TitleBar/TitlebarDragRegions
 gallery::LazyLoadedText dragRegionsCode{"Snippets/TitleBar/TitlebarDragRegions.h"};
 
 FrameworkElement dragRegions() {
+    using namespace wxl::dsl;
 #include "Snippets/TitleBar/TitlebarDragRegions.h"
 
     return gallery::controlExample({
@@ -41,6 +42,7 @@ gallery::LazyLoadedText endToEndHeader{"Snippets/TitleBar/EndEndTitlebarSample.h
 gallery::LazyLoadedText endToEndCode{"Snippets/TitleBar/EndEndTitlebarSample.h"};
 
 FrameworkElement endToEnd() {
+    using namespace wxl::dsl;
 #include "Snippets/TitleBar/EndEndTitlebarSample.h"
 
     return gallery::controlExample({

@@ -16,11 +16,11 @@ auto const copy = [](Model* model, WindowId window) -> async::task<> {
     if (picked.empty()) co_return;
 
     // A coroutine that ends in an exception ends the program: what can fail is caught.
-    std::vector<StorageItem> items;
+    std::vector<StorageItem> files;
     try {
         for (auto const& file : picked) {
             auto const stored = co_await StorageFile::getFileFromPathAsync(file.path());
-            items.push_back(StorageItem {stored});
+            files.push_back(StorageItem {stored});
         }
     } catch (...) {
         model->status.text(u"Error copying files to clipboard.");
@@ -28,7 +28,7 @@ auto const copy = [](Model* model, WindowId window) -> async::task<> {
     }
 
     auto package = DataPackage {requestedOperation = DataPackageOperation::Copy};
-    package.setStorageItems(items);
+    package.setStorageItems(files);
 
     std::u16string words;
     if (Clipboard::setContentWithOptions(package, ClipboardContentOptions {})) {
@@ -47,7 +47,7 @@ auto const paste = [](Model* model) -> async::task<> {
         co_return;
     }
     try {
-        auto const items = co_await package.getStorageItemsAsync();
+        auto const storageItems = co_await package.getStorageItemsAsync();
         std::u16string words = u"Requested operation: ";
         switch (package.requestedOperation()) {
         case DataPackageOperation::Copy: words += u"Copy"; break;
@@ -56,9 +56,9 @@ auto const paste = [](Model* model) -> async::task<> {
         default: words += u"None"; break;
         }
         words += u"\nFile(s) on clipboard (";
-        words += core::to_u16(static_cast<int>(items.size())).plain();
+        words += core::to_u16(static_cast<int>(storageItems.size())).plain();
         words += u"):";
-        for (auto const& item : items) {
+        for (auto const& item : storageItems) {
             words += u"\n  • ";
             words += std::u16string_view {item.name()};
         }

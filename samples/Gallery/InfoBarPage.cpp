@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,12 +11,13 @@ gallery::LazyLoadedText changeHeader{"Snippets/InfoBar/ClosableInfoBarOptionsCha
 gallery::LazyLoadedText changeCode{"Snippets/InfoBar/ClosableInfoBarOptionsChange.h"};
 
 FrameworkElement change() {
+    using namespace wxl::dsl;
 #include "Snippets/InfoBar/ClosableInfoBarOptionsChange.h"
 
     return gallery::controlExample({
         .header = gallery::snippet(changeHeader),
         .example = bar,
-        .options = {StackPanel {width = 150, isOpen, severity}},
+        .options = {StackPanel {width = 150, isOpenBox, severityBox}},
         .code = gallery::snippet(changeCode),
     });
 }
@@ -26,12 +26,13 @@ gallery::LazyLoadedText longShortHeader{"Snippets/InfoBar/ClosableInfoBarLongSho
 gallery::LazyLoadedText longShortCode{"Snippets/InfoBar/ClosableInfoBarLongShort.h"};
 
 FrameworkElement longShort() {
+    using namespace wxl::dsl;
 #include "Snippets/InfoBar/ClosableInfoBarLongShort.h"
 
     return gallery::controlExample({
         .header = gallery::snippet(longShortHeader),
         .example = bar,
-        .options = {StackPanel {width = 150, isOpen, length, actionButton}},
+        .options = {StackPanel {width = 150, isOpenBox, length, actionBox}},
         .code = gallery::snippet(longShortCode),
     });
 }
@@ -40,12 +41,13 @@ gallery::LazyLoadedText displayHeader{"Snippets/InfoBar/ClosableInfoBarOptionsDi
 gallery::LazyLoadedText displayCode{"Snippets/InfoBar/ClosableInfoBarOptionsDisplay.h"};
 
 FrameworkElement display() {
+    using namespace wxl::dsl;
 #include "Snippets/InfoBar/ClosableInfoBarOptionsDisplay.h"
 
     return gallery::controlExample({
         .header = gallery::snippet(displayHeader),
         .example = bar,
-        .options = {StackPanel {width = 150, isOpen, isIconVisible, isClosable}},
+        .options = {StackPanel {width = 150, isOpenBox, isIconVisibleBox, isClosableBox}},
         .code = gallery::snippet(displayCode),
     });
 }

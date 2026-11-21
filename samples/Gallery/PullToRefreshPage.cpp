@@ -7,7 +7,6 @@
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -15,6 +14,7 @@ gallery::LazyLoadedText basicHeader{"Snippets/PullToRefresh/BasicPulltorefresh.h
 gallery::LazyLoadedText basicCode{"Snippets/PullToRefresh/BasicPulltorefresh.h"};
 
 FrameworkElement basic() {
+    using namespace wxl::dsl;
 #include "Snippets/PullToRefresh/BasicPulltorefresh.h"
 
     return gallery::controlExample({
@@ -28,6 +28,7 @@ gallery::LazyLoadedText customIconHeader{"Snippets/PullToRefresh/CustomIconPullt
 gallery::LazyLoadedText customIconCode{"Snippets/PullToRefresh/CustomIconPulltorefresh.h"};
 
 FrameworkElement customIcon() {
+    using namespace wxl::dsl;
 #include "Snippets/PullToRefresh/CustomIconPulltorefresh.h"
 
     return gallery::controlExample({

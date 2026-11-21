@@ -12,7 +12,6 @@
 #include "Lab.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -42,13 +41,13 @@ struct Reveal {
     BorderLight border;
     RevealEffect reveal {hover, border};
 
-    HoverLight keyHover {diffuseAmount = 0.5f};
-    BorderLight keyBorder {diffuseAmount = 0.9f};
+    HoverLight keyHover {dsl::diffuseAmount = 0.5f};
+    BorderLight keyBorder {dsl::diffuseAmount = 0.9f};
     Button3DEffect relief {
-        foreground = rgb(255, 227, 180),
-        background = rgba(176, 98, 30, 0.933),
-        shadow = 0.4,
-        emboss = -0.3,
+        dsl::foreground = rgb(255, 227, 180),
+        dsl::background = rgba(176, 98, 30, 0.933),
+        dsl::shadow = 0.4,
+        dsl::emboss = -0.3,
         keyHover,
         keyBorder,
     };
@@ -127,9 +126,10 @@ struct Reveal {
 }  // namespace
 
 lab::Experiment lab::revealPage() {
+    using namespace wxl::dsl;
     auto const model = std::make_shared<Reveal>();
 
-    static constexpr char16_t const* labels[] = {
+    static constexpr char16_t const* captions[] = {
         u"7", u"8", u"9", u"÷", u"4", u"5", u"6", u"×", u"1", u"2", u"3", u"−", u"0", u",", u"=", u"+",
     };
 
@@ -156,7 +156,7 @@ lab::Experiment lab::revealPage() {
                 Margin {5},
                 CornerRadius {8},
                 fontSize = 22,
-                content = labels[index],
+                content = captions[index],
                 model->relief,
             });
         } else {
@@ -167,7 +167,7 @@ lab::Experiment lab::revealPage() {
                 vAlign.stretch,
                 Margin {5},
                 fontSize = 22,
-                content = labels[index],
+                content = captions[index],
                 model->reveal,
             });
         }

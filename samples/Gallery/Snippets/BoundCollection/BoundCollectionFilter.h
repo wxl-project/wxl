@@ -5,13 +5,13 @@ struct Model {
     core::observable_list<core::u16_text> shown;
 
     Model() {
-        shown.follow(query, [](core::u16_text const& text) {
+        shown.follow(query, [](core::u16_text const& typed) {
             static constexpr std::u16string_view words[] = {
                 u"apple", u"apricot", u"avocado", u"banana", u"blackberry", u"blueberry", u"cherry", u"coconut",
                 u"cranberry", u"date", u"fig", u"grape", u"grapefruit", u"kiwi", u"lemon", u"lime", u"mango",
                 u"melon", u"nectarine", u"orange", u"papaya", u"peach", u"pear", u"pineapple", u"plum",
                 u"pomegranate", u"raspberry", u"strawberry", u"tangerine", u"watermelon"};
-            std::u16string needle = text.plain();
+            std::u16string needle = typed.plain();
             for (char16_t& unit : needle) {
                 if (unit >= u'A' && unit <= u'Z') unit = static_cast<char16_t>(unit - u'A' + u'a');
             }

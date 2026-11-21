@@ -14,7 +14,6 @@
 #include <wxl/Microsoft.UI.Xaml.Shapes.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -22,6 +21,7 @@ gallery::LazyLoadedText naturalMotionHeader{"Snippets/XamlCompInterop/XamlCompIn
 gallery::LazyLoadedText naturalMotionCode{"Snippets/XamlCompInterop/XamlCompInteropNaturalMotionCompositionAnimation.h"};
 
 FrameworkElement naturalMotion() {
+    using namespace wxl::dsl;
 #include "Snippets/XamlCompInterop/XamlCompInteropNaturalMotionCompositionAnimation.h"
 
     return gallery::controlExample({
@@ -36,6 +36,7 @@ gallery::LazyLoadedText ellipseHeader{"Snippets/XamlCompInterop/XamlCompInteropE
 gallery::LazyLoadedText ellipseCode{"Snippets/XamlCompInterop/XamlCompInteropExpressionanimationEllipseElement.h"};
 
 FrameworkElement ellipse() {
+    using namespace wxl::dsl;
 #include "Snippets/XamlCompInterop/XamlCompInteropExpressionanimationEllipseElement.h"
 
     return gallery::controlExample({
@@ -49,6 +50,7 @@ gallery::LazyLoadedText severalHeader{"Snippets/XamlCompInterop/XamlCompInteropD
 gallery::LazyLoadedText severalCode{"Snippets/XamlCompInterop/XamlCompInteropDrivingSeveralRelatedAnimations.h"};
 
 FrameworkElement several() {
+    using namespace wxl::dsl;
 #include "Snippets/XamlCompInterop/XamlCompInteropDrivingSeveralRelatedAnimations.h"
 
     return gallery::controlExample({
@@ -62,6 +64,7 @@ gallery::LazyLoadedText circleHeader{"Snippets/XamlCompInterop/XamlCompInteropRe
 gallery::LazyLoadedText circleCode{"Snippets/XamlCompInterop/XamlCompInteropReferenceActualsizeExpressionanimationsMake.h"};
 
 FrameworkElement circle() {
+    using namespace wxl::dsl;
 #include "Snippets/XamlCompInterop/XamlCompInteropReferenceActualsizeExpressionanimationsMake.h"
 
     return gallery::controlExample({
@@ -76,6 +79,7 @@ gallery::LazyLoadedText actualOffsetHeader{"Snippets/XamlCompInterop/XamlCompInt
 gallery::LazyLoadedText actualOffsetCode{"Snippets/XamlCompInterop/XamlCompInteropReferenceActualoffsetActualsizeExpressionanimations.h"};
 
 FrameworkElement actualOffset() {
+    using namespace wxl::dsl;
 #include "Snippets/XamlCompInterop/XamlCompInteropReferenceActualoffsetActualsizeExpressionanimations.h"
 
     return gallery::controlExample({

@@ -44,15 +44,15 @@ auto example = StackPanel {
     view,
 };
 
-auto caption = [](char16_t const* words, int line, bool centered) {
+auto captionAt = [](char16_t const* words, int line, bool centered) {
     return TextBlock {row = line, vAlign.center, columnSpan = centered ? 2 : 1, words, centered ? HorizontalAlignment::Center : HorizontalAlignment::Left};
 };
 
 // The names of a choice are its rows; its position is the value of the enumeration.
-auto choice = [](int line, char16_t const* description, std::initializer_list<char16_t const*> names, core::observable<int>& field) {
-    auto box = ComboBox {row = line, column = 1, hAlign.stretch, toolTip = description, automationName = description, selectedIndex = Bind {field}};
-    for (auto const name : names) {
-        box.items().append(ComboBoxItem {content = name});
+auto choice = [](int line, char16_t const* labelText, std::initializer_list<char16_t const*> names, core::observable<int>& field) {
+    auto box = ComboBox {row = line, column = 1, hAlign.stretch, toolTip = labelText, automationName = labelText, selectedIndex = Bind {field}};
+    for (auto const option : names) {
+        box.items().append(ComboBoxItem {content = option});
     }
     return box;
 };
@@ -69,9 +69,9 @@ auto options = Grid {
     columnSpacing = 12.0,
     RowDefinitions<u"auto,auto,auto,auto,auto,auto,auto,auto">,
     rowSpacing = 16.0,
-    caption(u"ZoomMode", 0, false),
+    captionAt(u"ZoomMode", 0, false),
     choice(0, u"zoom mode", {u"Enabled", u"Disabled"}, model->zoomMode),
-    caption(u"ZoomFactor", 1, false),
+    captionAt(u"ZoomFactor", 1, false),
     NumberBox {
         row = 1,
         column = 1,
@@ -86,14 +86,14 @@ auto options = Grid {
         value = 4.0,
         onValueChanged += [view](NumberBox const&, NumberBoxValueChangedEventArgs& args) { view.zoomTo(static_cast<float>(args.newValue()), {}); },
     },
-    caption(u"ScrollMode", 2, true),
-    caption(u"Horizontal", 3, false),
+    captionAt(u"ScrollMode", 2, true),
+    captionAt(u"Horizontal", 3, false),
     choice(3, u"horizontal scroll mode", {u"Enabled", u"Disabled", u"Auto"}, model->horizontalMode),
-    caption(u"Vertical", 4, false),
+    captionAt(u"Vertical", 4, false),
     choice(4, u"vertical scroll mode", {u"Enabled", u"Disabled", u"Auto"}, model->verticalMode),
-    caption(u"ScrollbarVisibility", 5, true),
-    caption(u"Horizontal", 6, false),
+    captionAt(u"ScrollbarVisibility", 5, true),
+    captionAt(u"Horizontal", 6, false),
     choice(6, u"horizontal scroll bar visibility", {u"Auto", u"Visible", u"Hidden"}, model->horizontalBar),
-    caption(u"Vertical", 7, false),
+    captionAt(u"Vertical", 7, false),
     choice(7, u"vertical scroll bar visibility", {u"Auto", u"Visible", u"Hidden"}, model->verticalBar),
 };

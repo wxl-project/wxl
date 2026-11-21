@@ -27,7 +27,6 @@
 #include <wxl/Microsoft.UI.Composition.impl.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -334,6 +333,7 @@ struct Solid {
 }  // namespace
 
 lab::Experiment lab::scenesPage() {
+    using namespace wxl::dsl;
     auto const model = std::make_shared<Solid>();
 
     auto stage = Border {

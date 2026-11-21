@@ -9,8 +9,8 @@ auto bar = ProgressBar {
     Margin {10, 10, 0, 0},
     vAlign.top,
     isIndeterminate = true,
-    showPaused = BindOutput {model->state, [](int state) { return state == 1; }},
-    showError = BindOutput {model->state, [](int state) { return state == 2; }},
+    showPaused = BindOutput {model->state, [](int phase) { return phase == 1; }},
+    showError = BindOutput {model->state, [](int phase) { return phase == 2; }},
 };
 
 auto stateGroup = RadioButtons {

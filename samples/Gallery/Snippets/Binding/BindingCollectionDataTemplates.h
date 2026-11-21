@@ -5,7 +5,7 @@ struct Item {
     char16_t const* created;
     char16_t const* text;
 };
-static constexpr Item items[] = {
+static constexpr Item entries[] = {
     {u"Item 1", u"Jun 15, 2025 9:30 AM",
      u"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer id facilisis lectus. Cras nec convallis ante, quis pulvinar tellus."},
     {u"Item 2", u"Jul 22, 2025 2:15 PM",
@@ -21,9 +21,9 @@ struct Model {
     core::observable<core::u16_text> title, created, text;
 
     Model() {
-        title.follow(selected, [](int at) { return core::unicode::repaired(items[at].title); });
-        created.follow(selected, [](int at) { return core::unicode::repaired(items[at].created); });
-        text.follow(selected, [](int at) { return core::unicode::repaired(items[at].text); });
+        title.follow(selected, [](int at) { return core::unicode::repaired(entries[at].title); });
+        created.follow(selected, [](int at) { return core::unicode::repaired(entries[at].created); });
+        text.follow(selected, [](int at) { return core::unicode::repaired(entries[at].text); });
     }
 };
 auto const model = gallery::hold<Model>();
@@ -39,7 +39,7 @@ auto example = Grid {
         cornerRadius = CornerRadius {4},
         itemsSource = IndexList(4),
         itemTemplate = [](Object const& item) {
-            auto const& at = items[static_cast<size_t>(unboxValue<int64_t>(item))];
+            auto const& at = entries[static_cast<size_t>(unboxValue<int64_t>(item))];
             return StackPanel {Padding {4}, spacing = 2.0, TextBlock {FontWeight {600}, at.title},
                                TextBlock {foreground = brushes.Text.FillColor.Secondary, styles.TextBlock.Caption, at.created}};
         },

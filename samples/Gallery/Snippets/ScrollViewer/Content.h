@@ -40,7 +40,7 @@ auto viewer = ScrollViewer {
     },
 };
 
-auto caption = [](char16_t const* words, int line, Thickness around, bool centered) {
+auto captionAt = [](char16_t const* words, int line, Thickness around, bool centered) {
     return TextBlock {
         row = line,
         margin = around,
@@ -52,11 +52,11 @@ auto caption = [](char16_t const* words, int line, Thickness around, bool center
 };
 
 // The names of a choice are its rows; its position is the value of the enumeration.
-auto choice = [](int line, Thickness around, char16_t const* description, std::initializer_list<char16_t const*> names,
+auto choice = [](int line, Thickness around, char16_t const* labelText, std::initializer_list<char16_t const*> names,
                  core::observable<int>& field) {
-    auto box = ComboBox {row = line, column = 1, margin = around, hAlign.stretch, toolTip = description, automationName = description, selectedIndex = Bind {field}};
-    for (auto const name : names) {
-        box.items().append(ComboBoxItem {content = name});
+    auto box = ComboBox {row = line, column = 1, margin = around, hAlign.stretch, toolTip = labelText, automationName = labelText, selectedIndex = Bind {field}};
+    for (auto const option : names) {
+        box.items().append(ComboBoxItem {content = option});
     }
     return box;
 };
@@ -65,7 +65,7 @@ auto options = Grid {
     minWidth = 200,
     ColumnDefinitions<u"auto,*">,
     RowDefinitions<u"auto,auto,auto,auto,auto,auto,auto,auto">,
-    caption(u"ZoomMode", 0, Thickness {0, 0, 10, 0}, false),
+    captionAt(u"ZoomMode", 0, Thickness {0, 0, 10, 0}, false),
     choice(0, Thickness {}, u"zoom mode", {u"Disabled", u"Enabled"}, model->zoomMode),
     Slider {
         row = 1,
@@ -78,14 +78,14 @@ auto options = Grid {
         value = Bind {model->zoom},
         onValueChanged += [viewer](Slider const& self) { viewer.changeView({}, {}, static_cast<float>(self.value())); },
     },
-    caption(u"ScrollMode", 2, Thickness {0, 12}, true),
-    caption(u"Horizontal", 3, Thickness {0, 0, 10, 0}, false),
+    captionAt(u"ScrollMode", 2, Thickness {0, 12}, true),
+    captionAt(u"Horizontal", 3, Thickness {0, 0, 10, 0}, false),
     choice(3, Thickness {}, u"horizontal scroll mode", {u"Disabled", u"Enabled", u"Auto"}, model->horizontalMode),
-    caption(u"Vertical", 4, Thickness {0, 8, 10, 0}, false),
+    captionAt(u"Vertical", 4, Thickness {0, 8, 10, 0}, false),
     choice(4, Thickness {0, 8, 0, 0}, u"vertical scroll mode", {u"Disabled", u"Enabled", u"Auto"}, model->verticalMode),
-    caption(u"ScrollbarVisibility", 5, Thickness {0, 20, 0, 12}, true),
-    caption(u"Horizontal", 6, Thickness {0, 0, 10, 0}, false),
+    captionAt(u"ScrollbarVisibility", 5, Thickness {0, 20, 0, 12}, true),
+    captionAt(u"Horizontal", 6, Thickness {0, 0, 10, 0}, false),
     choice(6, Thickness {}, u"horizontal scroll bar visibility", {u"Disabled", u"Auto", u"Hidden", u"Visible"}, model->horizontalBar),
-    caption(u"Vertical", 7, Thickness {0, 8, 10, 0}, false),
+    captionAt(u"Vertical", 7, Thickness {0, 8, 10, 0}, false),
     choice(7, Thickness {0, 8, 0, 0}, u"vertical scroll bar visibility", {u"Disabled", u"Auto", u"Hidden", u"Visible"}, model->verticalBar),
 };

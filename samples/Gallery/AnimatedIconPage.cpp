@@ -5,7 +5,6 @@
 #include <wxl/Microsoft.UI.Xaml.Controls.AnimatedVisuals.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -13,6 +12,7 @@ gallery::LazyLoadedText buttonHeader{"Snippets/AnimatedIcon/AddingAnimatediconBu
 gallery::LazyLoadedText buttonCode{"Snippets/AnimatedIcon/AddingAnimatediconButton.h"};
 
 FrameworkElement button() {
+    using namespace wxl::dsl;
 #include "Snippets/AnimatedIcon/AddingAnimatediconButton.h"
 
     return gallery::controlExample({
@@ -27,6 +27,7 @@ gallery::LazyLoadedText navigationViewHeader{"Snippets/AnimatedIcon/AddingAnimat
 gallery::LazyLoadedText navigationViewCode{"Snippets/AnimatedIcon/AddingAnimatediconNavigationview.h"};
 
 FrameworkElement navigationView() {
+    using namespace wxl::dsl;
 #include "Snippets/AnimatedIcon/AddingAnimatediconNavigationview.h"
 
     return gallery::controlExample({

@@ -15,7 +15,6 @@
 #include <wxl/Microsoft.UI.Xaml.Shapes.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -23,6 +22,7 @@ gallery::LazyLoadedText basicListHeader{"Snippets/ListView/BasicListviewSimpleDa
 gallery::LazyLoadedText basicListCode{"Snippets/ListView/BasicListviewSimpleDatatemplate.h"};
 
 FrameworkElement basicList() {
+    using namespace wxl::dsl;
 #include "Snippets/ListView/BasicListviewSimpleDatatemplate.h"
 
     return gallery::controlExample({
@@ -36,6 +36,7 @@ gallery::LazyLoadedText selectionHeader{"Snippets/ListView/ListviewSelectionSupp
 gallery::LazyLoadedText selectionCode{"Snippets/ListView/ListviewSelectionSupport.h"};
 
 FrameworkElement selection() {
+    using namespace wxl::dsl;
 #include "Snippets/ListView/ListviewSelectionSupport.h"
 
     return gallery::controlExample({
@@ -50,6 +51,7 @@ gallery::LazyLoadedText imagesHeader{"Snippets/ListView/ListviewImages.html"};
 gallery::LazyLoadedText imagesCode{"Snippets/ListView/ListviewImages.h"};
 
 FrameworkElement images() {
+    using namespace wxl::dsl;
 #include "Snippets/ListView/ListviewImages.h"
 
     return gallery::controlExample({
@@ -63,6 +65,7 @@ gallery::LazyLoadedText filteringHeader{"Snippets/ListView/ListviewFiltering.htm
 gallery::LazyLoadedText filteringCode{"Snippets/ListView/ListviewFiltering.h"};
 
 FrameworkElement filtering() {
+    using namespace wxl::dsl;
 #include "Snippets/ListView/ListviewFiltering.h"
 
     return gallery::controlExample({
@@ -77,6 +80,7 @@ gallery::LazyLoadedText menusHeader{"Snippets/ListView/ListviewContextMenus.html
 gallery::LazyLoadedText menusCode{"Snippets/ListView/ListviewContextMenus.h"};
 
 FrameworkElement menus() {
+    using namespace wxl::dsl;
 #include "Snippets/ListView/ListviewContextMenus.h"
 
     return gallery::controlExample({
@@ -90,6 +94,7 @@ gallery::LazyLoadedText messagingHeader{"Snippets/ListView/ListviewMessagingData
 gallery::LazyLoadedText messagingCode{"Snippets/ListView/ListviewMessagingDataLogging.h"};
 
 FrameworkElement messaging() {
+    using namespace wxl::dsl;
 #include "Snippets/ListView/ListviewMessagingDataLogging.h"
 
     return gallery::controlExample({
@@ -103,6 +108,7 @@ gallery::LazyLoadedText restoringHeader{"Snippets/ListView/ListviewRestoreScroll
 gallery::LazyLoadedText restoringCode{"Snippets/ListView/ListviewRestoreScrollPosition.h"};
 
 FrameworkElement restoring() {
+    using namespace wxl::dsl;
 #include "Snippets/ListView/ListviewRestoreScrollPosition.h"
 
     return gallery::controlExample({
@@ -116,6 +122,7 @@ gallery::LazyLoadedText scrollingHeader{"Snippets/ListView/ListviewScrollIntoVie
 gallery::LazyLoadedText scrollingCode{"Snippets/ListView/ListviewScrollIntoView.h"};
 
 FrameworkElement scrolling() {
+    using namespace wxl::dsl;
 #include "Snippets/ListView/ListviewScrollIntoView.h"
 
     return gallery::controlExample({
@@ -130,6 +137,7 @@ gallery::LazyLoadedText draggingHeader{"Snippets/ListView/ListviewsDragDropReord
 gallery::LazyLoadedText draggingCode{"Snippets/ListView/ListviewsDragDropReordering.h"};
 
 FrameworkElement dragging() {
+    using namespace wxl::dsl;
 #include "Snippets/ListView/ListviewsDragDropReordering.h"
 
     return gallery::controlExample({
@@ -143,6 +151,7 @@ gallery::LazyLoadedText groupedHeader{"Snippets/ListView/ListviewGroupedHeaders.
 gallery::LazyLoadedText groupedCode{"Snippets/ListView/ListviewGroupedHeaders.h"};
 
 FrameworkElement grouped() {
+    using namespace wxl::dsl;
 #include "Snippets/ListView/ListviewGroupedHeaders.h"
 
     return gallery::controlExample({

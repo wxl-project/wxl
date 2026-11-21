@@ -1,7 +1,7 @@
 auto const menu = gallery::tabViewContextMenu();
-auto const programTab = [menu](char16_t const* title, char16_t const* icon) {
-    return TabViewItem {header = title, isClosable = false, contextFlyout = menu,
-                        iconSource = BitmapIconSource {showAsMonochrome = false, uriSource = icon}};
+auto const programTab = [menu](char16_t const* tabTitle, char16_t const* iconPath) {
+    return TabViewItem {header = tabTitle, isClosable = false, contextFlyout = menu,
+                        iconSource = BitmapIconSource {showAsMonochrome = false, uriSource = iconPath}};
 };
 
 auto example = StackPanel {

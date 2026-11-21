@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText linkedHeader{"Snippets/AnnotatedScrollBar/LinkedScrollVi
 gallery::LazyLoadedText linkedCode{"Snippets/AnnotatedScrollBar/LinkedScrollView.h"};
 
 FrameworkElement linked() {
+    using namespace wxl::dsl;
 #include "Snippets/AnnotatedScrollBar/LinkedScrollView.h"
 
     return gallery::controlExample({

@@ -9,9 +9,9 @@
 #include "ui.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 Teardown wxl_launched() {
+    using namespace wxl::dsl;
     auto bb = BbBlock {};
     bb.bb(u"[b]wxl.bb[/b] from an installed prefix");
     auto rsdn = RsdnBlock {};

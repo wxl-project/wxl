@@ -14,12 +14,12 @@ struct Model {
         title = u"Check the window dimensions",
     };
 
-    static NumberBox dimension(char16_t const* label, char16_t const* name, char16_t const* id, double initial, int boxRow, int boxColumn) {
+    static NumberBox dimension(char16_t const* headerText, char16_t const* automationText, char16_t const* id, double initial, int boxRow, int boxColumn) {
         return NumberBox {
             hAlign.stretch,
             automationId = id,
-            automationName = name,
-            header = label,
+            automationName = automationText,
+            header = headerText,
             row = boxRow,
             column = boxColumn,
             minimum = 1.0,
@@ -31,23 +31,23 @@ struct Model {
         };
     }
 
-    static std::u16string description(double width, double height, double minWidth, double maxWidth, double minHeight,
-                                      double maxHeight) {
-        auto number = [](double value) { return core::to_u16(value, std::chars_format::fixed, 0); };
-        std::u16string text = u"Initial client area: ";
-        text += number(width).plain();
-        text += u" by ";
-        text += number(height).plain();
-        text += u" DIPs. Width is constrained to ";
-        text += number(minWidth).plain();
-        text += u" to ";
-        text += number(maxWidth).plain();
-        text += u" DIPs and height to ";
-        text += number(minHeight).plain();
-        text += u" to ";
-        text += number(maxHeight).plain();
-        text += u" DIPs. Try resizing this window.";
-        return text;
+    static std::u16string description(double clientWidth, double clientHeight, double minClientWidth, double maxClientWidth, double minClientHeight,
+                                      double maxClientHeight) {
+        auto number = [](double amount) { return core::to_u16(amount, std::chars_format::fixed, 0); };
+        std::u16string line = u"Initial client area: ";
+        line += number(clientWidth).plain();
+        line += u" by ";
+        line += number(clientHeight).plain();
+        line += u" DIPs. Width is constrained to ";
+        line += number(minClientWidth).plain();
+        line += u" to ";
+        line += number(maxClientWidth).plain();
+        line += u" DIPs and height to ";
+        line += number(minClientHeight).plain();
+        line += u" to ";
+        line += number(maxClientHeight).plain();
+        line += u" DIPs. Try resizing this window.";
+        return line;
     }
 
     void open() {

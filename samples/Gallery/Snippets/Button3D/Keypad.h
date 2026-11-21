@@ -44,9 +44,9 @@ struct Model {
                 }
             };
         };
-        follow(emboss, [this](double value) {
-            for (Button3DEffect const* effect : {&numeric, &action, &large}) effect->emboss(value);
-            inverted.emboss(-value);
+        follow(emboss, [this](double depth) {
+            for (Button3DEffect const* keyEffect : {&numeric, &action, &large}) keyEffect->emboss(depth);
+            inverted.emboss(-depth);
         });
         follow(rim, all(&Button3DEffect::rim));
         follow(slope, all(&Button3DEffect::slope));
@@ -71,14 +71,14 @@ struct Model {
         follow(specularAmount, all(&Button3DEffect::specularAmount));
         follow(specularShine, all(&Button3DEffect::specularShine));
 
-        follow(spotSize, [this](float value) { spot.size(value); });
-        follow(spotFull, [this](float value) { spot.fullSize(value); });
-        follow(spotHeight, [this](float value) { spot.height(value); });
+        follow(spotSize, [this](float amount) { spot.size(amount); });
+        follow(spotFull, [this](float amount) { spot.fullSize(amount); });
+        follow(spotHeight, [this](float amount) { spot.height(amount); });
         follow(spotIntensity, [this](float) { relamp(); });
         follow(spotOn, [this](bool) { relamp(); });
-        follow(edgeSize, [this](float value) { edge.size(value); });
-        follow(edgeFull, [this](float value) { edge.fullSize(value); });
-        follow(edgeHeight, [this](float value) { edge.height(value); });
+        follow(edgeSize, [this](float amount) { edge.size(amount); });
+        follow(edgeFull, [this](float amount) { edge.fullSize(amount); });
+        follow(edgeHeight, [this](float amount) { edge.height(amount); });
         follow(edgeIntensity, [this](float) { relamp(); });
         follow(edgeOn, [this](bool) { relamp(); });
     }
@@ -94,7 +94,7 @@ auto const model = gallery::hold<Model>();
 // Клавиша стенда: 84 на 64 внутри обводки, скругление тела 8, знаки 22;
 // большие клавиши -- 220 на 150. Панель под ними растягивается на ширину
 // примера.
-auto const key = Preset {CornerRadius {9}, fontSize = 22};
+auto const keyLook = Preset {CornerRadius {9}, fontSize = 22};
 
 auto example = Border {
     hAlign.stretch,
@@ -111,23 +111,23 @@ auto example = Border {
             columnSpacing = 10,
             RowDefinitions<u"66,66,66,66">,
             ColumnDefinitions<u"86,86,86,86">,
-            [&](iterate<u"789÷456×123−0,=+"> symbol) {
+            [&](iterate<u"789÷456×123−0,=+"> sign) {
                 return Button {
-                    symbol.text(),
-                    key,
-                    symbol.index % 4 == 3 ? model->action : model->numeric,
+                    sign.text(),
+                    keyLook,
+                    sign.index % 4 == 3 ? model->action : model->numeric,
                     hAlign.stretch,
                     vAlign.stretch,
-                    row = symbol.index / 4,
-                    column = symbol.index % 4,
+                    row = sign.index / 4,
+                    column = sign.index % 4,
                 };
             },
         },
         StackPanel {
             orientation.horizontal,
             spacing = 12.0,
-            Button {u"emboss", key, model->large, width = 220, height = 150},
-            Button {u"−emboss", key, model->inverted, width = 220, height = 150},
+            Button {u"emboss", keyLook, model->large, width = 220, height = 150},
+            Button {u"−emboss", keyLook, model->inverted, width = 220, height = 150},
         },
     },
 };
@@ -139,8 +139,8 @@ auto const slider = [](char16_t const* title, auto& field, double low, double hi
 };
 // Флажок пишет в поле сам: его IsChecked -- значение с тремя состояниями, и
 // двусторонней привязки к bool у него нет.
-auto const check = [](char16_t const* title, core::observable<bool>& field) {
-    return CheckBox {content = title, isChecked = field.get(), onChecked += [&field] { field.set(true); },
+auto const check = [](char16_t const* labelText, core::observable<bool>& field) {
+    return CheckBox {content = labelText, isChecked = field.get(), onChecked += [&field] { field.set(true); },
                      onUnchecked += [&field] { field.set(false); }};
 };
 auto const group = [](char16_t const* title, bool open, auto... rows) {

@@ -14,7 +14,6 @@ import wxl.core;
 
 using namespace wxl;
 using namespace wxl::core;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -89,32 +88,33 @@ namespace presets {
 
 // Пресеты — это набор их аргументов, и здесь они константы
 constexpr Preset common {
-    fontSize = 18,
-    hAlign.center,
-    vAlign.center,
+    dsl::fontSize = 18,
+    dsl::hAlign.center,
+    dsl::vAlign.center,
 };
 
 constexpr Preset txt {
     common,  // Пресеты могут вкладываться друг в друга
     FontWeight{600},
-    foreground = colors.blue,
+    dsl::foreground = colors.blue,
 };
 
 constexpr Preset input {
     common,
-    width = 200,
+    dsl::width = 200,
 };
 
 constexpr Preset output {
     common,
-    width = 300,
-    isReadOnly = true,
+    dsl::width = 300,
+    dsl::isReadOnly = true,
 };
 
 }  // namespace presets
 }  // namespace
 
 wxl::Teardown wxl_launched() {
+    using namespace wxl::dsl;
     // Время жизни модели требуется продлить
     auto const model = make_refcounted<Equation>();
     Equation & eq = *model;

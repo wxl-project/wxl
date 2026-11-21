@@ -9,7 +9,6 @@
 #include <wxl/Microsoft.UI.Xaml.Media.Animation.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -17,6 +16,7 @@ gallery::LazyLoadedText pageTransitionsHeader{"Snippets/PageTransition/PageTrans
 gallery::LazyLoadedText pageTransitionsCode{"Snippets/PageTransition/PageTransitions.h"};
 
 FrameworkElement pageTransitions() {
+    using namespace wxl::dsl;
 #include "Snippets/PageTransition/PageTransitions.h"
 
     return gallery::controlExample({

@@ -7,12 +7,12 @@ struct Model {
 auto const model = gallery::hold<Model>();
 auto selected = TextBlock {Padding {0, 8, 0, 0}};
 
-auto command = [selected](Symbol which, char16_t const* caption, VirtualKey pressed, VirtualKeyModifiers held) {
+auto makeCommand = [selected](Symbol which, char16_t const* labelText, VirtualKey pressed, VirtualKeyModifiers held) {
     return AppBarButton {
         icon = SymbolIcon {symbol = which},
-        label = caption,
+        label = labelText,
         keyboardAccelerators[KeyboardAccelerator {key = pressed, modifiers = held}],
-        onClick += [selected, caption](AppBarButton const&) { selected.text(std::u16string {u"You clicked: "} + caption); },
+        onClick += [selected, labelText](AppBarButton const&) { selected.text(std::u16string {u"You clicked: "} + labelText); },
     };
 };
 
@@ -24,11 +24,11 @@ auto bar = CommandBar {
     onOpened += [model] { model->open.set(true); },
     onClosed += [model] { model->open.set(false); },
     primaryCommands[
-        command(Symbol::Add, u"Add", VirtualKey::A, VirtualKeyModifiers::Control),
-        command(Symbol::Edit, u"Edit", VirtualKey::E, VirtualKeyModifiers::Control),
-        command(Symbol::Share, u"Share", VirtualKey::F4, VirtualKeyModifiers::None)
+        makeCommand(Symbol::Add, u"Add", VirtualKey::A, VirtualKeyModifiers::Control),
+        makeCommand(Symbol::Edit, u"Edit", VirtualKey::E, VirtualKeyModifiers::Control),
+        makeCommand(Symbol::Share, u"Share", VirtualKey::F4, VirtualKeyModifiers::None)
     ],
-    secondaryCommands[command(Symbol::Setting, u"Settings", VirtualKey::I, VirtualKeyModifiers::Control)],
+    secondaryCommands[makeCommand(Symbol::Setting, u"Settings", VirtualKey::I, VirtualKeyModifiers::Control)],
 };
 
 // The four buttons the original adds to the secondary commands, and takes away.
@@ -37,12 +37,12 @@ auto addSecondary = [bar, selected]() {
     if (secondary.size() != 1) {
         return;
     }
-    auto append = [&](Symbol which, char16_t const* caption, VirtualKey pressed, VirtualKeyModifiers held) {
+    auto append = [&](Symbol which, char16_t const* labelText, VirtualKey pressed, VirtualKeyModifiers held) {
         secondary.append(AppBarButton {
             icon = SymbolIcon {symbol = which},
-            label = caption,
+            label = labelText,
             keyboardAccelerators[KeyboardAccelerator {key = pressed, modifiers = held}],
-            onClick += [selected, caption](AppBarButton const&) { selected.text(std::u16string {u"You clicked: "} + caption); },
+            onClick += [selected, labelText](AppBarButton const&) { selected.text(std::u16string {u"You clicked: "} + labelText); },
         });
     };
     append(Symbol::Add, u"Button 1", VirtualKey::N, VirtualKeyModifiers::Control);

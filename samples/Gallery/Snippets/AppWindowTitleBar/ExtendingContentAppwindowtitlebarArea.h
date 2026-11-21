@@ -36,10 +36,10 @@ struct Model {
                 },
             },
         });
-        auto titleBar = window->appWindow().titleBar();
-        titleBar.extendsContentIntoTitleBar(extendContent.isChecked().value_or(false));
-        if (titleBar.extendsContentIntoTitleBar()) {
-            titleBar.preferredHeightOption(height());
+        auto bar = window->appWindow().titleBar();
+        bar.extendsContentIntoTitleBar(extendContent.isChecked().value_or(false));
+        if (bar.extendsContentIntoTitleBar()) {
+            bar.preferredHeightOption(height());
         }
         window->add_onClosed([weak = self](auto&&...) {
             if (auto const model = weak.lock()) {
@@ -70,9 +70,9 @@ model->extendContent.add_onUnchecked([weak = model->self](auto&&...) {
 });
 model->heightOption.add_onSelectionChanged([weak = model->self](auto&&...) {
     if (auto const model = weak.lock(); model && model->window) {
-        auto titleBar = model->window->appWindow().titleBar();
-        if (titleBar.extendsContentIntoTitleBar()) {
-            titleBar.preferredHeightOption(model->height());
+        auto bar = model->window->appWindow().titleBar();
+        if (bar.extendsContentIntoTitleBar()) {
+            bar.preferredHeightOption(model->height());
         }
     }
 });

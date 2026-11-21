@@ -6,12 +6,12 @@ struct Model {
 };
 auto const model = gallery::hold<Model>();
 
-auto mark = [model](char16_t const* symbolCode, char16_t const* caption, bool Model::*flag, char16_t const* on, char16_t const* off) {
+auto mark = [model](char16_t const* symbolCode, char16_t const* labelText, bool Model::*flag, char16_t const* on, char16_t const* off) {
     return SwipeItem {
         background = themeBrushes.Button.Background,
         foreground = themeBrushes.AppBar.Item.Foreground,
         iconSource = FontIconSource {glyph = symbolCode},
-        text = caption,
+        text = labelText,
         onInvoked += [model, flag, on, off](SwipeItem const& self, SwipeItemInvokedEventArgs&) {
             model.get()->*flag = !(model.get()->*flag);
             self.text(model.get()->*flag ? on : off);

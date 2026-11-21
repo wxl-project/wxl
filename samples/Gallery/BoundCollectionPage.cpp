@@ -12,7 +12,6 @@
 import wxl.core;
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -20,6 +19,7 @@ gallery::LazyLoadedText growingHeader{"Snippets/BoundCollection/BoundCollectionG
 gallery::LazyLoadedText growingCode{"Snippets/BoundCollection/BoundCollectionGrowing.h"};
 
 FrameworkElement growingExample() {
+    using namespace wxl::dsl;
 #include "Snippets/BoundCollection/BoundCollectionGrowing.h"
 
     return gallery::controlExample({.header = gallery::snippet(growingHeader), .example = example, .code = gallery::snippet(growingCode)});
@@ -29,6 +29,7 @@ gallery::LazyLoadedText itemFieldHeader{"Snippets/BoundCollection/BoundCollectio
 gallery::LazyLoadedText itemFieldCode{"Snippets/BoundCollection/BoundCollectionItemField.h"};
 
 FrameworkElement itemFieldExample() {
+    using namespace wxl::dsl;
 #include "Snippets/BoundCollection/BoundCollectionItemField.h"
 
     return gallery::controlExample({.header = gallery::snippet(itemFieldHeader), .example = example, .code = gallery::snippet(itemFieldCode)});
@@ -38,6 +39,7 @@ gallery::LazyLoadedText filterHeader{"Snippets/BoundCollection/BoundCollectionFi
 gallery::LazyLoadedText filterCode{"Snippets/BoundCollection/BoundCollectionFilter.h"};
 
 FrameworkElement filterExample() {
+    using namespace wxl::dsl;
 #include "Snippets/BoundCollection/BoundCollectionFilter.h"
 
     return gallery::controlExample({.header = gallery::snippet(filterHeader), .example = example, .code = gallery::snippet(filterCode)});
@@ -46,6 +48,7 @@ FrameworkElement filterExample() {
 }  // namespace
 
 static FrameworkElement boundCollectionPage() {
+    using namespace wxl::dsl;
     return StackPanel {
         spacing = 12.0,
         gallery::prose(

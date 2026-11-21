@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,12 +11,13 @@ gallery::LazyLoadedText textHeader{"Snippets/Expander/ExpanderTextHeaderContent.
 gallery::LazyLoadedText textCode{"Snippets/Expander/ExpanderTextHeaderContent.h"};
 
 FrameworkElement textHeaderContent() {
+    using namespace wxl::dsl;
 #include "Snippets/Expander/ExpanderTextHeaderContent.h"
 
     return gallery::controlExample({
         .header = gallery::snippet(textHeader),
         .example = expander,
-        .options = {direction},
+        .options = {directionBox},
         .code = gallery::snippet(textCode),
     });
 }
@@ -26,6 +26,7 @@ gallery::LazyLoadedText alignmentHeader{"Snippets/Expander/ModifyingExpandersCon
 gallery::LazyLoadedText alignmentCode{"Snippets/Expander/ModifyingExpandersContentAlignment.h"};
 
 FrameworkElement contentAlignmentExample() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(alignmentHeader),
         .example =

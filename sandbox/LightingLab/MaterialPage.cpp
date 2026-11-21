@@ -10,7 +10,6 @@
 #include "Lab.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -549,6 +548,7 @@ struct Material {
 }  // namespace
 
 lab::Experiment lab::materialPage() {
+    using namespace wxl::dsl;
     auto const model = std::make_shared<Material>();
 
     auto stage = Border {

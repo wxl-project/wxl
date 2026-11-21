@@ -6,7 +6,6 @@
 #include <wxl/Windows.ApplicationModel.DataTransfer.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -20,6 +19,7 @@ void applyTheme(Object const& sender, std::u16string const& stem) {
 }  // namespace
 
 FrameworkElement gallery::copyNameButton(std::u16string name) {
+    using namespace wxl::dsl;
     return Button {
         Padding {4},
         automationName = u"Copy to clipboard",
@@ -34,6 +34,7 @@ FrameworkElement gallery::copyNameButton(std::u16string name) {
 }
 
 FrameworkElement gallery::designColumnTitle(char16_t const* text, int at, double left) {
+    using namespace wxl::dsl;
     return TextBlock {
         column = at,
         Margin {left, 0, 0, 0},
@@ -44,6 +45,7 @@ FrameworkElement gallery::designColumnTitle(char16_t const* text, int at, double
 }
 
 Image gallery::themedImage(std::u16string stem, double imageHeight) {
+    using namespace wxl::dsl;
     auto image = Image {height = imageHeight, hAlign.left};
     image.add_onLoaded([stem](Object const& sender, auto&&...) { applyTheme(sender, stem); });
     image.add_onActualThemeChanged([stem](Object const& sender, auto&&...) { applyTheme(sender, stem); });
@@ -51,6 +53,7 @@ Image gallery::themedImage(std::u16string stem, double imageHeight) {
 }
 
 FrameworkElement gallery::pinnedImage(std::u16string stem, double canvasWidth, double canvasHeight, std::vector<Pin> pins) {
+    using namespace wxl::dsl;
     auto canvas = Canvas {width = canvasWidth, height = canvasHeight, hAlign.left, gallery::themedImage(stem, canvasHeight)};
     for (auto const& pin : pins) {
         auto const button = Button {
@@ -76,28 +79,30 @@ FrameworkElement gallery::pinnedImage(std::u16string stem, double canvasWidth, d
 }
 
 Grid gallery::designRow(bool shaded, Thickness margin) {
-    auto row = Grid {hAlign.stretch, minHeight = 68, cornerRadius = CornerRadius {4}, Margin {margin}};
+    using namespace wxl::dsl;
+    auto tableRow = Grid {hAlign.stretch, minHeight = 68, cornerRadius = CornerRadius {4}, Margin {margin}};
     if (shaded) {
-        row.background(brushes.Card.BackgroundFillColor.Default);
+        tableRow.background(brushes.Card.BackgroundFillColor.Default);
     }
-    return row;
+    return tableRow;
 }
 
 FrameworkElement gallery::geometryRow(double radius, char16_t const* value, char16_t const* usage, char16_t const* resource,
                                       bool shaded) {
-    auto row = gallery::designRow(shaded);
-    row.columnDefinitions(ColumnDefinitions<u"148,*,160,auto">);
-    row.children().append(StackPanel {
+    using namespace wxl::dsl;
+    auto tableRow = gallery::designRow(shaded);
+    tableRow.columnDefinitions(ColumnDefinitions<u"148,*,160,auto">);
+    tableRow.children().append(StackPanel {
         orientation.horizontal,
         spacing = 12.0,
         Border {width = 20, height = 20, Margin {16, 0, 0, 0}, background = brushes.Accent.FillColor.Default,
                 cornerRadius = CornerRadius {radius}},
         TextBlock {vAlign.center, value},
     });
-    row.children().append(TextBlock {column = 1, maxWidth = 400, vAlign.center, textWrapping = TextWrapping::Wrap, styles.TextBlock.Caption, usage});
-    row.children().append(TextBlock {column = 2, vAlign.center, isTextSelectionEnabled = true, fontFamily = u"Consolas", styles.TextBlock.Caption, resource});
+    tableRow.children().append(TextBlock {column = 1, maxWidth = 400, vAlign.center, textWrapping = TextWrapping::Wrap, styles.TextBlock.Caption, usage});
+    tableRow.children().append(TextBlock {column = 2, vAlign.center, isTextSelectionEnabled = true, fontFamily = u"Consolas", styles.TextBlock.Caption, resource});
     if (std::u16string_view{resource} != u"N/a") {
-        row.children().append(Border {column = 3, Margin {4, 2, 8, 0}, gallery::copyNameButton(resource)});
+        tableRow.children().append(Border {column = 3, Margin {4, 2, 8, 0}, gallery::copyNameButton(resource)});
     }
-    return row;
+    return tableRow;
 }

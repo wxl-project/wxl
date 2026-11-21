@@ -22,21 +22,21 @@ auto calendar = CalendarView {
 };
 
 // A row of the list of choices for every name the original puts in a ComboBox.
-auto choice = [](char16_t const* title, int width, std::span<char16_t const* const> names, core::observable<int>& field) {
-    auto box = ComboBox {header = title, Margin {0, 10, 0, 0}, selectedIndex = Bind {field}};
-    if (width) {
-        box.width(width);
+auto choice = [](char16_t const* labelText, int boxWidth, std::span<char16_t const* const> names, core::observable<int>& field) {
+    auto box = ComboBox {header = labelText, Margin {0, 10, 0, 0}, selectedIndex = Bind {field}};
+    if (boxWidth) {
+        box.width(boxWidth);
     }
-    for (auto const name : names) {
-        box.items().append(ComboBoxItem {content = name});
+    for (auto const option : names) {
+        box.items().append(ComboBoxItem {content = option});
     }
     return box;
 };
 
 auto languageNames = [] {
     std::vector<char16_t const*> names;
-    for (auto const& entry : gallery::languages) {
-        names.push_back(entry.name);
+    for (auto const& culture : gallery::languages) {
+        names.push_back(culture.name);
     }
     return names;
 }();

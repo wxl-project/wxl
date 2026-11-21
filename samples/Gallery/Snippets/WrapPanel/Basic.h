@@ -8,15 +8,15 @@ struct Model {
 };
 auto const model = gallery::hold<Model>();
 
-auto item = [](char16_t const* text, double width) {
+auto item = [](char16_t const* words, double wrapWidth) {
     return Border {
-        minWidth = width,
+        minWidth = wrapWidth,
         Padding {12, 8},
         background = brushes.Control.FillColor.Default,
         borderBrush = brushes.Control.StrokeColor.Default,
         BorderThickness {1},
         CornerRadius {4},
-        TextBlock {text},
+        TextBlock {words},
     };
 };
 
@@ -34,7 +34,7 @@ auto layoutHost = Border {
                                   }},
         itemSpacing = BindOutput {model->itemSpacing},
         lineSpacing = BindOutput {model->lineSpacing},
-        padding = BindOutput {model->padding, [](double value) { return Thickness {value}; }},
+        padding = BindOutput {model->padding, [](double amount) { return Thickness {amount}; }},
         item(u"Alpha", 72),
         item(u"Beta item", 112),
         item(u"Gamma", 88),
@@ -48,11 +48,11 @@ auto layoutHost = Border {
     },
 };
 
-auto slider = [](char16_t const* name, char16_t const* label, char16_t const* id, core::observable<double>& field) {
+auto slider = [](char16_t const* headerText, char16_t const* automationText, char16_t const* id, core::observable<double>& field) {
     return Slider {
         automationId = id,
-        automationName = label,
-        header = name,
+        automationName = automationText,
+        header = headerText,
         minimum = 0.0,
         maximum = 24.0,
         snapsTo = SliderSnapsTo::Ticks,

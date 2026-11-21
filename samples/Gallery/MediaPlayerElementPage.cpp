@@ -14,7 +14,6 @@ import wxl.core;
 
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -22,6 +21,7 @@ gallery::LazyLoadedText transportControlsHeader{"Snippets/MediaPlayerElement/Med
 gallery::LazyLoadedText transportControlsCode{"Snippets/MediaPlayerElement/MediaplayerelementTransportControls.h"};
 
 FrameworkElement transportControls() {
+    using namespace wxl::dsl;
 #include "Snippets/MediaPlayerElement/MediaplayerelementTransportControls.h"
 
     return gallery::controlExample({
@@ -36,6 +36,7 @@ gallery::LazyLoadedText autoplayHeader{"Snippets/MediaPlayerElement/Mediaplayere
 gallery::LazyLoadedText autoplayCode{"Snippets/MediaPlayerElement/MediaplayerelementAutoplaysVideo.h"};
 
 FrameworkElement autoplay() {
+    using namespace wxl::dsl;
 #include "Snippets/MediaPlayerElement/MediaplayerelementAutoplaysVideo.h"
 
     return gallery::controlExample({

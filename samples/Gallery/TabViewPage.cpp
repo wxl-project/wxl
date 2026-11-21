@@ -18,7 +18,6 @@
 
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -26,6 +25,7 @@ gallery::LazyLoadedText addingClosingHeader{"Snippets/TabView/TabviewSupportAddi
 gallery::LazyLoadedText addingClosingCode{"Snippets/TabView/TabviewSupportAddingClosing.h"};
 
 FrameworkElement addingClosing() {
+    using namespace wxl::dsl;
 #include "Snippets/TabView/TabviewSupportAddingClosing.h"
 
     return gallery::controlExample({
@@ -39,6 +39,7 @@ gallery::LazyLoadedText itemsInMarkupHeader{"Snippets/TabView/TabviewTabviewitem
 gallery::LazyLoadedText itemsInMarkupCode{"Snippets/TabView/TabviewTabviewitemsDefinedMarkup.h"};
 
 FrameworkElement itemsInMarkup() {
+    using namespace wxl::dsl;
 #include "Snippets/TabView/TabviewTabviewitemsDefinedMarkup.h"
 
     return gallery::controlExample({
@@ -52,6 +53,7 @@ gallery::LazyLoadedText boundCollectionHeader{"Snippets/TabView/TabviewBoundColl
 gallery::LazyLoadedText boundCollectionCode{"Snippets/TabView/TabviewBoundCollectionMydata.h"};
 
 FrameworkElement boundCollection() {
+    using namespace wxl::dsl;
 #include "Snippets/TabView/TabviewBoundCollectionMydata.h"
 
     return gallery::controlExample({
@@ -65,6 +67,7 @@ gallery::LazyLoadedText keyboardingHeader{"Snippets/TabView/TabviewKeyboardingSu
 gallery::LazyLoadedText keyboardingCode{"Snippets/TabView/TabviewKeyboardingSupport.h"};
 
 FrameworkElement keyboarding() {
+    using namespace wxl::dsl;
 #include "Snippets/TabView/TabviewKeyboardingSupport.h"
 
     return gallery::controlExample({
@@ -78,6 +81,7 @@ gallery::LazyLoadedText customContentHeader{"Snippets/TabView/TabViewYouPutCusto
 gallery::LazyLoadedText customContentCode{"Snippets/TabView/TabViewYouPutCustomContent.h"};
 
 FrameworkElement customContent() {
+    using namespace wxl::dsl;
 #include "Snippets/TabView/TabViewYouPutCustomContent.h"
 
     return gallery::controlExample({
@@ -91,6 +95,7 @@ gallery::LazyLoadedText tabWidthsHeader{"Snippets/TabView/TabViewTabWidthsEither
 gallery::LazyLoadedText tabWidthsCode{"Snippets/TabView/TabViewTabWidthsEitherBe.h"};
 
 FrameworkElement tabWidths() {
+    using namespace wxl::dsl;
 #include "Snippets/TabView/TabViewTabWidthsEitherBe.h"
 
     return gallery::controlExample({
@@ -105,6 +110,7 @@ gallery::LazyLoadedText closeButtonHeader{"Snippets/TabView/TabViewCloseButtonBe
 gallery::LazyLoadedText closeButtonCode{"Snippets/TabView/TabViewCloseButtonBePersistent.h"};
 
 FrameworkElement closeButton() {
+    using namespace wxl::dsl;
 #include "Snippets/TabView/TabViewCloseButtonBePersistent.h"
 
     return gallery::controlExample({
@@ -119,6 +125,7 @@ gallery::LazyLoadedText colorIconsHeader{"Snippets/TabView/TabviewColorTabIcons.
 gallery::LazyLoadedText colorIconsCode{"Snippets/TabView/TabviewColorTabIcons.h"};
 
 FrameworkElement colorIcons() {
+    using namespace wxl::dsl;
 #include "Snippets/TabView/TabviewColorTabIcons.h"
 
     return gallery::controlExample({
@@ -132,6 +139,7 @@ gallery::LazyLoadedText accentStripHeader{"Snippets/TabView/TabviewAccentColored
 gallery::LazyLoadedText accentStripCode{"Snippets/TabView/TabviewAccentColoredTabstrip.h"};
 
 FrameworkElement accentStrip() {
+    using namespace wxl::dsl;
 #include "Snippets/TabView/TabviewAccentColoredTabstrip.h"
 
     return gallery::controlExample({
@@ -145,6 +153,7 @@ gallery::LazyLoadedText windowingHeader{"Snippets/TabView/CompleteTabviewWindowi
 gallery::LazyLoadedText windowingCode{"Snippets/TabView/CompleteTabviewWindowingSample.h"};
 
 FrameworkElement windowing() {
+    using namespace wxl::dsl;
 #include "Snippets/TabView/CompleteTabviewWindowingSample.h"
 
     return gallery::controlExample({

@@ -3,7 +3,7 @@ struct Model {
 };
 auto const model = gallery::hold<Model>();
 
-auto item = [](char16_t const* text) {
+auto item = [](char16_t const* words) {
     return Border {
         width = 72,
         Padding {12, 8},
@@ -11,7 +11,7 @@ auto item = [](char16_t const* text) {
         borderBrush = brushes.Control.StrokeColor.Default,
         BorderThickness {1},
         CornerRadius {4},
-        TextBlock {text},
+        TextBlock {words},
     };
 };
 

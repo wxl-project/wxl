@@ -16,7 +16,6 @@ import wxl.core;
 
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -24,6 +23,7 @@ gallery::LazyLoadedText drawingHeader{"Snippets/InkCanvas/InkCanvasDrawing.html"
 gallery::LazyLoadedText drawingCode{"Snippets/InkCanvas/InkCanvasDrawing.h"};
 
 FrameworkElement drawing() {
+    using namespace wxl::dsl;
 #include "Snippets/InkCanvas/InkCanvasDrawing.h"
 
     return gallery::controlExample({
@@ -38,6 +38,7 @@ gallery::LazyLoadedText toolbarHeader{"Snippets/InkCanvas/InkCanvasToolbar.html"
 gallery::LazyLoadedText toolbarCode{"Snippets/InkCanvas/InkCanvasToolbar.h"};
 
 FrameworkElement toolbar() {
+    using namespace wxl::dsl;
 #include "Snippets/InkCanvas/InkCanvasToolbar.h"
 
     return gallery::controlExample({
@@ -52,6 +53,7 @@ gallery::LazyLoadedText strokesHeader{"Snippets/InkCanvas/InkCanvasStrokes.html"
 gallery::LazyLoadedText strokesCode{"Snippets/InkCanvas/InkCanvasStrokes.h"};
 
 FrameworkElement strokes() {
+    using namespace wxl::dsl;
 #include "Snippets/InkCanvas/InkCanvasStrokes.h"
 
     return gallery::controlExample({

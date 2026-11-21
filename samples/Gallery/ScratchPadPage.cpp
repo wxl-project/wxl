@@ -11,7 +11,6 @@
 #include <wxl/Microsoft.UI.Xaml.Input.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -42,12 +41,13 @@ std::u16string withNamespaces(std::u16string xml) {
 }
 
 struct Model {
-    ScrollViewer pad {background = brushes.SolidBackgroundFillColor.Base, horizontalScrollBarVisibility = ScrollBarVisibility::Visible,
-                      horizontalScrollMode = ScrollMode::Auto, verticalScrollMode = ScrollMode::Auto};
-    TextBox editor {acceptsReturn = true, fontFamily = u"Consolas", fontSize = 12, isSpellCheckEnabled = false, automationName = u"XAML markup textbox"};
-    TextBlock status {row = 1, columnSpan = 2};
+    ScrollViewer pad {dsl::background = dsl::brushes.SolidBackgroundFillColor.Base, dsl::horizontalScrollBarVisibility = ScrollBarVisibility::Visible,
+                      dsl::horizontalScrollMode = ScrollMode::Auto, dsl::verticalScrollMode = ScrollMode::Auto};
+    TextBox editor {dsl::acceptsReturn = true, dsl::fontFamily = u"Consolas", dsl::fontSize = 12, dsl::isSpellCheckEnabled = false, dsl::automationName = u"XAML markup textbox"};
+    TextBlock status {dsl::row = 1, dsl::columnSpan = 2};
 
     void empty() {
+        using namespace wxl::dsl;
         pad.content(TextBlock {u"Click the Load button to load the content below.", hAlign.center, vAlign.center, textWrapping = TextWrapping::Wrap});
     }
 
@@ -78,6 +78,7 @@ struct Model {
 }  // namespace
 
 static FrameworkElement scratchPadPage() {
+    using namespace wxl::dsl;
     auto const model = gallery::hold<Model>();
     model->reset();
     std::weak_ptr<Model> const weak = model;

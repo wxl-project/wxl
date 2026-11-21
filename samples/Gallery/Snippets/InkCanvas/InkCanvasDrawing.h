@@ -24,8 +24,8 @@ auto const applyAttributes = [model, presenter](auto&&...) {
     constexpr Color inks[] = {colors.black, colors.red, colors.blue};
     auto attributes = presenter.copyDefaultDrawingAttributes();
     attributes.color(inks[std::max(model->color.selectedIndex(), 0)]);
-    auto const size = static_cast<float>(model->width.value());
-    attributes.size(Size {size, size});
+    auto const penSize = static_cast<float>(model->width.value());
+    attributes.size(Size {penSize, penSize});
     presenter.updateDefaultDrawingAttributes(attributes);
 };
 for (auto const& box : {model->pen, model->mouse, model->touch}) {

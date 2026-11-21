@@ -3,7 +3,7 @@
 // again. The bindings an element makes go when the list gives the element back, so the field never keeps a row the list
 // no longer shows. The selection is a field too: `selectedIndex = Bind {field}`.
 struct Task : core::sta_refcounted {
-    explicit Task(core::u16_view name) : title(name) {}
+    explicit Task(core::u16_view taskName) : title(taskName) {}
 
     core::u16_text const title;
     core::observable<core::u16_text> note {core::u16_text {u"Not started"}};
@@ -24,8 +24,8 @@ struct Model {
         selected.on_change([this](int at) noexcept {
             if (Task* const task = chosen(at)) draft.set(task->note.get());
         });
-        draft.on_change([this](core::u16_text const& text) noexcept {
-            if (Task* const task = chosen(selected.get())) task->note.set(text);
+        draft.on_change([this](core::u16_text const& typed) noexcept {
+            if (Task* const task = chosen(selected.get())) task->note.set(typed);
         });
     }
 

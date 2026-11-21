@@ -9,7 +9,6 @@
 #include "Lab.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -101,6 +100,7 @@ struct Shell {
 }  // namespace
 
 wxl::Teardown wxl_launched() {
+    using namespace wxl::dsl;
     auto const shell = std::make_shared<Shell>();
 
     auto window = Window {

@@ -13,7 +13,6 @@
 #include <wxl/Microsoft.UI.Xaml.Shapes.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -23,6 +22,7 @@ gallery::LazyLoadedText standardHeader{"Snippets/EasingFunction/StandardEasingFu
 gallery::LazyLoadedText standardCode{"Snippets/EasingFunction/StandardEasingFunction.h"};
 
 FrameworkElement standard() {
+    using namespace wxl::dsl;
 #include "Snippets/EasingFunction/StandardEasingFunction.h"
 
     return gallery::controlExample({
@@ -36,6 +36,7 @@ gallery::LazyLoadedText accelerateHeader{"Snippets/EasingFunction/AccelerateEasi
 gallery::LazyLoadedText accelerateCode{"Snippets/EasingFunction/AccelerateEasingFunction.h"};
 
 FrameworkElement accelerate() {
+    using namespace wxl::dsl;
 #include "Snippets/EasingFunction/AccelerateEasingFunction.h"
 
     return gallery::controlExample({
@@ -50,6 +51,7 @@ gallery::LazyLoadedText decelerateHeader{"Snippets/EasingFunction/DecelerateEasi
 gallery::LazyLoadedText decelerateCode{"Snippets/EasingFunction/DecelerateEasingFunction.h"};
 
 FrameworkElement decelerate() {
+    using namespace wxl::dsl;
 #include "Snippets/EasingFunction/DecelerateEasingFunction.h"
 
     return gallery::controlExample({
@@ -64,6 +66,7 @@ gallery::LazyLoadedText otherHeader{"Snippets/EasingFunction/OtherXamlEasingFunc
 gallery::LazyLoadedText otherCode{"Snippets/EasingFunction/OtherXamlEasingFunctions.h"};
 
 FrameworkElement other() {
+    using namespace wxl::dsl;
 #include "Snippets/EasingFunction/OtherXamlEasingFunctions.h"
 
     return gallery::controlExample({

@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText basicHeader{"Snippets/HeaderedContentControl/HeaderedCon
 gallery::LazyLoadedText basicCode{"Snippets/HeaderedContentControl/HeaderedContentControlBasic.h"};
 
 FrameworkElement basicExample() {
+    using namespace wxl::dsl;
 #include "Snippets/HeaderedContentControl/HeaderedContentControlBasic.h"
 
     return gallery::controlExample({.header = gallery::snippet(basicHeader), .example = example, .code = gallery::snippet(basicCode)});

@@ -3,7 +3,6 @@
 #include "Pages.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -11,6 +10,7 @@ gallery::LazyLoadedText simpleHeader{"Snippets/DropDownButton/Simple.html"};
 gallery::LazyLoadedText simpleCode{"Snippets/DropDownButton/Simple.h"};
 
 FrameworkElement simple() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(simpleHeader),
         .example =
@@ -24,6 +24,7 @@ gallery::LazyLoadedText iconHeader{"Snippets/DropDownButton/Icon.html"};
 gallery::LazyLoadedText iconCode{"Snippets/DropDownButton/Icon.h"};
 
 FrameworkElement withIcon() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(iconHeader),
         .example =

@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText simpleHeader{"Snippets/ToolTip/ToolTipButton.html"};
 gallery::LazyLoadedText simpleCode{"Snippets/ToolTip/ToolTipButton.h"};
 
 FrameworkElement simple() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(simpleHeader),
         .example =
@@ -25,6 +25,7 @@ gallery::LazyLoadedText placedHeader{"Snippets/ToolTip/ToolTipPlacement.html"};
 gallery::LazyLoadedText placedCode{"Snippets/ToolTip/ToolTipPlacement.h"};
 
 FrameworkElement placed() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(placedHeader),
         .example =
@@ -38,6 +39,7 @@ gallery::LazyLoadedText imageHeader{"Snippets/ToolTip/ToolTipImage.html"};
 gallery::LazyLoadedText imageCode{"Snippets/ToolTip/ToolTipImage.h"};
 
 FrameworkElement image() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(imageHeader),
         .example =

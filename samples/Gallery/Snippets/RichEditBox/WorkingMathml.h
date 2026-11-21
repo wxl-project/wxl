@@ -1,10 +1,10 @@
 // Intro of the example: what SetMathML and GetMathML do and how math mode is
 // turned on. The last paragraph is a <div>, so it carries no paragraph margin;
 // the theme gives every <p> four pixels below, as the original Paragraphs had.
-auto description = HtmlBlock {};
-description.theme(MarkupTheme{.paragraphMargin = Thickness {0, 0, 0, 4}});
-description.registerStyle(u"semibold", {.text = {.weight = 600.0}});
-description.html(
+auto explanation = HtmlBlock {};
+explanation.theme(MarkupTheme{.paragraphMargin = Thickness {0, 0, 0, 4}});
+explanation.registerStyle(u"semibold", {.text = {.weight = 600.0}});
+explanation.html(
     u"<p>The <span style=\"semibold\">SetMathML</span> method takes a <a href=\"https://www.w3.org/Math/\">MathML</a> "
     u"string and displays the equation in the <span style=\"semibold\">RichEditBox</span>. It replaces any existing "
     u"equation with the new one.</p>"
@@ -37,9 +37,9 @@ auto editor = RichEditBox {
     hAlign.left,
     onTextChanged += [mathml](RichEditBox const& self) {
         // Only a formula in one line has MathML to give: more lines give an empty string.
-        auto const text = self.document().getMathML();
-        mathml.code(u"xml", text.empty() ? std::wstring{L"<!-- No MathML content -->"}
-                                         : gallery::indentXml(gallery::wide(text)));
+        auto const markup = self.document().getMathML();
+        mathml.code(u"xml", markup.empty() ? std::wstring{L"<!-- No MathML content -->"}
+                                         : gallery::indentXml(gallery::wide(markup)));
     },
 };
 editor.document().setMathMode(RichEditMathMode::MathOnly);
@@ -65,12 +65,12 @@ auto setFormula = Button {
     styles.Button.Accent,
     onClick += [editor, formula] {
         // The formula's own colour has to be the text colour of the theme.
-        auto text = formula;
+        auto formulaText = formula;
         if (editor.actualTheme() == ElementTheme::Dark) {
-            for (std::size_t at; (at = text.find(u"#000000")) != std::u16string::npos;) {
-                text.replace(at, 7, u"#FFFFFF");
+            for (std::size_t at; (at = formulaText.find(u"#000000")) != std::u16string::npos;) {
+                formulaText.replace(at, 7, u"#FFFFFF");
             }
         }
-        editor.document().setMathML(text);
+        editor.document().setMathML(formulaText);
     },
 };

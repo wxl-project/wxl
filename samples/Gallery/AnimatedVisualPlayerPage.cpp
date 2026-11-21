@@ -8,7 +8,6 @@
 
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -16,6 +15,7 @@ gallery::LazyLoadedText lottieHeader{"Snippets/AnimatedVisualPlayer/AnimatedVisu
 gallery::LazyLoadedText lottieCode{"Snippets/AnimatedVisualPlayer/AnimatedVisualPlayerPlaybackLottieAnimation.h"};
 
 FrameworkElement lottie() {
+    using namespace wxl::dsl;
 #include "Snippets/AnimatedVisualPlayer/AnimatedVisualPlayerPlaybackLottieAnimation.h"
 
     return gallery::controlExample({

@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -14,6 +13,7 @@ gallery::LazyLoadedText colorCustomizationHeader{"Snippets/AppWindowTitleBar/App
 gallery::LazyLoadedText colorCustomizationCode{"Snippets/AppWindowTitleBar/AppwindowtitlebarColorCustomization.h"};
 
 FrameworkElement colorCustomization() {
+    using namespace wxl::dsl;
 #include "Snippets/AppWindowTitleBar/AppwindowtitlebarColorCustomization.h"
 
     return gallery::controlExample({
@@ -28,6 +28,7 @@ gallery::LazyLoadedText extendHeader{"Snippets/AppWindowTitleBar/ExtendingConten
 gallery::LazyLoadedText extendCode{"Snippets/AppWindowTitleBar/ExtendingContentAppwindowtitlebarArea.h"};
 
 FrameworkElement extend() {
+    using namespace wxl::dsl;
 #include "Snippets/AppWindowTitleBar/ExtendingContentAppwindowtitlebarArea.h"
 
     return gallery::controlExample({
@@ -42,6 +43,7 @@ gallery::LazyLoadedText themeHeightHeader{"Snippets/AppWindowTitleBar/Appwindowt
 gallery::LazyLoadedText themeHeightCode{"Snippets/AppWindowTitleBar/AppwindowtitlebarPreferredThemeHeight.h"};
 
 FrameworkElement themeHeight() {
+    using namespace wxl::dsl;
 #include "Snippets/AppWindowTitleBar/AppwindowtitlebarPreferredThemeHeight.h"
 
     return gallery::controlExample({

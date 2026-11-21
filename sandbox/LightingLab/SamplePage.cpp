@@ -11,7 +11,6 @@
 #include "Lab.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -280,6 +279,7 @@ struct Sample {
 }  // namespace
 
 lab::Experiment lab::samplePage() {
+    using namespace wxl::dsl;
     auto const model = std::make_shared<Sample>();
 
     auto list = Grid {

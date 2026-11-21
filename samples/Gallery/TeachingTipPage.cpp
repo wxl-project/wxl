@@ -5,7 +5,6 @@
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -13,6 +12,7 @@ gallery::LazyLoadedText targetedHeader{"Snippets/TeachingTip/ShowTargetedTeachin
 gallery::LazyLoadedText targetedCode{"Snippets/TeachingTip/ShowTargetedTeachingtipButton.h"};
 
 FrameworkElement targeted() {
+    using namespace wxl::dsl;
 #include "Snippets/TeachingTip/ShowTargetedTeachingtipButton.h"
 
     return gallery::controlExample({
@@ -26,6 +26,7 @@ gallery::LazyLoadedText nonTargetedHeader{"Snippets/TeachingTip/ShowNonTargetedT
 gallery::LazyLoadedText nonTargetedCode{"Snippets/TeachingTip/ShowNonTargetedTeachingtip.h"};
 
 FrameworkElement nonTargeted() {
+    using namespace wxl::dsl;
 #include "Snippets/TeachingTip/ShowNonTargetedTeachingtip.h"
 
     return gallery::controlExample({
@@ -39,6 +40,7 @@ gallery::LazyLoadedText heroHeader{"Snippets/TeachingTip/ShowTargetedTeachingtip
 gallery::LazyLoadedText heroCode{"Snippets/TeachingTip/ShowTargetedTeachingtipHero.h"};
 
 FrameworkElement hero() {
+    using namespace wxl::dsl;
 #include "Snippets/TeachingTip/ShowTargetedTeachingtipHero.h"
 
     return gallery::controlExample({

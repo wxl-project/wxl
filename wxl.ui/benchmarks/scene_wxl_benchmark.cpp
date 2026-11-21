@@ -25,7 +25,6 @@
 #include "ui.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -48,6 +47,7 @@ constexpr Color packed(uint32_t argb) {
 // of the repeat below, so that the twelve cards are twelve calls to one piece
 // of compiled code -- which is what the loop on the winrt side is too.
 Border card(int index, bench::CardText const& text) {
+    using namespace wxl::dsl;
     return Border{
         row = index / bench::columns,
         column = index % bench::columns,
@@ -129,6 +129,7 @@ Border card(int index, bench::CardText const& text) {
 // costs this side a parse the winrt side does not pay, since there the
 // definitions are built as objects.
 Grid page(std::array<bench::CardText, bench::cards> const& texts) {
+    using namespace wxl::dsl;
     return Grid{
         RowDefinitions<u"auto,*">,
         rowSpacing = 12.0,
@@ -414,6 +415,7 @@ int verify(std::vector<CardHandles> const& handles) {
 }  // namespace
 
 wxl::Teardown wxl_launched() {
+    using namespace wxl::dsl;
     // wxl owns the entry point; the arguments come from the process's command
     // line, the program first.
     auto const arguments = core::environment::command_line();
@@ -457,8 +459,8 @@ wxl::Teardown wxl_launched() {
     passTimes.reserve(bench::passes);
     int checksPassed = 0;
     {
-        Grid const target = page(texts);
-        auto const handles = collect(target);
+        Grid const scene = page(texts);
+        auto const handles = collect(scene);
         auto const palette = inkPalette();
 
         for (int index = 0; index < bench::passes; ++index) {

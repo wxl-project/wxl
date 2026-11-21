@@ -2,7 +2,7 @@ auto iconBadge = InfoBadge {hAlign.right, style = styles.InfoBadge.AttentionIcon
 auto valueBadge = InfoBadge {hAlign.right, style = styles.InfoBadge.AttentionValue, value = 10};
 auto dotBadge = InfoBadge {vAlign.center, style = styles.InfoBadge.AttentionDot};
 
-auto kind = ComboBox {
+auto kindBox = ComboBox {
     header = u"Styles",
     ComboBoxItem {content = u"Attention"},
     ComboBoxItem {content = u"Informational"},

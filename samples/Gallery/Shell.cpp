@@ -23,7 +23,6 @@
 import wxl.core;
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace gallery {
 
@@ -165,7 +164,8 @@ std::vector<SpecialSection> const& specialSections() {
 // Подпись пункта контрола: название и, у экспериментального, плашка
 // (NavigationItemContentTemplate оригинала).
 FrameworkElement itemContent(ControlInfo const& item) {
-    auto content = Grid {
+    using namespace wxl::dsl;
+    auto itemGrid = Grid {
         ColumnDefinitions<u"*,auto">,
         columnSpacing = 8.0,
         hAlign.stretch,
@@ -176,7 +176,7 @@ FrameworkElement itemContent(ControlInfo const& item) {
         },
     };
     if (item.isExperimental) {
-        content.children().append(Border {
+        itemGrid.children().append(Border {
             column = 1,
             Padding {6, 2},
             vAlign.center,
@@ -189,7 +189,7 @@ FrameworkElement itemContent(ControlInfo const& item) {
             },
         });
     }
-    return content;
+    return itemGrid;
 }
 
 // ---- Сама оболочка ---------------------------------------------------------
@@ -205,22 +205,22 @@ void focusSearch();
 struct Shell {
     Border host;
     NavigationView navigation {
-        row = 1,
-        isBackButtonVisible = NavigationViewBackButtonVisible::Collapsed,
-        isPaneToggleButtonVisible = false,
-        content = host,
-        onSelectionChanged += [](Object const& sender, NavigationViewSelectionChangedEventArgs& args) {
+        dsl::row = 1,
+        dsl::isBackButtonVisible = NavigationViewBackButtonVisible::Collapsed,
+        dsl::isPaneToggleButtonVisible = false,
+        dsl::content = host,
+        dsl::onSelectionChanged += [](Object const& sender, NavigationViewSelectionChangedEventArgs& args) {
             onSelected(sender.try_as<NavigationView>(), args.isSettingsSelected());
         },
     };
     // Поле поиска: Ctrl+F переводит на него фокус.
     AutoSuggestBox search {
-        minWidth = 320.0,
-        hAlign.stretch,
-        vAlign.center,
+        dsl::minWidth = 320.0,
+        dsl::hAlign.stretch,
+        dsl::vAlign.center,
         // Содержимое TitleBar лежит в PART_ContentPresenter с выравниванием по центру, и поле получает ширину по тексту:
         // растягиваем его на всю область содержимого, ширина которой от самого поля не зависит.
-        onLoaded += [](Object const& sender, auto&&...) {
+        dsl::onLoaded += [](Object const& sender, auto&&...) {
             auto const box = sender.try_as<AutoSuggestBox>();
             auto const area = VisualTreeHelper::getParent(VisualTreeHelper::getParent(box)).try_as<FrameworkElement>();
             if (!area) {
@@ -229,9 +229,9 @@ struct Shell {
             box.width(area.actualWidth());
             area.add_onSizeChanged([box](Object const& area, auto&&...) { box.width(area.try_as<FrameworkElement>().actualWidth()); });
         },
-        placeholderText = u"Search controls and samples...",
-        queryIcon = SymbolIcon {symbol = FluentSymbol::Search},
-        onTextChanged += [](AutoSuggestBox const& self, AutoSuggestBoxTextChangedEventArgs& args) {
+        dsl::placeholderText = u"Search controls and samples...",
+        dsl::queryIcon = SymbolIcon {dsl::symbol = FluentSymbol::Search},
+        dsl::onTextChanged += [](AutoSuggestBox const& self, AutoSuggestBoxTextChangedEventArgs& args) {
             // Подсказки даёт только ввод пользователя; выбранная подсказка сама вписывается в текст.
             if (args.reason() != AutoSuggestionBoxTextChangeReason::UserInput) {
                 return;
@@ -242,13 +242,13 @@ struct Shell {
             }
             self.itemsSource(stringList(found));
         },
-        onSuggestionChosen += [](AutoSuggestBox const& self, AutoSuggestBoxSuggestionChosenEventArgs& args) {
+        dsl::onSuggestionChosen += [](AutoSuggestBox const& self, AutoSuggestBoxSuggestionChosenEventArgs& args) {
             auto const title = unboxValue<hstring>(args.selectedItem());
             if (title != u"No results found") {
                 self.text(title);
             }
         },
-        onQuerySubmitted += [](Object const&, AutoSuggestBoxQuerySubmittedEventArgs& args) {
+        dsl::onQuerySubmitted += [](Object const&, AutoSuggestBoxQuerySubmittedEventArgs& args) {
             // Выбранная подсказка ведёт прямо на страницу контрола, набранный текст — на результаты поиска.
             if (args.chosenSuggestion()) {
                 auto const title = unboxValue<hstring>(args.chosenSuggestion());
@@ -261,13 +261,13 @@ struct Shell {
         },
     };
     TitleBar titleBar {
-        title = u"WXL Gallery",
-        isBackButtonVisible = false,
-        isPaneToggleButtonVisible = true,
-        iconSource = ImageIconSource {imageSource = u"Assets/Tiles/GalleryIcon.ico"},
-        onBackRequested += [] { goBack(); },
-        onPaneToggleRequested += [] { togglePane(); },
-        content = search,
+        dsl::title = u"WXL Gallery",
+        dsl::isBackButtonVisible = false,
+        dsl::isPaneToggleButtonVisible = true,
+        dsl::iconSource = ImageIconSource {dsl::imageSource = u"Assets/Tiles/GalleryIcon.ico"},
+        dsl::onBackRequested += [] { goBack(); },
+        dsl::onPaneToggleRequested += [] { togglePane(); },
+        dsl::content = search,
     };
     // Пункты панели по порядку и индекс родителя каждого (-1 — верхний
     // уровень): по ним `select` находит элемент и раскрывает его группу.
@@ -386,6 +386,7 @@ void select(Destination const& destination) {
 }
 
 void show(Destination destination, bool record) {
+    using namespace wxl::dsl;
     auto& s = *shell;
     if (record && s.hasCurrent) {
         s.back.push_back(s.current);
@@ -490,6 +491,7 @@ int lastIndex(Shell const& s) {
 }
 
 void buildMenu(Shell& s) {
+    using namespace wxl::dsl;
     auto const& all = catalog();
 
     s.navigation.menuItems().append(addItem(s, std::wstring{homeName}, -1,
@@ -507,13 +509,13 @@ void buildMenu(Shell& s) {
             icon = FontIcon {glyph = section.glyph},
         };
         s.navigation.menuItems().append(group);
-        for (auto const& entry : section.items) {
-            auto row = NavigationViewItem {automationId = std::wstring{entry.id}, content = entry.content};
-            if (!entry.glyph.empty()) {
-                row.icon(FontIcon {glyph = entry.glyph});
+        for (auto const& sectionItem : section.items) {
+            auto navItem = NavigationViewItem {automationId = std::wstring{sectionItem.id}, content = sectionItem.content};
+            if (!sectionItem.glyph.empty()) {
+                navItem.icon(FontIcon {glyph = sectionItem.glyph});
             }
-            row.isEnabled(all.find(entry.id) && pageFor(entry.id));
-            group.menuItems().append(addItem(s, itemName(entry.id), -1, row));
+            navItem.isEnabled(all.find(sectionItem.id) && pageFor(sectionItem.id));
+            group.menuItems().append(addItem(s, itemName(sectionItem.id), -1, navItem));
         }
     }
 
@@ -536,19 +538,19 @@ void buildMenu(Shell& s) {
     });
 
     for (auto const* group : ordered) {
-        auto row = NavigationViewItem {content = group->title};
+        auto groupItem = NavigationViewItem {content = group->title};
         if (!group->iconGlyph.empty()) {
-            row.icon(FontIcon {glyph = group->iconGlyph});
+            groupItem.icon(FontIcon {glyph = group->iconGlyph});
         }
-        addItem(s, groupName(group->uniqueId), -1, row);
-        s.navigation.menuItems().append(row);
+        addItem(s, groupName(group->uniqueId), -1, groupItem);
+        s.navigation.menuItems().append(groupItem);
         int const parent = lastIndex(s);
         for (auto const& item : group->items) {
-            auto child = NavigationViewItem {automationId = item.uniqueId, content = itemContent(item)};
-            child.horizontalContentAlignment(HorizontalAlignment::Stretch);
-            child.icon(ImageIcon {source = gallery::assetPath(item.imagePath)});
-            child.isEnabled(pageFor(item.uniqueId) != nullptr);
-            row.menuItems().append(addItem(s, itemName(item.uniqueId), parent, child));
+            auto childItem = NavigationViewItem {automationId = item.uniqueId, content = itemContent(item)};
+            childItem.horizontalContentAlignment(HorizontalAlignment::Stretch);
+            childItem.icon(ImageIcon {source = gallery::assetPath(item.imagePath)});
+            childItem.isEnabled(pageFor(item.uniqueId) != nullptr);
+            groupItem.menuItems().append(addItem(s, itemName(item.uniqueId), parent, childItem));
         }
     }
 }
@@ -622,6 +624,7 @@ void holdModel(std::shared_ptr<void> model) {
 }
 
 Window createMainWindow() {
+    using namespace wxl::dsl;
     shell = std::make_shared<Shell>();
     auto& s = *shell;
     buildMenu(s);
@@ -661,8 +664,8 @@ Window createMainWindow() {
     window.appWindow().resize({savedSize.width, savedSize.height});
     window.add_onClosed([](auto&&...) {
         if (shell && shell->main) {
-            auto const size = shell->main->appWindow().size();
-            savedSize = {size.width, size.height};
+            auto const windowSize = shell->main->appWindow().size();
+            savedSize = {windowSize.width, windowSize.height};
             saveState();
         }
         // Выход. Ожидания под токеном выхода кончаются здесь, пока очередь окна ещё крутится: процесс ждёт их до

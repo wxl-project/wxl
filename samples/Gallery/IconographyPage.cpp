@@ -14,7 +14,6 @@
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -52,32 +51,35 @@ bool fits(gallery::Icon const& icon, std::vector<std::u16string> const& filter) 
 }
 
 TextBlock heading(char16_t const* text) {
+    using namespace wxl::dsl;
     return TextBlock {foreground = brushes.Text.FillColor.Secondary, styles.TextBlock.Caption, text};
 }
 
 struct Model {
     std::vector<size_t> shown;
     std::vector<std::u16string> tags;
-    ItemsView view {minWidth = 100, Padding {16}, height = 560, layout = UniformGridLayout {minColumnSpacing = 8.0, minRowSpacing = 8.0}};
-    AutoSuggestBox box {minWidth = 304, maxWidth = 320, hAlign.left, Margin {0, 16, 0, 0}, placeholderText = u"Search icons by name, code, or tags",
-                        queryIcon = SymbolIcon {symbol = Symbol::Find}};
-    FontIcon big {fontSize = 48};
-    StackPanel warning {orientation.horizontal, spacing = 8.0, Margin {0, 4, 0, 0}, vAlign.top, column = 1,
-                        toolTip = u"This icon is only available in Segoe Fluent Icons (the default icon font on Windows 11). On Windows 10, "
+    ItemsView view {dsl::minWidth = 100, Padding {16}, dsl::height = 560, dsl::layout = UniformGridLayout {dsl::minColumnSpacing = 8.0, dsl::minRowSpacing = 8.0}};
+    AutoSuggestBox box {dsl::minWidth = 304, dsl::maxWidth = 320, dsl::hAlign.left, Margin {0, 16, 0, 0}, dsl::placeholderText = u"Search icons by name, code, or tags",
+                        dsl::queryIcon = SymbolIcon {dsl::symbol = Symbol::Find}};
+    FontIcon big {dsl::fontSize = 48};
+    StackPanel warning {dsl::orientation.horizontal, dsl::spacing = 8.0, Margin {0, 4, 0, 0}, dsl::vAlign.top, dsl::column = 1,
+                        dsl::toolTip = u"This icon is only available in Segoe Fluent Icons (the default icon font on Windows 11). On Windows 10, "
                                   u"Segoe MDL2 Assets is used by default, so the icon may not appear unless Segoe Fluent Icons is installed."};
     TextBlock name, textGlyph, codeGlyph, fontIconCode, symbolCode;
     TextBlock symbolLabel = heading(u"SymbolIcon");
-    TextBlock tagsLabel {Margin {0, 4, 0, 0}, foreground = brushes.Text.FillColor.Secondary, styles.TextBlock.Caption, u"Tags"};
-    ItemsView tagView {Margin {0, 8, 0, 4}, automationLabeledBy = tagsLabel, isItemInvokedEnabled = true, selectionMode = ItemsViewSelectionMode::None,
-                       layout = FlowLayout {orientation.horizontal, lineSpacing = 4.0, minItemSpacing = 4.0}};
+    TextBlock tagsLabel {Margin {0, 4, 0, 0}, dsl::foreground = dsl::brushes.Text.FillColor.Secondary, dsl::styles.TextBlock.Caption, u"Tags"};
+    ItemsView tagView {Margin {0, 8, 0, 4}, dsl::automationLabeledBy = tagsLabel, dsl::isItemInvokedEnabled = true, dsl::selectionMode = ItemsViewSelectionMode::None,
+                       dsl::layout = FlowLayout {dsl::orientation.horizontal, dsl::lineSpacing = 4.0, dsl::minItemSpacing = 4.0}};
     TextBlock noTags {Margin {0, 4, 0, 0}, u"No tags available."};
 
     static TextBlock code() {
+        using namespace wxl::dsl;
         return TextBlock {isTextSelectionEnabled = true, fontFamily = u"Consolas", Margin {0, 0, 0, 8}, minHeight = 32,
                           textWrapping = TextWrapping::Wrap};
     }
 
     Model() : name(code()), textGlyph(code()), codeGlyph(code()), fontIconCode(code()), symbolCode(code()) {
+        using namespace wxl::dsl;
         warning.children().append(FontIcon {fontSize = 12, foreground = brushes.SystemFillColor.Caution, glyph = u"", vAlign.center});
         warning.children().append(TextBlock {u"Only supported in Segoe Fluent Icons", textWrapping = TextWrapping::Wrap, fontSize = 12,
                                              foreground = brushes.SystemFillColor.Caution, vAlign.center});
@@ -126,32 +128,34 @@ struct Model {
 };
 
 FrameworkElement iconTile(std::weak_ptr<Model> weak, Object const& item) {
+    using namespace wxl::dsl;
     auto const model = weak.lock();
-    auto const& icon = gallery::icons()[model->shown[static_cast<size_t>(unboxValue<int64_t>(item))]];
+    auto const& iconInfo = gallery::icons()[model->shown[static_cast<size_t>(unboxValue<int64_t>(item))]];
     return ItemContainer {
         width = 96,
         height = 96,
-        automationName = icon.name,
-        toolTip = icon.name,
+        automationName = iconInfo.name,
+        toolTip = iconInfo.name,
         cornerRadius = CornerRadius {4},
         child = Grid {
             background = brushes.Card.BackgroundFillColor.Default,
             borderBrush = brushes.Card.StrokeColorDefault,
             BorderThickness {1},
             cornerRadius = CornerRadius {4},
-            Viewbox {width = 28, height = 28, Margin {0, 0, 0, 16}, child = FontIcon {glyph = icon.glyph}},
+            Viewbox {width = 28, height = 28, Margin {0, 0, 0, 16}, child = FontIcon {glyph = iconInfo.glyph}},
             TextBlock {Margin {8, 0, 8, 8}, hAlign.center, vAlign.bottom, foreground = brushes.Text.FillColor.Secondary, styles.TextBlock.Caption,
-                       textTrimming = TextTrimming::CharacterEllipsis, textWrapping = TextWrapping::NoWrap, icon.name},
+                       textTrimming = TextTrimming::CharacterEllipsis, textWrapping = TextWrapping::NoWrap, iconInfo.name},
         },
     };
 }
 
 FrameworkElement tagTile(std::weak_ptr<Model> weak, Object const& item) {
+    using namespace wxl::dsl;
     auto const model = weak.lock();
-    auto const& tag = model->tags[static_cast<size_t>(unboxValue<int64_t>(item))];
+    auto const& tagText = model->tags[static_cast<size_t>(unboxValue<int64_t>(item))];
     return ItemContainer {
         hAlign.left,
-        automationName = tag,
+        automationName = tagText,
         cornerRadius = CornerRadius {12},
         child = Grid {
             minHeight = 24,
@@ -161,7 +165,7 @@ FrameworkElement tagTile(std::weak_ptr<Model> weak, Object const& item) {
             BorderThickness {1},
             cornerRadius = CornerRadius {12},
             TextBlock {vAlign.center, foreground = brushes.Text.FillColor.Secondary, styles.TextBlock.Caption,
-                       textTrimming = TextTrimming::CharacterEllipsis, tag},
+                       textTrimming = TextTrimming::CharacterEllipsis, tagText},
         },
     };
 }
@@ -169,6 +173,7 @@ FrameworkElement tagTile(std::weak_ptr<Model> weak, Object const& item) {
 }  // namespace
 
 static FrameworkElement iconographyPage() {
+    using namespace wxl::dsl;
     auto const model = gallery::hold<Model>();
     std::weak_ptr<Model> const weak = model;
 

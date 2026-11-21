@@ -87,7 +87,7 @@ auto example = Grid {height = 300, width = 400, vAlign.top, splitView};
 
 auto togglePane = ToggleButton {content = u"IsPaneOpen", isChecked = Bind {model->paneOpen}};
 
-auto placement = ToggleSwitch {
+auto placementSwitch = ToggleSwitch {
     minWidth = 120,
     Margin {0, 12, 0, 0},
     header = u"Placement",
@@ -100,7 +100,7 @@ auto placement = ToggleSwitch {
     },
 };
 
-auto displayMode = ComboBox {
+auto displayModeBox = ComboBox {
     width = 196,
     Margin {0, 4, 0, 0},
     vAlign.center,
@@ -112,7 +112,7 @@ auto displayMode = ComboBox {
     selectedIndex = Bind {model->mode},
 };
 
-auto paneBackground = ComboBox {
+auto paneBackgroundBox = ComboBox {
     width = 196,
     Margin {0, 12, 0, 0},
     vAlign.center,
@@ -123,17 +123,17 @@ auto paneBackground = ComboBox {
     ComboBoxItem {content = u"Green"},
     selectedIndex = 0,
     onSelectionChanged += [splitView](ComboBox const& self) {
-        static constexpr Color colors[] = {rgb(255, 0, 0), rgb(0, 0, 255), rgb(0, 128, 0)};
+        static constexpr Color palette[] = {rgb(255, 0, 0), rgb(0, 0, 255), rgb(0, 128, 0)};
         int const index = self.selectedIndex();
         if (index == 0) {
             splitView.paneBackground(brushes.SystemControl.Background.Chrome.MediumLow);
         } else if (index > 0) {
-            splitView.paneBackground(SolidColorBrush {color = colors[index - 1]});
+            splitView.paneBackground(SolidColorBrush {color = palette[index - 1]});
         }
     },
 };
 
-auto openPaneLength = Slider {
+auto openPaneLengthSlider = Slider {
     width = 196,
     Margin {0, 12, 0, 0},
     header = u"OpenPaneLength",
@@ -144,7 +144,7 @@ auto openPaneLength = Slider {
     value = Bind {model->openLength},
 };
 
-auto compactPaneLength = Slider {
+auto compactPaneLengthSlider = Slider {
     width = 196,
     header = u"CompactPaneLength",
     minimum = 24.0,

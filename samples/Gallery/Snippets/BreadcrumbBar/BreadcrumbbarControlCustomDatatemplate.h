@@ -7,8 +7,8 @@ for (size_t i = 0; i < model->names.size(); ++i) {
     model->folders.append(static_cast<int64_t>(i));
 }
 
-auto const name = [model](Object const& item) { return boxValue(model->names[static_cast<size_t>(unboxValue<int64_t>(item))]); };
-auto const crumb = boundTemplate(u"TextBlock", {{u"Text", name}, {u"AutomationProperties.Name", name}});
+auto const nameOf = [model](Object const& item) { return boxValue(model->names[static_cast<size_t>(unboxValue<int64_t>(item))]); };
+auto const crumb = boundTemplate(u"TextBlock", {{u"Text", nameOf}, {u"AutomationProperties.Name", nameOf}});
 
 auto example = BreadcrumbBar {
     itemsSource = model->folders,

@@ -7,24 +7,24 @@ auto behind = [] {
 };
 
 // A swatch and its name, as a list row.
-auto swatch = [](Color color, char16_t const* name) {
+auto swatch = [](Color c, char16_t const* colorName) {
     return ComboBoxItem {
         content = StackPanel {
             orientation.horizontal,
-            Rectangle {width = 20, height = 20, fill = color},
-            TextBlock {Margin {4, 0, 0, 0}, name},
+            Rectangle {width = 20, height = 20, fill = c},
+            TextBlock {Margin {4, 0, 0, 0}, colorName},
         },
     };
 };
 
-auto brush = AcrylicBrush {tintColor = colors.black, tintOpacity = 0.8, fallbackColor = colors.green};
+auto acrylic = AcrylicBrush {tintColor = colors.black, tintOpacity = 0.8, fallbackColor = colors.green};
 
 // The width follows the room the page has: 500 from a room of 500, 652 from 800, its own below that.
 struct Room {
     core::observable<int> step;
 };
 auto const room = gallery::hold<Room>();
-room->step.follow(gallery::pageSize().width, [](double width) { return width >= 800 ? 2 : width >= 500 ? 1 : 0; });
+room->step.follow(gallery::pageSize().width, [](double pageWidth) { return pageWidth >= 800 ? 2 : pageWidth >= 500 ? 1 : 0; });
 
 auto example = Grid {
     minWidth = 320,
@@ -32,7 +32,7 @@ auto example = Grid {
     minHeight = BindOutput {room->step, [](int step) { return step == 0 ? 200.0 : 252.0; }},
     ColumnDefinitions<u"*,252">,
     behind(),
-    Rectangle {Margin {12}, fill = brush},
+    Rectangle {Margin {12}, fill = acrylic},
 };
 
 auto options = StackPanel {
@@ -47,7 +47,7 @@ auto options = StackPanel {
         smallChange = 0.001,
         stepFrequency = 0.001,
         value = 0.8,
-        onValueChanged += [brush](Slider const& self) { brush.tintOpacity(self.value()); },
+        onValueChanged += [acrylic](Slider const& self) { acrylic.tintOpacity(self.value()); },
     },
     TextBlock {Margin {0, 12}, u"Tint Color :"},
     ComboBox {
@@ -56,9 +56,9 @@ auto options = StackPanel {
         swatch(colors.red, u"#FFFF0000"),
         swatch(colors.blue, u"#FF0000FF"),
         selectedIndex = 0,
-        onSelectionChanged += [brush](ComboBox const& self) {
+        onSelectionChanged += [acrylic](ComboBox const& self) {
             static constexpr Color tints[] = {colors.black, colors.red, colors.blue};
-            brush.tintColor(tints[self.selectedIndex()]);
+            acrylic.tintColor(tints[self.selectedIndex()]);
         },
     },
     TextBlock {Margin {0, 12, 0, 12}, u"Fallback Color :"},
@@ -67,9 +67,9 @@ auto options = StackPanel {
         swatch(colors.green, u"#FF008000"),
         swatch(rgb(255, 255, 0), u"#FFFFFF00"),
         selectedIndex = 0,
-        onSelectionChanged += [brush](ComboBox const& self) {
+        onSelectionChanged += [acrylic](ComboBox const& self) {
             static constexpr Color fallbacks[] = {colors.green, rgb(255, 255, 0)};
-            brush.fallbackColor(fallbacks[self.selectedIndex()]);
+            acrylic.fallbackColor(fallbacks[self.selectedIndex()]);
         },
     },
 };

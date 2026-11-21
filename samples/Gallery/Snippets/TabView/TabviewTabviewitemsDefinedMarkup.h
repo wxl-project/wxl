@@ -13,8 +13,8 @@ auto const threeTabs = [newTab](TabView const& self) {
         self.tabItems().append(newTab(i));
     }
 };
-auto const document = [menu](int number, Symbol symbol) {
-    return TabViewItem {header = u"Document " + gallery::numberText(number), contextFlyout = menu, iconSource = SymbolIconSource {symbol = symbol},
+auto const document = [menu](int number, Symbol tabSymbol) {
+    return TabViewItem {header = u"Document " + gallery::numberText(number), contextFlyout = menu, iconSource = SymbolIconSource {tabSymbol = tabSymbol},
                         content = gallery::samplePage(number + 1)};
 };
 auto example = TabView {

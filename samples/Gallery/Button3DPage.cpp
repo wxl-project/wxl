@@ -9,7 +9,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -17,6 +16,7 @@ gallery::LazyLoadedText KeypadHeader{"Snippets/Button3D/Keypad.html"};
 gallery::LazyLoadedText KeypadCode{"Snippets/Button3D/Keypad.h"};
 
 FrameworkElement keypadExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Button3D/Keypad.h"
 
     return gallery::controlExample({

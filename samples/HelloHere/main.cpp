@@ -6,15 +6,14 @@
 
 using namespace wxl;
 using namespace wxl::core;
-using namespace wxl::dsl;
 
 namespace {
 
 // Presets are their arguments, and these are constants: laid out by the
 // compiler, with nothing to run for them at start-up.
 namespace presets {
-    constexpr Preset centeredAndWrapped{hAlign.center, textWrapping.wrap};
-    constexpr Preset allCentered{hAlign.center, vAlign.center};
+    constexpr Preset centeredAndWrapped{dsl::hAlign.center, dsl::textWrapping.wrap};
+    constexpr Preset allCentered{dsl::hAlign.center, dsl::vAlign.center};
 }
 
 ElementTheme themeOf(bool dark) {
@@ -23,6 +22,7 @@ ElementTheme themeOf(bool dark) {
 
 // The button shows where it leads: the icon and the name of the other theme.
 SymbolIcon switchIcon(bool dark) {
+    using namespace wxl::dsl;
     return SymbolIcon {symbol = dark ? FluentSymbol::Brightness : FluentSymbol::MobQuietHours};
 }
 
@@ -33,6 +33,7 @@ std::u16string switchTip(bool dark) {
 }  // namespace
 
 Teardown wxl_launched() {
+    using namespace wxl::dsl;
     // Whether the window is dark. It takes the system's theme before the window shows,
     // and the button flips it. Its bindings own what they drive, so the Teardown keeps
     // it as long as the window lives, and a handler on those controls refers to it

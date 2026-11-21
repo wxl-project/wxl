@@ -43,15 +43,15 @@ auto const queueCountUpdate = [model] {
 };
 
 auto const flowItem = [](Object const& item) {
-    std::u16string label = u"Item ";
-    label += gallery::numberText(static_cast<int>(unboxValue<int64_t>(item)) + 1);
+    std::u16string labelText = u"Item ";
+    labelText += gallery::numberText(static_cast<int>(unboxValue<int64_t>(item)) + 1);
     return Border {width = 96,
                    height = 64,
                    background = brushes.Control.FillColor.Default,
                    borderBrush = brushes.Control.StrokeColor.Default,
                    BorderThickness {1},
                    CornerRadius {4},
-                   TextBlock {hAlign.center, vAlign.center, label}};
+                   TextBlock {hAlign.center, vAlign.center, labelText}};
 };
 
 model->scroll.content(ItemsRepeater {

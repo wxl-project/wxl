@@ -9,10 +9,10 @@ auto const bar = SelectorBar {
           SelectorBarItem {text = u"Page4"}, SelectorBarItem {text = u"Page5"}],
     onSelectionChanged += [model](SelectorBar const& sender, SelectorBarSelectionChangedEventArgs&) {
         auto const selected = sender.selectedItem();
-        auto const items = sender.items();
+        auto const barItems = sender.items();
         int current = 0;
-        for (uint32_t i = 0; i < items.size(); ++i) {
-            if (items[i].text() == selected.text()) {
+        for (uint32_t i = 0; i < barItems.size(); ++i) {
+            if (barItems[i].text() == selected.text()) {
                 current = static_cast<int>(i);
             }
         }

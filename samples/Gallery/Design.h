@@ -42,21 +42,21 @@ wxl::FrameworkElement typographyRow(char16_t const* example, Style style, char16
                                     char16_t const* size, bool shaded) {
     using namespace wxl;
     using namespace wxl::dsl;
-    auto cell = [](char16_t const* text, int at) {
-        return TextBlock {column = at, vAlign.center, styles.TextBlock.Caption, text};
+    auto cell = [](char16_t const* words, int at) {
+        return TextBlock {column = at, vAlign.center, styles.TextBlock.Caption, words};
     };
-    auto name = cell(resource, 3);
-    name.isTextSelectionEnabled(true);
-    name.fontFamily(u"Consolas");
-    auto row = designRow(shaded);
-    row.padding(Thickness {0, 12, 0, 12});
-    row.columnDefinitions(ColumnDefinitions<u"272,136,112,194,auto">);
-    row.children().append(TextBlock {Margin {16, 0, 0, 0}, vAlign.center, style, example});
-    row.children().append(cell(font, 1));
-    row.children().append(cell(size, 2));
-    row.children().append(name);
-    row.children().append(Border {column = 4, Margin {4, 2, 8, 0}, copyNameButton(resource)});
-    return row;
+    auto resourceName = cell(resource, 3);
+    resourceName.isTextSelectionEnabled(true);
+    resourceName.fontFamily(u"Consolas");
+    auto tableRow = designRow(shaded);
+    tableRow.padding(Thickness {0, 12, 0, 12});
+    tableRow.columnDefinitions(ColumnDefinitions<u"272,136,112,194,auto">);
+    tableRow.children().append(TextBlock {Margin {16, 0, 0, 0}, vAlign.center, style, example});
+    tableRow.children().append(cell(font, 1));
+    tableRow.children().append(cell(size, 2));
+    tableRow.children().append(resourceName);
+    tableRow.children().append(Border {column = 4, Margin {4, 2, 8, 0}, copyNameButton(resource)});
+    return tableRow;
 }
 
 // Строка таблицы скруглений: образец, где применяется, имя ресурса.

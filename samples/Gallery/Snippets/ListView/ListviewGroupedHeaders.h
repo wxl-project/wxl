@@ -48,11 +48,11 @@ auto example = StackPanel {
         borderBrush = brushes.Control.Strong.StrokeColorDefault,
         borderThickness = 1,
         itemTemplate = [contactOf, groups](Object const& item) -> UIElement {
-            auto const entry = groups->order[static_cast<size_t>(unboxValue<int64_t>(item))];
-            if (entry < 0) {
-                return TextBlock {automationAccessibilityView = AccessibilityView::Raw, styles.TextBlock.Title, groups->headers[static_cast<size_t>(-entry) - 1]};
+            auto const record = groups->order[static_cast<size_t>(unboxValue<int64_t>(item))];
+            if (record < 0) {
+                return TextBlock {automationAccessibilityView = AccessibilityView::Raw, styles.TextBlock.Title, groups->headers[static_cast<size_t>(-record) - 1]};
             }
-            return contactOf(boxValue(entry));
+            return contactOf(boxValue(record));
         },
         itemsSource = IndexList(static_cast<int64_t>(groups->order.size())),
     },

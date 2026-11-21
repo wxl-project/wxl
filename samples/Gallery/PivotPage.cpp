@@ -6,7 +6,6 @@
 
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -14,6 +13,7 @@ gallery::LazyLoadedText basicHeader{"Snippets/Pivot/BasicPivot.html"};
 gallery::LazyLoadedText basicCode{"Snippets/Pivot/BasicPivot.h"};
 
 FrameworkElement basic() {
+    using namespace wxl::dsl;
 #include "Snippets/Pivot/BasicPivot.h"
 
     return gallery::controlExample({

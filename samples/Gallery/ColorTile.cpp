@@ -10,11 +10,11 @@
 #include <wxl/Windows.ApplicationModel.DataTransfer.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
 SystemBackdropElement backdropHost(gallery::ColorBackdrop backdrop) {
+    using namespace wxl::dsl;
     auto host = SystemBackdropElement {columnSpan = 2};
     switch (backdrop) {
         case gallery::ColorBackdrop::Acrylic: host.systemBackdrop(DesktopAcrylicBackdrop {}); break;
@@ -25,19 +25,21 @@ SystemBackdropElement backdropHost(gallery::ColorBackdrop backdrop) {
 }
 
 Hyperlink linkTo(char16_t const* title, wchar_t const* id) {
+    using namespace wxl::dsl;
     return Hyperlink {onClick += [id](auto&&...) { gallery::navigate({gallery::Place::Item, id}); }, Run {title}};
 }
 
 }  // namespace
 
 gallery::ColorTileParts gallery::makeColorTile(ColorTileInfo const& info) {
+    using namespace wxl::dsl;
     ColorTileParts parts {
         .root = Grid {row = info.row, column = info.column, ColumnDefinitions<u"*,auto">},
         .body = Grid {Padding {12}, rowSpacing = 6.0, RowDefinitions<u"auto,auto,*,auto,auto">, ColumnDefinitions<u"*,auto">},
         .texts = {},
         .copyIcon = FontIcon {glyph = u"", fontSize = 14},
     };
-    auto text = [&](TextBlock const& block) {
+    auto addText = [&](TextBlock const& block) {
         parts.texts.push_back(block);
         return block;
     };
@@ -46,10 +48,10 @@ gallery::ColorTileParts gallery::makeColorTile(ColorTileInfo const& info) {
     }
     parts.body.minHeight(120);
     parts.body.children().append(
-        text(TextBlock {isTextSelectionEnabled = true, styles.TextBlock.BodyStrong, textWrapping = TextWrapping::WrapWholeWords, info.name}));
+        addText(TextBlock {isTextSelectionEnabled = true, styles.TextBlock.BodyStrong, textWrapping = TextWrapping::WrapWholeWords, info.name}));
     auto const explanation = TextBlock {row = 1, Margin {0, -4, 0, 0}, isTextSelectionEnabled = true, opacity = 0.8,
                                         styles.TextBlock.Caption, textWrapping = TextWrapping::WrapWholeWords, info.explanation};
-    parts.body.children().append(text(explanation));
+    parts.body.children().append(addText(explanation));
     if (!!*info.key) {
         parts.body.children().append(Button {
             column = 1,
@@ -68,14 +70,14 @@ gallery::ColorTileParts gallery::makeColorTile(ColorTileInfo const& info) {
                 Clipboard::setContent(package);
             },
         });
-        parts.body.children().append(text(TextBlock {row = 3, columnSpan = 2, isTextSelectionEnabled = true, styles.TextBlock.Caption,
+        parts.body.children().append(addText(TextBlock {row = 3, columnSpan = 2, isTextSelectionEnabled = true, styles.TextBlock.Caption,
                                                     textWrapping = TextWrapping::Wrap, info.key}));
     }
     if (info.comment) {
         auto const note = TextBlock {row = 4, columnSpan = 2, styles.TextBlock.Caption, textWrapping = TextWrapping::Wrap,
                                      Run {u"See "}, linkTo(u"SystemBackdrop", L"SystemBackdrops"), Run {u" and "},
                                      linkTo(u"SystemBackdropElement", L"SystemBackdropElement")};
-        parts.body.children().append(text(note));
+        parts.body.children().append(addText(note));
     }
     parts.root.children().append(parts.body);
     if (info.separator) {
@@ -87,6 +89,7 @@ gallery::ColorTileParts gallery::makeColorTile(ColorTileInfo const& info) {
 
 gallery::ColorExampleParts gallery::makeColorExample(char16_t const* exampleTitle, char16_t const* description,
                                                      FrameworkElement const& content) {
+    using namespace wxl::dsl;
     ColorExampleParts parts {
         .root = Grid {Margin {0, 36, 0, 8}, Padding {12}, rowSpacing = 4.0, RowDefinitions<u"auto,auto,auto">,
                       borderBrush = brushes.Card.StrokeColorDefault, BorderThickness {1}, cornerRadius = CornerRadius {8}},
@@ -100,6 +103,7 @@ gallery::ColorExampleParts gallery::makeColorExample(char16_t const* exampleTitl
 }
 
 FrameworkElement gallery::tileGrid(int columns, int rows, std::vector<FrameworkElement> tiles) {
+    using namespace wxl::dsl;
     std::vector<GridLength> const columnLengths(static_cast<std::size_t>(columns), GridLength {1.0, GridUnitType::Star});
     std::vector<GridLength> const rowLengths(static_cast<std::size_t>(rows), GridLength {1.0, GridUnitType::Auto});
     auto grid = Grid {columnDefinitions = columnLengths, rowDefinitions = rowLengths};

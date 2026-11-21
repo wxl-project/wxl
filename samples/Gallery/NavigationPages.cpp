@@ -8,7 +8,6 @@
 #include <wxl/Microsoft.UI.Xaml.Media.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 void gallery::showSample(Frame const& frame, int number) {
     navigatePage(frame).content(samplePage(number));
@@ -32,6 +31,7 @@ std::u16string gallery::sampleHeader(int number) {
 }
 
 MenuFlyout gallery::tabViewContextMenu() {
+    using namespace wxl::dsl;
     return MenuFlyout {onOpening += [](MenuFlyout const& self) {
         populateTabViewContextMenu(self);
         // A menu that ended up with nothing in it is not shown.
@@ -42,13 +42,14 @@ MenuFlyout gallery::tabViewContextMenu() {
 }
 
 void gallery::populateTabViewContextMenu(MenuFlyout const& flyout) {
+    using namespace wxl::dsl;
     flyout.items().clear();
 
-    auto const target = flyout.target();
-    if (!target || !target.is<TabViewItem>()) {
+    auto const anchor = flyout.target();
+    if (!anchor || !anchor.is<TabViewItem>()) {
         return;
     }
-    auto const item = target.try_as<TabViewItem>();
+    auto const item = anchor.try_as<TabViewItem>();
 
     // Up the tree from the tab: the list that holds the tabs and the TabView around it.
     core::nullable<ListView> list;
@@ -77,17 +78,17 @@ void gallery::populateTabViewContextMenu(MenuFlyout const& flyout) {
     // putting it back one place on.
     auto const view = *tabs;
     auto const index = static_cast<uint32_t>((*list).indexFromContainer(item));
-    auto const move = [view](uint32_t from, uint32_t to) {
-        if (auto const source = view.tabItemsSource()) {
-            IndexList const list{source};
-            auto const value = list.getAt(from);
-            list.removeAt(from);
-            list.insertAt(to, value);
+    auto const move = [view](uint32_t oldIndex, uint32_t newIndex) {
+        if (auto const boundSource = view.tabItemsSource()) {
+            IndexList const list{boundSource};
+            auto const moved = list.getAt(oldIndex);
+            list.removeAt(oldIndex);
+            list.insertAt(newIndex, moved);
         } else {
-            auto const items = view.tabItems();
-            auto const moved = items[from];
-            items.removeAt(from);
-            items.insertAt(to, moved);
+            auto const tabs = view.tabItems();
+            auto const moved = tabs[oldIndex];
+            tabs.removeAt(oldIndex);
+            tabs.insertAt(newIndex, moved);
         }
     };
 

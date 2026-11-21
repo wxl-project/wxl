@@ -27,8 +27,8 @@ view.updateLayout();
 // the pane is on top; below it the pane is as it is by default -- a minimal one on the left. The layout of the panel around
 // the view reports the room into the model, and the mode follows it.
 model->top.follow(model->room, [view](double room) { return room >= view.compactModeThresholdWidth(); });
-Apply {view, paneDisplayMode = BindOutput {model->top, [](bool top) {
-                 return top ? NavigationViewPaneDisplayMode::Top : NavigationViewPaneDisplayMode::Auto;
+Apply {view, paneDisplayMode = BindOutput {model->top, [](bool onTop) {
+                 return onTop ? NavigationViewPaneDisplayMode::Top : NavigationViewPaneDisplayMode::Auto;
              }}};
 
 auto example = Grid {

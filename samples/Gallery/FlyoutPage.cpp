@@ -5,7 +5,6 @@
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -13,6 +12,7 @@ gallery::LazyLoadedText buttonHeader{"Snippets/Flyout/ButtonFlyout.html"};
 gallery::LazyLoadedText buttonCode{"Snippets/Flyout/ButtonFlyout.h"};
 
 FrameworkElement button() {
+    using namespace wxl::dsl;
 #include "Snippets/Flyout/ButtonFlyout.h"
 
     return gallery::controlExample({

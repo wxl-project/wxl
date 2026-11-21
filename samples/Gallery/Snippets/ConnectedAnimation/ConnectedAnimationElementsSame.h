@@ -13,7 +13,7 @@ struct Model {
 };
 auto const model = gallery::hold<Model>();
 
-auto const items = IndexList(static_cast<int64_t>(objects->size()));
+auto const indices = IndexList(static_cast<int64_t>(objects->size()));
 model->collection.itemMargin(Thickness {4});
 model->collection.itemTemplate([objects](Object const& item) {
     auto const& object = (*objects)[static_cast<size_t>(unboxValue<int64_t>(item))];
@@ -22,7 +22,7 @@ model->collection.itemTemplate([objects](Object const& item) {
                  Border {Padding {8, 4}, vAlign.bottom, background = brushes.Acrylic.BackgroundFillColor.Base,
                          TextBlock {styles.TextBlock.Caption, object.title}}};
 });
-model->collection.itemsSource(items);
+model->collection.itemsSource(indices);
 
 auto const back = [model](auto&&...) {
     auto const animation = ConnectedAnimationService::getForCurrentView().prepareToAnimate(u"backwardsAnimation", model->destination);

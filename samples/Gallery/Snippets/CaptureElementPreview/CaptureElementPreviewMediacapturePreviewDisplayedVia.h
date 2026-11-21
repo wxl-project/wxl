@@ -16,7 +16,7 @@ struct Model {
     async::task<> takingPhoto;
 };
 auto const model = gallery::hold<Model>();
-static auto const words = [](hstring const& text) { return std::u16string {text.data(), text.size()}; };
+static auto const words = [](hstring const& chars) { return std::u16string {chars.data(), chars.size()}; };
 
 // The camera is started for the group chosen in the list: a player takes the frames of its first source.
 auto const start = [](Model* model, MediaFrameSourceGroup group) -> async::task<> {
@@ -107,18 +107,18 @@ auto const takePhoto = [](Model* model) -> async::task<> {
 model->capture.add_onClick([model, takePhoto](auto&&...) { model->takingPhoto = takePhoto(model.get()); });
 
 // The snapshots column takes the height the preview leaves, without adding to it: its content is measured as short as can be.
-auto const fill = CustomLayout {
-    [](Collection<UIElement> const& children, Size available) {
+auto const fillLayout = CustomLayout {
+    [](Collection<UIElement> const& panelChildren, Size available) {
         Size wanted {};
-        for (auto const& child : children) {
-            child.measure(Size {available.width, 100});
-            wanted = Size {std::max(wanted.width, child.desiredSize().width), std::max(wanted.height, child.desiredSize().height)};
+        for (auto const& element : panelChildren) {
+            element.measure(Size {available.width, 100});
+            wanted = Size {std::max(wanted.width, element.desiredSize().width), std::max(wanted.height, element.desiredSize().height)};
         }
         return wanted;
     },
-    [](Collection<UIElement> const& children, Size final) {
-        for (auto const& child : children) {
-            child.arrange(Rect {0, 0, final.width, final.height});
+    [](Collection<UIElement> const& panelChildren, Size final) {
+        for (auto const& element : panelChildren) {
+            element.arrange(Rect {0, 0, final.width, final.height});
         }
         return final;
     },
@@ -134,7 +134,7 @@ auto example = Grid {
     model->sourceName,
     Grid {row = 1, model->preview},
     Grid {row = 0, column = 1, model->capturedText},
-    Grid {row = 1, column = 1, LayoutPanel {layout = fill, ScrollViewer {verticalScrollMode = ScrollMode::Enabled, content = model->snapshots}}},
+    Grid {row = 1, column = 1, LayoutPanel {layout = fillLayout, ScrollViewer {verticalScrollMode = ScrollMode::Enabled, content = model->snapshots}}},
     onLoaded += [model, find](UIElement const& self) { model->finding = find(model.get(), self); },
 };
 auto options = StackPanel {spacing = 16, model->cameras, model->mirror, model->capture};

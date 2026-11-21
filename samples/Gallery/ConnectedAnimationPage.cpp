@@ -15,7 +15,6 @@
 #include <wxl/Microsoft.UI.Xaml.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -23,6 +22,7 @@ gallery::LazyLoadedText listPageHeader{"Snippets/ConnectedAnimation/ConnectedAni
 gallery::LazyLoadedText listPageCode{"Snippets/ConnectedAnimation/ConnectedAnimationListPage.h"};
 
 FrameworkElement listPage() {
+    using namespace wxl::dsl;
 #include "Snippets/ConnectedAnimation/ConnectedAnimationListPage.h"
 
     return gallery::controlExample({
@@ -36,6 +36,7 @@ gallery::LazyLoadedText sameElementsHeader{"Snippets/ConnectedAnimation/Connecte
 gallery::LazyLoadedText sameElementsCode{"Snippets/ConnectedAnimation/ConnectedAnimationElementsSame.h"};
 
 FrameworkElement sameElements() {
+    using namespace wxl::dsl;
 #include "Snippets/ConnectedAnimation/ConnectedAnimationElementsSame.h"
 
     return gallery::controlExample({
@@ -49,6 +50,7 @@ gallery::LazyLoadedText simpleHeader{"Snippets/ConnectedAnimation/SimpleConnecte
 gallery::LazyLoadedText simpleCode{"Snippets/ConnectedAnimation/SimpleConnectedAnimation.h"};
 
 FrameworkElement simple() {
+    using namespace wxl::dsl;
 #include "Snippets/ConnectedAnimation/SimpleConnectedAnimation.h"
 
     return gallery::controlExample({
@@ -63,6 +65,7 @@ gallery::LazyLoadedText itemsRepeaterHeader{"Snippets/ConnectedAnimation/Connect
 gallery::LazyLoadedText itemsRepeaterCode{"Snippets/ConnectedAnimation/ConnectedAnimationItemsrepeater.h"};
 
 FrameworkElement itemsRepeater() {
+    using namespace wxl::dsl;
 #include "Snippets/ConnectedAnimation/ConnectedAnimationItemsrepeater.h"
 
     return gallery::controlExample({

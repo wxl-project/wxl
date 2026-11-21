@@ -8,7 +8,6 @@
 #include <wxl/Microsoft.UI.Xaml.Shapes.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -16,6 +15,7 @@ gallery::LazyLoadedText basicHeader{"Snippets/ContentIsland/BasicContentIslandCo
 gallery::LazyLoadedText basicCode{"Snippets/ContentIsland/BasicContentIslandContent.h"};
 
 FrameworkElement basic() {
+    using namespace wxl::dsl;
 #include "Snippets/ContentIsland/BasicContentIslandContent.h"
 
     return gallery::controlExample({

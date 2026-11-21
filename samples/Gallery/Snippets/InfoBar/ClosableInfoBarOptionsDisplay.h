@@ -14,6 +14,6 @@ auto bar = InfoBar {
     onClosed += [model](InfoBar const&, InfoBarClosedEventArgs&) { model->open.set(false); },
 };
 
-auto isOpen = CheckBox {content = u"Is Open", isChecked = Bind {model->open}};
-auto isIconVisible = CheckBox {content = u"Is Icon Visible", isChecked = Bind {model->iconVisible}};
-auto isClosable = CheckBox {content = u"Is Closable", isChecked = Bind {model->closable}};
+auto isOpenBox = CheckBox {content = u"Is Open", isChecked = Bind {model->open}};
+auto isIconVisibleBox = CheckBox {content = u"Is Icon Visible", isChecked = Bind {model->iconVisible}};
+auto isClosableBox = CheckBox {content = u"Is Closable", isChecked = Bind {model->closable}};

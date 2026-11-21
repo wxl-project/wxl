@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText onAppObjectHeader{"Snippets/CommandBarFlyout/OnAppObject
 gallery::LazyLoadedText onAppObjectCode{"Snippets/CommandBarFlyout/OnAppObject.h"};
 
 FrameworkElement onAppObject() {
+    using namespace wxl::dsl;
 #include "Snippets/CommandBarFlyout/OnAppObject.h"
 
     return gallery::controlExample({

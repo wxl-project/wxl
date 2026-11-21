@@ -57,11 +57,11 @@ struct Model {
     double offsetOfItem(int index) const { return tileHeight * (index / itemsPerRow()); }
 
     // The section an offset falls in: that of the last item of the row it ends in.
-    char16_t const* labelAt(double offset) const {
+    char16_t const* labelAt(double scrollOffset) const {
         int end = 0;
         for (auto const& section : sections) {
             end += section.count;
-            if (&section == std::end(sections) - 1 || offset <= offsetOfItem(end - 1)) {
+            if (&section == std::end(sections) - 1 || scrollOffset <= offsetOfItem(end - 1)) {
                 return section.name;
             }
         }

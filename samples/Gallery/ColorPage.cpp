@@ -11,7 +11,6 @@
 #include <wxl/Microsoft.UI.Xaml.Media.Animation.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -31,12 +30,13 @@ FrameworkElement section(int index) {
 
 struct Model {
     int previous = 0;
-    Frame frame {isNavigationStackEnabled = false, vAlign.stretch};
+    Frame frame {dsl::isNavigationStackEnabled = false, dsl::vAlign.stretch};
 };
 
 }  // namespace
 
 static FrameworkElement colorPage() {
+    using namespace wxl::dsl;
 #include "Snippets/Color/ColorBrushReference.h"
 
     auto const model = gallery::hold<Model>();
@@ -47,10 +47,10 @@ static FrameworkElement colorPage() {
               SelectorBarItem {text = u"Background"}, SelectorBarItem {text = u"Signal"}, SelectorBarItem {text = u"High Contrast"}],
         onSelectionChanged += [model](SelectorBar const& sender, SelectorBarSelectionChangedEventArgs&) {
             auto const selected = sender.selectedItem();
-            auto const items = sender.items();
+            auto const barItems = sender.items();
             int current = 0;
-            for (uint32_t i = 0; i < items.size(); ++i) {
-                if (items[i].text() == selected.text()) {
+            for (uint32_t i = 0; i < barItems.size(); ++i) {
+                if (barItems[i].text() == selected.text()) {
                     current = static_cast<int>(i);
                 }
             }

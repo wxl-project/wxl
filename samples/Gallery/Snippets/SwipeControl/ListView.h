@@ -7,7 +7,7 @@ struct Model {
 
     void fill() {
         list.items().clear();
-        for (auto const& name : names) {
+        for (auto const& itemName : names) {
             list.items().append(SwipeControl {
                 height = 68,
                 minWidth = 200,
@@ -35,7 +35,7 @@ struct Model {
                     text = u"Delete",
                     onInvoked += [this](SwipeItem const&, SwipeItemInvokedEventArgs& args) {
                         auto const shown = args.swipeControl().content().try_as<TextBlock>().text();
-                        std::erase_if(names, [&](auto const& name) { return shown == std::u16string_view {name}; });
+                        std::erase_if(names, [&](auto const& itemName) { return shown == std::u16string_view {itemName}; });
                         fill();
                     },
                 }],
@@ -44,7 +44,7 @@ struct Model {
                     hAlign.stretch,
                     vAlign.center,
                     fontSize = 24.0,
-                    text = name,
+                    text = itemName,
                 },
             });
         }

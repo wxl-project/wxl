@@ -6,11 +6,11 @@
 #include "ColorTile.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace gallery {
 
 FrameworkElement textSection() {
+    using namespace wxl::dsl;
     return StackPanel {
         spacing = 4.0,
         colorExample(u"Text", u"For UI labels and static text.", brushes.SolidBackgroundFillColor.Quarternary, nullptr, colorSample(u"Text")),
@@ -40,6 +40,7 @@ FrameworkElement textSection() {
 }
 
 FrameworkElement fillSection() {
+    using namespace wxl::dsl;
     return StackPanel {
         spacing = 4.0,
         colorExample(u"Control Fill", u"Fill used for standard controls.", brushes.SolidBackgroundFillColor.Quarternary, nullptr, colorSample(u"Control Fill")),
@@ -101,6 +102,7 @@ FrameworkElement fillSection() {
 }
 
 FrameworkElement strokeSection() {
+    using namespace wxl::dsl;
     return StackPanel {
         spacing = 4.0,
         colorExample(u"Card Stroke", u"Used for card and layer colors.", brushes.SolidBackgroundFillColor.Quarternary, nullptr, colorSample(u"Card Stroke")),
@@ -153,6 +155,7 @@ FrameworkElement strokeSection() {
 }
 
 FrameworkElement backgroundSection() {
+    using namespace wxl::dsl;
     return StackPanel {
         spacing = 4.0,
         colorExample(u"Card Background", u"Used to create 'cards' - content blocks that live on page and layer backgrounds.", brushes.SolidBackgroundFillColor.Quarternary, nullptr, colorSample(u"Card Background")),
@@ -214,6 +217,7 @@ FrameworkElement backgroundSection() {
 }
 
 FrameworkElement signalSection() {
+    using namespace wxl::dsl;
     return StackPanel {
         spacing = 4.0,
         colorExample(u"System", u"Used for accent fills on controls.", brushes.SolidBackgroundFillColor.Quarternary, nullptr, colorSample(u"System")),
@@ -244,6 +248,7 @@ FrameworkElement signalSection() {
 }
 
 FrameworkElement highContrastSection() {
+    using namespace wxl::dsl;
     return StackPanel {
         spacing = 4.0,
         TextBlock {textWrapping = TextWrapping::Wrap, u"Below are the default high contrast themes shown. The brush names are the same, and the OS will choose the right colors based on the selected theme."},

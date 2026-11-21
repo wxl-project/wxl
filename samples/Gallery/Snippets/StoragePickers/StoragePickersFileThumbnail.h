@@ -10,10 +10,10 @@ struct Model {
 };
 auto const model = gallery::hold<Model>();
 
-auto choice = [](char16_t const* title, std::initializer_list<char16_t const*> names, core::observable<int>& field) {
-    auto box = ComboBox {header = title, width = 200, selectedIndex = Bind {field}};
-    for (auto const name : names) {
-        box.items().append(ComboBoxItem {content = name});
+auto choice = [](char16_t const* labelText, std::initializer_list<char16_t const*> names, core::observable<int>& field) {
+    auto box = ComboBox {header = labelText, width = 200, selectedIndex = Bind {field}};
+    for (auto const option : names) {
+        box.items().append(ComboBoxItem {content = option});
     }
     return box;
 };
@@ -37,14 +37,14 @@ auto const pick = [](Model* model, Button button) -> async::task<> {
 
     // The new picker answers with a path; the thumbnail is a property of the older storage file.
     auto const file = co_await StorageFile::getFileFromPathAsync(picked.path());
-    auto const mode = modes[model->mode.get()];
+    auto const thumbnailMode = modes[model->mode.get()];
 
     // The number box is empty (NaN) when the user clears it: a sane size instead.
     double const raw = model->size.value();
-    uint32_t const size = std::isnan(raw) || raw <= 0 ? 200u : static_cast<uint32_t>(raw);
+    uint32_t const requested = std::isnan(raw) || raw <= 0 ? 200u : static_cast<uint32_t>(raw);
 
     try {
-        auto const thumbnail = co_await file.getThumbnailAsync(mode, size, ThumbnailOptions::UseCurrentScale);
+        auto const thumbnail = co_await file.getThumbnailAsync(thumbnailMode, requested, ThumbnailOptions::UseCurrentScale);
         auto const picture = BitmapImage {};
         co_await picture.setSourceAsync(thumbnail);
         model->thumbnail.source(picture);
@@ -54,7 +54,7 @@ auto const pick = [](Model* model, Button button) -> async::task<> {
         words += u"\nMode: ThumbnailMode.";
         words += modeNames[model->mode.get()];
         words += u"\nRequested size: ";
-        words += core::to_u16(size).plain();
+        words += core::to_u16(requested).plain();
         words += u"\nReturned size: ";
         words += core::to_u16(thumbnail.originalWidth()).plain();
         words += u" x ";

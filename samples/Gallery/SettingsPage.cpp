@@ -10,15 +10,16 @@
 #include <wxl/Windows.ApplicationModel.DataTransfer.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
 FrameworkElement sectionHeader(zstring_view label) {
+    using namespace wxl::dsl;
     return TextBlock {label, Margin {1, 30, 0, 6}, styles.TextBlock.BodyStrong};
 }
 
 FrameworkElement themeChoice() {
+    using namespace wxl::dsl;
     return ComboBox {
         automationName = u"App theme",
         ComboBoxItem {content = u"Light"},
@@ -46,6 +47,7 @@ FrameworkElement themeChoice() {
 }
 
 FrameworkElement manageSamples() {
+    using namespace wxl::dsl;
     return StackPanel {
         orientation.horizontal,
         spacing = 8.0,
@@ -75,6 +77,7 @@ FrameworkElement manageSamples() {
 }  // namespace
 
 wxl::FrameworkElement gallery::settingsPage() {
+    using namespace wxl::dsl;
     return Grid {
         RowDefinitions<u"auto,*">,
         TextBlock {u"Settings", Margin {36, 24, 36, 0}, maxWidth = 1064, styles.TextBlock.Title},

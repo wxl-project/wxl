@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText bitmapIconHeader{"Snippets/IconElement/MulticolorBitmap.
 gallery::LazyLoadedText bitmapIconCode{"Snippets/IconElement/MulticolorBitmap.h"};
 
 FrameworkElement bitmapIcon() {
+    using namespace wxl::dsl;
 #include "Snippets/IconElement/MulticolorBitmap.h"
 
     return gallery::controlExample({
@@ -26,6 +26,7 @@ gallery::LazyLoadedText fontIconHeader{"Snippets/IconElement/FontGlyph.html"};
 gallery::LazyLoadedText fontIconCode{"Snippets/IconElement/FontGlyph.h"};
 
 FrameworkElement fontIcon() {
+    using namespace wxl::dsl;
 #include "Snippets/IconElement/FontGlyph.h"
 
     return gallery::controlExample({
@@ -39,6 +40,7 @@ gallery::LazyLoadedText imageIconHeader{"Snippets/IconElement/ImageBitmap.html"}
 gallery::LazyLoadedText imageIconCode{"Snippets/IconElement/ImageBitmap.h"};
 
 FrameworkElement imageIcon() {
+    using namespace wxl::dsl;
 #include "Snippets/IconElement/ImageBitmap.h"
 
     return gallery::controlExample({
@@ -52,6 +54,7 @@ gallery::LazyLoadedText svgIconHeader{"Snippets/IconElement/ImageSvg.html"};
 gallery::LazyLoadedText svgIconCode{"Snippets/IconElement/ImageSvg.h"};
 
 FrameworkElement svgIcon() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(svgIconHeader),
         .example =
@@ -65,6 +68,7 @@ gallery::LazyLoadedText pathIconHeader{"Snippets/IconElement/Path.html"};
 gallery::LazyLoadedText pathIconCode{"Snippets/IconElement/Path.h"};
 
 FrameworkElement pathIcon() {
+    using namespace wxl::dsl;
 #include "Snippets/IconElement/Path.h"
 
     return gallery::controlExample({
@@ -78,6 +82,7 @@ gallery::LazyLoadedText symbolIconHeader{"Snippets/IconElement/Symbol.html"};
 gallery::LazyLoadedText symbolIconCode{"Snippets/IconElement/Symbol.h"};
 
 FrameworkElement symbolIcon() {
+    using namespace wxl::dsl;
 #include "Snippets/IconElement/Symbol.h"
 
     return gallery::controlExample({

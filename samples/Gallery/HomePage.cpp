@@ -11,13 +11,13 @@
 #include <memory>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
 // Плитка ссылки в шапке (Tile оригинала).
 FrameworkElement headerTile(zstring_view title, zstring_view description,
                             zstring_view link, FrameworkElement const& source) {
+    using namespace wxl::dsl;
     return HyperlinkButton {
         width = 232,
         height = 172,
@@ -49,10 +49,12 @@ FrameworkElement headerTile(zstring_view title, zstring_view description,
 }
 
 FrameworkElement picture(zstring_view path) {
+    using namespace wxl::dsl;
     return Image {source = path, height = 36};
 }
 
 FrameworkElement heroHeader() {
+    using namespace wxl::dsl;
     return Grid {
         RowDefinitions<u"auto,auto,*">,
         height = 400,
@@ -103,6 +105,7 @@ FrameworkElement heroHeader() {
 }
 
 FrameworkElement heading(zstring_view label, Thickness space) {
+    using namespace wxl::dsl;
     return TextBlock {label, margin = space, fontSize = 16, automationHeadingLevel = AutomationHeadingLevel::Level2, styles.TextBlock.BodyStrong};
 }
 
@@ -120,6 +123,7 @@ std::vector<gallery::ControlInfo const*> byIds(std::vector<std::wstring> const& 
 }  // namespace
 
 wxl::FrameworkElement gallery::homePage() {
+    using namespace wxl::dsl;
     std::vector<ControlInfo const*> added;
     for (auto const& group : catalog().groups) {
         for (auto const& item : group.items) {

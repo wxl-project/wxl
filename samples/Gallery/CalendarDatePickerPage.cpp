@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText headerPlaceholderHeader{"Snippets/CalendarDatePicker/Hea
 gallery::LazyLoadedText headerPlaceholderCode{"Snippets/CalendarDatePicker/HeaderPlaceholder.h"};
 
 FrameworkElement headerPlaceholder() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(headerPlaceholderHeader),
         .example =

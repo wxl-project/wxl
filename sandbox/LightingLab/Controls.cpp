@@ -3,7 +3,6 @@
 #include "Lab.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -15,11 +14,12 @@ hstring number(double value) {
 template <class Value>
 FrameworkElement slider(char16_t const* title, core::observable<Value>& field, double low, double high,
                         double step) {
+    using namespace wxl::dsl;
     return Grid {
         ColumnDefinitions<u"*,auto">,
         RowDefinitions<u"auto,auto">,
         TextBlock {title},
-        TextBlock {column = 1, opacity = 0.65, text = BindOutput {field, [](double value) { return number(value); }}},
+        TextBlock {column = 1, opacity = 0.65, text = BindOutput {field, [](double amount) { return number(amount); }}},
         Slider {
             row = 1,
             columnSpan = 2,
@@ -47,9 +47,10 @@ FrameworkElement lab::sliderRow(char16_t const* title, core::observable<float>& 
 
 FrameworkElement lab::choiceRow(char16_t const* title, core::observable<int>& field,
                                 std::span<char16_t const* const> names) {
+    using namespace wxl::dsl;
     auto box = ComboBox {header = title, hAlign.stretch};
-    for (auto const name : names) {
-        box.items().append(ComboBoxItem {content = name});
+    for (auto const option : names) {
+        box.items().append(ComboBoxItem {content = option});
     }
     // После пунктов: выбранный номер у пустого списка не держится.
     Apply {box, selectedIndex = Bind {field}};
@@ -57,12 +58,14 @@ FrameworkElement lab::choiceRow(char16_t const* title, core::observable<int>& fi
 }
 
 FrameworkElement lab::toggleRow(char16_t const* title, core::observable<bool>& field) {
+    using namespace wxl::dsl;
     return ToggleSwitch {header = title, isOn = Bind {field}};
 }
 
 // Флажок пишет в поле сам: его IsChecked -- значение с тремя состояниями, и
 // двусторонней привязки к bool у него нет.
 FrameworkElement lab::checkRow(char16_t const* title, core::observable<bool>& field) {
+    using namespace wxl::dsl;
     return CheckBox {
         content = title,
         isChecked = field.get(),
@@ -72,6 +75,7 @@ FrameworkElement lab::checkRow(char16_t const* title, core::observable<bool>& fi
 }
 
 FrameworkElement lab::colorRow(char16_t const* title, core::observable<Color>& field) {
+    using namespace wxl::dsl;
     return Grid {
         ColumnDefinitions<u"*,auto">,
         TextBlock {title, vAlign.center},
@@ -83,7 +87,7 @@ FrameworkElement lab::colorRow(char16_t const* title, core::observable<Color>& f
                 height = 24,
                 Margin {-11, -6},
                 CornerRadius {4, 0, 0, 4},
-                background = BindOutput {field, [](Color value) { return SolidColorBrush {color = value}; }},
+                background = BindOutput {field, [](Color c) { return SolidColorBrush {color = c}; }},
             },
             flyout = Flyout {
                 placement = FlyoutPlacementMode::Bottom,
@@ -101,17 +105,20 @@ FrameworkElement lab::colorRow(char16_t const* title, core::observable<Color>& f
 }
 
 FrameworkElement lab::noteRow(char16_t const* words) {
+    using namespace wxl::dsl;
     return TextBlock {words, textWrapping = TextWrapping::Wrap, opacity = 0.65};
 }
 
 FrameworkElement lab::statusRow(core::observable<hstring>& field) {
+    using namespace wxl::dsl;
     return TextBlock {text = BindOutput {field}, textWrapping = TextWrapping::Wrap, isTextSelectionEnabled = true};
 }
 
 FrameworkElement lab::group(char16_t const* title, bool open, std::initializer_list<FrameworkElement> rows) {
+    using namespace wxl::dsl;
     auto panel = StackPanel {spacing = 10.0};
-    for (auto const& entry : rows) {
-        panel.children().append(entry);
+    for (auto const& record : rows) {
+        panel.children().append(record);
     }
     return Expander {
         hAlign.stretch,
@@ -123,9 +130,10 @@ FrameworkElement lab::group(char16_t const* title, bool open, std::initializer_l
 }
 
 FrameworkElement lab::settingsPanel(std::initializer_list<FrameworkElement> groups) {
+    using namespace wxl::dsl;
     auto panel = StackPanel {spacing = 8.0, Margin {12}};
-    for (auto const& entry : groups) {
-        panel.children().append(entry);
+    for (auto const& record : groups) {
+        panel.children().append(record);
     }
     return panel;
 }

@@ -7,7 +7,6 @@
 #include <wxl/Microsoft.Windows.AppNotifications.Builder.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -15,6 +14,7 @@ gallery::LazyLoadedText basicHeader{"Snippets/AppNotification/AppNotificationBas
 gallery::LazyLoadedText basicCode{"Snippets/AppNotification/AppNotificationBasicNotification.h"};
 
 FrameworkElement basic() {
+    using namespace wxl::dsl;
 #include "Snippets/AppNotification/AppNotificationBasicNotification.h"
 
     return gallery::controlExample({
@@ -28,6 +28,7 @@ gallery::LazyLoadedText logoHeader{"Snippets/AppNotification/AppNotificationInfo
 gallery::LazyLoadedText logoCode{"Snippets/AppNotification/AppNotificationInformationalNotificationLogoCustom.h"};
 
 FrameworkElement customLogo() {
+    using namespace wxl::dsl;
 #include "Snippets/AppNotification/AppNotificationInformationalNotificationLogoCustom.h"
 
     return gallery::controlExample({
@@ -42,6 +43,7 @@ gallery::LazyLoadedText heroHeader{"Snippets/AppNotification/AppNotificationVisu
 gallery::LazyLoadedText heroCode{"Snippets/AppNotification/AppNotificationVisualNotificationHeroImage.h"};
 
 FrameworkElement hero() {
+    using namespace wxl::dsl;
 #include "Snippets/AppNotification/AppNotificationVisualNotificationHeroImage.h"
 
     return gallery::controlExample({
@@ -55,6 +57,7 @@ gallery::LazyLoadedText controlsHeader{"Snippets/AppNotification/NotificationApp
 gallery::LazyLoadedText controlsCode{"Snippets/AppNotification/NotificationAppnotificationControls.h"};
 
 FrameworkElement controls() {
+    using namespace wxl::dsl;
 #include "Snippets/AppNotification/NotificationAppnotificationControls.h"
 
     return gallery::controlExample({
@@ -68,6 +71,7 @@ gallery::LazyLoadedText progressHeader{"Snippets/AppNotification/AppNotification
 gallery::LazyLoadedText progressCode{"Snippets/AppNotification/AppNotificationNotificationProgressbar.h"};
 
 FrameworkElement progress() {
+    using namespace wxl::dsl;
 #include "Snippets/AppNotification/AppNotificationNotificationProgressbar.h"
 
     return gallery::controlExample({
@@ -80,6 +84,7 @@ FrameworkElement progress() {
 }  // namespace
 
 static wxl::FrameworkElement appNotificationPage() {
+    using namespace wxl::dsl;
     return StackPanel {
         // Заставка страницы оригинала: подсказка про «Do Not Disturb» и предупреждение о шуме. Отступ prose {0,12,12,12} —
         // дословно отступ RichTextBlock оригинала: prose кладёт HtmlBlock ровно в Content InfoBar, где стоял RichTextBlock.

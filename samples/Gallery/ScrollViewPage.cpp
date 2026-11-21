@@ -5,7 +5,6 @@
 #include <wxl/Windows.Globalization.NumberFormatting.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -13,6 +12,7 @@ gallery::LazyLoadedText withContentHeader{"Snippets/ScrollView/Content.html"};
 gallery::LazyLoadedText withContentCode{"Snippets/ScrollView/Content.h"};
 
 FrameworkElement withContent() {
+    using namespace wxl::dsl;
 #include "Snippets/ScrollView/Content.h"
 
     return gallery::controlExample({
@@ -27,6 +27,7 @@ gallery::LazyLoadedText constantVelocityHeader{"Snippets/ScrollView/ConstantVelo
 gallery::LazyLoadedText constantVelocityCode{"Snippets/ScrollView/ConstantVelocity.h"};
 
 FrameworkElement constantVelocity() {
+    using namespace wxl::dsl;
 #include "Snippets/ScrollView/ConstantVelocity.h"
 
     return gallery::controlExample({
@@ -41,6 +42,7 @@ gallery::LazyLoadedText customAnimationHeader{"Snippets/ScrollView/CustomAnimati
 gallery::LazyLoadedText customAnimationCode{"Snippets/ScrollView/CustomAnimation.h"};
 
 FrameworkElement customAnimation() {
+    using namespace wxl::dsl;
 #include "Snippets/ScrollView/CustomAnimation.h"
 
     return gallery::controlExample({

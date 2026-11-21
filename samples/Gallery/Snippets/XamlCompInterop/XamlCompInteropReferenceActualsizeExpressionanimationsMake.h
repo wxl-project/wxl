@@ -5,7 +5,7 @@ auto const panel = Grid {width = 200, height = 200, Margin {12}};
 // the size of the parent, theta the angle of each element.
 std::u16string const radius = u"(source.ActualSize.X / 2)";
 std::u16string const theta = u".02 * " + radius + u" + ((2 * Pi)/total)*index";
-std::u16string const expression = u"Vector3(" + radius + u"*cos(" + theta + u")+" + radius + u", " + radius + u"*sin(" + theta + u")+0,0)";
+std::u16string const formula = u"Vector3(" + radius + u"*cos(" + theta + u")+" + radius + u", " + radius + u"*sin(" + theta + u")+0,0)";
 
 constexpr int total = 8;
 for (int i = 0; i < total; ++i) {
@@ -13,7 +13,7 @@ for (int i = 0; i < total; ++i) {
     panel.children().append(button);
 
     auto const animation = compositor.createExpressionAnimation();
-    animation.expression(expression);
+    animation.expression(formula);
     animation.setScalarParameter(u"index", static_cast<float>(i + 1));
     animation.setScalarParameter(u"total", static_cast<float>(total));
     animation.target(u"Translation");

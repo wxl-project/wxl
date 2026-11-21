@@ -6,7 +6,6 @@
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -14,6 +13,7 @@ gallery::LazyLoadedText declaredHeader{"Snippets/FlipView/SimpleFlipviewItemsDec
 gallery::LazyLoadedText declaredCode{"Snippets/FlipView/SimpleFlipviewItemsDeclared.h"};
 
 FrameworkElement declared() {
+    using namespace wxl::dsl;
 #include "Snippets/FlipView/SimpleFlipviewItemsDeclared.h"
 
     return gallery::controlExample({
@@ -27,6 +27,7 @@ gallery::LazyLoadedText boundHeader{"Snippets/FlipView/FlipviewShowingBoundData.
 gallery::LazyLoadedText boundCode{"Snippets/FlipView/FlipviewShowingBoundData.h"};
 
 FrameworkElement bound() {
+    using namespace wxl::dsl;
 #include "Snippets/FlipView/FlipviewShowingBoundData.h"
 
     return gallery::controlExample({
@@ -40,6 +41,7 @@ gallery::LazyLoadedText verticalHeader{"Snippets/FlipView/VerticalFlipview.html"
 gallery::LazyLoadedText verticalCode{"Snippets/FlipView/VerticalFlipview.h"};
 
 FrameworkElement vertical() {
+    using namespace wxl::dsl;
 #include "Snippets/FlipView/VerticalFlipview.h"
 
     return gallery::controlExample({

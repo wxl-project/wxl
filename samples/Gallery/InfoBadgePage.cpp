@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,12 +11,13 @@ gallery::LazyLoadedText embeddedHeader{"Snippets/InfoBadge/EmbeddedNavigationVie
 gallery::LazyLoadedText embeddedCode{"Snippets/InfoBadge/EmbeddedNavigationView.h"};
 
 FrameworkElement embedded() {
+    using namespace wxl::dsl;
 #include "Snippets/InfoBadge/EmbeddedNavigationView.h"
 
     return gallery::controlExample({
         .header = gallery::snippet(embeddedHeader),
         .example = Grid {navigation},
-        .options = {StackPanel {width = 160, opacity, displayMode}},
+        .options = {StackPanel {width = 160, opacitySwitch, displayModeBox}},
         .code = gallery::snippet(embeddedCode),
     });
 }
@@ -26,12 +26,13 @@ gallery::LazyLoadedText differentHeader{"Snippets/InfoBadge/DifferentInfoBadgeSt
 gallery::LazyLoadedText differentCode{"Snippets/InfoBadge/DifferentInfoBadgeStyles.h"};
 
 FrameworkElement different() {
+    using namespace wxl::dsl;
 #include "Snippets/InfoBadge/DifferentInfoBadgeStyles.h"
 
     return gallery::controlExample({
         .header = gallery::snippet(differentHeader),
         .example = StackPanel {hAlign.center, spacing = 20.0, orientation.horizontal, iconBadge, valueBadge, dotBadge},
-        .options = {StackPanel {width = 160, kind}},
+        .options = {StackPanel {width = 160, kindBox}},
         .code = gallery::snippet(differentCode),
     });
 }
@@ -40,6 +41,7 @@ gallery::LazyLoadedText insideHeader{"Snippets/InfoBadge/PlacingInfoBadgeInsideA
 gallery::LazyLoadedText insideCode{"Snippets/InfoBadge/PlacingInfoBadgeInsideAnother.h"};
 
 FrameworkElement inside() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(insideHeader),
         .example =
@@ -53,6 +55,7 @@ gallery::LazyLoadedText dynamicHeader{"Snippets/InfoBadge/InfoBadgeDynamicValue.
 gallery::LazyLoadedText dynamicCode{"Snippets/InfoBadge/InfoBadgeDynamicValue.h"};
 
 FrameworkElement dynamic() {
+    using namespace wxl::dsl;
 #include "Snippets/InfoBadge/InfoBadgeDynamicValue.h"
 
     return gallery::controlExample({

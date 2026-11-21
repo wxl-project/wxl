@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,12 +11,13 @@ gallery::LazyLoadedText contentHeader{"Snippets/Viewbox/ContentInsideViewbox.htm
 gallery::LazyLoadedText contentCode{"Snippets/Viewbox/ContentInsideViewbox.h"};
 
 FrameworkElement insideViewbox() {
+    using namespace wxl::dsl;
 #include "Snippets/Viewbox/ContentInsideViewbox.h"
 
     return gallery::controlExample({
         .header = gallery::snippet(contentHeader),
         .example = viewbox,
-        .options = {StackPanel {width = 200, size, stretchGroup, directionGroup}},
+        .options = {StackPanel {width = 200, sizeSlider, stretchGroup, directionGroup}},
         .code = gallery::snippet(contentCode),
     });
 }

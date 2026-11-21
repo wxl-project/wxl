@@ -8,7 +8,6 @@
 #include <memory>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -69,6 +68,7 @@ auto byRoom(Thickness wide, Thickness narrow) {
 }
 
 FrameworkElement titled(zstring_view title, FrameworkElement const& body, Thickness titleMargin, Thickness narrowTitleMargin) {
+    using namespace wxl::dsl;
     return Grid {
         RowDefinitions<u"auto,*">,
         TextBlock {
@@ -84,30 +84,33 @@ FrameworkElement titled(zstring_view title, FrameworkElement const& body, Thickn
 }  // namespace
 
 wxl::FrameworkElement gallery::allControlsPage() {
-    std::vector<ControlInfo const*> items;
+    using namespace wxl::dsl;
+    std::vector<ControlInfo const*> controls;
     for (auto const& group : catalog().groups) {
         for (auto const& item : group.items) {
-            items.push_back(&item);
+            controls.push_back(&item);
         }
     }
-    items = sortedByTitle(std::move(items));
-    auto const grid = tileGrid(items, Thickness {24, 16, 24, 36}, u"ItemGridView", u"Items In Group");
+    controls = sortedByTitle(std::move(controls));
+    auto const grid = tileGrid(controls, Thickness {24, 16, 24, 36}, u"ItemGridView", u"Items In Group");
     Apply {grid, padding = byRoom(Thickness {24, 16, 24, 36}, Thickness {16, 16, 16, 36})};
     return titled(L"Controls", grid, Thickness {36, 24, 16, 0}, Thickness {16, 24, 16, 0});
 }
 
 wxl::FrameworkElement gallery::sectionPage(ControlGroup const& group) {
-    std::vector<ControlInfo const*> items;
+    using namespace wxl::dsl;
+    std::vector<ControlInfo const*> controls;
     for (auto const& item : group.items) {
-        items.push_back(&item);
+        controls.push_back(&item);
     }
-    items = sortedByTitle(std::move(items));
-    auto const grid = tileGrid(items, Thickness {36, 0, 36, 0}, u"ItemGridView", u"Items In Group");
+    controls = sortedByTitle(std::move(controls));
+    auto const grid = tileGrid(controls, Thickness {36, 0, 36, 0}, u"ItemGridView", u"Items In Group");
     Apply {grid, padding = byRoom(Thickness {36, 0, 36, 0}, Thickness {16, 0, 16, 36})};
     return titled(group.title, grid, Thickness {36, 24, 16, 24}, Thickness {24, 24, 16, 24});
 }
 
 wxl::FrameworkElement gallery::searchResultsPage(std::wstring_view query) {
+    using namespace wxl::dsl;
     auto const words = tokens(query);
 
     // Отбор по разделам; первым идёт «All» со всем найденным.
@@ -160,9 +163,9 @@ wxl::FrameworkElement gallery::searchResultsPage(std::wstring_view query) {
             if (!selected) {
                 return;
             }
-            auto const name = gallery::wide(selected.name());
+            auto const selectedName = gallery::wide(selected.name());
             for (std::size_t i = 0; i < results->size(); ++i) {
-                if ((*results)[i].name == name.substr(0, name.rfind(L" ("))) {
+                if ((*results)[i].name == selectedName.substr(0, selectedName.rfind(L" ("))) {
                     show(i);
                     return;
                 }
@@ -170,8 +173,8 @@ wxl::FrameworkElement gallery::searchResultsPage(std::wstring_view query) {
         },
     };
     for (auto const& filter : *results) {
-        auto const label = filter.name + L" (" + std::to_wstring(filter.items.size()) + L")";
-        auto item = NavigationViewItem {content = label, name = label};
+        auto const filterLabel = filter.name + L" (" + std::to_wstring(filter.items.size()) + L")";
+        auto item = NavigationViewItem {content = filterLabel, name = filterLabel};
         navigation.menuItems().append(item);
         if (&filter == &results->front()) {
             navigation.selectedItem(item);

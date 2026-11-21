@@ -4,11 +4,11 @@ struct Model {
 };
 auto const model = gallery::hold<Model>();
 
-auto caption = [model](char16_t const* text, double x, double y) {
+auto addCaption = [model](char16_t const* words, double px, double py) {
     return TextBlock {
-        text,
-        left = x,
-        top = y,
+        words,
+        left = px,
+        top = py,
         zIndex = 1,
         visibility = BindOutput {model->showPoints, [](bool on) { return on ? Visibility::Visible : Visibility::Collapsed; }},
     };
@@ -25,11 +25,11 @@ auto example = Canvas {
             strokeThickness = BindOutput {model->thickness},
         },
     },
-    caption(u"Point #1: (10,100)", 0, 130),
-    caption(u"Point #2: (100,25)", 40, 75),
-    caption(u"Point #3: (300,250)", 280, 175),
-    caption(u"Point #4: (400,75)", 360, 60),
-    caption(u"Point #5: (200,75)", 170, 60),
+    addCaption(u"Point #1: (10,100)", 0, 130),
+    addCaption(u"Point #2: (100,25)", 40, 75),
+    addCaption(u"Point #3: (300,250)", 280, 175),
+    addCaption(u"Point #4: (400,75)", 360, 60),
+    addCaption(u"Point #5: (200,75)", 170, 60),
 };
 
 auto options = StackPanel {

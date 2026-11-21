@@ -8,7 +8,6 @@
 #include "Pages.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -29,6 +28,7 @@ gallery::LazyLoadedText selectionHeader{"Snippets/RichTextBlock/CustomSelectionH
 gallery::LazyLoadedText selectionCode{"Snippets/RichTextBlock/CustomSelectionHighlight.h"};
 
 FrameworkElement customSelection() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(selectionHeader),
         .example =
@@ -42,6 +42,7 @@ gallery::LazyLoadedText overflowHeader{"Snippets/RichTextBlock/Overflow.html"};
 gallery::LazyLoadedText overflowCode{"Snippets/RichTextBlock/Overflow.h"};
 
 FrameworkElement overflow() {
+    using namespace wxl::dsl;
 #include "Snippets/RichTextBlock/Overflow.h"
 
     return gallery::controlExample({

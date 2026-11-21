@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText withImageHeader{"Snippets/ScrollViewer/Content.html"};
 gallery::LazyLoadedText withImageCode{"Snippets/ScrollViewer/Content.h"};
 
 FrameworkElement withImage() {
+    using namespace wxl::dsl;
 #include "Snippets/ScrollViewer/Content.h"
 
     return gallery::controlExample({

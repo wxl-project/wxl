@@ -14,7 +14,6 @@
 import wxl.core;
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -22,6 +21,7 @@ gallery::LazyLoadedText singleHeader{"Snippets/StoragePickers/StoragePickersPick
 gallery::LazyLoadedText singleCode{"Snippets/StoragePickers/StoragePickersPickSingleFile.h"};
 
 FrameworkElement single() {
+    using namespace wxl::dsl;
 #include "Snippets/StoragePickers/StoragePickersPickSingleFile.h"
 
     return gallery::controlExample({
@@ -36,6 +36,7 @@ gallery::LazyLoadedText multipleHeader{"Snippets/StoragePickers/StoragePickersPi
 gallery::LazyLoadedText multipleCode{"Snippets/StoragePickers/StoragePickersPickMultipleFiles.h"};
 
 FrameworkElement multiple() {
+    using namespace wxl::dsl;
 #include "Snippets/StoragePickers/StoragePickersPickMultipleFiles.h"
 
     return gallery::controlExample({
@@ -50,6 +51,7 @@ gallery::LazyLoadedText saveHeader{"Snippets/StoragePickers/StoragePickersSaveFi
 gallery::LazyLoadedText saveCode{"Snippets/StoragePickers/StoragePickersSaveFile.h"};
 
 FrameworkElement save() {
+    using namespace wxl::dsl;
 #include "Snippets/StoragePickers/StoragePickersSaveFile.h"
 
     return gallery::controlExample({
@@ -64,6 +66,7 @@ gallery::LazyLoadedText folderHeader{"Snippets/StoragePickers/StoragePickersPick
 gallery::LazyLoadedText folderCode{"Snippets/StoragePickers/StoragePickersPickFolder.h"};
 
 FrameworkElement folder() {
+    using namespace wxl::dsl;
 #include "Snippets/StoragePickers/StoragePickersPickFolder.h"
 
     return gallery::controlExample({
@@ -78,6 +81,7 @@ gallery::LazyLoadedText thumbnailHeader{"Snippets/StoragePickers/StoragePickersF
 gallery::LazyLoadedText thumbnailCode{"Snippets/StoragePickers/StoragePickersFileThumbnail.h"};
 
 FrameworkElement thumbnail() {
+    using namespace wxl::dsl;
 #include "Snippets/StoragePickers/StoragePickersFileThumbnail.h"
 
     return gallery::controlExample({
@@ -91,6 +95,7 @@ FrameworkElement thumbnail() {
 }  // namespace
 
 static wxl::FrameworkElement storagePickersPage() {
+    using namespace wxl::dsl;
     return StackPanel {
         // Подсказка оригинала вверху страницы. Отступ prose {0,12,12,12} — дословно отступ RichTextBlock оригинала: prose
         // кладёт HtmlBlock ровно в Content InfoBar, где стоял RichTextBlock, поэтому отступ переносится дословно.

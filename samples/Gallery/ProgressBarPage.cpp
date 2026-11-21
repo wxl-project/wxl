@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText indeterminateHeader{"Snippets/ProgressBar/IndeterminateP
 gallery::LazyLoadedText indeterminateCode{"Snippets/ProgressBar/IndeterminateProgressBar.h"};
 
 FrameworkElement indeterminate() {
+    using namespace wxl::dsl;
 #include "Snippets/ProgressBar/IndeterminateProgressBar.h"
 
     return gallery::controlExample({
@@ -26,11 +26,12 @@ gallery::LazyLoadedText determinateHeader{"Snippets/ProgressBar/DeterminateProgr
 gallery::LazyLoadedText determinateCode{"Snippets/ProgressBar/DeterminateProgressBar.h"};
 
 FrameworkElement determinate() {
+    using namespace wxl::dsl;
 #include "Snippets/ProgressBar/DeterminateProgressBar.h"
 
     return gallery::controlExample({
         .header = gallery::snippet(determinateHeader),
-        .example = row,
+        .example = rowPanel,
         .code = gallery::snippet(determinateCode),
     });
 }

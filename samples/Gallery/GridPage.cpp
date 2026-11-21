@@ -3,7 +3,6 @@
 #include "Pages.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -11,6 +10,7 @@ gallery::LazyLoadedText threeHeader{"Snippets/Grid/ThreeByThreeGrid.html"};
 gallery::LazyLoadedText threeCode{"Snippets/Grid/ThreeByThreeGrid.h"};
 
 FrameworkElement three() {
+    using namespace wxl::dsl;
 #include "Snippets/Grid/ThreeByThreeGrid.h"
 
     return gallery::controlExample({

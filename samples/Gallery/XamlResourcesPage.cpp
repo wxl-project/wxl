@@ -9,7 +9,6 @@
 #include <wxl/Microsoft.UI.Xaml.Documents.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -21,16 +20,19 @@ gallery::LazyLoadedText themeHeader{"Snippets/XamlResources/XamlResourcesDefineN
 gallery::LazyLoadedText themeCode{"Snippets/XamlResources/XamlResourcesDefineNewThemeResource.h"};
 
 FrameworkElement levels() {
+    using namespace wxl::dsl;
 #include "Snippets/XamlResources/Xamlresources.h"
     return gallery::controlExample({.header = gallery::snippet(levelsHeader), .example = example, .code = gallery::snippet(levelsCode)});
 }
 
 FrameworkElement versus() {
+    using namespace wxl::dsl;
 #include "Snippets/XamlResources/XamlResourcesStaticresourceVersusThemeresource.h"
     return gallery::controlExample({.header = gallery::snippet(versusHeader), .example = example, .code = gallery::snippet(versusCode)});
 }
 
 FrameworkElement newTheme() {
+    using namespace wxl::dsl;
 #include "Snippets/XamlResources/XamlResourcesDefineNewThemeResource.h"
     return gallery::controlExample({.header = gallery::snippet(themeHeader), .example = example, .code = gallery::snippet(themeCode)});
 }
@@ -38,6 +40,7 @@ FrameworkElement newTheme() {
 }  // namespace
 
 static FrameworkElement xamlResourcesPage() {
+    using namespace wxl::dsl;
     return StackPanel {
         TextBlock {Margin {0, 12, 0, 4}, styles.TextBlock.Subtitle, u"Creating and using resources"},
         StackPanel {

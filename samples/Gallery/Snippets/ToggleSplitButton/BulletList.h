@@ -2,7 +2,7 @@ auto const marker = std::make_shared<MarkerType>(MarkerType::Bullet);
 
 auto richBox = RichEditBox {width = 240, minHeight = 96, automationName = u"Text entry"};
 
-auto icon = SymbolIcon {symbol = Symbol::List};
+auto markerIcon = SymbolIcon {symbol = Symbol::List};
 
 const Preset choice {
     Padding {4},
@@ -21,15 +21,15 @@ struct Model {
 };
 auto const model = gallery::hold<Model>();
 
-auto const choose = [](Flyout flyout, Button button, Symbol symbol, MarkerType type, SymbolIcon icon,
+auto const choose = [](Flyout popup, Button button, Symbol markerSymbol, MarkerType type, SymbolIcon markerIcon,
                        RichEditBox richBox, std::shared_ptr<MarkerType> marker) -> async::task<> {
     auto clicks = onClick(button);
     if (co_await clicks.next()) {
         *marker = type;
-        icon.symbol(symbol);
+        markerIcon.symbol(markerSymbol);
         richBox.document().selection().paragraphFormat().listType(type);
-        flyout.target().try_as<ToggleSplitButton>().isChecked(true);
-        flyout.hide();
+        popup.target().try_as<ToggleSplitButton>().isChecked(true);
+        popup.hide();
         richBox.focus(FocusState::Keyboard);
     }
 };
@@ -37,21 +37,21 @@ auto const choose = [](Flyout flyout, Button button, Symbol symbol, MarkerType t
 auto listButton = ToggleSplitButton {
     vAlign.top,
     automationName = u"Bullets",
-    content = icon,
+    content = markerIcon,
     onIsCheckedChanged += [richBox, marker](ToggleSplitButton const& self) {
         richBox.document().selection().paragraphFormat().listType(
             self.isChecked() ? *marker : MarkerType::None);
     },
     flyout = Flyout {
         placement = FlyoutPlacementMode::Bottom,
-        onOpened += [model, choose, richBox, icon, marker](Object const& sender) {
-            auto const flyout = sender.try_as<Flyout>();
-            auto const buttons = flyout.content().try_as<StackPanel>().children();
+        onOpened += [model, choose, richBox, markerIcon, marker](Object const& sender) {
+            auto const popup = sender.try_as<Flyout>();
+            auto const buttons = popup.content().try_as<StackPanel>().children();
             model->choosing.clear();
             model->choosing.push_back(
-                choose(flyout, buttons[0].try_as<Button>(), Symbol::List, MarkerType::Bullet, icon, richBox, marker));
-            model->choosing.push_back(choose(flyout, buttons[1].try_as<Button>(), Symbol::Bullets,
-                                             MarkerType::UppercaseRoman, icon, richBox, marker));
+                choose(popup, buttons[0].try_as<Button>(), Symbol::List, MarkerType::Bullet, markerIcon, richBox, marker));
+            model->choosing.push_back(choose(popup, buttons[1].try_as<Button>(), Symbol::Bullets,
+                                             MarkerType::UppercaseRoman, markerIcon, richBox, marker));
         },
         content = StackPanel {
             orientation.horizontal,

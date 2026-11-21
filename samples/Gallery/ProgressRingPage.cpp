@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText indeterminateHeader{"Snippets/ProgressRing/Indeterminate
 gallery::LazyLoadedText indeterminateCode{"Snippets/ProgressRing/IndeterminateProgressRing.h"};
 
 FrameworkElement indeterminate() {
+    using namespace wxl::dsl;
 #include "Snippets/ProgressRing/IndeterminateProgressRing.h"
 
     return gallery::controlExample({
@@ -26,6 +26,7 @@ gallery::LazyLoadedText determinateHeader{"Snippets/ProgressRing/DeterminateProg
 gallery::LazyLoadedText determinateCode{"Snippets/ProgressRing/DeterminateProgressRing.h"};
 
 FrameworkElement determinate() {
+    using namespace wxl::dsl;
 #include "Snippets/ProgressRing/DeterminateProgressRing.h"
 
     return gallery::controlExample({

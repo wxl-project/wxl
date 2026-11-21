@@ -3,7 +3,6 @@
 #include "Pages.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -24,6 +23,7 @@ gallery::LazyLoadedText customHeader{"Snippets/ToggleSwitch/Custom.html"};
 gallery::LazyLoadedText customCode{"Snippets/ToggleSwitch/Custom.h"};
 
 FrameworkElement custom() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(customHeader),
         .example =

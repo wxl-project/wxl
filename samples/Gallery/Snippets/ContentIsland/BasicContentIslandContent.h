@@ -21,11 +21,11 @@ struct Model {
     }
 
     // The scene of the island: a visual of the compositor of the host, which turns on its own.
-    static ContentIsland scene(Compositor const& compositor, Vector2 size) {
+    static ContentIsland scene(Compositor const& compositor, Vector2 extent) {
         auto const square = compositor.createSpriteVisual();
-        square.size({size.x / 2, size.y / 2});
+        square.size({extent.x / 2, extent.y / 2});
         square.anchorPoint({0.5f, 0.5f});
-        square.offset({size.x / 2, size.y / 2, 0.0f});
+        square.offset({extent.x / 2, extent.y / 2, 0.0f});
         square.brush(compositor.createColorBrush(rgb(60, 120, 220)));
 
         auto const turn = compositor.createScalarKeyFrameAnimation();
@@ -36,7 +36,7 @@ struct Model {
         square.startAnimation(u"RotationAngleInDegrees", turn);
 
         auto const root = compositor.createContainerVisual();
-        root.size(size);
+        root.size(extent);
         root.children().insertAtTop(square);
         return ContentIsland::create(root);
     }
@@ -47,12 +47,12 @@ struct Model {
 
         auto const host = hosts[entries.size()];
         auto const parent = host.xamlRoot().contentIsland();
-        auto const placement = ElementCompositionPreview::getElementVisual(host).try_as<ContainerVisual>();
+        auto const hostVisual = ElementCompositionPreview::getElementVisual(host).try_as<ContainerVisual>();
         // The panel has just been shown and is not laid out yet: the size is the one the host was given.
-        auto const size = Vector2 {static_cast<float>(host.width()), static_cast<float>(host.height())};
+        auto const extent = Vector2 {static_cast<float>(host.width()), static_cast<float>(host.height())};
 
         // The link lives as long as the connection between the parent and the child island.
-        auto const link = ChildSiteLink::create(parent, placement);
+        auto const link = ChildSiteLink::create(parent, hostVisual);
 
         // The offset of the child in the parent follows the host element, or the automation of the
         // island would look for it in the wrong place. Called at every layout of this thread: little work.
@@ -66,20 +66,20 @@ struct Model {
         auto token = host.add_onLayoutUpdated([follow](Object const&, Object const&) { follow(); });
         follow();
 
-        placement.size(size);
-        link.actualSize(size);
+        hostVisual.size(extent);
+        link.actualSize(extent);
 
-        auto const island = scene(placement.compositor(), size);
+        auto const island = scene(hostVisual.compositor(), extent);
         link.connect(island);
         entries.push_back(Entry {link, island, host, std::move(token)});
     }
 
     // The page is left: the handlers are taken off and the islands closed, the link last.
     void unload() {
-        for (auto& entry : entries) {
-            entry.host.remove_onLayoutUpdated(entry.layoutUpdated);
-            entry.island.close();
-            entry.link.close();
+        for (auto& record : entries) {
+            record.host.remove_onLayoutUpdated(record.layoutUpdated);
+            record.island.close();
+            record.link.close();
         }
         entries.clear();
     }

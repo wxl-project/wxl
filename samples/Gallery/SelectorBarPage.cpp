@@ -11,7 +11,6 @@
 
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -19,6 +18,7 @@ gallery::LazyLoadedText basicHeader{"Snippets/SelectorBar/BasicSelectorbar.html"
 gallery::LazyLoadedText basicCode{"Snippets/SelectorBar/BasicSelectorbar.h"};
 
 FrameworkElement basic() {
+    using namespace wxl::dsl;
 #include "Snippets/SelectorBar/BasicSelectorbar.h"
 
     return gallery::controlExample({
@@ -32,6 +32,7 @@ gallery::LazyLoadedText frameTransitionsHeader{"Snippets/SelectorBar/Selectorbar
 gallery::LazyLoadedText frameTransitionsCode{"Snippets/SelectorBar/SelectorbarFrameSlideTransitions.h"};
 
 FrameworkElement frameTransitions() {
+    using namespace wxl::dsl;
 #include "Snippets/SelectorBar/SelectorbarFrameSlideTransitions.h"
 
     return gallery::controlExample({
@@ -45,6 +46,7 @@ gallery::LazyLoadedText collectionsHeader{"Snippets/SelectorBar/SelectorbarDispl
 gallery::LazyLoadedText collectionsCode{"Snippets/SelectorBar/SelectorbarDisplayingDifferentCollections.h"};
 
 FrameworkElement collections() {
+    using namespace wxl::dsl;
 #include "Snippets/SelectorBar/SelectorbarDisplayingDifferentCollections.h"
 
     return gallery::controlExample({

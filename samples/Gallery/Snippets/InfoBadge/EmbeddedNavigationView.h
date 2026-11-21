@@ -2,13 +2,13 @@ auto badge = InfoBadge {value = 5};
 
 auto navigation = NavigationView {height = 300, paneDisplayMode = NavigationViewPaneDisplayMode::Left};
 
-auto opacity = ToggleSwitch {
+auto opacitySwitch = ToggleSwitch {
     header = u"InfoBadge Opacity",
     isOn = true,
     onToggled += [badge](ToggleSwitch const& self) { badge.opacity(self.isOn() ? 1.0 : 0.0); },
 };
 
-auto displayMode = ComboBox {
+auto displayModeBox = ComboBox {
     header = u"Display Mode",
     ComboBoxItem {content = u"LeftExpanded"},
     ComboBoxItem {content = u"LeftCompact"},

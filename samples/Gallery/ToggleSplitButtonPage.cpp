@@ -7,7 +7,6 @@
 import wxl.core;
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -15,6 +14,7 @@ gallery::LazyLoadedText listHeader{"Snippets/ToggleSplitButton/BulletList.html"}
 gallery::LazyLoadedText listCode{"Snippets/ToggleSplitButton/BulletList.h"};
 
 FrameworkElement listExample() {
+    using namespace wxl::dsl;
 #include "Snippets/ToggleSplitButton/BulletList.h"
 
     return gallery::controlExample({

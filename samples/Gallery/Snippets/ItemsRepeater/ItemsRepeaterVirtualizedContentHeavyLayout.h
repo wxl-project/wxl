@@ -2,14 +2,14 @@
 // filter, in the order chosen; a new filter or order is a new list of positions, which the layout takes as a change
 // of all its items.
 auto const recipes = std::make_shared<std::vector<gallery::Recipe>>(gallery::makeRecipes(1000));
-auto const colors = &gallery::namedColors();
+auto const palette = &gallery::namedColors();
 
-auto const recipeTemplate = [recipes, colors](Object const& item) {
+auto const recipeTemplate = [recipes, palette](Object const& item) {
     auto const& recipe = (*recipes)[static_cast<size_t>(unboxValue<int64_t>(item))];
     return StackPanel {
         Margin {5},
         background = brushes.SystemControl.Background.Base.Low,
-        StackPanel {height = 75, Margin {8}, background = (*colors)[static_cast<size_t>(recipe.colorIndex)].color, opacity = 0.8,
+        StackPanel {height = 75, Margin {8}, background = (*palette)[static_cast<size_t>(recipe.colorIndex)].color, opacity = 0.8,
                     TextBlock {Padding {12}, fontSize = 35, foreground = brushes.SystemControl.Foreground.AltHigh,
                                textAlignment = TextAlignment::Center, gallery::numberText(recipe.num)}},
         TextBlock {Margin {15, 0, 10, 0}, styles.TextBlock.Title, textWrapping = TextWrapping::Wrap, recipe.name},
@@ -37,9 +37,9 @@ auto const update = [model, recipes, show] {
         }
     }
     std::stable_sort(shown.begin(), shown.end(), [&](int64_t a, int64_t b) {
-        auto const left = (*recipes)[static_cast<size_t>(a)].ingredientList.size();
-        auto const right = (*recipes)[static_cast<size_t>(b)].ingredientList.size();
-        return model->descending ? left > right : left < right;
+        auto const leftCount = (*recipes)[static_cast<size_t>(a)].ingredientList.size();
+        auto const rightCount = (*recipes)[static_cast<size_t>(b)].ingredientList.size();
+        return model->descending ? leftCount > rightCount : leftCount < rightCount;
     });
     show(shown);
     announceOther(model->repeater, u"Filtered recipes, " + gallery::numberText(static_cast<int>(shown.size())) + u" results.",

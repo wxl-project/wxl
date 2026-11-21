@@ -14,7 +14,6 @@
 import wxl.core;
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -22,6 +21,7 @@ gallery::LazyLoadedText copyTextHeader{"Snippets/Clipboard/CopyTextClipboard.htm
 gallery::LazyLoadedText copyTextCode{"Snippets/Clipboard/CopyTextClipboard.h"};
 
 FrameworkElement copyText() {
+    using namespace wxl::dsl;
 #include "Snippets/Clipboard/CopyTextClipboard.h"
 
     return gallery::controlExample({
@@ -35,6 +35,7 @@ gallery::LazyLoadedText pasteTextHeader{"Snippets/Clipboard/PasteTextClipboard.h
 gallery::LazyLoadedText pasteTextCode{"Snippets/Clipboard/PasteTextClipboard.h"};
 
 FrameworkElement pasteText() {
+    using namespace wxl::dsl;
 #include "Snippets/Clipboard/PasteTextClipboard.h"
 
     return gallery::controlExample({
@@ -48,6 +49,7 @@ gallery::LazyLoadedText imageHeader{"Snippets/Clipboard/ClipboardCopyPasteImage.
 gallery::LazyLoadedText imageCode{"Snippets/Clipboard/ClipboardCopyPasteImage.h"};
 
 FrameworkElement image() {
+    using namespace wxl::dsl;
 #include "Snippets/Clipboard/ClipboardCopyPasteImage.h"
 
     return gallery::controlExample({
@@ -61,6 +63,7 @@ gallery::LazyLoadedText filesHeader{"Snippets/Clipboard/ClipboardCopyPasteFiles.
 gallery::LazyLoadedText filesCode{"Snippets/Clipboard/ClipboardCopyPasteFiles.h"};
 
 FrameworkElement files() {
+    using namespace wxl::dsl;
 #include "Snippets/Clipboard/ClipboardCopyPasteFiles.h"
 
     return gallery::controlExample({
@@ -74,6 +77,7 @@ gallery::LazyLoadedText optionsHeader{"Snippets/Clipboard/ClipboardHistoryRoamin
 gallery::LazyLoadedText optionsCode{"Snippets/Clipboard/ClipboardHistoryRoamingOptions.h"};
 
 FrameworkElement options() {
+    using namespace wxl::dsl;
 #include "Snippets/Clipboard/ClipboardHistoryRoamingOptions.h"
 
     return gallery::controlExample({
@@ -87,6 +91,7 @@ gallery::LazyLoadedText otherHeader{"Snippets/Clipboard/OtherClipboardOperations
 gallery::LazyLoadedText otherCode{"Snippets/Clipboard/OtherClipboardOperations.h"};
 
 FrameworkElement other() {
+    using namespace wxl::dsl;
 #include "Snippets/Clipboard/OtherClipboardOperations.h"
 
     return gallery::controlExample({

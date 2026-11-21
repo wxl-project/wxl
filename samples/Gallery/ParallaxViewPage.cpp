@@ -8,7 +8,6 @@
 #include <wxl/Microsoft.UI.Xaml.Shapes.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -16,6 +15,7 @@ gallery::LazyLoadedText listViewHeader{"Snippets/ParallaxView/ParallaxViewParall
 gallery::LazyLoadedText listViewCode{"Snippets/ParallaxView/ParallaxViewParallaxListview.h"};
 
 FrameworkElement listView() {
+    using namespace wxl::dsl;
 #include "Snippets/ParallaxView/ParallaxViewParallaxListview.h"
 
     return gallery::controlExample({
@@ -29,6 +29,7 @@ gallery::LazyLoadedText scrollViewHeader{"Snippets/ParallaxView/ParallaxViewPara
 gallery::LazyLoadedText scrollViewCode{"Snippets/ParallaxView/ParallaxViewParallaxScrollview.h"};
 
 FrameworkElement scrollView() {
+    using namespace wxl::dsl;
 #include "Snippets/ParallaxView/ParallaxViewParallaxScrollview.h"
 
     return gallery::controlExample({

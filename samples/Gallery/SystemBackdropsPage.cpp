@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText backdropTypesHeader{"Snippets/SystemBackdrops/SystemBack
 gallery::LazyLoadedText backdropTypesCode{"Snippets/SystemBackdrops/SystemBackdropsBackdropTypes.h"};
 
 FrameworkElement backdropTypes() {
+    using namespace wxl::dsl;
 #include "Snippets/SystemBackdrops/SystemBackdropsBackdropTypes.h"
 
     return gallery::controlExample({
@@ -25,6 +25,7 @@ gallery::LazyLoadedText micaBackdropHeader{"Snippets/SystemBackdrops/SystemBackd
 gallery::LazyLoadedText micaBackdropCode{"Snippets/SystemBackdrops/SystemBackdropsMicacontroller.h"};
 
 FrameworkElement micaBackdropExample() {
+    using namespace wxl::dsl;
 #include "Snippets/SystemBackdrops/SystemBackdropsMicacontroller.h"
 
     return gallery::controlExample({
@@ -38,6 +39,7 @@ gallery::LazyLoadedText acrylicBackdropHeader{"Snippets/SystemBackdrops/SystemBa
 gallery::LazyLoadedText acrylicBackdropCode{"Snippets/SystemBackdrops/SystemBackdropsDesktopacryliccontroller.h"};
 
 FrameworkElement acrylicBackdropExample() {
+    using namespace wxl::dsl;
 #include "Snippets/SystemBackdrops/SystemBackdropsDesktopacryliccontroller.h"
 
     return gallery::controlExample({

@@ -11,7 +11,6 @@
 #include <wxl/Microsoft.UI.Xaml.Media.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -32,21 +31,25 @@ FrameworkElement controlTemplate() {
 }
 
 FrameworkElement dataTemplate() {
+    using namespace wxl::dsl;
 #include "Snippets/Templates/TemplatesCustomizeComboboxItemtemplateDatatemplate.h"
     return gallery::controlExample({.header = gallery::snippet(dataHeader), .example = example, .code = gallery::snippet(dataCode)});
 }
 
 FrameworkElement itemsPanelTemplate() {
+    using namespace wxl::dsl;
 #include "Snippets/Templates/TemplatesCustomizeItemscontrolItemspaneltemplate.h"
     return gallery::controlExample({.header = gallery::snippet(panelHeader), .example = example, .code = gallery::snippet(panelCode)});
 }
 
 FrameworkElement nestedPresets() {
+    using namespace wxl::dsl;
 #include "Snippets/Templates/TemplatesPresetsNested.h"
     return gallery::controlExample({.header = gallery::snippet(presetsHeader), .example = example, .code = gallery::snippet(presetsCode)});
 }
 
 FrameworkElement builtTemplates() {
+    using namespace wxl::dsl;
 #include "Snippets/Templates/TemplatesBuiltWhereApplied.h"
     return gallery::controlExample({.header = gallery::snippet(templatesHeader), .example = example, .code = gallery::snippet(templatesCode)});
 }
@@ -54,6 +57,7 @@ FrameworkElement builtTemplates() {
 }  // namespace
 
 static FrameworkElement templatesPage() {
+    using namespace wxl::dsl;
     return StackPanel {
         spacing = 12.0,
         Margin {0, 12, 0, 0},

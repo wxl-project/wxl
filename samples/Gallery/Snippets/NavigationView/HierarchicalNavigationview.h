@@ -37,7 +37,7 @@ auto const view = NavigationView {
 };
 view.selectedItem(view.menuItems()[0]);
 
-auto const mode = [view](NavigationViewPaneDisplayMode display, bool open) {
+auto const setMode = [view](NavigationViewPaneDisplayMode display, bool open) {
     return [view, display, open](auto&&...) {
         view.paneDisplayMode(display);
         view.isPaneOpen(open);
@@ -45,9 +45,9 @@ auto const mode = [view](NavigationViewPaneDisplayMode display, bool open) {
 };
 auto options = StackPanel {
     TextBlock {Margin {0, 12, 0, 0}, u"PanePosition:"},
-    RadioButton {content = u"Left mode", groupName = u"hierachicalGroup", isChecked = true, onChecked += mode(NavigationViewPaneDisplayMode::Left, true)},
-    RadioButton {content = u"Top mode", groupName = u"hierachicalGroup", onChecked += mode(NavigationViewPaneDisplayMode::Top, false)},
-    RadioButton {content = u"LeftCompact mode", groupName = u"hierachicalGroup", onChecked += mode(NavigationViewPaneDisplayMode::LeftCompact, false)},
+    RadioButton {content = u"Left mode", groupName = u"hierachicalGroup", isChecked = true, onChecked += setMode(NavigationViewPaneDisplayMode::Left, true)},
+    RadioButton {content = u"Top mode", groupName = u"hierachicalGroup", onChecked += setMode(NavigationViewPaneDisplayMode::Top, false)},
+    RadioButton {content = u"LeftCompact mode", groupName = u"hierachicalGroup", onChecked += setMode(NavigationViewPaneDisplayMode::LeftCompact, false)},
 };
 
 auto example = Grid {

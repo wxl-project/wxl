@@ -11,7 +11,6 @@
 
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -19,6 +18,7 @@ gallery::LazyLoadedText pinHeader{"Snippets/MapControl/MapControlShowingPinMap.h
 gallery::LazyLoadedText pinCode{"Snippets/MapControl/MapControlShowingPinMap.h"};
 
 FrameworkElement pin() {
+    using namespace wxl::dsl;
 #include "Snippets/MapControl/MapControlShowingPinMap.h"
 
     return gallery::controlExample({
@@ -31,5 +31,6 @@ FrameworkElement pin() {
 }  // namespace
 
 wxl::FrameworkElement gallery::mapControlPage() {
+    using namespace wxl::dsl;
     return StackPanel {TextBlock {Margin {0, 0, 0, 12}, textWrapping = TextWrapping::Wrap, Run {u"Follow instructions "}, Hyperlink {navigateUri = u"https://learn.microsoft.com/azure/azure-maps/how-to-manage-account-keys", Run {u"here"}}, Run {u" to obtain your MapServiceToken."}}, Image {height = 320, hAlign.left, automationAccessibilityView = AccessibilityView::Raw, source = u"Assets/SampleMedia/MapExample.png"}, pin()};
 }

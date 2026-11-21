@@ -7,14 +7,14 @@ static constexpr int counts[] = {5, 7, 4};
 auto const view = ItemsView {
     layout = StackLayout {orientation.horizontal},
     itemTemplate = [](Object const& item) {
-        auto const kind = unboxValue<int64_t>(item) / 100;
-        return ItemContainer {width = 112, height = 82, Margin {4}, background = kind == 0 ? pink : kind == 1 ? plum : powderBlue};
+        auto const category = unboxValue<int64_t>(item) / 100;
+        return ItemContainer {width = 112, height = 82, Margin {4}, background = category == 0 ? pink : category == 1 ? plum : powderBlue};
     },
 };
-auto const show = [view](int kind) {
+auto const show = [view](int category) {
     std::vector<int64_t> tiles;
-    for (int i = 0; i < counts[kind]; ++i) {
-        tiles.push_back(kind * 100 + i);
+    for (int i = 0; i < counts[category]; ++i) {
+        tiles.push_back(category * 100 + i);
     }
     view.itemsSource(IndexList{tiles});
 };

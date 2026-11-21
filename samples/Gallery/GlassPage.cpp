@@ -6,7 +6,6 @@
 #include "Pages.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -14,6 +13,7 @@ gallery::LazyLoadedText FrostHeader{"Snippets/Glass/Frost.html"};
 gallery::LazyLoadedText FrostCode{"Snippets/Glass/Frost.h"};
 
 FrameworkElement frostExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Glass/Frost.h"
 
     return gallery::controlExample({
@@ -27,6 +27,7 @@ gallery::LazyLoadedText TintedHeader{"Snippets/Glass/Tinted.html"};
 gallery::LazyLoadedText TintedCode{"Snippets/Glass/Tinted.h"};
 
 FrameworkElement tintedExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Glass/Tinted.h"
 
     return gallery::controlExample({

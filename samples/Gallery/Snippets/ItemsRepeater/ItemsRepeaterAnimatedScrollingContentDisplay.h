@@ -1,6 +1,6 @@
 // The colors of the original are names; here each is a color of the application's own, and the repeater is
 // given the position of each.
-auto const* colors = &gallery::namedColors();
+auto const* palette = &gallery::namedColors();
 
 struct Model {
     ScrollViewer scroll {width = 250, height = 175};
@@ -13,14 +13,14 @@ struct Model {
 };
 auto const model = gallery::hold<Model>();
 
-auto const colorButton = [model, colors](Object const& item) {
-    auto const& entry = (*colors)[static_cast<size_t>(unboxValue<int64_t>(item))];
+auto const colorButton = [model, palette](Object const& item) {
+    auto const& named = (*palette)[static_cast<size_t>(unboxValue<int64_t>(item))];
     return Button {
         hAlign.stretch,
-        background = entry.color,
+        background = named.color,
         foreground = brushes.Text.FillColor.Inverse,
-        content = entry.name,
-        onClick += [model, name = entry.name](Button const& self) {
+        content = named.name,
+        onClick += [model, name = named.name](Button const& self) {
             model->swatch.fill(self.background());
             announce(self, std::u16string {u"Rectangle color set to "} + name, u"RectangleChangedNotificationActivityId");
             // The button of the color chosen is named so for a screen reader, the one before it by its own words again.
@@ -44,7 +44,7 @@ auto const colorButton = [model, colors](Object const& item) {
 
 model->repeater = ItemsRepeater {
     itemTemplate = colorButton,
-    itemsSource = IndexList(static_cast<int64_t>(colors->size())),
+    itemsSource = IndexList(static_cast<int64_t>(palette->size())),
     onGettingFocus += [model](auto const&, GettingFocusEventArgs& args) {
         // Focus coming into the repeater from outside goes to the item that had it last.
         auto const lastFocus = args.oldFocusedElement().try_as<UIElement>();
@@ -56,15 +56,15 @@ model->repeater = ItemsRepeater {
         if (args.handled()) {
             return;
         }
-        int target = -1;
+        int targetIndex = -1;
         int const last = model->repeater.itemsSourceView().count() - 1;
         if (args.key() == VirtualKey::Home) {
-            target = model->previouslyFocusedIndex != 0 ? 0 : -1;
+            targetIndex = model->previouslyFocusedIndex != 0 ? 0 : -1;
         } else if (args.key() == VirtualKey::End) {
-            target = model->previouslyFocusedIndex != last ? last : -1;
+            targetIndex = model->previouslyFocusedIndex != last ? last : -1;
         }
-        if (target != -1) {
-            auto const element = model->repeater.getOrCreateElement(target);
+        if (targetIndex != -1) {
+            auto const element = model->repeater.getOrCreateElement(targetIndex);
             element.startBringIntoView();
             if (auto const control = element.try_as<Control>()) {
                 control.focus(FocusState::Programmatic);
@@ -87,10 +87,10 @@ model->repeater = ItemsRepeater {
         item.startAnimation(u"Scale.X", scale);
         item.startAnimation(u"Scale.Y", scale);
 
-        auto const centerPoint = compositor.createExpressionAnimation();
-        centerPoint.setReferenceParameter(u"item", item);
-        centerPoint.expression(u"Vector3(item.Size.X/2, item.Size.Y/2, 0)");
-        item.startAnimation(u"CenterPoint", centerPoint);
+        auto const centerAnimation = compositor.createExpressionAnimation();
+        centerAnimation.setReferenceParameter(u"item", item);
+        centerAnimation.expression(u"Vector3(item.Size.X/2, item.Size.Y/2, 0)");
+        item.startAnimation(u"CenterPoint", centerAnimation);
     },
 };
 model->scroll.content(model->repeater);

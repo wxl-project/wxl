@@ -13,7 +13,6 @@
 #include <wxl/Microsoft.UI.Xaml.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -21,6 +20,7 @@ gallery::LazyLoadedText entranceExampleHeader{"Snippets/ThemeTransition/Entrance
 gallery::LazyLoadedText entranceExampleCode{"Snippets/ThemeTransition/EntrancethemetransitionAddingItemsYour.h"};
 
 FrameworkElement entranceExample() {
+    using namespace wxl::dsl;
 #include "Snippets/ThemeTransition/EntrancethemetransitionAddingItemsYour.h"
 
     return gallery::controlExample({
@@ -35,6 +35,7 @@ gallery::LazyLoadedText repositionExampleHeader{"Snippets/ThemeTransition/Reposi
 gallery::LazyLoadedText repositionExampleCode{"Snippets/ThemeTransition/RepositionthemetransitionReactLayoutChanges.h"};
 
 FrameworkElement repositionExample() {
+    using namespace wxl::dsl;
 #include "Snippets/ThemeTransition/RepositionthemetransitionReactLayoutChanges.h"
 
     return gallery::controlExample({
@@ -49,6 +50,7 @@ gallery::LazyLoadedText contentExampleHeader{"Snippets/ThemeTransition/Contentth
 gallery::LazyLoadedText contentExampleCode{"Snippets/ThemeTransition/ContentthemetransitionAnimateContentRefreshes.h"};
 
 FrameworkElement contentExample() {
+    using namespace wxl::dsl;
 #include "Snippets/ThemeTransition/ContentthemetransitionAnimateContentRefreshes.h"
 
     return gallery::controlExample({
@@ -63,6 +65,7 @@ gallery::LazyLoadedText addDeleteExampleHeader{"Snippets/ThemeTransition/Adddele
 gallery::LazyLoadedText addDeleteExampleCode{"Snippets/ThemeTransition/AdddeletethemetransitionAnimateAddingRemoving.h"};
 
 FrameworkElement addDeleteExample() {
+    using namespace wxl::dsl;
 #include "Snippets/ThemeTransition/AdddeletethemetransitionAnimateAddingRemoving.h"
 
     return gallery::controlExample({
@@ -77,6 +80,7 @@ gallery::LazyLoadedText popupExampleHeader{"Snippets/ThemeTransition/Popupthemet
 gallery::LazyLoadedText popupExampleCode{"Snippets/ThemeTransition/PopupthemetransitionAnimateOpeningClosing.h"};
 
 FrameworkElement popupExample() {
+    using namespace wxl::dsl;
 #include "Snippets/ThemeTransition/PopupthemetransitionAnimateOpeningClosing.h"
 
     return gallery::controlExample({

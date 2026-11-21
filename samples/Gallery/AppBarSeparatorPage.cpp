@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText separatedHeader{"Snippets/AppBarSeparator/Separated.html
 gallery::LazyLoadedText separatedCode{"Snippets/AppBarSeparator/Separated.h"};
 
 FrameworkElement separated() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(separatedHeader),
         .example =

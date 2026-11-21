@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText controlHeader{"Snippets/VariableSizedWrapGrid/VariableSi
 gallery::LazyLoadedText controlCode{"Snippets/VariableSizedWrapGrid/VariableSizedWrapGridControl.h"};
 
 FrameworkElement control() {
+    using namespace wxl::dsl;
 #include "Snippets/VariableSizedWrapGrid/VariableSizedWrapGridControl.h"
 
     return gallery::controlExample({

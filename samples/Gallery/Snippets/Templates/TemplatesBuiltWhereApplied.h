@@ -20,13 +20,13 @@ auto const look = Preset {
 auto const badge = Template<Border> {look, hAlign.left, Template<TextBlock> {foreground = colors.white, FontWeight {600}, u"New"}};
 
 // A Template inside a Template: two Borders from one description, which a plain Border written once could not be.
-auto const row = Template<StackPanel> {orientation.horizontal, spacing = 8.0, badge, badge};
+auto const rowTemplate = Template<StackPanel> {orientation.horizontal, spacing = 8.0, badge, badge};
 
-auto const built = row.build();  // the object itself, asked for by hand
+auto const built = rowTemplate.build();  // the object itself, asked for by hand
 
 auto example = StackPanel {
     spacing = 12.0,
-    row,          // a template in a real description: it is built here
+    rowTemplate,          // a template in a real description: it is built here
     built,        // the object that was built above
     Border {look, TextBlock {foreground = colors.white, u"A preset in a real description"}},
 };

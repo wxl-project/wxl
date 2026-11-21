@@ -5,7 +5,6 @@
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -13,6 +12,7 @@ gallery::LazyLoadedText offsetExampleHeader{"Snippets/Popup/PopupOffsetPositioni
 gallery::LazyLoadedText offsetExampleCode{"Snippets/Popup/PopupOffsetPositioning.h"};
 
 FrameworkElement offsetExample() {
+    using namespace wxl::dsl;
 #include "Snippets/Popup/PopupOffsetPositioning.h"
 
     return gallery::controlExample({

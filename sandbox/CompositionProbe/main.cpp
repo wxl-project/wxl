@@ -8,9 +8,9 @@
 #include "pch.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 wxl::Teardown wxl_launched() {
+    using namespace wxl::dsl;
     CompositionWindow const window{L"Проба своего окна", SizeInt32{720, 520}};
 
     // Задний фон сцены -- визуал композитора, тёмно-бирюзовый: любой белый

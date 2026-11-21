@@ -7,7 +7,6 @@
 #include <wxl/Microsoft.UI.Xaml.Controls.h>
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -20,11 +19,13 @@ gallery::LazyLoadedText implicitHeader{"Snippets/XamlStyles/XamlStylesStyleWitho
 gallery::LazyLoadedText implicitCode{"Snippets/XamlStyles/XamlStylesStyleWithoutKeyImplicit.h"};
 
 FrameworkElement applying() {
+    using namespace wxl::dsl;
 #include "Snippets/XamlStyles/XamlStylesCreatingApplyingStyle.h"
     return gallery::controlExample({.header = gallery::snippet(applyingHeader), .example = example, .code = gallery::snippet(applyingCode)});
 }
 
 FrameworkElement implicit() {
+    using namespace wxl::dsl;
 #include "Snippets/XamlStyles/XamlStylesStyleWithoutKeyImplicit.h"
     return gallery::controlExample({.header = gallery::snippet(implicitHeader), .example = example, .code = gallery::snippet(implicitCode)});
 }
@@ -32,6 +33,7 @@ FrameworkElement implicit() {
 }  // namespace
 
 static FrameworkElement xamlStylesPage() {
+    using namespace wxl::dsl;
     return StackPanel {
         spacing = 12.0,
         TextBlock {Margin {0, 12, 0, 4}, styles.TextBlock.Subtitle, u"Creating and using styles"},

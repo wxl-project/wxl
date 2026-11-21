@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText sampleHeader{"Snippets/RadialGradientBrush/RadialGradien
 gallery::LazyLoadedText sampleCode{"Snippets/RadialGradientBrush/RadialGradientBrushSample.h"};
 
 FrameworkElement sample() {
+    using namespace wxl::dsl;
 #include "Snippets/RadialGradientBrush/RadialGradientBrushSample.h"
 
     return gallery::controlExample({

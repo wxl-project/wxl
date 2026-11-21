@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText simpleHeader{"Snippets/PasswordBox/Simple.html"};
 gallery::LazyLoadedText simpleCode{"Snippets/PasswordBox/Simple.h"};
 
 FrameworkElement simple() {
+    using namespace wxl::dsl;
 #include "Snippets/PasswordBox/Simple.h"
 
     return gallery::controlExample({
@@ -25,6 +25,7 @@ gallery::LazyLoadedText headerHeader{"Snippets/PasswordBox/HeaderPlaceholderText
 gallery::LazyLoadedText headerCode{"Snippets/PasswordBox/HeaderPlaceholderText.h"};
 
 FrameworkElement headerPlaceholder() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(headerHeader),
         .example =
@@ -38,6 +39,7 @@ gallery::LazyLoadedText revealHeader{"Snippets/PasswordBox/RevealMode.html"};
 gallery::LazyLoadedText revealCode{"Snippets/PasswordBox/RevealMode.h"};
 
 FrameworkElement revealMode() {
+    using namespace wxl::dsl;
 #include "Snippets/PasswordBox/RevealMode.h"
 
     return gallery::controlExample({

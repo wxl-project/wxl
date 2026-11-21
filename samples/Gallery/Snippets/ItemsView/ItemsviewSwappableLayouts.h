@@ -46,9 +46,9 @@ auto const stackTemplate = [objects](Object const& item) {
     auto const& object = (*objects)[static_cast<size_t>(unboxValue<int64_t>(item))];
     auto picture = Image {width = 24, height = 16, Margin {0, 4, 0, 0}, alignLeftWithPanel = true, alignTopWithPanel = true,
                           stretch = Stretch::UniformToFill, source = object.imageLocation};
-    auto caption = TextBlock {styles.TextBlock.Base, Margin {8, 0, 0, 0}, alignTopWithPanel = true, rightOf = picture, object.title};
-    return ItemContainer {child = RelativePanel {width = 480, minHeight = 80, maxHeight = 100, picture, caption,
-                                         TextBlock {styles.TextBlock.Caption, Margin {0, 4, 8, 4}, below = caption,
+    auto captionBlock = TextBlock {styles.TextBlock.Base, Margin {8, 0, 0, 0}, alignTopWithPanel = true, rightOf = picture, object.title};
+    return ItemContainer {child = RelativePanel {width = 480, minHeight = 80, maxHeight = 100, picture, captionBlock,
+                                         TextBlock {styles.TextBlock.Caption, Margin {0, 4, 8, 4}, below = captionBlock,
                                                     textTrimming = TextTrimming::WordEllipsis, textWrapping = TextWrapping::Wrap,
                                                     object.description}}};
 };
@@ -77,7 +77,7 @@ auto const number = [](char16_t const* label, double from, double to, double sta
     box.add_onValueChanged([apply](NumberBox const& self, NumberBoxValueChangedEventArgs&) { apply(self.value()); });
     return box;
 };
-auto const heading = [](char16_t const* label) { return TextBlock {Margin {0, 15, 0, 10}, FontWeight {600}, label}; };
+auto const heading = [](char16_t const* labelText) { return TextBlock {Margin {0, 15, 0, 10}, FontWeight {600}, labelText}; };
 
 model->linedOptions.children().append(heading(u"LinedFlowLayout settings"));
 model->linedOptions.children().append(number(u"Space between lines", 0, 100, 5, [model](double v) { model->lined.lineSpacing(v); }));

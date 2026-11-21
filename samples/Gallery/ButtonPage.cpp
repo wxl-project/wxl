@@ -5,7 +5,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -13,6 +12,7 @@ gallery::LazyLoadedText simpleHeader{"Snippets/Button/Simple.html"};
 gallery::LazyLoadedText simpleCode{"Snippets/Button/Simple.h"};
 
 FrameworkElement simple() {
+    using namespace wxl::dsl;
 #include "Snippets/Button/Simple.h"
 
     return gallery::controlExample({
@@ -28,6 +28,7 @@ gallery::LazyLoadedText withImageHeader{"Snippets/Button/WithImage.html"};
 gallery::LazyLoadedText withImageCode{"Snippets/Button/WithImage.h"};
 
 FrameworkElement withImage() {
+    using namespace wxl::dsl;
 #include "Snippets/Button/WithImage.h"
 
     return gallery::controlExample({
@@ -42,6 +43,7 @@ gallery::LazyLoadedText stylesHeader{"Snippets/Button/BuiltInStyles.html"};
 gallery::LazyLoadedText stylesCode{"Snippets/Button/BuiltInStyles.h"};
 
 FrameworkElement builtInStyles() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(stylesHeader),
         .example =
@@ -55,6 +57,7 @@ gallery::LazyLoadedText wrappingHeader{"Snippets/Button/Wrapping.html"};
 gallery::LazyLoadedText wrappingCode{"Snippets/Button/Wrapping.h"};
 
 FrameworkElement wrapping() {
+    using namespace wxl::dsl;
     return gallery::controlExample({
         .header = gallery::snippet(wrappingHeader),
         .example =

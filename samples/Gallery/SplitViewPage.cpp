@@ -7,7 +7,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -15,12 +14,13 @@ gallery::LazyLoadedText basicHeader{"Snippets/SplitView/BasicSplitView.html"};
 gallery::LazyLoadedText basicCode{"Snippets/SplitView/BasicSplitView.h"};
 
 FrameworkElement basic() {
+    using namespace wxl::dsl;
 #include "Snippets/SplitView/BasicSplitView.h"
 
     return gallery::controlExample({
         .header = gallery::snippet(basicHeader),
         .example = example,
-        .options = {StackPanel {togglePane, placement, displayMode, paneBackground, openPaneLength, compactPaneLength}},
+        .options = {StackPanel {togglePane, placementSwitch, displayModeBox, paneBackgroundBox, openPaneLengthSlider, compactPaneLengthSlider}},
         .code = gallery::snippet(basicCode),
     });
 }

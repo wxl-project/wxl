@@ -4,7 +4,6 @@
 #include "Shell.h"
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -12,6 +11,7 @@ gallery::LazyLoadedText exposingHeader{"Snippets/StandardUICommand/ExposingComma
 gallery::LazyLoadedText exposingCode{"Snippets/StandardUICommand/ExposingCommand.h"};
 
 FrameworkElement exposing() {
+    using namespace wxl::dsl;
 #include "Snippets/StandardUICommand/ExposingCommand.h"
 
     return gallery::controlExample({

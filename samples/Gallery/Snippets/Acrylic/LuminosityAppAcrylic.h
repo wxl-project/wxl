@@ -7,14 +7,14 @@ auto behind = [] {
 };
 
 constexpr Color skyBlue = rgb(0x87, 0xce, 0xeb);
-auto brush = AcrylicBrush {tintColor = skyBlue, tintOpacity = 0.8, tintLuminosityOpacity = 0.8, fallbackColor = skyBlue};
+auto acrylic = AcrylicBrush {tintColor = skyBlue, tintOpacity = 0.8, tintLuminosityOpacity = 0.8, fallbackColor = skyBlue};
 
 // The width follows the room the page has: 500 from a room of 500, 652 from 800, its own below that.
 struct Room {
     core::observable<int> step;
 };
 auto const room = gallery::hold<Room>();
-room->step.follow(gallery::pageSize().width, [](double width) { return width >= 800 ? 2 : width >= 500 ? 1 : 0; });
+room->step.follow(gallery::pageSize().width, [](double pageWidth) { return pageWidth >= 800 ? 2 : pageWidth >= 500 ? 1 : 0; });
 
 auto example = Grid {
     minWidth = 652,
@@ -22,7 +22,7 @@ auto example = Grid {
     minHeight = BindOutput {room->step, [](int step) { return step == 0 ? 200.0 : 252.0; }},
     ColumnDefinitions<u"*,252">,
     behind(),
-    Rectangle {Margin {12}, fill = brush},
+    Rectangle {Margin {12}, fill = acrylic},
 };
 
 auto options = StackPanel {
@@ -37,7 +37,7 @@ auto options = StackPanel {
         smallChange = 0.001,
         stepFrequency = 0.001,
         value = 0.8,
-        onValueChanged += [brush](Slider const& self) { brush.tintOpacity(self.value()); },
+        onValueChanged += [acrylic](Slider const& self) { acrylic.tintOpacity(self.value()); },
     },
     TextBlock {Margin {0, 12, 0, 12}, u"Tint Luminosity Opacity :"},
     Slider {
@@ -50,6 +50,6 @@ auto options = StackPanel {
         smallChange = 0.001,
         stepFrequency = 0.001,
         value = 0.8,
-        onValueChanged += [brush](Slider const& self) { brush.tintLuminosityOpacity(self.value()); },
+        onValueChanged += [acrylic](Slider const& self) { acrylic.tintLuminosityOpacity(self.value()); },
     },
 };

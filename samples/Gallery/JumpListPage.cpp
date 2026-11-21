@@ -8,7 +8,6 @@
 import wxl.core;
 
 using namespace wxl;
-using namespace wxl::dsl;
 
 namespace {
 
@@ -16,6 +15,7 @@ gallery::LazyLoadedText tasksHeader{"Snippets/JumpList/AddingTasksJumpList.html"
 gallery::LazyLoadedText tasksCode{"Snippets/JumpList/AddingTasksJumpList.h"};
 
 FrameworkElement tasks() {
+    using namespace wxl::dsl;
 #include "Snippets/JumpList/AddingTasksJumpList.h"
 
     return gallery::controlExample({
@@ -29,6 +29,7 @@ gallery::LazyLoadedText groupHeader{"Snippets/JumpList/JumpListAddingItemsCustom
 gallery::LazyLoadedText groupCode{"Snippets/JumpList/JumpListAddingItemsCustomGroup.h"};
 
 FrameworkElement group() {
+    using namespace wxl::dsl;
 #include "Snippets/JumpList/JumpListAddingItemsCustomGroup.h"
 
     return gallery::controlExample({
@@ -41,6 +42,7 @@ FrameworkElement group() {
 }  // namespace
 
 static wxl::FrameworkElement jumpListPage() {
+    using namespace wxl::dsl;
     // What the original says above its examples: the list belongs to a packaged application.
     return StackPanel {
         InfoBar {Margin {0, 10, 0, 0}, isOpen = true, isClosable = false, severity = InfoBarSeverity::Warning,
